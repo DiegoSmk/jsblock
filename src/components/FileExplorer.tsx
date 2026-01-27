@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Folder, File, ChevronRight, ChevronDown, FileCode, FolderOpen, Save, FileText, Box, FolderPlus, X } from 'lucide-react';
+import { Folder, File, ChevronRight, ChevronDown, FileCode, FolderOpen, Save, FileText, Box, FolderPlus, X, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { RecentEnvironments } from './RecentEnvironments';
 import 'allotment/dist/style.css';
 import { useStore } from '../store/useStore';
 
@@ -12,6 +14,7 @@ interface FileEntry {
 }
 
 export const FileExplorer: React.FC = () => {
+    const { t } = useTranslation();
     const { openedFolder, setOpenedFolder, selectedFile, setSelectedFile, saveFile, theme } = useStore();
     const [files, setFiles] = useState<FileEntry[]>([]);
     const [isCreating, setIsCreating] = useState<{ type: 'file' | 'folder', ext?: string } | null>(null);
@@ -218,12 +221,32 @@ export const FileExplorer: React.FC = () => {
                         <Save size={14} />
                     </button>
                 )}
+                {openedFolder && (
+                    <button
+                        onClick={() => {
+                            setOpenedFolder(null);
+                            setSelectedFile(null);
+                        }}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#aaa' : '#666', padding: 4, marginLeft: 'auto' }}
+                        title={t('file_explorer.close_folder')}
+                    >
+                        <LogOut size={14} />
+                    </button>
+                )}
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
                 {openedFolder ? renderTree(files) : (
                     <div style={{ padding: '24px', textAlign: 'center' }}>
-                        <p style={{ fontSize: '0.85rem', opacity: 0.5, marginBottom: '16px' }}>Nenhuma pasta aberta</p>
+                        <div style={{ marginBottom: '28px' }}>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px', color: isDark ? '#fff' : '#000', opacity: 0.7 }}>
+                                {t('recent.welcome')}
+                            </h2>
+                            <p style={{ fontSize: '0.85rem', opacity: 0.6, color: isDark ? '#ccc' : '#666' }}>
+                                {t('recent.select_env')}
+                            </p>
+                        </div>
+
                         <button
                             onClick={openFolderDialog}
                             style={{
@@ -241,8 +264,12 @@ export const FileExplorer: React.FC = () => {
                             }}
                         >
                             <FolderPlus size={16} />
-                            Abrir Pasta
+                            {t('file_explorer.open_button')}
                         </button>
+
+                        <div style={{ marginTop: '16px', textAlign: 'left', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, paddingTop: '12px' }}>
+                            <RecentEnvironments embedded />
+                        </div>
                     </div>
                 )}
             </div>

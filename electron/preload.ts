@@ -10,5 +10,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     windowMaximize: () => ipcRenderer.send('window-maximize'),
     windowClose: () => ipcRenderer.send('window-close'),
     createFile: (path: string, content?: string) => ipcRenderer.invoke('create-file', path, content),
-    createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path)
+    createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path),
+    checkPathExists: (path: string) => ipcRenderer.invoke('check-path-exists', path)
 });

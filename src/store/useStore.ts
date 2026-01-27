@@ -15,6 +15,13 @@ import { parseCodeToFlow } from '../logic/CodeParser';
 import { generateCodeFromFlow } from '../logic/CodeGenerator';
 import { getLayoutedElements } from '../logic/layout';
 
+type RecentEnvironment = {
+    path: string;
+    lastOpened: number; // timestamp
+    label?: 'personal' | 'work' | 'fun' | 'other';
+    isFavorite?: boolean;
+};
+
 type AppState = {
     code: string;
     nodes: Node[];
@@ -51,6 +58,8 @@ type AppState = {
         title: string;
         initialValue: string;
         type: string;
+        placeholder?: string;
+        confirmLabel?: string;
         onSubmit: (name: string) => void;
     };
     openModal: (config: Omit<AppState['modal'], 'isOpen'>) => void;
@@ -79,6 +88,14 @@ type AppState = {
     setOpenedFolder: (path: string | null) => void;
     setSelectedFile: (path: string | null) => Promise<void>;
     saveFile: () => Promise<void>;
+
+    // Recent Environments
+    recentEnvironments: RecentEnvironment[];
+    addRecent: (path: string) => Promise<void>;
+    removeRecent: (path: string) => void;
+    toggleFavorite: (path: string) => void;
+    setRecentLabel: (path: string, label: 'personal' | 'work' | 'fun' | 'other' | undefined) => void;
+    validateRecents: () => Promise<void>;
 };
 
 const initialCode = '';
@@ -97,7 +114,72 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     showCanvas: true,
     isBlockFile: false,
     openedFolder: null,
+
     selectedFile: null,
+    recentEnvironments: JSON.parse(localStorage.getItem('recentEnvironments') || '[]'),
+
+    addRecent: async (path: string) => {
+        const { recentEnvironments } = get();
+        // Check if path exists using the new API
+        if ((window as any).electronAPI) {
+            const exists = await (window as any).electronAPI.checkPathExists(path);
+            if (!exists) return;
+        }
+
+        const now = Date.now();
+        const existingIndex = recentEnvironments.findIndex((r: RecentEnvironment) => r.path === path);
+
+        let newRecents = [...recentEnvironments];
+        if (existingIndex >= 0) {
+            newRecents[existingIndex] = { ...newRecents[existingIndex], lastOpened: now };
+        } else {
+            newRecents.push({ path, lastOpened: now });
+        }
+
+        localStorage.setItem('recentEnvironments', JSON.stringify(newRecents));
+        set({ recentEnvironments: newRecents });
+    },
+
+    removeRecent: (path: string) => {
+        const newRecents = get().recentEnvironments.filter((r: RecentEnvironment) => r.path !== path);
+        localStorage.setItem('recentEnvironments', JSON.stringify(newRecents));
+        set({ recentEnvironments: newRecents });
+    },
+
+    toggleFavorite: (path: string) => {
+        const newRecents = get().recentEnvironments.map((r: RecentEnvironment) =>
+            r.path === path ? { ...r, isFavorite: !r.isFavorite } : r
+        );
+        localStorage.setItem('recentEnvironments', JSON.stringify(newRecents));
+        set({ recentEnvironments: newRecents });
+    },
+
+    setRecentLabel: (path: string, label) => {
+        const newRecents = get().recentEnvironments.map((r: RecentEnvironment) =>
+            r.path === path ? { ...r, label } : r
+        );
+        localStorage.setItem('recentEnvironments', JSON.stringify(newRecents));
+        set({ recentEnvironments: newRecents });
+    },
+
+    validateRecents: async () => {
+        if (!(window as any).electronAPI) return;
+
+        const { recentEnvironments } = get();
+        const validRecents = [];
+
+        for (const recent of recentEnvironments) {
+            const exists = await (window as any).electronAPI.checkPathExists(recent.path);
+            if (exists) {
+                validRecents.push(recent);
+            }
+        }
+
+        if (validRecents.length !== recentEnvironments.length) {
+            localStorage.setItem('recentEnvironments', JSON.stringify(validRecents));
+            set({ recentEnvironments: validRecents });
+        }
+    },
     toggleSidebar: () => set({ showSidebar: !get().showSidebar }),
     setSidebarTab: (tab: 'explorer' | 'library') => set({ activeSidebarTab: tab, showSidebar: true }),
     toggleCode: () => {
@@ -237,6 +319,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
 
     onConnect: (connection: Connection) => {
+        if (connection.source === connection.target) return;
+
         const { nodes, edges, code, isBlockFile } = get();
         const newEdges = addEdge(connection, edges);
         set({ edges: newEdges });
@@ -420,8 +504,11 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
     setOpenedFolder: async (path) => {
         set({ openedFolder: path });
-        if (path && (window as any).electronAPI) {
-            await (window as any).electronAPI.ensureProjectConfig(path);
+        if (path) {
+            get().addRecent(path); // Add to recents when opened
+            if ((window as any).electronAPI) {
+                await (window as any).electronAPI.ensureProjectConfig(path);
+            }
         }
     },
 

@@ -10,7 +10,8 @@ import {
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
-import { RefreshCw, Code, Box, FolderOpen, Minus, Square, X, PanelLeft, Files, Library } from 'lucide-react';
+import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Edit2, Trash2, Box } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
 import { loader } from '@monaco-editor/react';
@@ -40,6 +41,7 @@ import { FunctionLibrary } from './components/FunctionLibrary';
 import { FileExplorer } from './components/FileExplorer';
 import { SideRibbon } from './components/SideRibbon';
 import { NoteNode } from './components/NoteNode';
+import { Tooltip } from './components/Tooltip';
 
 const nodeTypes: NodeTypes = {
   variableNode: VariableNode,
@@ -57,6 +59,7 @@ const nodeTypes: NodeTypes = {
 };
 
 function FlowContent() {
+  const { t } = useTranslation();
   const {
     nodes,
     edges,
@@ -64,7 +67,8 @@ function FlowContent() {
     onEdgesChange,
     onConnect,
     theme,
-    activeScopeId
+    activeScopeId,
+    openModal
   } = useStore();
 
   const { fitView, deleteElements, getEdge, updateEdge } = useReactFlow();
@@ -96,10 +100,16 @@ function FlowContent() {
       const edge = getEdge(edgeMenu.id);
       if (edge) {
         const currentLabel = edge.label as string || '';
-        const newLabel = window.prompt("Digite o comentário para esta conexão:", currentLabel);
-        if (newLabel !== null) {
-          updateEdge(edgeMenu.id, { label: newLabel });
-        }
+        openModal({
+          title: currentLabel ? t('edge.edit_comment') : t('edge.add_comment'),
+          initialValue: currentLabel,
+          type: 'prompt',
+          placeholder: t('edge.comment_prompt'),
+          confirmLabel: 'Salvar',
+          onSubmit: (newLabel: string) => {
+            updateEdge(edgeMenu.id, { label: newLabel });
+          }
+        });
       }
     }
     setEdgeMenu(null);
@@ -138,6 +148,15 @@ function FlowContent() {
     }
   }, [activeScopeId, fitView, filteredNodes.length]);
 
+  // Determine if the currently selected edge (in context menu) has a label/comment
+  const currentEdgeLabel = edgeMenu ? getEdge(edgeMenu.id)?.label : null;
+  const hasComment = !!currentEdgeLabel;
+
+  const isValidConnection = useCallback(
+    (connection: any) => connection.source !== connection.target,
+    []
+  );
+
   return (
     <div style={{ width: '100%', height: '100%' }}>
       <ReactFlow
@@ -148,6 +167,7 @@ function FlowContent() {
         onConnect={onConnect}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
+        isValidConnection={isValidConnection}
         nodeTypes={nodeTypes}
         colorMode={isDark ? 'dark' : 'light'}
         fitView
@@ -172,55 +192,78 @@ function FlowContent() {
           <div
             style={{
               position: 'fixed',
-              top: edgeMenu.y,
-              left: edgeMenu.x,
-              background: isDark ? '#333' : '#fff',
-              border: `1px solid ${isDark ? '#555' : '#ddd'}`,
-              borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              top: edgeMenu.y - 40,
+              left: edgeMenu.x - 40,
+              background: isDark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(12px)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              borderRadius: '50px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
               zIndex: 1000,
-              padding: '4px',
-              minWidth: '150px'
+              padding: '6px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              animation: 'fadeIn 0.15s ease-out'
             }}
           >
-            <button
-              onClick={() => handleEdgeAction('comment')}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                background: 'transparent',
-                border: 'none',
-                color: isDark ? '#eee' : '#333',
-                cursor: 'pointer',
-                borderRadius: '4px',
-                fontSize: '13px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#444' : '#f0f0f0'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              📝 Inserir Comentário
-            </button>
-            <button
-              onClick={() => handleEdgeAction('delete')}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '8px 12px',
-                background: 'transparent',
-                border: 'none',
-                color: '#ef4444',
-                cursor: 'pointer',
-                borderRadius: '4px',
-                fontSize: '13px'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#444' : '#f0f0f0'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              🗑️ Apagar Conexão
-            </button>
+            <Tooltip content={hasComment ? t('edge.edit_comment') : t('edge.add_comment')} side="top">
+              <button
+                onClick={() => handleEdgeAction('comment')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: isDark ? '#e0e0e0' : '#444',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Edit2 size={18} color={hasComment ? (isDark ? '#4ade80' : '#22c55e') : (isDark ? '#a855f7' : '#8b5cf6')} />
+              </button>
+            </Tooltip>
+
+            <div style={{ width: '1px', height: '16px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+
+            <Tooltip content={t('edge.delete_connection')} side="top">
+              <button
+                onClick={() => handleEdgeAction('delete')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Trash2 size={18} />
+              </button>
+            </Tooltip>
           </div>
         )}
       </ReactFlow>
@@ -229,6 +272,7 @@ function FlowContent() {
 }
 
 function App() {
+  const { t } = useTranslation();
   const {
     code, setCode, forceLayout, theme,
     showCode, showCanvas, showSidebar, activeSidebarTab, toggleSidebar, setSidebarTab,
@@ -287,7 +331,7 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', WebkitAppRegion: 'no-drag' } as any}>
             <button
               onClick={toggleSidebar}
-              title={showSidebar ? "Esconder Explorador" : "Mostrar Explorador"}
+              title={showSidebar ? t('app.hide_explorer') : t('app.show_explorer')}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -307,7 +351,7 @@ function App() {
               <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
                 <button
                   onClick={() => setSidebarTab('explorer')}
-                  title="Explorador de Arquivos"
+                  title={t('app.file_explorer')}
                   style={{
                     background: activeSidebarTab === 'explorer' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
                     border: 'none',
@@ -322,17 +366,19 @@ function App() {
                   <Files size={18} />
                 </button>
                 <button
-                  onClick={() => setSidebarTab('library')}
-                  title="Biblioteca de Funções"
+                  onClick={() => openedFolder && setSidebarTab('library')}
+                  title={!openedFolder ? "Abra uma pasta para acessar a biblioteca" : t('app.function_library')}
+                  disabled={!openedFolder}
                   style={{
                     background: activeSidebarTab === 'library' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
                     border: 'none',
-                    cursor: 'pointer',
-                    color: activeSidebarTab === 'library' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                    cursor: !openedFolder ? 'default' : 'pointer',
+                    color: !openedFolder ? (isDark ? '#333' : '#ccc') : activeSidebarTab === 'library' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
                     padding: '6px',
                     borderRadius: '4px',
                     display: 'flex',
                     alignItems: 'center',
+                    opacity: !openedFolder ? 0.5 : 1
                   }}
                 >
                   <Library size={18} />
@@ -392,7 +438,7 @@ function App() {
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <RefreshCw size={14} />
-              <span>Layout</span>
+              <span>{t('app.layout')}</span>
             </button>
 
             <button
@@ -417,13 +463,14 @@ function App() {
               }}
             >
               <FolderOpen size={14} />
-              <span>Abrir</span>
+              <span>{t('app.open')}</span>
             </button>
 
             {/* Window Controls */}
             <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
               <button
                 onClick={() => (window as any).electronAPI?.windowMinimize()}
+                title={t('app.window_controls.minimize')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
                 onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
@@ -432,6 +479,7 @@ function App() {
               </button>
               <button
                 onClick={() => (window as any).electronAPI?.windowMaximize()}
+                title={t('app.window_controls.maximize')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
                 onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
@@ -440,6 +488,7 @@ function App() {
               </button>
               <button
                 onClick={() => (window as any).electronAPI?.windowClose()}
+                title={t('app.window_controls.close')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
                 onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
@@ -453,7 +502,7 @@ function App() {
         <div style={{ flex: 1, position: 'relative' }}>
           <Allotment>
             <Allotment.Pane minSize={150} preferredSize={240} visible={showSidebar}>
-              {activeSidebarTab === 'explorer' ? (
+              {(!openedFolder || activeSidebarTab === 'explorer') ? (
                 <FileExplorer />
               ) : (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -487,7 +536,7 @@ function App() {
                 {!selectedFile ? (
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
                     <Code size={48} opacity={0.3} />
-                    <p>Selecione um arquivo para editar</p>
+                    <p>{t('app.select_file')}</p>
                   </div>
                 ) : (
                   <Editor
@@ -513,8 +562,8 @@ function App() {
                 </div>
                 {!selectedFile ? (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                    <Box size={64} opacity={0.1} />
-                    <p style={{ fontSize: '1.1rem' }}>Abrir uma pasta ou arquivo para começar</p>
+                    <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
+                    <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
                   </div>
                 ) : (
                   <ReactFlowProvider>

@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { Search, ChevronRight, Box, Code2, StickyNote, Plus } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useReactFlow } from '@xyflow/react';
+import { useTranslation } from 'react-i18next';
 
 export const FunctionLibrary = () => {
+    const { t } = useTranslation();
     const { nodes, theme, navigateInto, addNoteNode, isBlockFile } = useStore();
     const { setCenter } = useReactFlow();
     const [searchTerm, setSearchTerm] = useState('');
@@ -56,7 +58,7 @@ export const FunctionLibrary = () => {
                 }}>
                     <Search size={16} color={isDark ? '#888' : '#666'} />
                     <input
-                        placeholder="Buscar funções..."
+                        placeholder={t('library.search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         style={{
@@ -102,7 +104,7 @@ export const FunctionLibrary = () => {
                         }}
                     >
                         <StickyNote size={20} />
-                        Nova Nota de Bloco
+                        {t('library.new_block_note')}
                     </button>
                 )}
 
@@ -115,12 +117,12 @@ export const FunctionLibrary = () => {
                     marginBottom: '10px',
                     paddingLeft: '10px'
                 }}>
-                    Biblioteca de Funções ({functions.length})
+                    {t('app.function_library')} ({functions.length})
                 </div>
 
                 {functions.length === 0 ? (
                     <div style={{ padding: '20px', textAlign: 'center', color: '#666', fontSize: '0.8rem' }}>
-                        Nenhuma função encontrada
+                        {t('library.no_functions')}
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -170,7 +172,7 @@ export const FunctionLibrary = () => {
                                             gap: '4px'
                                         }}
                                     >
-                                        Mergulhar <ChevronRight size={12} />
+                                        {t('library.dive')} <ChevronRight size={12} />
                                     </button>
                                 </div>
                             </div>

@@ -124,6 +124,7 @@ ipcMain.handle('create-file', async (_event, filePath: string, content: string =
     }
 });
 
+
 ipcMain.handle('create-directory', async (_event, dirPath: string) => {
     try {
         if (fs.existsSync(dirPath)) {
@@ -136,6 +137,16 @@ ipcMain.handle('create-directory', async (_event, dirPath: string) => {
         throw err;
     }
 });
+
+ipcMain.handle('check-path-exists', async (_event, pathToCheck: string) => {
+    try {
+        return fs.existsSync(pathToCheck);
+    } catch (err) {
+        console.error('Error checking path existence:', err);
+        return false;
+    }
+});
+
 
 // Window Control Handlers
 ipcMain.on('window-minimize', () => {

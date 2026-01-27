@@ -2,10 +2,12 @@ import React, { memo, useCallback } from 'react';
 import { Handle, Position, NodeResizer } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { StickyNote, Move } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const NoteNode = memo(({ id, data, selected }: any) => {
     const updateNodeData = useStore(state => state.updateNodeData);
     const theme = useStore(state => state.theme);
+    const { t } = useTranslation();
     const isDark = theme === 'dark';
 
     const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -105,7 +107,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
                     <input
                         value={data.label || ''}
                         onChange={handleTitleChange}
-                        placeholder="Título da Nota"
+                        placeholder={t('note.title_placeholder')}
                         style={{
                             background: 'transparent',
                             border: 'none',
@@ -125,7 +127,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
                     className="note-node-textarea"
                     value={data.text || ''}
                     onChange={handleTextChange}
-                    placeholder="Digite suas anotações..."
+                    placeholder={t('note.text_placeholder')}
                     style={{
                         flex: 1,
                         background: 'transparent',

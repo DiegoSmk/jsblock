@@ -26,22 +26,25 @@ export const ModernModal = () => {
 
     if (!modal.isOpen) return null;
 
-    const validate = (name: string) => {
-        if (!name.trim()) return "Nome obrigatório";
+    const validate = (value: string) => {
+        if (!value.trim() && modal.type !== 'optional-prompt') return "Campo obrigatório";
 
-        const isValidIdentifier = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name);
-        if (!isValidIdentifier) {
-            return "Inválido: use letras, números, _ ou $";
-        }
+        if (modal.type === 'variable' || modal.type.startsWith('var-')) {
+            const name = value;
+            const isValidIdentifier = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name);
+            if (!isValidIdentifier) {
+                return "Inválido: use letras, números, _ ou $";
+            }
 
-        const reserved = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'switch', 'case', 'break', 'continue', 'true', 'false', 'null', 'undefined', 'class', 'extends', 'import', 'export', 'default', 'new', 'this', 'super'];
-        if (reserved.includes(name)) {
-            return `"${name}" é palavra reservada`;
-        }
+            const reserved = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'switch', 'case', 'break', 'continue', 'true', 'false', 'null', 'undefined', 'class', 'extends', 'import', 'export', 'default', 'new', 'this', 'super'];
+            if (reserved.includes(name)) {
+                return `"${name}" é palavra reservada`;
+            }
 
-        const exists = nodes.some((n: Node) => n.id === `var-${name}` || (n.data as any).label === name);
-        if (exists) {
-            return `Variável "${name}" já existe`;
+            const exists = nodes.some((n: Node) => n.id === `var-${name}` || (n.data as any).label === name);
+            if (exists) {
+                return `Variável "${name}" já existe`;
+            }
         }
 
         return null;
@@ -59,7 +62,7 @@ export const ModernModal = () => {
     };
 
     const currentError = error || validate(inputValue);
-    const isValid = inputValue.trim() && !currentError;
+    const isValid = (modal.type === 'optional-prompt') || (inputValue.trim() && !currentError);
 
     return (
         <>
@@ -144,7 +147,7 @@ export const ModernModal = () => {
                                     color: isDark ? '#888' : '#666',
                                     fontWeight: 400
                                 }}>
-                                    Transforme este valor em uma variável reutilizável
+                                    {modal.type === 'variable' ? 'Transforme este valor em uma variável reutilizável' : ''}
                                 </p>
                             </div>
                             <button
@@ -178,7 +181,7 @@ export const ModernModal = () => {
                                 marginBottom: '8px',
                                 letterSpacing: '0.01em'
                             }}>
-                                Nome da Variável
+                                {modal.type === 'variable' ? 'Nome da Variável' : (modal.type.startsWith('prompt') ? '' : 'Valor')}
                             </label>
                             <div style={{ position: 'relative' }}>
                                 <input
@@ -188,7 +191,7 @@ export const ModernModal = () => {
                                         setInputValue(e.target.value);
                                         setError(null);
                                     }}
-                                    placeholder="totalVendas"
+                                    placeholder={modal.placeholder || (modal.type === 'variable' ? "totalVendas" : "Digite aqui...")}
                                     className="modal-input"
                                     style={{
                                         width: '100%',
@@ -196,8 +199,8 @@ export const ModernModal = () => {
                                         paddingRight: isValid ? '44px' : '16px',
                                         background: isDark ? '#0f0f0f' : '#fafafa',
                                         border: `1.5px solid ${error ? '#ff5252' :
-                                                isValid ? '#4caf50' :
-                                                    (isDark ? '#2a2a2a' : '#e0e0e0')
+                                            isValid ? '#4caf50' :
+                                                (isDark ? '#2a2a2a' : '#e0e0e0')
                                             }`,
                                         borderRadius: '10px',
                                         color: isDark ? '#fff' : '#1a1a1a',
@@ -294,7 +297,7 @@ export const ModernModal = () => {
                                     opacity: isValid ? 1 : 0.6
                                 }}
                             >
-                                Criar Variável
+                                {modal.confirmLabel || 'Confirmar'}
                             </button>
                         </div>
                     </form>

@@ -1,20 +1,21 @@
 import React from 'react';
-import { Files, Search, Library, Settings, Sun, Moon } from 'lucide-react';
+import { Files, Search, Settings, Sun, Moon } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export const SideRibbon: React.FC = () => {
     const {
         theme, toggleTheme,
-        showSidebar, toggleSidebar,
+        showSidebar,
         activeSidebarTab, setSidebarTab
     } = useStore();
 
     const isDark = theme === 'dark';
 
-    const RibbonButton = ({ icon: Icon, active, onClick, title, bottom }: { icon: any, active?: boolean, onClick: () => void, title: string, bottom?: boolean }) => (
+    const RibbonButton = ({ icon: Icon, active, onClick, title, bottom, disabled }: { icon: any, active?: boolean, onClick: () => void, title: string, bottom?: boolean, disabled?: boolean }) => (
         <button
-            onClick={onClick}
+            onClick={disabled ? undefined : onClick}
             title={title}
+            disabled={disabled}
             style={{
                 width: '40px',
                 height: '40px',
@@ -23,14 +24,19 @@ export const SideRibbon: React.FC = () => {
                 justifyContent: 'center',
                 background: 'transparent',
                 border: 'none',
-                color: active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
-                cursor: 'pointer',
+                color: disabled ? (isDark ? '#333' : '#ccc') : active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
+                cursor: disabled ? 'default' : 'pointer',
                 transition: 'all 0.2s',
                 position: 'relative',
-                marginTop: bottom ? 'auto' : 0
+                marginTop: bottom ? 'auto' : 0,
+                opacity: disabled ? 0.5 : 1
             }}
-            onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
-            onMouseLeave={(e) => e.currentTarget.style.color = active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666')}
+            onMouseEnter={(e) => {
+                if (!disabled) e.currentTarget.style.color = isDark ? '#fff' : '#000';
+            }}
+            onMouseLeave={(e) => {
+                if (!disabled) e.currentTarget.style.color = active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666');
+            }}
         >
             <Icon size={20} strokeWidth={active ? 2.5 : 2} />
             {active && (
@@ -70,12 +76,7 @@ export const SideRibbon: React.FC = () => {
                 onClick={() => { }}
                 title="Busca (Em breve)"
             />
-            <RibbonButton
-                icon={Library}
-                active={showSidebar && activeSidebarTab === 'library'}
-                onClick={() => setSidebarTab('library')}
-                title="Biblioteca"
-            />
+
 
             <div style={{ flex: 1 }} />
 
