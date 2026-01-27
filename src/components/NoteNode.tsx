@@ -150,7 +150,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
                 type="target"
                 position={Position.Top}
                 className="note-handle"
-                style={{ ...handleStyle, top: -25 }}
+                style={{ ...handleStyle, top: -20 }}
             >
                 <div className={`visual-handle ${isConnected('top', 'target') ? 'connected' : ''}`} />
             </Handle>
@@ -159,7 +159,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
                 type="source"
                 position={Position.Right}
                 className="note-handle"
-                style={{ ...handleStyle, right: -25 }}
+                style={{ ...handleStyle, right: -20 }}
             >
                 <div className={`visual-handle ${isConnected('right', 'source') ? 'connected' : ''}`} />
             </Handle>
@@ -168,7 +168,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
                 type="source"
                 position={Position.Bottom}
                 className="note-handle"
-                style={{ ...handleStyle, bottom: -25 }}
+                style={{ ...handleStyle, bottom: -20 }}
             >
                 <div className={`visual-handle ${isConnected('bottom', 'source') ? 'connected' : ''}`} />
             </Handle>
@@ -177,7 +177,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
                 type="target"
                 position={Position.Left}
                 className="note-handle"
-                style={{ ...handleStyle, left: -25 }}
+                style={{ ...handleStyle, left: -20 }}
             >
                 <div className={`visual-handle ${isConnected('left', 'target') ? 'connected' : ''}`} />
             </Handle>
@@ -185,10 +185,10 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
             <style>{`
                 /* Ensure Handle component overrides */
                 .note-handle {
-                    width: 50px !important;
-                    height: 50px !important;
-                    min-width: 50px !important;
-                    min-height: 50px !important;
+                    width: 40px !important;
+                    height: 40px !important;
+                    min-width: 40px !important;
+                    min-height: 40px !important;
                     background: transparent !important;
                     border: none !important;
                     box-shadow: none !important;
