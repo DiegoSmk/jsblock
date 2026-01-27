@@ -1,0 +1,240 @@
+:root {
+    font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color-scheme: light dark;
+
+    /* Primary Palette */
+    --p-50: #f0f9ff;
+    --p-100: #e0f2fe;
+    --p-200: #bae6fd;
+    --p-300: #7dd3fc;
+    --p-400: #38bdf8;
+    --p-500: #0ea5e9;
+    --p-600: #0284c7;
+    --p-700: #0369a1;
+    --p-800: #075985;
+    --p-900: #0c4a6e;
+
+    /* Neutrals - Dark Mode Default */
+    --bg-main: #0f172a;
+    --bg-node: rgba(30, 41, 59, 0.7);
+    --bg-node-header: #1e293b;
+    --border-node: rgba(255, 255, 255, 0.1);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+
+    color: var(--text-main);
+    background-color: var(--bg-main);
+
+    /* Logo Variables - Dark Mode */
+    --logo-gradient: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+    --logo-shadow: drop-shadow(0 2px 4px rgba(79, 195, 247, 0.3));
+    --block-bg-1: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+    --block-bg-2: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+    --block-bg-3: linear-gradient(135deg, #29b6f6 0%, #1976d2 100%);
+    --block-bg-4: linear-gradient(135deg, #039be5 0%, #0277bd 100%);
+    --block-bg-5: linear-gradient(135deg, #0288d1 0%, #01579b 100%);
+    --block-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background-color: var(--bg-main);
+    overflow: hidden;
+}
+
+/* Logo Styles */
+.app-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    padding: 4px;
+}
+
+.app-logo:hover {
+    transform: scale(1.02);
+}
+
+.logo-js {
+    font-size: 1.5rem;
+    font-weight: 900;
+    display: inline-block;
+    letter-spacing: -0.03em;
+
+    /* Use separate properties to avoid shorthand conflicts */
+    background-image: var(--logo-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+
+    filter: var(--logo-shadow);
+    transition: background-image 0.3s ease, filter 0.3s ease;
+}
+
+.logo-blocks {
+    display: flex;
+    gap: 4px;
+}
+
+.logo-block {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 900;
+    transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.logo-block:hover {
+    transform: translateY(-2px);
+}
+
+/* Node Base Styles */
+.premium-node {
+    border-radius: 12px;
+    background: var(--bg-node);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border-node);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+    overflow: visible;
+    user-select: none;
+}
+
+.premium-node:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.node-header {
+    padding: 10px 16px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-node);
+    color: #fff;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+}
+
+.node-content {
+    padding: 16px;
+}
+
+/* React Flow Handle Overrides */
+.react-flow__handle {
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid #fff !important;
+    transition: all 0.2s ease;
+}
+
+/* Flow Handle Types */
+.handle-flow {
+    width: 0 !important;
+    height: 0 !important;
+    border-top: 7px solid transparent !important;
+    border-bottom: 7px solid transparent !important;
+    border-left: 12px solid #38bdf8 !important;
+    /* Standard triangle */
+    border-radius: 0 !important;
+    background: none !important;
+    border-right: none !important;
+    cursor: crosshair;
+}
+
+.handle-data {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 3px !important;
+    /* Square with slight roundness */
+    background: var(--handle-output);
+    /* Standard grey by default */
+    border: 2px solid #fff !important;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    cursor: crosshair;
+}
+
+.react-flow__handle:hover {
+    filter: brightness(1.1);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-main: #f8fafc;
+        --bg-node: rgba(255, 255, 255, 0.9);
+        --bg-node-header: #f1f5f9;
+        --border-node: rgba(0, 0, 0, 0.05);
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+
+        /* Logo Variables - Light Mode */
+        --logo-gradient: linear-gradient(135deg, #0070f3 0%, #0052cc 100%);
+        --logo-shadow: drop-shadow(0 2px 4px rgba(0, 112, 243, 0.2));
+        --block-bg-1: linear-gradient(135deg, #0070f3 0%, #0052cc 100%);
+        --block-bg-2: linear-gradient(135deg, #0064e0 0%, #0041a8 100%);
+        --block-bg-3: linear-gradient(135deg, #0052cc 0%, #003080 100%);
+        --block-bg-4: linear-gradient(135deg, #0041a8 0%, #002666 100%);
+        --block-bg-5: linear-gradient(135deg, #003080 0%, #001a4d 100%);
+        --block-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    }
+}
+
+/* Theme Override via Data Attribute */
+[data-theme='light'] {
+    --bg-main: #f8fafc;
+    --bg-node: rgba(255, 255, 255, 0.9);
+    --bg-node-header: #f1f5f9;
+    --border-node: rgba(0, 0, 0, 0.05);
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+
+    --logo-gradient: linear-gradient(135deg, #0070f3 0%, #0052cc 100%);
+    --logo-shadow: drop-shadow(0 2px 4px rgba(0, 112, 243, 0.2));
+    --block-bg-1: linear-gradient(135deg, #0070f3 0%, #0052cc 100%);
+    --block-bg-2: linear-gradient(135deg, #0064e0 0%, #0041a8 100%);
+    --block-bg-3: linear-gradient(135deg, #0052cc 0%, #003080 100%);
+    --block-bg-4: linear-gradient(135deg, #0041a8 0%, #002666 100%);
+    --block-bg-5: linear-gradient(135deg, #003080 0%, #001a4d 100%);
+    --block-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    --handle-output: #64748b;
+}
+
+[data-theme='dark'] {
+    --bg-main: #0f172a;
+    --bg-node: rgba(30, 41, 59, 0.85);
+    /* Slightly increased opacity for better contrast */
+    --bg-node-header: #1e293b;
+    --border-node: rgba(255, 255, 255, 0.1);
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+
+    --logo-gradient: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+    --logo-shadow: drop-shadow(0 2px 4px rgba(79, 195, 247, 0.3));
+    --block-bg-1: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+    --block-bg-2: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+    --block-bg-3: linear-gradient(135deg, #29b6f6 0%, #1976d2 100%);
+    --block-bg-4: linear-gradient(135deg, #039be5 0%, #0277bd 100%);
+    --block-bg-5: linear-gradient(135deg, #0288d1 0%, #01579b 100%);
+    --block-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
+    --handle-output: #94a3b8;
+}

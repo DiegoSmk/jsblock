@@ -1,0 +1,14 @@
+import { contextBridge, ipcRenderer } from 'electron';
+
+contextBridge.exposeInMainWorld('electronAPI', {
+    selectFolder: () => ipcRenderer.invoke('select-folder'),
+    readDir: (path: string) => ipcRenderer.invoke('read-dir', path),
+    readFile: (path: string) => ipcRenderer.invoke('read-file', path),
+    writeFile: (path: string, content: string) => ipcRenderer.invoke('write-file', path, content),
+    ensureProjectConfig: (path: string) => ipcRenderer.invoke('ensure-project-config', path),
+    windowMinimize: () => ipcRenderer.send('window-minimize'),
+    windowMaximize: () => ipcRenderer.send('window-maximize'),
+    windowClose: () => ipcRenderer.send('window-close'),
+    createFile: (path: string, content?: string) => ipcRenderer.invoke('create-file', path, content),
+    createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path)
+});

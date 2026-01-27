@@ -1,0 +1,136 @@
+
+import type { ParserContext } from './types';
+import { CallHandler } from './handlers/CallHandler';
+import { IfHandler } from './handlers/IfHandler';
+import { LoopHandler } from './handlers/LoopHandler';
+import { SwitchHandler } from './handlers/SwitchHandler';
+import { TryCatchHandler } from './handlers/TryCatchHandler';
+import { VariableHandler } from './handlers/VariableHandler';
+import { LogicHandler } from './handlers/LogicHandler';
+import { AssignmentHandler } from './handlers/AssignmentHandler';
+import { FunctionHandler } from './handlers/FunctionHandler';
+import { ReturnHandler } from './handlers/ReturnHandler';
+import { generateId } from './utils';
+
+export const parseStatement = (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
+    const idSuffix = index !== undefined ? `${index}` : undefined;
+
+    if (VariableHandler.canHandle(stmt)) {
+        VariableHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        return undefined;
+    }
+
+    if (FunctionHandler.canHandle(stmt)) {
+        FunctionHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        return undefined;
+    }
+
+    if (AssignmentHandler.canHandle(stmt)) {
+        return AssignmentHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (IfHandler.canHandle(stmt)) {
+        return IfHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (LoopHandler.canHandle(stmt)) {
+        return LoopHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (SwitchHandler.canHandle(stmt)) {
+        return SwitchHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (TryCatchHandler.canHandle(stmt)) {
+        return TryCatchHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (CallHandler.canHandle(stmt)) {
+        return CallHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (LogicHandler.canHandle(stmt)) {
+        return LogicHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (ReturnHandler.canHandle(stmt)) {
+        return ReturnHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+
+    return undefined;
+};
+
+export const processBlockInScope = (
+    bodyNode: any,
+    ctx: ParserContext,
+    entryNodeId: string,
+    flowHandle: string,
+    label: string,
+    preNodes: any[] = []
+) => {
+    if (!bodyNode) return;
+
+    const newScopeId = generateId('scope');
+
+    const entryNode = ctx.nodes.find(n => n.id === entryNodeId);
+    if (entryNode) {
+        if (!entryNode.data.scopes) (entryNode.data as any).scopes = {};
+        (entryNode.data as any).scopes[flowHandle] = {
+            id: newScopeId,
+            label: `${entryNode.data.label} > ${label}`
+        };
+    }
+
+    const oldScopeId = ctx.currentScopeId;
+    const oldParentId = ctx.currentParentId;
+
+    ctx.currentScopeId = newScopeId;
+    ctx.currentParentId = undefined; // Reset logical parenting inside new scope
+
+    // Add pre-nodes (parameters) to the new scope
+    preNodes.forEach(node => {
+        node.data = { ...node.data, scopeId: newScopeId };
+        ctx.nodes.push(node);
+        if (node.type === 'variableNode') {
+            ctx.variableNodes[node.data.label] = node.id;
+        }
+    });
+
+    const statements = bodyNode.type === 'BlockStatement' ? bodyNode.body : [bodyNode];
+
+    let prevId: string | undefined = undefined;
+
+    statements.forEach((stmt: any) => {
+        const nodeId = parseStatement(stmt, ctx, prevId, 'flow-next');
+        if (nodeId) {
+            prevId = nodeId;
+        }
+    });
+
+    ctx.currentScopeId = oldScopeId;
+    ctx.currentParentId = oldParentId;
+};
+
+export const initializeContext = (astBody: any[], indexCounter: { value: number }): ParserContext => {
+    const nativeApiId = 'node-js-runtime';
+    const ctx: ParserContext = {
+        nodes: [{
+            id: nativeApiId,
+            type: 'nativeApiNode',
+            position: { x: 500, y: -200 }, // Position it away from main flow
+            data: { label: 'JS Runtime' }
+        }],
+        edges: [],
+        variableNodes: {},
+        body: astBody,
+        indexCounter,
+        currentScopeId: 'root',
+        currentParentId: undefined,
+        nativeApiNodeId: nativeApiId,
+        processBlock: (bodyNode, entryNodeId, flowHandle, label, preNodes) =>
+            processBlockInScope(bodyNode, ctx, entryNodeId, flowHandle, label, preNodes)
+    };
+
+    return ctx;
+};

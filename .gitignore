@@ -1,0 +1,72 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist
+dist-electron
+out
+build
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Electron-specific
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.zip
+release/
+
+# Vite
+*.local
+dist
+dist-ssr
+*.pyc
+__pycache__
