@@ -1,0 +1,73 @@
+.git-panel-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.git-panel-header {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.git-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    transition: background 0.12s ease;
+}
+
+.git-action-toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+}
+
+.git-button-base {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.12s ease;
+}
+
+.git-file-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 20px;
+    font-size: 0.8rem;
+    gap: 12px;
+}
+
+.git-badge {
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justifyContent: center;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 0 7px;
+}
+
+.git-icon-container {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
