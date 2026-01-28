@@ -11,5 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     windowClose: () => ipcRenderer.send('window-close'),
     createFile: (path: string, content?: string) => ipcRenderer.invoke('create-file', path, content),
     createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path),
-    checkPathExists: (path: string) => ipcRenderer.invoke('check-path-exists', path)
+    checkPathExists: (path: string) => ipcRenderer.invoke('check-path-exists', path),
+    moveFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('move-file', oldPath, newPath)
 });

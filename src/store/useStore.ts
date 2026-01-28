@@ -14,6 +14,7 @@ import {
 import { parseCodeToFlow } from '../logic/CodeParser';
 import { generateCodeFromFlow } from '../logic/CodeGenerator';
 import { getLayoutedElements } from '../logic/layout';
+import i18n from '../i18n/config';
 
 type RecentEnvironment = {
     path: string;
@@ -35,8 +36,13 @@ type AppState = {
     // File System State
     openedFolder: string | null;
     selectedFile: string | null;
+    autoSave: boolean;
+    isDirty: boolean;
 
-    setCode: (code: string) => void;
+    toggleAutoSave: () => void;
+    setDirty: (dirty: boolean) => void;
+
+    setCode: (code: string, shouldSetDirty?: boolean) => void;
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     onConnect: (connection: Connection) => void;
@@ -62,8 +68,20 @@ type AppState = {
         confirmLabel?: string;
         onSubmit: (name: string) => void;
     };
+    confirmationModal: {
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        onCancel: () => void;
+        onDiscard?: () => void;
+        confirmLabel?: string;
+        cancelLabel?: string;
+        discardLabel?: string;
+    } | null;
     openModal: (config: Omit<AppState['modal'], 'isOpen'>) => void;
     closeModal: () => void;
+    setConfirmationModal: (config: AppState['confirmationModal']) => void;
 
     // UI State
     showSidebar: boolean;
@@ -85,8 +103,10 @@ type AppState = {
     isBlockFile: boolean;
 
     // File System Actions
+    // File System Actions
     setOpenedFolder: (path: string | null) => void;
     setSelectedFile: (path: string | null) => Promise<void>;
+    loadContentForFile: (path: string) => Promise<void>;
     saveFile: () => Promise<void>;
 
     // Recent Environments
@@ -100,6 +120,8 @@ type AppState = {
 
 const initialCode = '';
 
+let saveTimeout: any = null;
+
 export const useStore = create<AppState>((set: any, get: any) => ({
     code: initialCode,
     nodes: [],
@@ -109,13 +131,24 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
     showSidebar: true,
+    confirmationModal: null,
+
     activeSidebarTab: 'explorer',
     showCode: true,
     showCanvas: true,
     isBlockFile: false,
     openedFolder: null,
-
     selectedFile: null,
+    autoSave: localStorage.getItem('autoSave') === 'true',
+    isDirty: false,
+
+    toggleAutoSave: () => {
+        const newValue = !get().autoSave;
+        localStorage.setItem('autoSave', String(newValue));
+        set({ autoSave: newValue });
+    },
+
+    setDirty: (dirty: boolean) => set({ isDirty: dirty }),
     recentEnvironments: JSON.parse(localStorage.getItem('recentEnvironments') || '[]'),
 
     addRecent: async (path: string) => {
@@ -198,8 +231,21 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         onSubmit: () => { }
     },
 
-    setCode: (code: string) => {
+    setCode: (code: string, shouldSetDirty = true) => {
+        // Existing logic for parsing and evaluation
         const { nodes, edges } = parseCodeToFlow(code);
+
+        if (saveTimeout) clearTimeout(saveTimeout);
+
+        if (shouldSetDirty) {
+            if (get().autoSave) {
+                saveTimeout = setTimeout(() => {
+                    get().saveFile();
+                }, 1000);
+            } else {
+                set({ isDirty: true });
+            }
+        }
 
         let runtimeValues: Record<string, any> = {};
 
@@ -301,17 +347,31 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const nextNodes = applyNodeChanges(changes, get().nodes);
         set({ nodes: nextNodes });
         if (get().isBlockFile) {
-            get().saveFile();
+            if (get().autoSave) {
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    get().saveFile();
+                }, 1000);
+            } else {
+                set({ isDirty: true });
+            }
         }
     },
 
     onEdgesChange: (changes: EdgeChange[]) => {
-        const { nodes, edges, code, isBlockFile } = get();
+        const { nodes, edges, code, isBlockFile, autoSave } = get();
         const newEdges = applyEdgeChanges(changes, edges);
         set({ edges: newEdges });
 
         if (isBlockFile) {
-            get().saveFile();
+            if (autoSave) {
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    get().saveFile();
+                }, 1000);
+            } else {
+                set({ isDirty: true });
+            }
         } else {
             const newCode = generateCodeFromFlow(code, nodes, newEdges);
             get().setCode(newCode);
@@ -321,12 +381,13 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     onConnect: (connection: Connection) => {
         if (connection.source === connection.target) return;
 
-        const { nodes, edges, code, isBlockFile } = get();
+        const { nodes, edges, code, isBlockFile, autoSave } = get();
         const newEdges = addEdge(connection, edges);
         set({ edges: newEdges });
 
         if (isBlockFile) {
-            get().saveFile();
+            if (autoSave) get().saveFile();
+            else set({ isDirty: true });
         } else {
             const newCode = generateCodeFromFlow(code, nodes, newEdges);
             get().setCode(newCode);
@@ -344,12 +405,19 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
 
     updateNodeData: (nodeId: string, newData: any) => {
-        const { nodes, code, edges, isBlockFile } = get();
+        const { nodes, code, edges, isBlockFile, autoSave } = get();
         const updatedNodes = nodes.map((n: Node) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n);
         set({ nodes: updatedNodes });
 
         if (isBlockFile) {
-            get().saveFile();
+            if (autoSave) {
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    get().saveFile();
+                }, 1000);
+            } else {
+                set({ isDirty: true });
+            }
         } else {
             // Regenerate code based on the new data
             const newCode = generateCodeFromFlow(code, updatedNodes, edges);
@@ -471,6 +539,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
     openModal: (config) => set({ modal: { ...config, isOpen: true } }),
     closeModal: () => set({ modal: { ...get().modal, isOpen: false } }),
+    setConfirmationModal: (config) => set({ confirmationModal: config }),
 
     navigateInto: (scopeId, label) => {
         const stack = get().navigationStack;
@@ -513,7 +582,57 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
 
     setSelectedFile: async (path) => {
-        set({ selectedFile: path });
+        const previousFile = get().selectedFile;
+        const isDirty = get().isDirty;
+
+        if (previousFile && previousFile !== path) {
+            if (get().autoSave) {
+                await get().saveFile();
+                // Continue to change file
+            } else if (isDirty) {
+                // Return a promise that resolves when user chooses
+                // We pause the switching here.
+                // NOTE: setSelectedFile effectively becomes async "request".
+                // Since react state is synchronous, we can't easily block this call stack.
+                // A better approach for "professional" apps is: 
+                // RequestSwitch -> Check Dirty -> Dialog -> (Save -> Switch) OR (Discard -> Switch) OR (Cancel -> Do nothing)
+
+                // For this implementation, we will use the Store to trigger the modal, 
+                // and the modal's callbacks will trigger the ACTUAL switch.
+
+                const fileName = previousFile.split(/[\\/]/).pop() || '';
+                get().setConfirmationModal({
+                    isOpen: true,
+                    title: i18n.t('app.confirm_save.title'),
+                    message: i18n.t('app.confirm_save.message', { fileName }),
+                    confirmLabel: i18n.t('app.confirm_save.save'),
+                    cancelLabel: i18n.t('app.confirm_save.cancel'),
+                    discardLabel: i18n.t('app.confirm_save.discard'),
+                    onConfirm: async () => {
+                        await get().saveFile();
+                        get().setConfirmationModal(null);
+                        set({ selectedFile: path, isDirty: false });
+                        await get().loadContentForFile(path);
+                    },
+                    onDiscard: async () => {
+                        get().setConfirmationModal(null);
+                        set({ selectedFile: path, isDirty: false }); // Discarding means we just overwrite/ignore dirty
+                        await get().loadContentForFile(path);
+                    },
+                    onCancel: () => {
+                        get().setConfirmationModal(null);
+                        // Do not switch file
+                    }
+                });
+                return; // STOP execution here
+            }
+        }
+
+        set({ selectedFile: path, isDirty: false });
+        await get().loadContentForFile(path);
+    },
+
+    loadContentForFile: async (path: string) => {
         if (path && (window as any).electronAPI) {
             try {
                 const content = await (window as any).electronAPI.readFile(path);
@@ -539,7 +658,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                         });
                     }
                 } else {
-                    get().setCode(content);
+                    get().setCode(content, false);
                     // For code files, we usually want both visible by default or stick to current
                     set({ showCode: true, showCanvas: true });
                 }
@@ -558,7 +677,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                     contentToSave = JSON.stringify({ nodes, edges }, null, 2);
                 }
                 await (window as any).electronAPI.writeFile(selectedFile, contentToSave);
-                console.log('File saved successfully');
+                set({ isDirty: false });
             } catch (err) {
                 console.error('Failed to save file:', err);
             }

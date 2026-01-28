@@ -14,6 +14,13 @@ export const pt = {
                 minimize: "Minimizar",
                 maximize: "Maximizar",
                 close: "Fechar"
+            },
+            confirm_save: {
+                title: "Salvar alterações?",
+                message: "O arquivo \"{{fileName}}\" tem alterações não salvas.",
+                save: "Salvar",
+                cancel: "Cancelar",
+                discard: "Descartar"
             }
         },
         note: {
@@ -29,7 +36,12 @@ export const pt = {
         file_explorer: {
             no_folder: "Nenhuma pasta aberta",
             open_button: "Abrir Pasta",
-            close_folder: "Fechar Pasta"
+            close_folder: "Fechar Pasta",
+            already_exists: "Já existe um item com este nome no destino.",
+            new_js: "Novo Arquivo JS",
+            new_ts: "Novo Arquivo TS",
+            new_folder: "Nova Pasta",
+            delete: "Excluir"
         },
         library: {
             search_placeholder: "Buscar funções...",

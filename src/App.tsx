@@ -42,6 +42,8 @@ import { FileExplorer } from './components/FileExplorer';
 import { SideRibbon } from './components/SideRibbon';
 import { NoteNode } from './components/NoteNode';
 import { Tooltip } from './components/Tooltip';
+import { ConfirmationModal } from './components/ConfirmationModal';
+import { FileControls } from './components/FileControls';
 
 const nodeTypes: NodeTypes = {
   variableNode: VariableNode,
@@ -68,8 +70,21 @@ function FlowContent() {
     onConnect,
     theme,
     activeScopeId,
-    openModal
+    openModal,
+    saveFile
   } = useStore();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveFile();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saveFile]);
 
   const { fitView, deleteElements, getEdge, updateEdge } = useReactFlow();
   const isDark = theme === 'dark';
@@ -276,8 +291,9 @@ function App() {
   const {
     code, setCode, forceLayout, theme,
     showCode, showCanvas, showSidebar, activeSidebarTab, toggleSidebar, setSidebarTab,
-    saveFile, setOpenedFolder,
-    selectedFile, openedFolder, isBlockFile
+    saveFile, setOpenedFolder, setSelectedFile,
+    selectedFile, openedFolder, isBlockFile,
+    confirmationModal, isDirty
   } = useStore();
 
   const isDark = theme === 'dark';
@@ -302,6 +318,12 @@ function App() {
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (value !== undefined) setCode(value);
   }, [setCode]);
+
+  const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      saveFile();
+    });
+  }, [saveFile]);
 
   return (
     <div style={{
@@ -415,6 +437,16 @@ function App() {
                 <FolderOpen size={12} />
                 <span style={{ fontWeight: 500 }}>{folderName}</span>
               </div>
+            )}
+
+            {/* Global Save Button - Only visible when a file is open */}
+            {selectedFile && (
+              <FileControls
+                isDark={isDark}
+                isDirty={isDirty}
+                onSave={saveFile}
+                onClose={() => setSelectedFile(null)}
+              />
             )}
           </div>
 
@@ -544,6 +576,7 @@ function App() {
                     defaultLanguage="typescript"
                     value={code}
                     onChange={handleEditorChange}
+                    onMount={handleEditorDidMount}
                     theme={isDark ? "vs-dark" : "light"}
                     options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
                   />
@@ -575,6 +608,19 @@ function App() {
           </Allotment>
         </div>
       </div>
+      {confirmationModal && (
+        <ConfirmationModal
+          isOpen={confirmationModal.isOpen}
+          title={confirmationModal.title}
+          message={confirmationModal.message}
+          onConfirm={confirmationModal.onConfirm}
+          onCancel={confirmationModal.onCancel}
+          onDiscard={confirmationModal.onDiscard}
+          confirmLabel={confirmationModal.confirmLabel}
+          cancelLabel={confirmationModal.cancelLabel}
+          discardLabel={confirmationModal.discardLabel}
+        />
+      )}
     </div>
   );
 }

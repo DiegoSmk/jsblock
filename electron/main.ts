@@ -147,6 +147,16 @@ ipcMain.handle('check-path-exists', async (_event, pathToCheck: string) => {
     }
 });
 
+ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => {
+    try {
+        await fs.promises.rename(oldPath, newPath);
+        return true;
+    } catch (err) {
+        console.error('Error moving file:', err);
+        throw err;
+    }
+});
+
 
 // Window Control Handlers
 ipcMain.on('window-minimize', () => {

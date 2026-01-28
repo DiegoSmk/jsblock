@@ -14,6 +14,13 @@ export const en = {
                 minimize: "Minimize",
                 maximize: "Maximize",
                 close: "Close"
+            },
+            confirm_save: {
+                title: "Save changes?",
+                message: "The file \"{{fileName}}\" has unsaved changes.",
+                save: "Save",
+                cancel: "Cancel",
+                discard: "Discard"
             }
         },
         note: {
@@ -29,7 +36,12 @@ export const en = {
         file_explorer: {
             no_folder: "No folder opened",
             open_button: "Open Folder",
-            close_folder: "Close Folder"
+            close_folder: "Close Folder",
+            already_exists: "An item with this name already exists in the destination.",
+            new_js: "New JS File",
+            new_ts: "New TS File",
+            new_folder: "New Folder",
+            delete: "Delete"
         },
         library: {
             search_placeholder: "Search functions...",
