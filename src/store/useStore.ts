@@ -11,6 +11,8 @@ import {
     applyNodeChanges,
     applyEdgeChanges,
 } from '@xyflow/react';
+// import { v4 as uuidv4 } from 'uuid'; // Removed to avoid dependency check
+const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 import { parseCodeToFlow } from '../logic/CodeParser';
 import { generateCodeFromFlow } from '../logic/CodeGenerator';
 import { getLayoutedElements } from '../logic/layout';
@@ -41,6 +43,23 @@ type GitLogEntry = {
 type GitAuthor = {
     name: string;
     email: string;
+};
+
+type GitProfile = {
+    id: string;
+    name: string;
+    email: string;
+    tag: 'work' | 'personal' | 'ai' | 'custom';
+    customTagName?: string;
+};
+
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
+
+export type Toast = {
+    id: string;
+    type: ToastType;
+    message: string;
+    duration?: number;
 };
 
 type AppState = {
@@ -147,13 +166,27 @@ type AppState = {
         globalAuthor: GitAuthor | null;
         projectAuthor: GitAuthor | null;
     };
+    gitProfiles: GitProfile[];
     refreshGit: () => Promise<void>;
     fetchGitConfig: () => Promise<void>;
     gitStage: (path: string) => Promise<void>;
+    gitStageAll: () => Promise<void>;
     gitUnstage: (path: string) => Promise<void>;
+    gitUnstageAll: () => Promise<void>;
+    gitDiscard: (path: string) => Promise<void>;
+    gitDiscardAll: () => Promise<void>;
     gitCommit: (message: string) => Promise<void>;
     gitInit: (author?: GitAuthor, isGlobal?: boolean) => Promise<void>;
     setGitConfig: (author: GitAuthor, isGlobal: boolean) => Promise<void>;
+    addGitProfile: (profile: Omit<GitProfile, 'id'>) => void;
+    removeGitProfile: (id: string) => void;
+    updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
+    resetToGlobal: () => Promise<void>;
+
+    // Toast Actions
+    toasts: Toast[];
+    addToast: (toast: Omit<Toast, 'id'>) => void;
+    removeToast: (id: string) => void;
 };
 
 const initialCode = '';
@@ -165,6 +198,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     nodes: [],
     edges: [],
     theme: 'dark',
+    toasts: [],
     runtimeValues: {},
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
@@ -185,6 +219,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         globalAuthor: null,
         projectAuthor: null
     },
+    gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
     selectedFile: null,
     autoSave: localStorage.getItem('autoSave') === 'true',
     isDirty: false,
@@ -763,24 +798,50 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             const branchRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', 'HEAD']);
             const currentBranch = branchRes.stdout.trim();
 
-            // Get status
-            const statusRes = await (window as any).electronAPI.gitCommand(openedFolder, ['status', '--porcelain', '-b']);
-            // Parse porcelain status
-            const lines = statusRes.stdout.split('\n').filter((l: string) => l.trim() !== '');
-            const changes: GitFileStatus[] = lines
-                .filter((l: string) => !l.startsWith('##'))
-                .map((line: string) => {
-                    const index = line[0];
-                    const workingTree = line[1];
-                    const path = line.substring(3);
-                    let status: GitFileStatus['status'] = 'modified';
-                    if (index === '?' || workingTree === '?') status = 'untracked';
-                    else if (index === 'A') status = 'added';
-                    else if (index === 'D' || workingTree === 'D') status = 'deleted';
-                    else if (index === 'R') status = 'renamed';
+            // Get status with -z for robust path handling
+            // This is critical for files with spaces or special characters
+            const statusRes = await (window as any).electronAPI.gitCommand(openedFolder, ['status', '--porcelain', '-b', '-z']);
 
-                    return { path, status, index, workingTree };
-                });
+            // Output format with -z:
+            // "## branch_info\0XY path\0XY path2\0R  old\0new\0"
+            const rawStatus = statusRes.stdout;
+            const tokens = rawStatus.split('\0');
+            const changes: GitFileStatus[] = [];
+
+            let i = 0;
+            while (i < tokens.length) {
+                const token = tokens[i];
+                if (!token) { // End of stream or Empty
+                    i++;
+                    continue;
+                }
+
+                if (token.startsWith('##')) {
+                    i++;
+                    continue;
+                }
+
+                const index = token[0] || ' ';
+                const workingTree = token[1] || ' ';
+                let path = token.substring(3);
+                let status: GitFileStatus['status'] = 'modified';
+
+                if (index === 'R' || workingTree === 'R') {
+                    status = 'renamed';
+                    i++;
+                    if (i < tokens.length) {
+                        path = tokens[i];
+                    }
+                } else if (index === '?' || workingTree === '?') status = 'untracked';
+                else if (index === 'A') status = 'added';
+                else if (index === 'D' || workingTree === 'D') status = 'deleted';
+
+                if (path) {
+                    changes.push({ path, status, index, workingTree });
+                }
+
+                i++;
+            }
 
             // Get Log
             const logRes = await (window as any).electronAPI.gitCommand(openedFolder, ['log', '--graph', '--oneline', '--all', '-n', '20', '--pretty=format:"%h|%an|%ar|%s"']);
@@ -834,8 +895,11 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             // Fetch Local (if folder exists)
             let projectAuthor = null;
             if (openedFolder) {
-                const lName = await (window as any).electronAPI.gitCommand(openedFolder, ['config', 'user.name']);
-                const lEmail = await (window as any).electronAPI.gitCommand(openedFolder, ['config', 'user.email']);
+                // Explicitly check local config to differentiate from global inheritance
+                const lName = await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.name']);
+                const lEmail = await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.email']);
+
+                // Only treat as project author if explicitly defined locally
                 if (lName.stdout.trim() || lEmail.stdout.trim()) {
                     projectAuthor = {
                         name: lName.stdout.trim(),
@@ -859,15 +923,84 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     gitStage: async (path: string) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
-        await (window as any).electronAPI.gitCommand(openedFolder, ['add', path]);
-        await refreshGit();
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['add', `"${path}"`]);
+            await refreshGit();
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao adicionar arquivo (stage).' });
+        }
     },
 
     gitUnstage: async (path: string) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
-        await (window as any).electronAPI.gitCommand(openedFolder, ['restore', '--staged', path]);
-        await refreshGit();
+        try {
+            // Check if HEAD exists (to handle initial commit state where HEAD is invalid)
+            const headRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
+            const hasHead = !headRes.stderr && headRes.stdout.trim();
+
+            if (hasHead) {
+                await (window as any).electronAPI.gitCommand(openedFolder, ['reset', 'HEAD', `"${path}"`]);
+            } else {
+                // Initial commit: use rm --cached to unstage
+                await (window as any).electronAPI.gitCommand(openedFolder, ['rm', '--cached', `"${path}"`]);
+            }
+
+            await refreshGit();
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao remover arquivo (unstage).' });
+        }
+    },
+
+    gitStageAll: async () => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['add', '.']);
+            await refreshGit();
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao adicionar todos os arquivos.' });
+        }
+    },
+
+    gitUnstageAll: async () => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            // Check if HEAD exists
+            const headRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
+            const hasHead = !headRes.stderr && headRes.stdout.trim();
+            if (hasHead) {
+                await (window as any).electronAPI.gitCommand(openedFolder, ['reset', 'HEAD']);
+            } else {
+                await (window as any).electronAPI.gitCommand(openedFolder, ['rm', '--cached', '-r', '.']);
+            }
+            await refreshGit();
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao remover todos os arquivos (unstage).' });
+        }
+    },
+
+    gitDiscard: async (path: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['restore', `"${path}"`]);
+            await refreshGit();
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao descartar alterações.' });
+        }
+    },
+
+    gitDiscardAll: async () => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['restore', '.']);
+            await refreshGit();
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao descartar todas as alterações.' });
+        }
     },
 
     gitCommit: async (message: string) => {
@@ -894,16 +1027,104 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const { openedFolder, fetchGitConfig } = get();
         if (!(window as any).electronAPI) return;
 
-        const target = isGlobal ? '--global' : '';
         const dir = openedFolder || '.';
 
-        if (author.name) {
-            await (window as any).electronAPI.gitCommand(dir, ['config', target, 'user.name', `"${author.name}"`]);
-        }
-        if (author.email) {
-            await (window as any).electronAPI.gitCommand(dir, ['config', target, 'user.email', `"${author.email}"`]);
+        if (isGlobal) {
+            // Setting Global Config
+            const argsBase = ['config', '--global'];
+            try {
+                if (author.name) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.name', `"${author.name}"`]);
+                if (author.email) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.email', `"${author.email}"`]);
+
+                get().addToast({
+                    type: 'success',
+                    message: 'Autor Global atualizado com sucesso!'
+                });
+            } catch (e) {
+                get().addToast({
+                    type: 'error',
+                    message: 'Erro ao atualizar Autor Global.'
+                });
+            }
+        } else {
+            // Setting Local Config (Explicit Override)
+            try {
+                if (author.name) {
+                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.name', `"${author.name}"`]);
+                }
+                if (author.email) {
+                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.email', `"${author.email}"`]);
+                }
+
+                get().addToast({
+                    type: 'success',
+                    message: `Autor Local definido para: ${author.name}`
+                });
+            } catch (e) {
+                get().addToast({
+                    type: 'error',
+                    message: 'Erro ao definir Autor Local.'
+                });
+            }
         }
 
         await fetchGitConfig();
+        console.log('Fetch config executed');
     },
+
+    resetToGlobal: async () => {
+        const { openedFolder, fetchGitConfig } = get();
+        if (!(window as any).electronAPI || !openedFolder) return;
+
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.name']);
+            await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.email']);
+
+            get().addToast({
+                type: 'info',
+                message: 'Usando configuração Global (Local resetado).'
+            });
+        } catch (e) {
+            get().addToast({
+                type: 'error',
+                message: 'Erro ao resetar para configuração Global.'
+            });
+        }
+        await fetchGitConfig();
+    },
+
+    addGitProfile: (profile: Omit<GitProfile, 'id'>) => {
+        const id = `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const newProfiles = [...get().gitProfiles, { ...profile, id }];
+        localStorage.setItem('gitProfiles', JSON.stringify(newProfiles));
+        set({ gitProfiles: newProfiles });
+    },
+
+    removeGitProfile: (id: string) => {
+        const newProfiles = get().gitProfiles.filter((p: GitProfile) => p.id !== id);
+        localStorage.setItem('gitProfiles', JSON.stringify(newProfiles));
+        set({ gitProfiles: newProfiles });
+    },
+
+    updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => {
+        const newProfiles = get().gitProfiles.map((p: GitProfile) =>
+            p.id === id ? { ...p, ...updates } : p
+        );
+        localStorage.setItem('gitProfiles', JSON.stringify(newProfiles));
+        set({ gitProfiles: newProfiles });
+    },
+
+    addToast: (toast) => {
+        const id = generateId();
+        const duration = toast.duration || 3000;
+        set((state: any) => ({ toasts: [...state.toasts, { ...toast, id }] }));
+
+        setTimeout(() => {
+            get().removeToast(id);
+        }, duration);
+    },
+
+    removeToast: (id) => {
+        set((state: any) => ({ toasts: state.toasts.filter((t: Toast) => t.id !== id) }));
+    }
 }));

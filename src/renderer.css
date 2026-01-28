@@ -1,0 +1,13 @@
+/* Custom select dropdown styling */
+select option {
+    background: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    padding: 8px !important;
+    border: none !important;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+    background: var(--hover-bg) !important;
+}

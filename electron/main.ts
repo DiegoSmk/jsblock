@@ -9,6 +9,10 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+// Disable Autofill to check if it suppresses "Request Autofill.enable failed" errors
+app.commandLine.appendSwitch('disable-features', 'Autofill');
+
+
 let mainWindow: BrowserWindow | null;
 
 function createWindow() {

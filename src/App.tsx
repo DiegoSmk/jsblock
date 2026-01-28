@@ -45,6 +45,7 @@ import { NoteNode } from './components/NoteNode';
 import { Tooltip } from './components/Tooltip';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { FileControls } from './components/FileControls';
+import { ToastContainer } from './components/ToastContainer';
 
 const nodeTypes: NodeTypes = {
   variableNode: VariableNode,
@@ -624,6 +625,7 @@ function App() {
           discardLabel={confirmationModal.discardLabel}
         />
       )}
+      <ToastContainer />
     </div>
   );
 }
