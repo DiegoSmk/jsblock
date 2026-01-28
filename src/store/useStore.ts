@@ -23,6 +23,26 @@ type RecentEnvironment = {
     isFavorite?: boolean;
 };
 
+type GitFileStatus = {
+    path: string;
+    status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked' | 'staged';
+    index: string;
+    workingTree: string;
+};
+
+type GitLogEntry = {
+    hash: string;
+    author: string;
+    date: string;
+    message: string;
+    graph?: string;
+};
+
+type GitAuthor = {
+    name: string;
+    email: string;
+};
+
 type AppState = {
     code: string;
     nodes: Node[];
@@ -85,11 +105,11 @@ type AppState = {
 
     // UI State
     showSidebar: boolean;
-    activeSidebarTab: 'explorer' | 'library';
+    activeSidebarTab: 'explorer' | 'library' | 'git';
     showCode: boolean;
     showCanvas: boolean;
     toggleSidebar: () => void;
-    setSidebarTab: (tab: 'explorer' | 'library') => void;
+    setSidebarTab: (tab: 'explorer' | 'library' | 'git') => void;
     toggleCode: () => void;
     toggleCanvas: () => void;
 
@@ -116,6 +136,24 @@ type AppState = {
     toggleFavorite: (path: string) => void;
     setRecentLabel: (path: string, label: 'personal' | 'work' | 'fun' | 'other' | undefined) => void;
     validateRecents: () => Promise<void>;
+
+    // Git Actions
+    git: {
+        isRepo: boolean;
+        currentBranch: string;
+        changes: GitFileStatus[];
+        log: GitLogEntry[];
+        rawLog: string;
+        globalAuthor: GitAuthor | null;
+        projectAuthor: GitAuthor | null;
+    };
+    refreshGit: () => Promise<void>;
+    fetchGitConfig: () => Promise<void>;
+    gitStage: (path: string) => Promise<void>;
+    gitUnstage: (path: string) => Promise<void>;
+    gitCommit: (message: string) => Promise<void>;
+    gitInit: (author?: GitAuthor, isGlobal?: boolean) => Promise<void>;
+    setGitConfig: (author: GitAuthor, isGlobal: boolean) => Promise<void>;
 };
 
 const initialCode = '';
@@ -138,6 +176,15 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     showCanvas: true,
     isBlockFile: false,
     openedFolder: null,
+    git: {
+        isRepo: false,
+        currentBranch: '',
+        changes: [],
+        log: [],
+        rawLog: '',
+        globalAuthor: null,
+        projectAuthor: null
+    },
     selectedFile: null,
     autoSave: localStorage.getItem('autoSave') === 'true',
     isDirty: false,
@@ -214,7 +261,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
     toggleSidebar: () => set({ showSidebar: !get().showSidebar }),
-    setSidebarTab: (tab: 'explorer' | 'library') => set({ activeSidebarTab: tab, showSidebar: true }),
+    setSidebarTab: (tab: 'explorer' | 'library' | 'git') => set({ activeSidebarTab: tab, showSidebar: true }),
     toggleCode: () => {
         if (get().showCode && !get().showCanvas) return;
         set({ showCode: !get().showCode });
@@ -694,5 +741,169 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         };
         set({ nodes: [...get().nodes, newNode] });
         get().saveFile();
+    },
+
+    refreshGit: async () => {
+        const { openedFolder } = get();
+        if (!openedFolder || !(window as any).electronAPI) return;
+
+        try {
+            // Check if it's a repo
+            const isRepoRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--is-inside-work-tree']);
+            const isRepo = isRepoRes.stdout.trim() === 'true';
+
+            if (!isRepo) {
+                set((state: any) => ({
+                    git: { ...state.git, isRepo: false }
+                }));
+                return;
+            }
+
+            // Get current branch
+            const branchRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', 'HEAD']);
+            const currentBranch = branchRes.stdout.trim();
+
+            // Get status
+            const statusRes = await (window as any).electronAPI.gitCommand(openedFolder, ['status', '--porcelain', '-b']);
+            // Parse porcelain status
+            const lines = statusRes.stdout.split('\n').filter((l: string) => l.trim() !== '');
+            const changes: GitFileStatus[] = lines
+                .filter((l: string) => !l.startsWith('##'))
+                .map((line: string) => {
+                    const index = line[0];
+                    const workingTree = line[1];
+                    const path = line.substring(3);
+                    let status: GitFileStatus['status'] = 'modified';
+                    if (index === '?' || workingTree === '?') status = 'untracked';
+                    else if (index === 'A') status = 'added';
+                    else if (index === 'D' || workingTree === 'D') status = 'deleted';
+                    else if (index === 'R') status = 'renamed';
+
+                    return { path, status, index, workingTree };
+                });
+
+            // Get Log
+            const logRes = await (window as any).electronAPI.gitCommand(openedFolder, ['log', '--graph', '--oneline', '--all', '-n', '20', '--pretty=format:"%h|%an|%ar|%s"']);
+            const rawLog = logRes.stdout;
+
+            // Parse log entries from raw output (hacky but works for simplified view)
+            const logEntries: GitLogEntry[] = logRes.stdout.split('\n')
+                .filter((l: string) => l.includes('|'))
+                .map((line: string) => {
+                    // line might look like "* \"hash|author|date|msg\""
+                    const content = line.match(/"([^"]+)"/)?.[1] || "";
+                    const [hash, author, date, message] = content.split('|');
+                    const graph = line.split('"')[0]; // Everything before the quote is the graph part
+                    return { hash, author, date, message, graph };
+                });
+
+            set((state: any) => ({
+                git: {
+                    ...state.git,
+                    isRepo: true,
+                    currentBranch,
+                    changes,
+                    log: logEntries,
+                    rawLog
+                }
+            }));
+        } catch (err) {
+            console.error('Git refresh failed:', err);
+            set((state: any) => ({
+                git: { ...state.git, isRepo: false }
+            }));
+        }
+    },
+
+    fetchGitConfig: async () => {
+        const { openedFolder } = get();
+        if (!(window as any).electronAPI) return;
+
+        const baseDir = openedFolder || '.';
+
+        try {
+            // Fetch Global
+            const gName = await (window as any).electronAPI.gitCommand(baseDir, ['config', '--global', 'user.name']);
+            const gEmail = await (window as any).electronAPI.gitCommand(baseDir, ['config', '--global', 'user.email']);
+
+            const globalAuthor = {
+                name: gName.stdout.trim(),
+                email: gEmail.stdout.trim()
+            };
+
+            // Fetch Local (if folder exists)
+            let projectAuthor = null;
+            if (openedFolder) {
+                const lName = await (window as any).electronAPI.gitCommand(openedFolder, ['config', 'user.name']);
+                const lEmail = await (window as any).electronAPI.gitCommand(openedFolder, ['config', 'user.email']);
+                if (lName.stdout.trim() || lEmail.stdout.trim()) {
+                    projectAuthor = {
+                        name: lName.stdout.trim(),
+                        email: lEmail.stdout.trim()
+                    };
+                }
+            }
+
+            set((state: any) => ({
+                git: {
+                    ...state.git,
+                    globalAuthor: globalAuthor.name || globalAuthor.email ? globalAuthor : null,
+                    projectAuthor
+                }
+            }));
+        } catch (err) {
+            console.error('Fetch git config failed:', err);
+        }
+    },
+
+    gitStage: async (path: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        await (window as any).electronAPI.gitCommand(openedFolder, ['add', path]);
+        await refreshGit();
+    },
+
+    gitUnstage: async (path: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        await (window as any).electronAPI.gitCommand(openedFolder, ['restore', '--staged', path]);
+        await refreshGit();
+    },
+
+    gitCommit: async (message: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        await (window as any).electronAPI.gitCommand(openedFolder, ['commit', '-m', `"${message}"`]);
+        await refreshGit();
+    },
+
+    gitInit: async (author?: GitAuthor, isGlobal: boolean = false) => {
+        const { openedFolder, refreshGit, setGitConfig } = get();
+        if (!openedFolder) return;
+
+        await (window as any).electronAPI.gitCommand(openedFolder, ['init']);
+
+        if (author) {
+            await setGitConfig(author, isGlobal);
+        }
+
+        await refreshGit();
+    },
+
+    setGitConfig: async (author: GitAuthor, isGlobal: boolean) => {
+        const { openedFolder, fetchGitConfig } = get();
+        if (!(window as any).electronAPI) return;
+
+        const target = isGlobal ? '--global' : '';
+        const dir = openedFolder || '.';
+
+        if (author.name) {
+            await (window as any).electronAPI.gitCommand(dir, ['config', target, 'user.name', `"${author.name}"`]);
+        }
+        if (author.email) {
+            await (window as any).electronAPI.gitCommand(dir, ['config', target, 'user.email', `"${author.email}"`]);
+        }
+
+        await fetchGitConfig();
     },
 }));

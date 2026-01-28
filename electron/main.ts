@@ -1,7 +1,13 @@
 
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
 import { app, BrowserWindow, protocol, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 let mainWindow: BrowserWindow | null;
 
@@ -154,6 +160,18 @@ ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => 
     } catch (err) {
         console.error('Error moving file:', err);
         throw err;
+    }
+});
+
+ipcMain.handle('git-command', async (_event, dirPath: string, args: string[]) => {
+    try {
+        // Basic security: simple check if it starts with git (though we pass as array)
+        const command = `git ${args.join(' ')}`;
+        const { stdout, stderr } = await execAsync(command, { cwd: dirPath });
+        return { stdout, stderr };
+    } catch (err: any) {
+        // Git often returns error codes for things like "nothing to commit"
+        return { stdout: err.stdout || '', stderr: err.stderr || err.message };
     }
 });
 

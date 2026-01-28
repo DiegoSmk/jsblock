@@ -1,5 +1,5 @@
 import React from 'react';
-import { Files, Search, Settings, Sun, Moon } from 'lucide-react';
+import { Files, Search, Settings, Sun, Moon, GitBranch } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export const SideRibbon: React.FC = () => {
@@ -7,7 +7,8 @@ export const SideRibbon: React.FC = () => {
         theme, toggleTheme,
         showSidebar,
         activeSidebarTab, setSidebarTab,
-        autoSave, toggleAutoSave
+        autoSave, toggleAutoSave,
+        openedFolder
     } = useStore();
 
     const isDark = theme === 'dark';
@@ -76,6 +77,13 @@ export const SideRibbon: React.FC = () => {
                 icon={Search}
                 onClick={() => { }}
                 title="Busca (Em breve)"
+            />
+            <RibbonButton
+                icon={GitBranch}
+                active={showSidebar && activeSidebarTab === 'git'}
+                onClick={() => setSidebarTab('git')}
+                title="Git (Controle de Versão)"
+                disabled={!openedFolder}
             />
 
 

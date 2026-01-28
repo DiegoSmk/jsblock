@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build && tsc -p tsconfig.electron.json",
     "start": "electron .",
-    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on tcp:5173 && tsc -p tsconfig.electron.json && electron .\"",
+    "electron:dev": "concurrently -k \"cross-env VITE_CJS_IGNORE_WARNING=true BROWSER=none npm run dev\" \"wait-on tcp:5173 && tsc -p tsconfig.electron.json && electron .\"",
     "electron:build": "npm run build && electron-builder"
   },
   "keywords": [],

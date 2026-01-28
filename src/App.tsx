@@ -11,6 +11,7 @@ import {
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
 import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Edit2, Trash2, Box } from 'lucide-react';
+import { GitPanel } from './components/GitPanel';
 import { useTranslation } from 'react-i18next';
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
@@ -531,81 +532,83 @@ function App() {
           </div>
         </header>
 
-        <div style={{ flex: 1, position: 'relative' }}>
-          <Allotment>
-            <Allotment.Pane minSize={150} preferredSize={240} visible={showSidebar}>
-              {(!openedFolder || activeSidebarTab === 'explorer') ? (
-                <FileExplorer />
-              ) : (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <ReactFlowProvider>
-                    <FunctionLibrary />
-                  </ReactFlowProvider>
-                </div>
-              )}
-            </Allotment.Pane>
-
-            <Allotment.Pane minSize={200} preferredSize={350} visible={!isBlockFile && showCode}>
-              <div
-                style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
-                onKeyDown={(e) => e.stopPropagation()}
-              >
-                {selectedFile && (
-                  <div style={{
-                    height: '32px',
-                    background: isDark ? '#2d2d2d' : '#f0f0f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '0 12px',
-                    fontSize: '0.75rem',
-                    color: isDark ? '#aaa' : '#666',
-                    borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
-                  }}>
-                    <Code size={14} style={{ marginRight: '8px' }} />
-                    {selectedFile.split(/[\\/]/).pop()}
-                  </div>
-                )}
-                {!selectedFile ? (
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                    <Code size={48} opacity={0.3} />
-                    <p>{t('app.select_file')}</p>
-                  </div>
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+          {activeSidebarTab === 'git' ? (
+            <GitPanel />
+          ) : (
+            <Allotment>
+              <Allotment.Pane minSize={150} preferredSize={240} visible={showSidebar}>
+                {(!openedFolder || activeSidebarTab === 'explorer') ? (
+                  <FileExplorer />
                 ) : (
-                  <Editor
-                    height="100%"
-                    defaultLanguage="typescript"
-                    value={code}
-                    onChange={handleEditorChange}
-                    onMount={handleEditorDidMount}
-                    theme={isDark ? "vs-dark" : "light"}
-                    options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
-                  />
-                )}
-              </div>
-            </Allotment.Pane>
-
-
-
-            <Allotment.Pane minSize={400} visible={isBlockFile || showCanvas}>
-              <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
-                  <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
-                    <ScopeBreadcrumbs />
+                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <ReactFlowProvider>
+                      <FunctionLibrary />
+                    </ReactFlowProvider>
                   </div>
+                )}
+              </Allotment.Pane>
+
+              <Allotment.Pane minSize={200} preferredSize={350} visible={!isBlockFile && showCode}>
+                <div
+                  style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  {selectedFile && (
+                    <div style={{
+                      height: '32px',
+                      background: isDark ? '#2d2d2d' : '#f0f0f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 12px',
+                      fontSize: '0.75rem',
+                      color: isDark ? '#aaa' : '#666',
+                      borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
+                    }}>
+                      <Code size={14} style={{ marginRight: '8px' }} />
+                      {selectedFile.split(/[\\/]/).pop()}
+                    </div>
+                  )}
+                  {!selectedFile ? (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                      <Code size={48} opacity={0.3} />
+                      <p>{t('app.select_file')}</p>
+                    </div>
+                  ) : (
+                    <Editor
+                      height="100%"
+                      defaultLanguage="typescript"
+                      value={code}
+                      onChange={handleEditorChange}
+                      onMount={handleEditorDidMount}
+                      theme={isDark ? "vs-dark" : "light"}
+                      options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
+                    />
+                  )}
                 </div>
-                {!selectedFile ? (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                    <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
-                    <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
+              </Allotment.Pane>
+
+              <Allotment.Pane minSize={400} visible={isBlockFile || showCanvas}>
+                <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
+                    <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
+                      <ScopeBreadcrumbs />
+                    </div>
                   </div>
-                ) : (
-                  <ReactFlowProvider>
-                    <FlowContent />
-                  </ReactFlowProvider>
-                )}
-              </div>
-            </Allotment.Pane>
-          </Allotment>
+                  {!selectedFile ? (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                      <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
+                      <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
+                    </div>
+                  ) : (
+                    <ReactFlowProvider>
+                      <FlowContent />
+                    </ReactFlowProvider>
+                  )}
+                </div>
+              </Allotment.Pane>
+            </Allotment>
+          )}
         </div>
       </div>
       {confirmationModal && (

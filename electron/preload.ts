@@ -12,5 +12,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     createFile: (path: string, content?: string) => ipcRenderer.invoke('create-file', path, content),
     createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path),
     checkPathExists: (path: string) => ipcRenderer.invoke('check-path-exists', path),
-    moveFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('move-file', oldPath, newPath)
+    moveFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('move-file', oldPath, newPath),
+    gitCommand: (dirPath: string, args: string[]) => ipcRenderer.invoke('git-command', dirPath, args)
 });
