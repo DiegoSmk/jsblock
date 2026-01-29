@@ -13,6 +13,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { Radio } from '../ui/Radio';
 import { Tooltip } from '../Tooltip';
+import { TerminalProgressBar } from './TerminalProgressBar';
 import 'xterm/css/xterm.css';
 
 export const GitTerminalView: React.FC = () => {
@@ -32,6 +33,16 @@ export const GitTerminalView: React.FC = () => {
     const [newCmdLabel, setNewCmdLabel] = useState('');
     const [newCmdValue, setNewCmdValue] = useState('');
     const [newCmdAutoExecute, setNewCmdAutoExecute] = useState(true);
+    const [terminalProgress, setTerminalProgress] = useState<{ percent: number; label: string; visible: boolean }>({
+        percent: 0,
+        label: '',
+        visible: false
+    });
+    const [gitSuggestion, setGitSuggestion] = useState<string | null>(null);
+    const [lastCommitHash, setLastCommitHash] = useState<string | null>(null);
+    const progressTimeoutRef = useRef<any>(null);
+    const suggestionTimeoutRef = useRef<any>(null);
+    const commitTimeoutRef = useRef<any>(null);
 
     useEffect(() => {
         if (!terminalRef.current) return;
@@ -123,6 +134,66 @@ export const GitTerminalView: React.FC = () => {
 
             const unsubscribe = (window as any).electronAPI.terminalOnData((data: string) => {
                 term.write(data);
+
+                // Progress Tracking Logic
+                // 1. Search for percentage patterns (e.g. 45%, 10/100, etc)
+                const percentMatch = data.match(/(\d+)%/);
+                if (percentMatch) {
+                    const percent = parseInt(percentMatch[1]);
+
+                    // Filter out small common numbers that aren't real progress
+                    if (percent > 0 || (percent === 0 && data.includes('progress'))) {
+                        setTerminalProgress({
+                            percent,
+                            label: data.includes('npm') ? 'NPM Install/Build...' :
+                                data.includes('git') ? 'Git Operation...' :
+                                    'Processando Tarefa...',
+                            visible: true
+                        });
+
+                        // reset timeout to hide
+                        if (progressTimeoutRef.current) clearTimeout(progressTimeoutRef.current);
+
+                        if (percent >= 100) {
+                            progressTimeoutRef.current = setTimeout(() => {
+                                setTerminalProgress(p => ({ ...p, visible: false }));
+                            }, 3000);
+                        } else {
+                            // If no progress for 10 seconds, hide it (stale)
+                            progressTimeoutRef.current = setTimeout(() => {
+                                setTerminalProgress(p => ({ ...p, visible: false }));
+                            }, 10000);
+                        }
+                    }
+                }
+
+                // Git Correction Logic
+                // Detects patterns like: 'git: 'chekout' is not a git command. Did you mean checkout?'
+                if (data.includes('not a git command') || data.includes('The most similar command')) {
+                    const suggestionMatch = data.match(/The most similar command(?:s)? is\s+([a-z-]+)/) ||
+                        data.match(/Did you mean this\?\s+([a-z-]+)/);
+                    if (suggestionMatch && suggestionMatch[1]) {
+                        setGitSuggestion(suggestionMatch[1]);
+                        if (suggestionTimeoutRef.current) clearTimeout(suggestionTimeoutRef.current);
+                        suggestionTimeoutRef.current = setTimeout(() => setGitSuggestion(null), 15000);
+                    }
+                }
+
+                // Clear suggestion when a new line starts (user is typing something else)
+                if (data.includes('\r') || data.includes('\n')) {
+                    // We keep it for a bit after the error, but if a long time passes it clears via timeout
+                }
+
+                // Undo Commit Logic
+                // Detects: [main 3a4f2b1] commit message
+                if (data.includes('] ') && (data.includes('create mode') || data.includes('files changed'))) {
+                    const commitMatch = data.match(/\[[a-zA-Z0-9\-_./]+\s+([a-f0-9]+)\]/);
+                    if (commitMatch && commitMatch[1]) {
+                        setLastCommitHash(commitMatch[1]);
+                        if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current);
+                        commitTimeoutRef.current = setTimeout(() => setLastCommitHash(null), 20000);
+                    }
+                }
             });
 
             term.onSelectionChange(() => {
@@ -166,6 +237,22 @@ export const GitTerminalView: React.FC = () => {
             };
         }
     }, [isDark, openedFolder, settings.terminalCopyOnSelect, settings.terminalRightClickPaste]);
+
+    const handleApplySuggestion = (cmd: string) => {
+        if ((window as any).electronAPI) {
+            // Write git [suggestion] and enter
+            (window as any).electronAPI.terminalSendInput(`git ${cmd}\r`);
+            setGitSuggestion(null);
+        }
+    };
+
+    const handleUndoCommit = () => {
+        if ((window as any).electronAPI) {
+            // git reset --soft HEAD~1
+            (window as any).electronAPI.terminalSendInput(`git reset --soft HEAD~1\r`);
+            setLastCommitHash(null);
+        }
+    };
 
     const handleRunQuickCommand = (cmd: string, autoExecute: boolean = true) => {
         if ((window as any).electronAPI) {
@@ -555,6 +642,157 @@ export const GitTerminalView: React.FC = () => {
                         background-clip: content-box;
                     }
                 `}</style>
+
+                {terminalProgress.visible && (
+                    <TerminalProgressBar
+                        progress={terminalProgress.percent}
+                        label={terminalProgress.label}
+                        isDark={isDark}
+                    />
+                )}
+
+                {gitSuggestion && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: terminalProgress.visible ? '80px' : '20px',
+                        right: '20px',
+                        zIndex: 101,
+                        background: isDark ? 'rgba(30, 30, 30, 0.95)' : '#fff',
+                        border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.4)' : 'rgba(0, 112, 243, 0.3)'}`,
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        animation: 'slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        backdropFilter: 'blur(10px)',
+                    }}>
+                        <style>{`
+                            @keyframes slideInRight {
+                                from { transform: translateX(30px); opacity: 0; }
+                                to { transform: translateX(0); opacity: 1; }
+                            }
+                        `}</style>
+                        <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: isDark ? '#4fc3f7' : '#0070f3'
+                        }}>
+                            <Zap size={18} />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Sugestão do Git</div>
+                            <div style={{ fontSize: '0.85rem', color: isDark ? '#eee' : '#333' }}>
+                                Quis dizer <span style={{ fontWeight: 800, color: isDark ? '#4fc3f7' : '#0070f3' }}>git {gitSuggestion}</span>?
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginLeft: '8px' }}>
+                            <button
+                                onClick={() => setGitSuggestion(null)}
+                                style={{
+                                    background: 'transparent',
+                                    border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                    color: isDark ? '#888' : '#666',
+                                    padding: '6px 10px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Ignorar
+                            </button>
+                            <button
+                                onClick={() => handleApplySuggestion(gitSuggestion!)}
+                                style={{
+                                    background: isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)',
+                                    border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)'}`,
+                                    color: isDark ? '#4fc3f7' : '#0070f3',
+                                    padding: '6px 14px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(79, 195, 247, 0.25)' : 'rgba(0, 112, 243, 0.15)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'}
+                            >
+                                Corrigir Agora
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {lastCommitHash && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: (terminalProgress.visible || gitSuggestion) ? '80px' : '20px',
+                        left: '20px',
+                        zIndex: 101,
+                        background: isDark ? 'rgba(30,30,30,0.95)' : '#fff',
+                        border: `1px solid ${isDark ? 'rgba(74, 222, 128, 0.4)' : 'rgba(22, 163, 74, 0.3)'}`,
+                        borderRadius: '12px',
+                        padding: '12px 16px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        animation: 'slideInLeft 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        backdropFilter: 'blur(10px)',
+                    }}>
+                        <style>{`
+                            @keyframes slideInLeft {
+                                from { transform: translateX(-30px); opacity: 0; }
+                                to { transform: translateX(0); opacity: 1; }
+                            }
+                        `}</style>
+                        <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            background: isDark ? 'rgba(74, 222, 128, 0.1)' : 'rgba(22, 163, 74, 0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: isDark ? '#4ade80' : '#16a34a'
+                        }}>
+                            <Check size={18} />
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Git Commit</div>
+                            <div style={{ fontSize: '0.85rem', color: isDark ? '#eee' : '#333' }}>
+                                Commit <span style={{ fontWeight: 800, color: isDark ? '#4ade80' : '#16a34a', fontFamily: 'monospace' }}>{lastCommitHash}</span> realizado!
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', marginLeft: '8px' }}>
+                            <button
+                                onClick={() => handleUndoCommit()}
+                                style={{
+                                    background: isDark ? 'rgba(248, 113, 113, 0.15)' : 'rgba(220, 38, 38, 0.1)',
+                                    border: `1px solid ${isDark ? 'rgba(248, 113, 113, 0.3)' : 'rgba(220, 38, 38, 0.2)'}`,
+                                    color: isDark ? '#f87171' : '#dc2626',
+                                    padding: '6px 14px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(248, 113, 113, 0.25)' : 'rgba(220, 38, 38, 0.15)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = isDark ? 'rgba(248, 113, 113, 0.15)' : 'rgba(220, 38, 38, 0.1)'}
+                            >
+                                Desfazer (Undo)
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <div
                     ref={terminalRef}
                     style={{
