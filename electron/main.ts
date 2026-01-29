@@ -6,6 +6,8 @@ import path from 'path';
 import fs from 'fs';
 import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
+import * as pty from 'node-pty';
+import os from 'os';
 
 const execFileAsync = promisify(execFile);
 const execAsync = promisify(exec);
@@ -195,4 +197,52 @@ ipcMain.on('window-maximize', () => {
 
 ipcMain.on('window-close', () => {
     mainWindow?.close();
+});
+
+// --- Terminal (PTY) Management ---
+let ptyProcess: pty.IPty | null = null;
+
+ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
+    // Kill existing process if any
+    if (ptyProcess) {
+        ptyProcess.kill();
+        ptyProcess = null;
+    }
+
+    const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+
+    ptyProcess = pty.spawn(shell, [], {
+        name: 'xterm-color',
+        cols: 80,
+        rows: 24,
+        cwd: options.cwd || os.homedir(),
+        env: process.env as any
+    });
+
+    ptyProcess.onData((data) => {
+        mainWindow?.webContents.send('terminal-data', data);
+    });
+
+    ptyProcess.onExit(() => {
+        mainWindow?.webContents.send('terminal-data', '\r\n[Processo finalizado]\r\n');
+        ptyProcess = null;
+    });
+});
+
+ipcMain.on('terminal-input', (event, data: string) => {
+    ptyProcess?.write(data);
+});
+
+ipcMain.on('terminal-resize', (event, { cols, rows }: { cols: number, rows: number }) => {
+    ptyProcess?.resize(cols, rows);
+});
+
+ipcMain.on('terminal-kill', () => {
+    ptyProcess?.kill();
+    ptyProcess = null;
+});
+
+// Ensure cleanup on quit
+app.on('will-quit', () => {
+    ptyProcess?.kill();
 });

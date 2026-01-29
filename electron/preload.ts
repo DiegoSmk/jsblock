@@ -13,5 +13,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path),
     checkPathExists: (path: string) => ipcRenderer.invoke('check-path-exists', path),
     moveFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('move-file', oldPath, newPath),
-    gitCommand: (dirPath: string, args: string[]) => ipcRenderer.invoke('git-command', dirPath, args)
+    gitCommand: (dirPath: string, args: string[]) => ipcRenderer.invoke('git-command', dirPath, args),
+
+    // Terminal
+    terminalCreate: (options: { cwd: string }) => ipcRenderer.send('terminal-create', options),
+    terminalSendInput: (data: string) => ipcRenderer.send('terminal-input', data),
+    terminalOnData: (callback: (data: string) => void) => {
+        const subscription = (_event: any, data: string) => callback(data);
+        ipcRenderer.on('terminal-data', subscription);
+        return () => ipcRenderer.removeListener('terminal-data', subscription);
+    },
+    terminalResize: (cols: number, rows: number) => ipcRenderer.send('terminal-resize', { cols, rows }),
+    terminalKill: () => ipcRenderer.send('terminal-kill')
 });
