@@ -185,11 +185,22 @@ type AppState = {
     updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
     resetToGlobal: () => Promise<void>;
 
+    // Quick Commands
+    quickCommands: QuickCommand[];
+    addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => void;
+    removeQuickCommand: (id: string) => void;
+
     // Toast Actions
     toasts: Toast[];
     addToast: (toast: Omit<Toast, 'id'>) => void;
     removeToast: (id: string) => void;
 };
+
+export interface QuickCommand {
+    id: string;
+    label: string;
+    command: string;
+}
 
 const initialCode = '';
 
@@ -223,6 +234,20 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         activeView: 'status'
     },
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
+    quickCommands: JSON.parse(localStorage.getItem('quickCommands') || '[]'),
+
+    addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => {
+        const newCmd = { ...cmd, id: Date.now().toString() };
+        const quickCommands = [...get().quickCommands, newCmd];
+        localStorage.setItem('quickCommands', JSON.stringify(quickCommands));
+        set({ quickCommands });
+    },
+
+    removeQuickCommand: (id: string) => {
+        const quickCommands = get().quickCommands.filter((c: any) => c.id !== id);
+        localStorage.setItem('quickCommands', JSON.stringify(quickCommands));
+        set({ quickCommands });
+    },
 
     setGitView: (view: 'status' | 'terminal') => {
         set((state: any) => ({

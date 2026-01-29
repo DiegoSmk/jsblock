@@ -170,13 +170,34 @@ ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => 
     }
 });
 
+ipcMain.handle('open-system-terminal', async (_event, dirPath: string) => {
+    try {
+        if (process.platform === 'linux') {
+            // Try common terminal emulators
+            exec(`gnome-terminal --working-directory="${dirPath}"`, (err) => {
+                if (err) exec(`konsole --workdir "${dirPath}"`, (err) => {
+                    if (err) exec(`xfce4-terminal --working-directory="${dirPath}"`, (err) => {
+                        if (err) exec(`xterm -e "cd ${dirPath} && bash"`);
+                    });
+                });
+            });
+        } else if (process.platform === 'win32') {
+            exec(`start cmd /K "cd /d ${dirPath}"`);
+        } else if (process.platform === 'darwin') {
+            exec(`open -a Terminal "${dirPath}"`);
+        }
+        return true;
+    } catch (err) {
+        console.error('Error opening system terminal:', err);
+        return false;
+    }
+});
+
 ipcMain.handle('git-command', async (_event, dirPath: string, args: string[]) => {
     try {
-        // Use execFile instead of exec for better argument handling (no shell needed)
         const { stdout, stderr } = await execFileAsync('git', args, { cwd: dirPath });
         return { stdout, stderr };
     } catch (err: any) {
-        // Git often returns error codes for things like "nothing to commit"
         return { stdout: err.stdout || '', stderr: err.stderr || err.message };
     }
 });

@@ -24,5 +24,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('terminal-data', subscription);
     },
     terminalResize: (cols: number, rows: number) => ipcRenderer.send('terminal-resize', { cols, rows }),
-    terminalKill: () => ipcRenderer.send('terminal-kill')
+    terminalKill: () => ipcRenderer.send('terminal-kill'),
+    openSystemTerminal: (path: string) => ipcRenderer.invoke('open-system-terminal', path)
 });
