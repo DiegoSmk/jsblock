@@ -551,7 +551,7 @@ function App() {
 
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <Allotment key={activeSidebarTab}>
-            <Allotment.Pane minSize={150} preferredSize={240} visible={showSidebar}>
+            <Allotment.Pane minSize={150} preferredSize={240} maxSize={450} visible={showSidebar}>
               {activeSidebarTab === 'git' ? (
                 <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff' }}>
                   <CommitHistory
