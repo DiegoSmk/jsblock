@@ -431,10 +431,12 @@ function App() {
               className="app-logo"
               style={{ transform: 'scale(0.8)', cursor: 'pointer', marginLeft: '8px' }}
               onClick={() => {
+                const randomIndex = Math.floor(Math.random() * 5); // Fallback random
                 openModal({
                   title: 'Sobre o JS BLOCK',
                   initialValue: '',
                   type: 'about',
+                  payload: { fallenIndex: randomIndex },
                   confirmLabel: 'Fechar',
                   onSubmit: () => { }
                 });
@@ -451,12 +453,23 @@ function App() {
                       height: '14px',
                       fontSize: '9px',
                       borderRadius: '3px',
-                      background: `var(--block-bg-${i + 1})`,
-                      color: '#000',
-                      fontWeight: 900
+                      background: 'transparent',
+                      color: isDark ? '#fff' : '#000',
+                      fontWeight: 700
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openModal({
+                        title: 'Sobre o JS BLOCK',
+                        initialValue: '',
+                        type: 'about',
+                        payload: { fallenIndex: i },
+                        confirmLabel: 'Fechar',
+                        onSubmit: () => { }
+                      });
                     }}
                   >
-                    {letter}
+                    <span className="logo-letter-visual">{letter}</span>
                   </div>
                 ))}
               </div>

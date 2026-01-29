@@ -112,6 +112,7 @@ type AppState = {
         type: string;
         placeholder?: string;
         confirmLabel?: string;
+        payload?: any;
         onSubmit: (name: string) => void;
     };
     confirmationModal: {
@@ -371,6 +372,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         title: '',
         initialValue: '',
         type: '',
+        payload: null,
         onSubmit: () => { }
     },
 

@@ -138,7 +138,52 @@ export const ModernModal = () => {
                         lineHeight: '1.6',
                         color: isDark ? '#ccc' : '#444'
                     }}>
-                        <p style={{ margin: '0 0 16px 0' }}>
+                        {/* Big Logo Illustration */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            marginBottom: '24px',
+                            gap: '12px',
+                            padding: '20px 0'
+                        }}>
+                            <span className="logo-js" style={{ fontSize: '32px' }}>JS</span>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                {['B', 'L', 'O', 'C', 'K'].map((letter, i) => {
+                                    const isFallen = modal.payload?.fallenIndex === i;
+                                    // Stable "random" rotation based on index if we want it to stay the same for that open
+                                    // but let's just make it look fallen.
+                                    const rotation = isFallen ? (i % 2 === 0 ? -15 : 15) + (i * 2) : 0;
+                                    const translateY = isFallen ? 8 : 0;
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            style={{
+                                                width: '32px',
+                                                height: '32px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                borderRadius: '6px',
+                                                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                                color: isDark ? '#fff' : '#000',
+                                                fontSize: '18px',
+                                                fontWeight: 900,
+                                                border: `1px solid ${isDark ? '#333' : '#eee'}`,
+                                                transform: `rotate(${rotation}deg) translateY(${translateY}px)`,
+                                                transition: 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                zIndex: isFallen ? 10 : 1
+                                            }}
+                                        >
+                                            {letter}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <p style={{ margin: '0 0 16px 0', textAlign: 'center' }}>
                             <strong>JS BLOCK</strong> é uma IDE baseada em fluxo para engenharia de código JavaScript e Node.js.
                         </p>
                         <p style={{ margin: 0 }}>
