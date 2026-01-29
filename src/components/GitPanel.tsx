@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ScrollArea } from './ui/ScrollArea';
 import { useStore } from '../store/useStore';
 import { RefreshCw, Briefcase, User, Sparkles, Smile, GitBranch, Settings, Check, Globe } from 'lucide-react';
 
@@ -425,7 +426,12 @@ export const GitPanel: React.FC = () => {
                 stagedCount={staged.length}
             />
 
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <ScrollArea
+                style={{ flex: 1 }}
+                autoHide
+                thumbColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+                thumbHoverColor={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+            >
                 <GitStatusGroups
                     isDark={isDark}
                     staged={staged}
@@ -444,7 +450,7 @@ export const GitPanel: React.FC = () => {
                     isOpen={showHistory}
                     onToggle={() => setShowHistory(!showHistory)}
                 />
-            </div>
+            </ScrollArea>
 
             <AuthorModal
                 isDark={isDark}
