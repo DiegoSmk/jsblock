@@ -10,8 +10,10 @@ import {
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
-import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Edit2, Trash2, Box } from 'lucide-react';
+import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Layers, Terminal } from 'lucide-react';
 import { GitPanel } from './components/GitPanel';
+import { CommitHistory } from './components/git/CommitHistory';
+import { ContextRibbon } from './components/ui/ContextRibbon';
 import { useTranslation } from 'react-i18next';
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
@@ -295,7 +297,7 @@ function App() {
     showCode, showCanvas, showSidebar, activeSidebarTab, toggleSidebar, setSidebarTab,
     saveFile, setOpenedFolder, setSelectedFile,
     selectedFile, openedFolder, isBlockFile,
-    confirmationModal, isDirty
+    confirmationModal, isDirty, git
   } = useStore();
 
   const isDark = theme === 'dark';
@@ -338,6 +340,18 @@ function App() {
     }}>
       <SideRibbon />
 
+      {/* Context Ribbon (Module Level Navigation) */}
+      {activeSidebarTab === 'git' && (
+        <ContextRibbon
+          activeId={useStore.getState().git.activeView}
+          onSelect={(id) => useStore.getState().setGitView(id as 'status' | 'terminal')}
+          items={[
+            { id: 'status', icon: Layers, label: 'Status & Changes' },
+            { id: 'terminal', icon: Terminal, label: 'Terminal Integrado' }
+          ]}
+        />
+      )}
+
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <ModernModal />
         <header style={{
@@ -353,29 +367,31 @@ function App() {
           WebkitAppRegion: 'drag'
         } as any}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', WebkitAppRegion: 'no-drag' } as any}>
-            <button
-              onClick={toggleSidebar}
-              title={showSidebar ? t('app.hide_explorer') : t('app.show_explorer')}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: showSidebar ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
-                padding: '4px',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <PanelLeft size={20} strokeWidth={2} />
-            </button>
+            {['explorer', 'library', 'git'].includes(activeSidebarTab) && (
+              <button
+                onClick={toggleSidebar}
+                title={showSidebar ? t('app.hide_explorer') : t('app.show_explorer')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: showSidebar ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
+                  padding: '4px',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <PanelLeft size={20} strokeWidth={2} />
+              </button>
+            )}
 
-            {showSidebar && (
+            {showSidebar && (activeSidebarTab === 'explorer' || activeSidebarTab === 'library') && (
               <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
                 <button
                   onClick={() => setSidebarTab('explorer')}
-                  title={t('app.file_explorer')}
+                  title="Explorador de Arquivos"
                   style={{
                     background: activeSidebarTab === 'explorer' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
                     border: 'none',
@@ -391,7 +407,7 @@ function App() {
                 </button>
                 <button
                   onClick={() => openedFolder && setSidebarTab('library')}
-                  title={!openedFolder ? "Abra uma pasta para acessar a biblioteca" : t('app.function_library')}
+                  title="Biblioteca de Funções"
                   disabled={!openedFolder}
                   style={{
                     background: activeSidebarTab === 'library' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
@@ -534,23 +550,33 @@ function App() {
         </header>
 
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          {activeSidebarTab === 'git' ? (
-            <GitPanel />
-          ) : (
-            <Allotment>
-              <Allotment.Pane minSize={150} preferredSize={240} visible={showSidebar}>
-                {(!openedFolder || activeSidebarTab === 'explorer') ? (
-                  <FileExplorer />
-                ) : (
-                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <ReactFlowProvider>
-                      <FunctionLibrary />
-                    </ReactFlowProvider>
-                  </div>
-                )}
-              </Allotment.Pane>
+          <Allotment>
+            <Allotment.Pane minSize={150} preferredSize={240} visible={showSidebar}>
+              {activeSidebarTab === 'git' ? (
+                <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff' }}>
+                  <CommitHistory
+                    isDark={isDark}
+                    logs={git.log}
+                    isOpen={true}
+                    onToggle={() => { }}
+                    hideToggle={true}
+                  />
+                </div>
+              ) : (!openedFolder || activeSidebarTab === 'explorer') ? (
+                <FileExplorer />
+              ) : (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <ReactFlowProvider>
+                    <FunctionLibrary />
+                  </ReactFlowProvider>
+                </div>
+              )}
+            </Allotment.Pane>
 
-              <Allotment.Pane minSize={200} preferredSize={350} visible={!isBlockFile && showCode}>
+            <Allotment.Pane minSize={200} preferredSize={activeSidebarTab === 'git' ? 800 : 350} visible={activeSidebarTab === 'git' || (!isBlockFile && showCode)}>
+              {activeSidebarTab === 'git' ? (
+                <GitPanel />
+              ) : (
                 <div
                   style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
                   onKeyDown={(e) => e.stopPropagation()}
@@ -587,29 +613,29 @@ function App() {
                     />
                   )}
                 </div>
-              </Allotment.Pane>
+              )}
+            </Allotment.Pane>
 
-              <Allotment.Pane minSize={400} visible={isBlockFile || showCanvas}>
-                <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
-                    <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
-                      <ScopeBreadcrumbs />
-                    </div>
+            <Allotment.Pane minSize={400} visible={activeSidebarTab !== 'git' && (isBlockFile || showCanvas)}>
+              <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
+                  <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
+                    <ScopeBreadcrumbs />
                   </div>
-                  {!selectedFile ? (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                      <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
-                      <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
-                    </div>
-                  ) : (
-                    <ReactFlowProvider>
-                      <FlowContent />
-                    </ReactFlowProvider>
-                  )}
                 </div>
-              </Allotment.Pane>
-            </Allotment>
-          )}
+                {!selectedFile ? (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                    <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
+                    <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
+                  </div>
+                ) : (
+                  <ReactFlowProvider>
+                    <FlowContent />
+                  </ReactFlowProvider>
+                )}
+              </div>
+            </Allotment.Pane>
+          </Allotment>
         </div>
       </div>
       {confirmationModal && (

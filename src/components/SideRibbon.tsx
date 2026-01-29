@@ -1,14 +1,14 @@
 import React from 'react';
-import { Files, Search, Settings, Sun, Moon, GitBranch } from 'lucide-react';
+import { Search, Settings, Sun, Moon, GitBranch, Box } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export const SideRibbon: React.FC = () => {
     const {
         theme, toggleTheme,
-        showSidebar,
         activeSidebarTab, setSidebarTab,
         autoSave, toggleAutoSave,
-        openedFolder
+        openedFolder,
+        git
     } = useStore();
 
     const isDark = theme === 'dark';
@@ -55,6 +55,69 @@ export const SideRibbon: React.FC = () => {
         </button>
     );
 
+    // Dynamic Middle Slot Content
+    const renderMiddleSlot = () => {
+        if (activeSidebarTab === 'git' && git.isRepo) {
+            // Git History Mini Graph
+            return (
+                <div style={{
+                    flex: 1,
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    paddingTop: '16px',
+                    gap: '6px',
+                    overflow: 'hidden'
+                }}>
+                    {/* Visual Connector Line */}
+                    <div style={{
+                        width: '2px',
+                        flex: 1,
+                        background: isDark ? '#2d2d2d' : '#e0e0e0',
+                        position: 'absolute',
+                        top: '160px',
+                        bottom: '140px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 0
+                    }} />
+
+                    {git.log.slice(0, 10).map((commit, i) => (
+                        <div
+                            key={commit.hash}
+                            title={`${commit.message} (${commit.author})`}
+                            style={{
+                                width: '10px',
+                                height: '10px',
+                                borderRadius: '50%',
+                                background: i === 0
+                                    ? (isDark ? '#4fc3f7' : '#0070f3') // HEAD
+                                    : (isDark ? '#444' : '#ccc'),
+                                border: `2px solid ${isDark ? '#1a1a1a' : '#e3e5e8'}`,
+                                zIndex: 1,
+                                cursor: 'help', // Just a hint involved
+                                flexShrink: 0
+                            }}
+                        />
+                    ))}
+                    {git.log.length > 10 && (
+                        <div style={{
+                            width: '4px',
+                            height: '4px',
+                            borderRadius: '50%',
+                            background: isDark ? '#333' : '#ccc',
+                            marginTop: '2px'
+                        }} />
+                    )}
+                </div>
+            );
+        }
+
+        // Default: spacer
+        return <div style={{ flex: 1 }} />;
+    };
+
     return (
         <div style={{
             width: '40px',
@@ -65,13 +128,14 @@ export const SideRibbon: React.FC = () => {
             alignItems: 'center',
             padding: '8px 0',
             borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,
-            zIndex: 20
+            zIndex: 20,
+            position: 'relative' // For absolute positioning inside
         }}>
             <RibbonButton
-                icon={Files}
-                active={showSidebar && activeSidebarTab === 'explorer'}
+                icon={Box}
+                active={activeSidebarTab === 'explorer' || activeSidebarTab === 'library'}
                 onClick={() => setSidebarTab('explorer')}
-                title="Explorador de Arquivos"
+                title="Ambiente de Blueprints"
             />
             <RibbonButton
                 icon={Search}
@@ -80,14 +144,13 @@ export const SideRibbon: React.FC = () => {
             />
             <RibbonButton
                 icon={GitBranch}
-                active={showSidebar && activeSidebarTab === 'git'}
+                active={activeSidebarTab === 'git'}
                 onClick={() => setSidebarTab('git')}
                 title="Git (Controle de Versão)"
                 disabled={!openedFolder}
             />
 
-
-            <div style={{ flex: 1 }} />
+            {renderMiddleSlot()}
 
             <div style={{
                 display: 'flex',
@@ -97,7 +160,8 @@ export const SideRibbon: React.FC = () => {
                 paddingBottom: '12px',
                 borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,
                 marginBottom: '8px',
-                width: '100%'
+                width: '100%',
+                zIndex: 2 // Above the line
             }}>
                 <button
                     onClick={toggleAutoSave}

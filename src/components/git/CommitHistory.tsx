@@ -6,19 +6,37 @@ interface GitHistoryProps {
     logs: any[];
     isOpen: boolean;
     onToggle: () => void;
+    hideToggle?: boolean;
 }
 
 export const CommitHistory: React.FC<GitHistoryProps> = ({
-    isDark, logs, isOpen, onToggle
+    isDark, logs, isOpen, onToggle, hideToggle = false
 }) => (
     <>
-        <SectionHeader
-            title="Histórico de Commits"
-            count={logs.length}
-            isOpen={isOpen}
-            onToggle={onToggle}
-            isDark={isDark}
-        />
+        {!hideToggle ? (
+            <SectionHeader
+                title="Histórico de Commits"
+                count={logs.length}
+                isOpen={isOpen}
+                onToggle={onToggle}
+                isDark={isDark}
+            />
+        ) : (
+            <div style={{
+                padding: '12px 16px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: isDark ? '#888' : '#666',
+                borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
+                background: isDark ? '#1a1a1a' : '#fafafa',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <span>HISTÓRICO</span>
+                <span style={{ fontSize: '0.65rem', opacity: 0.5 }}>{logs.length}</span>
+            </div>
+        )}
         {isOpen && (
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '0' }}>
                 {logs.length === 0 ? (

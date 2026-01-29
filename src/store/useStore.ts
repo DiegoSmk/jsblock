@@ -165,8 +165,10 @@ type AppState = {
         rawLog: string;
         globalAuthor: GitAuthor | null;
         projectAuthor: GitAuthor | null;
+        activeView: 'status' | 'terminal';
     };
     gitProfiles: GitProfile[];
+    setGitView: (view: 'status' | 'terminal') => void;
     refreshGit: () => Promise<void>;
     fetchGitConfig: () => Promise<void>;
     gitStage: (path: string) => Promise<void>;
@@ -217,9 +219,17 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         log: [],
         rawLog: '',
         globalAuthor: null,
-        projectAuthor: null
+        projectAuthor: null,
+        activeView: 'status'
     },
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
+
+    setGitView: (view: 'status' | 'terminal') => {
+        set((state: any) => ({
+            git: { ...state.git, activeView: view }
+        }));
+    },
+
     selectedFile: null,
     autoSave: localStorage.getItem('autoSave') === 'true',
     isDirty: false,
