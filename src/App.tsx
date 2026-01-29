@@ -433,7 +433,7 @@ function App() {
               onClick={() => {
                 const randomIndex = Math.floor(Math.random() * 5); // Fallback random
                 openModal({
-                  title: 'Sobre o JS BLOCK',
+                  title: 'SOBRE',
                   initialValue: '',
                   type: 'about',
                   payload: { fallenIndex: randomIndex },
@@ -460,7 +460,7 @@ function App() {
                     onClick={(e) => {
                       e.stopPropagation();
                       openModal({
-                        title: 'Sobre o JS BLOCK',
+                        title: 'SOBRE',
                         initialValue: '',
                         type: 'about',
                         payload: { fallenIndex: i },

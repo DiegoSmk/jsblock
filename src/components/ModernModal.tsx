@@ -143,16 +143,14 @@ export const ModernModal = () => {
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            marginBottom: '24px',
+                            marginBottom: '32px',
                             gap: '12px',
-                            padding: '20px 0'
+                            padding: '24px 0 16px'
                         }}>
-                            <span className="logo-js" style={{ fontSize: '32px' }}>JS</span>
+                            <span className="logo-js" style={{ fontSize: '36px' }}>JS</span>
                             <div style={{ display: 'flex', gap: '6px' }}>
                                 {['B', 'L', 'O', 'C', 'K'].map((letter, i) => {
                                     const isFallen = modal.payload?.fallenIndex === i;
-                                    // Stable "random" rotation based on index if we want it to stay the same for that open
-                                    // but let's just make it look fallen.
                                     const rotation = isFallen ? (i % 2 === 0 ? -15 : 15) + (i * 2) : 0;
                                     const translateY = isFallen ? 8 : 0;
 
@@ -160,15 +158,15 @@ export const ModernModal = () => {
                                         <div
                                             key={i}
                                             style={{
-                                                width: '32px',
-                                                height: '32px',
+                                                width: '36px',
+                                                height: '36px',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                borderRadius: '6px',
+                                                borderRadius: '8px',
                                                 background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                                                 color: isDark ? '#fff' : '#000',
-                                                fontSize: '18px',
+                                                fontSize: '20px',
                                                 fontWeight: 900,
                                                 border: `1px solid ${isDark ? '#333' : '#eee'}`,
                                                 transform: `rotate(${rotation}deg) translateY(${translateY}px)`,
@@ -183,23 +181,79 @@ export const ModernModal = () => {
                             </div>
                         </div>
 
-                        <p style={{ margin: '0 0 16px 0', textAlign: 'center' }}>
-                            <strong>JS BLOCK</strong> é uma IDE baseada em fluxo para engenharia de código JavaScript e Node.js.
-                        </p>
-                        <p style={{ margin: 0 }}>
-                            Desenvolva lógicas complexas visualmente através de Blueprints e gere código limpo e performático instantaneamente.
-                        </p>
+                        {/* Main Description */}
                         <div style={{
-                            marginTop: '24px',
-                            padding: '12px',
-                            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                            borderRadius: '8px',
-                            fontSize: '0.8rem',
-                            color: isDark ? '#666' : '#999',
                             textAlign: 'center',
-                            border: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`
+                            marginBottom: '24px',
+                            padding: '0 8px'
                         }}>
-                            Versão {pkg.version} • 2026
+                            <h3 style={{
+                                margin: '0 0 12px 0',
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                color: isDark ? '#fff' : '#1a1a1a',
+                                letterSpacing: '-0.01em'
+                            }}>
+                                JS BLOCK
+                            </h3>
+                            <p style={{
+                                margin: '0 0 12px 0',
+                                fontSize: '0.9rem',
+                                lineHeight: '1.6',
+                                color: isDark ? '#aaa' : '#666'
+                            }}>
+                                IDE baseada em fluxo para engenharia de código JavaScript e Node.js.
+                            </p>
+                            <p style={{
+                                margin: 0,
+                                fontSize: '0.85rem',
+                                lineHeight: '1.5',
+                                color: isDark ? '#888' : '#777',
+                                fontStyle: 'italic'
+                            }}>
+                                Desenvolva lógicas complexas visualmente através de Blueprints e gere código limpo e performático instantaneamente.
+                            </p>
+                        </div>
+
+                        {/* Version Info */}
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            marginTop: '24px',
+                            padding: '16px',
+                            background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: '8px',
+                            border: `1px solid ${isDark ? '#2d2d2d' : '#e5e5e5'}`
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                fontSize: '0.75rem',
+                                color: isDark ? '#666' : '#999',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                fontWeight: 600
+                            }}>
+                                <span>Versão</span>
+                                <span style={{
+                                    color: isDark ? '#4fc3f7' : '#0070f3',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.8rem'
+                                }}>
+                                    {pkg.version}
+                                </span>
+                            </div>
+                            <div style={{
+                                fontSize: '0.7rem',
+                                color: isDark ? '#555' : '#aaa',
+                                textAlign: 'center',
+                                paddingTop: '8px',
+                                borderTop: `1px solid ${isDark ? '#2a2a2a' : '#efefef'}`
+                            }}>
+                                © 2026 • Todos os direitos reservados
+                            </div>
                         </div>
                     </div>
                 ) : (
