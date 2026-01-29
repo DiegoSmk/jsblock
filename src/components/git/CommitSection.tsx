@@ -1,18 +1,15 @@
 import React from 'react';
-import { Settings } from 'lucide-react';
 
 interface CommitSectionProps {
     isDark: boolean;
     commitMessage: string;
     setCommitMessage: (msg: string) => void;
-    currentAuthor: { name: string; email: string } | null;
-    setShowAuthorModal: (show: boolean) => void;
     onCommit: () => void;
     stagedCount: number;
 }
 
 export const CommitSection: React.FC<CommitSectionProps> = ({
-    isDark, commitMessage, setCommitMessage, currentAuthor, setShowAuthorModal, onCommit, stagedCount
+    isDark, commitMessage, setCommitMessage, onCommit, stagedCount
 }) => {
     return (
         <div style={{ padding: '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#e5e7eb'}` }}>
@@ -38,20 +35,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
             </div>
 
             <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div
-                    onClick={() => setShowAuthorModal(true)}
-                    style={{
-                        fontSize: '0.7rem',
-                        color: isDark ? '#666' : '#999',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer'
-                    }}
-                >
-                    <Settings size={12} />
-                    {currentAuthor ? `${currentAuthor.name} <${currentAuthor.email}>` : 'Configurar Autor'}
-                </div>
+                <div />
                 <button
                     onClick={onCommit}
                     disabled={!commitMessage || stagedCount === 0}

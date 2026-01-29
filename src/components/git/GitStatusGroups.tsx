@@ -68,7 +68,8 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                         <button
                             onClick={() => gitUnstage(file.path)}
                             title="Remover do Stage"
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#f87171', padding: '4px' }}
+                            className="git-file-action-button discard"
+                            style={{ color: '#f87171' }}
                         >
                             <Minus size={14} />
                         </button>
@@ -152,14 +153,16 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                             <button
                                 onClick={() => gitDiscard(file.path)}
                                 title="Descartar Alterações"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#f87171', padding: '4px' }}
+                                className="git-file-action-button discard"
+                                style={{ color: '#f87171' }}
                             >
                                 <RotateCcw size={14} />
                             </button>
                             <button
                                 onClick={() => gitStage(file.path)}
                                 title="Preparar Alteração (Stage)"
-                                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#4ade80', padding: '4px' }}
+                                className="git-file-action-button stage"
+                                style={{ color: '#4ade80' }}
                             >
                                 <Plus size={14} />
                             </button>

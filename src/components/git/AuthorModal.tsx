@@ -1,4 +1,5 @@
 import React from 'react';
+import { Settings, X, Plus, Trash2, ArrowLeft, Briefcase, User, Sparkles, Smile, Tag } from 'lucide-react';
 
 interface Author {
     name: string;
@@ -25,6 +26,12 @@ interface AuthorModalProps {
     onSave: () => void;
     getTagColor: (tag: string) => string;
     getTagIcon: (tag: string) => React.ReactNode;
+    showProfileManager: boolean;
+    setShowProfileManager: (show: boolean) => void;
+    handleAddProfile: () => void;
+    removeGitProfile: (id: string) => void;
+    newProfile: { name: string; email: string; tag: 'work' | 'personal' | 'ai' | 'custom'; customTagName: string };
+    setNewProfile: (profile: any) => void;
 }
 
 export const AuthorModal: React.FC<AuthorModalProps> = ({
@@ -32,7 +39,10 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
     authorConfigBuffer, setAuthorConfigBuffer,
     isEditingAuthor, setIsEditingAuthor,
     gitProfiles, globalAuthor,
-    onSave, getTagColor, getTagIcon
+    onSave, getTagColor, getTagIcon,
+    showProfileManager, setShowProfileManager,
+    handleAddProfile, removeGitProfile,
+    newProfile, setNewProfile
 }) => {
     if (!isOpen) return null;
 
@@ -44,12 +54,13 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(0, 0, 0, 0.5)',
+                background: 'rgba(0, 0, 0, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 zIndex: 10000,
-                padding: '16px'
+                padding: '16px',
+                backdropFilter: 'blur(4px)'
             }}
             onClick={onClose}
         >
@@ -57,257 +68,369 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 style={{
                     background: isDark ? '#1a1a1a' : '#fff',
-                    borderRadius: '10px',
+                    borderRadius: '12px',
                     width: '100%',
-                    maxWidth: '420px',
+                    maxWidth: '400px',
                     border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)'
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxHeight: '85vh',
+                    overflow: 'hidden'
                 }}
             >
                 {/* Header */}
-                <div style={{ padding: '16px 16px 12px 16px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>
-                        Configurar Autor
+                <div style={{ padding: '16px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {showProfileManager && (
+                        <button
+                            onClick={() => setShowProfileManager(false)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: isDark ? '#888' : '#666',
+                                padding: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderRadius: '6px',
+                                transition: 'background 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#2a2a2a' : '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                            <ArrowLeft size={18} />
+                        </button>
+                    )}
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, flex: 1, color: isDark ? '#fff' : '#1a1a1a' }}>
+                        {showProfileManager ? 'Gerenciar Perfis' : 'Configurar Autor'}
                     </h3>
+                    {!showProfileManager && (
+                        <button
+                            onClick={onClose}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: isDark ? '#666' : '#999',
+                                padding: '4px',
+                                borderRadius: '6px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#2a2a2a' : '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                        >
+                            <X size={20} />
+                        </button>
+                    )}
                 </div>
 
                 {/* Content */}
-                <div style={{ padding: '14px 16px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {/* Scope Selection */}
-                        <div>
-                            <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                                Escopo
-                            </div>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                                <label style={{
-                                    flex: 1,
-                                    padding: '8px 6px',
-                                    borderRadius: '6px',
-                                    background: !authorConfigBuffer.isGlobal
-                                        ? (isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.08)')
-                                        : 'transparent',
-                                    border: `1px solid ${!authorConfigBuffer.isGlobal
-                                        ? (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')
-                                        : (isDark ? '#333' : '#e5e7eb')}`,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    fontSize: '0.8rem'
-                                }}>
-                                    <input
-                                        type="radio"
-                                        checked={!authorConfigBuffer.isGlobal}
-                                        onChange={() => {
-                                            setAuthorConfigBuffer({ name: '', email: '', isGlobal: false });
-                                            setIsEditingAuthor(false);
-                                        }}
-                                    />
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>Local</div>
-                                        <div style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999' }}>Este projeto</div>
-                                    </div>
-                                </label>
-                                <label style={{
-                                    flex: 1,
-                                    padding: '8px 6px',
-                                    borderRadius: '6px',
-                                    background: authorConfigBuffer.isGlobal
-                                        ? (isDark ? 'rgba(74, 222, 128, 0.1)' : 'rgba(16, 185, 129, 0.08)')
-                                        : 'transparent',
-                                    border: `1px solid ${authorConfigBuffer.isGlobal
-                                        ? 'rgba(74, 222, 128, 0.3)'
-                                        : (isDark ? '#333' : '#e5e7eb')}`,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    fontSize: '0.8rem'
-                                }}>
-                                    <input
-                                        type="radio"
-                                        checked={authorConfigBuffer.isGlobal}
-                                        onChange={() => {
-                                            const hasGlobal = globalAuthor?.name && globalAuthor?.email;
-                                            setAuthorConfigBuffer({
-                                                name: hasGlobal && globalAuthor ? globalAuthor.name : '',
-                                                email: hasGlobal && globalAuthor ? globalAuthor.email : '',
-                                                isGlobal: true
-                                            });
-                                            setIsEditingAuthor(!hasGlobal);
-                                        }}
-                                    />
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>Global</div>
-                                        <div style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999' }}>Todos projetos</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Global Author Display */}
-                        {authorConfigBuffer.isGlobal && !isEditingAuthor && globalAuthor?.name && (
+                <div style={{ padding: '20px', overflowY: 'auto', overflowX: 'hidden' }}>
+                    {showProfileManager ? (
+                        /* Profile Manager View */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             <div style={{
-                                padding: '10px',
-                                background: isDark ? 'rgba(74, 222, 128, 0.05)' : 'rgba(16, 185, 129, 0.05)',
-                                border: `1px solid ${isDark ? 'rgba(74, 222, 128, 0.2)' : 'rgba(16, 185, 129, 0.15)'}`,
-                                borderRadius: '6px'
+                                padding: '16px',
+                                background: isDark ? 'rgba(255,255,255,0.02)' : '#f9fafb',
+                                borderRadius: '10px',
+                                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`
                             }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                                        Atual
-                                    </div>
-                                    <button
-                                        onClick={() => setIsEditingAuthor(true)}
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: '12px', color: isDark ? '#666' : '#999', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Novo Perfil
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <input
+                                        placeholder="Nome do Perfil"
+                                        value={newProfile.name}
+                                        onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
                                         style={{
-                                            padding: '3px 8px',
-                                            background: 'transparent',
-                                            border: `1px solid ${isDark ? '#444' : '#d1d1d1'}`,
-                                            borderRadius: '4px',
-                                            color: '#10b981',
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            borderRadius: '8px',
+                                            border: `1px solid ${isDark ? '#444' : '#d1d5db'}`,
+                                            background: isDark ? '#000' : '#fff',
+                                            color: isDark ? '#fff' : '#000',
+                                            fontSize: '0.9rem',
+                                            outline: 'none',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                    <input
+                                        placeholder="Email"
+                                        value={newProfile.email}
+                                        onChange={(e) => setNewProfile({ ...newProfile, email: e.target.value })}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px 12px',
+                                            borderRadius: '8px',
+                                            border: `1px solid ${isDark ? '#444' : '#d1d5db'}`,
+                                            background: isDark ? '#000' : '#fff',
+                                            color: isDark ? '#fff' : '#000',
+                                            fontSize: '0.9rem',
+                                            outline: 'none',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+
+                                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                        {(['personal', 'work', 'ai', 'custom'] as const).map(tag => (
+                                            <button
+                                                key={tag}
+                                                onClick={() => setNewProfile({ ...newProfile, tag })}
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '8px',
+                                                    borderRadius: '6px',
+                                                    border: `1px solid ${newProfile.tag === tag ? getTagColor(tag) : (isDark ? '#333' : '#e5e7eb')}`,
+                                                    background: newProfile.tag === tag ? `${getTagColor(tag)}20` : 'transparent',
+                                                    color: newProfile.tag === tag ? getTagColor(tag) : (isDark ? '#666' : '#999'),
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    transition: 'all 0.2s',
+                                                    gap: '4px',
+                                                    fontSize: '0.7rem'
+                                                }}
+                                                title={tag === 'custom' ? 'Personalizado' : tag}
+                                            >
+                                                {getTagIcon(tag)}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {newProfile.tag === 'custom' && (
+                                        <input
+                                            placeholder="Nome da Flag (Ex: Freelance)"
+                                            value={newProfile.customTagName}
+                                            onChange={(e) => setNewProfile({ ...newProfile, customTagName: e.target.value })}
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px 12px',
+                                                borderRadius: '8px',
+                                                border: `1px solid ${isDark ? '#444' : '#d1d5db'}`,
+                                                background: isDark ? '#000' : '#fff',
+                                                color: isDark ? '#fff' : '#000',
+                                                fontSize: '0.9rem',
+                                                outline: 'none',
+                                                boxSizing: 'border-box',
+                                                marginTop: '4px'
+                                            }}
+                                        />
+                                    )}
+
+                                    <button
+                                        onClick={handleAddProfile}
+                                        disabled={!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)}
+                                        style={{
+                                            marginTop: '8px',
+                                            padding: '10px',
+                                            background: (!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)) ? (isDark ? '#222' : '#eee') : (isDark ? '#4fc3f7' : '#0070f3'),
+                                            color: (!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)) ? (isDark ? '#444' : '#999') : '#fff',
+                                            border: 'none',
+                                            borderRadius: '8px',
                                             cursor: 'pointer',
-                                            fontSize: '0.65rem',
-                                            fontWeight: 600
+                                            fontSize: '0.9rem',
+                                            fontWeight: 700,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '8px',
+                                            transition: 'opacity 0.2s'
                                         }}
                                     >
-                                        Alterar
+                                        <Plus size={18} /> Criar Perfil
                                     </button>
                                 </div>
-                                <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{globalAuthor.name}</div>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999' }}>{globalAuthor.email}</div>
                             </div>
-                        )}
 
-                        {/* Saved Profiles */}
-                        {!authorConfigBuffer.isGlobal && gitProfiles.length > 0 && (
-                            <div>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', marginBottom: '6px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
-                                    Perfis Salvos
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
+                                    Perfis Existentes
                                 </div>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {gitProfiles.map(profile => (
-                                        <div
-                                            key={profile.id}
-                                            onClick={() => setAuthorConfigBuffer({ name: profile.name, email: profile.email, isGlobal: false })}
-                                            style={{
-                                                padding: '5px 8px',
-                                                background: (authorConfigBuffer.name === profile.name && authorConfigBuffer.email === profile.email)
-                                                    ? (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)')
-                                                    : (isDark ? '#2d2d2d' : '#f5f5f5'),
-                                                border: `1px solid ${(authorConfigBuffer.name === profile.name && authorConfigBuffer.email === profile.email)
-                                                    ? (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')
-                                                    : (isDark ? '#444' : '#e5e7eb')}`,
-                                                borderRadius: '5px',
-                                                cursor: 'pointer',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '5px',
-                                                fontSize: '0.7rem'
-                                            }}
-                                        >
-                                            <span style={{ color: getTagColor(profile.tag), fontSize: '0.85rem' }}>
-                                                {getTagIcon(profile.tag)}
-                                            </span>
-                                            <span style={{ fontWeight: 600 }}>{profile.name}</span>
+                                {gitProfiles.map(p => (
+                                    <div key={p.id} style={{
+                                        padding: '12px',
+                                        background: isDark ? '#222' : '#fff',
+                                        borderRadius: '10px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        border: `1px solid ${isDark ? '#333' : '#f3f4f6'}`,
+                                        width: '100%',
+                                        boxSizing: 'border-box'
+                                    }}>
+                                        <div style={{
+                                            width: '36px',
+                                            height: '36px',
+                                            borderRadius: '50%',
+                                            background: isDark ? '#333' : '#f3f4f6',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: getTagColor(p.tag),
+                                            flexShrink: 0
+                                        }}>
+                                            {getTagIcon(p.tag)}
                                         </div>
-                                    ))}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: isDark ? '#fff' : '#1a1a1a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.email}</div>
+                                        </div>
+                                        <button
+                                            onClick={() => removeGitProfile(p.id)}
+                                            style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                color: '#f87171',
+                                                padding: '8px',
+                                                borderRadius: '8px'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(248, 113, 113, 0.1)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {gitProfiles.length === 0 && (
+                                    <div style={{ textAlign: 'center', padding: '20px', color: isDark ? '#444' : '#ccc', fontSize: '0.85rem' }}>
+                                        Nenhum perfil cadastrado.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        /* Configuration View */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* Scope Selection */}
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 700, textTransform: 'uppercase' }}>
+                                    Escopo de Configuração
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <label style={{
+                                        flex: 1, padding: '12px', borderRadius: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px',
+                                        background: !authorConfigBuffer.isGlobal ? (isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.05)') : 'transparent',
+                                        border: `2px solid ${!authorConfigBuffer.isGlobal ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#333' : '#e5e7eb')}`,
+                                        transition: 'all 0.2s'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input type="radio" checked={!authorConfigBuffer.isGlobal} onChange={() => setAuthorConfigBuffer({ ...authorConfigBuffer, isGlobal: false })} />
+                                            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Local</span>
+                                        </div>
+                                        <span style={{ fontSize: '0.7rem', color: isDark ? '#555' : '#999', marginLeft: '24px' }}>Apenas este projeto</span>
+                                    </label>
+                                    <label style={{
+                                        flex: 1, padding: '12px', borderRadius: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px',
+                                        background: authorConfigBuffer.isGlobal ? (isDark ? 'rgba(74, 222, 128, 0.1)' : 'rgba(16, 185, 129, 0.05)') : 'transparent',
+                                        border: `2px solid ${authorConfigBuffer.isGlobal ? (isDark ? '#4ade80' : '#10b981') : (isDark ? '#333' : '#e5e7eb')}`,
+                                        transition: 'all 0.2s'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input type="radio" checked={authorConfigBuffer.isGlobal} onChange={() => setAuthorConfigBuffer({ ...authorConfigBuffer, isGlobal: true })} />
+                                            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Global</span>
+                                        </div>
+                                        <span style={{ fontSize: '0.7rem', color: isDark ? '#555' : '#999', marginLeft: '24px' }}>Todos os projetos</span>
+                                    </label>
                                 </div>
                             </div>
-                        )}
 
-                        {/* Inputs */}
-                        {(!authorConfigBuffer.isGlobal || isEditingAuthor) && (
-                            <>
+                            {/* Saved Profiles List */}
+                            {!authorConfigBuffer.isGlobal && gitProfiles.length > 0 && (
                                 <div>
-                                    <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
-                                        Nome
-                                    </label>
+                                    <div style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 700, textTransform: 'uppercase' }}>
+                                        Perfis Rápidos
+                                    </div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {gitProfiles.map(profile => {
+                                            const isSelected = authorConfigBuffer.name === profile.name && authorConfigBuffer.email === profile.email;
+                                            return (
+                                                <div
+                                                    key={profile.id}
+                                                    onClick={() => setAuthorConfigBuffer({ ...authorConfigBuffer, name: profile.name, email: profile.email })}
+                                                    style={{
+                                                        padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px',
+                                                        background: isSelected ? (isDark ? '#2d2d2d' : '#f3f4f6') : (isDark ? '#222' : '#fff'),
+                                                        border: `1px solid ${isSelected ? getTagColor(profile.tag) : (isDark ? '#333' : '#e5e7eb')}`,
+                                                        color: isSelected ? getTagColor(profile.tag) : (isDark ? '#888' : '#666'),
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <span style={{ opacity: isSelected ? 1 : 0.6 }}>{getTagIcon(profile.tag)}</span>
+                                                    {profile.name}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Manual Inputs */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div>
+                                    <label style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 600 }}>NOME</label>
                                     <input
-                                        type="text"
-                                        placeholder="Seu nome"
-                                        value={authorConfigBuffer.name}
+                                        type="text" value={authorConfigBuffer.name}
                                         onChange={(e) => setAuthorConfigBuffer({ ...authorConfigBuffer, name: e.target.value })}
-                                        style={{
-                                            width: '100%',
-                                            padding: '8px 10px',
-                                            borderRadius: '6px',
-                                            border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                                            background: isDark ? '#2d2d2d' : '#fff',
-                                            color: isDark ? '#fff' : '#000',
-                                            fontSize: '0.85rem',
-                                            outline: 'none',
-                                            boxSizing: 'border-box'
-                                        }}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${isDark ? '#333' : '#d1d5db'}`, background: isDark ? '#262626' : '#fff', color: isDark ? '#fff' : '#000', fontSize: '0.9rem', boxSizing: 'border-box' }}
                                     />
                                 </div>
-
                                 <div>
-                                    <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '5px', fontWeight: 600 }}>
-                                        Email
-                                    </label>
+                                    <label style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 600 }}>EMAIL</label>
                                     <input
-                                        type="email"
-                                        placeholder="seu@email.com"
-                                        value={authorConfigBuffer.email}
+                                        type="email" value={authorConfigBuffer.email}
                                         onChange={(e) => setAuthorConfigBuffer({ ...authorConfigBuffer, email: e.target.value })}
-                                        style={{
-                                            width: '100%',
-                                            padding: '8px 10px',
-                                            borderRadius: '6px',
-                                            border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                                            background: isDark ? '#2d2d2d' : '#fff',
-                                            color: isDark ? '#fff' : '#000',
-                                            fontSize: '0.85rem',
-                                            outline: 'none',
-                                            boxSizing: 'border-box'
-                                        }}
+                                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${isDark ? '#333' : '#d1d5db'}`, background: isDark ? '#262626' : '#fff', color: isDark ? '#fff' : '#000', fontSize: '0.9rem', boxSizing: 'border-box' }}
                                     />
                                 </div>
-                            </>
-                        )}
-                    </div>
+                            </div>
+
+                            {/* Manage Button */}
+                            {!authorConfigBuffer.isGlobal && (
+                                <button
+                                    onClick={() => setShowProfileManager(true)}
+                                    style={{
+                                        marginTop: '4px', width: '100%', padding: '12px', background: 'transparent', color: isDark ? '#888' : '#666', border: `1px dashed ${isDark ? '#444' : '#d1d5db'}`, borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.borderColor = isDark ? '#666' : '#999';
+                                        e.currentTarget.style.color = isDark ? '#bbb' : '#333';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.borderColor = isDark ? '#444' : '#d1d5db';
+                                        e.currentTarget.style.color = isDark ? '#888' : '#666';
+                                    }}
+                                >
+                                    <Settings size={16} /> Gerenciar Perfis Salvos
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
-                <div style={{ padding: '12px 16px', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            padding: '8px 16px',
-                            background: 'transparent',
-                            color: isDark ? '#888' : '#666',
-                            border: `1px solid ${isDark ? '#444' : '#d1d1d1'}`,
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.8rem'
-                        }}
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={onSave}
-                        disabled={!authorConfigBuffer.name || !authorConfigBuffer.email}
-                        style={{
-                            padding: '8px 16px',
-                            background: (!authorConfigBuffer.name || !authorConfigBuffer.email)
-                                ? (isDark ? 'rgba(79, 195, 247, 0.05)' : 'rgba(0, 112, 243, 0.05)')
-                                : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
-                            color: (!authorConfigBuffer.name || !authorConfigBuffer.email)
-                                ? (isDark ? '#444' : '#aaa')
-                                : (isDark ? '#4fc3f7' : '#0070f3'),
-                            border: `1px solid ${(!authorConfigBuffer.name || !authorConfigBuffer.email)
-                                ? (isDark ? '#333' : '#eee')
-                                : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
-                            borderRadius: '6px',
-                            cursor: (!authorConfigBuffer.name || !authorConfigBuffer.email) ? 'not-allowed' : 'pointer',
-                            fontSize: '0.8rem',
-                            fontWeight: 600
-                        }}
-                    >
-                        Salvar Configuração
-                    </button>
-                </div>
+                {!showProfileManager && (
+                    <div style={{ padding: '16px', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, display: 'flex', justifyContent: 'flex-end', gap: '10px', background: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)' }}>
+                        <button onClick={onClose} style={{ padding: '10px 16px', background: 'transparent', color: isDark ? '#888' : '#666', border: `1px solid ${isDark ? '#333' : '#d1d5db'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={onSave}
+                            disabled={!authorConfigBuffer.name || !authorConfigBuffer.email}
+                            style={{
+                                padding: '10px 24px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 700,
+                                background: (!authorConfigBuffer.name || !authorConfigBuffer.email) ? (isDark ? '#222' : '#eee') : (isDark ? '#4fc3f7' : '#0070f3'),
+                                color: (!authorConfigBuffer.name || !authorConfigBuffer.email) ? (isDark ? '#444' : '#aaa') : '#fff',
+                                border: 'none',
+                                opacity: (!authorConfigBuffer.name || !authorConfigBuffer.email) ? 0.6 : 1,
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            Salvar Alterações
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

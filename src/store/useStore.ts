@@ -924,7 +924,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['add', `"${path}"`]);
+            await (window as any).electronAPI.gitCommand(openedFolder, ['add', path]);
             await refreshGit();
         } catch (e) {
             get().addToast({ type: 'error', message: 'Erro ao adicionar arquivo (stage).' });
@@ -940,10 +940,10 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             const hasHead = !headRes.stderr && headRes.stdout.trim();
 
             if (hasHead) {
-                await (window as any).electronAPI.gitCommand(openedFolder, ['reset', 'HEAD', `"${path}"`]);
+                await (window as any).electronAPI.gitCommand(openedFolder, ['reset', 'HEAD', path]);
             } else {
                 // Initial commit: use rm --cached to unstage
-                await (window as any).electronAPI.gitCommand(openedFolder, ['rm', '--cached', `"${path}"`]);
+                await (window as any).electronAPI.gitCommand(openedFolder, ['rm', '--cached', path]);
             }
 
             await refreshGit();
@@ -985,7 +985,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['restore', `"${path}"`]);
+            await (window as any).electronAPI.gitCommand(openedFolder, ['restore', path]);
             await refreshGit();
         } catch (e) {
             get().addToast({ type: 'error', message: 'Erro ao descartar alterações.' });
@@ -1006,7 +1006,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     gitCommit: async (message: string) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
-        await (window as any).electronAPI.gitCommand(openedFolder, ['commit', '-m', `"${message}"`]);
+        await (window as any).electronAPI.gitCommand(openedFolder, ['commit', '-m', message]);
         await refreshGit();
     },
 
@@ -1033,8 +1033,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             // Setting Global Config
             const argsBase = ['config', '--global'];
             try {
-                if (author.name) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.name', `"${author.name}"`]);
-                if (author.email) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.email', `"${author.email}"`]);
+                if (author.name) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.name', author.name]);
+                if (author.email) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.email', author.email]);
 
                 get().addToast({
                     type: 'success',
@@ -1050,10 +1050,10 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             // Setting Local Config (Explicit Override)
             try {
                 if (author.name) {
-                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.name', `"${author.name}"`]);
+                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.name', author.name]);
                 }
                 if (author.email) {
-                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.email', `"${author.email}"`]);
+                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.email', author.email]);
                 }
 
                 get().addToast({
