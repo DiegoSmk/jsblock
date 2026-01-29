@@ -289,9 +289,9 @@ export const GitStatusView: React.FC = () => {
                                                 e.currentTarget.style.background = 'transparent';
                                             }}
                                         >
-                                            <span style={{ color: getTagColor(profile.tag), flexShrink: 0 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: getTagColor(profile.tag), flexShrink: 0 }}>
                                                 {getTagIcon(profile.tag)}
-                                            </span>
+                                            </div>
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                     {profile.name}
@@ -377,8 +377,8 @@ export const GitStatusView: React.FC = () => {
                 }}
                 authorConfigBuffer={authorConfigBuffer}
                 setAuthorConfigBuffer={setAuthorConfigBuffer}
-                isEditingAuthor={isEditingAuthor}
                 setIsEditingAuthor={setIsEditingAuthor}
+                isEditingAuthor={isEditingAuthor}
                 gitProfiles={gitProfiles}
                 globalAuthor={git.globalAuthor}
                 onSave={handleSaveAuthorModal}
