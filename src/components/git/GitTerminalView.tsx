@@ -9,6 +9,7 @@ import {
     X,
     Zap
 } from 'lucide-react';
+import { Modal } from '../ui/Modal';
 import 'xterm/css/xterm.css';
 
 export const GitTerminalView: React.FC = () => {
@@ -142,6 +143,43 @@ export const GitTerminalView: React.FC = () => {
         }
     };
 
+    const addCommandModalFooter = (
+        <>
+            <button
+                onClick={() => setShowAddCommand(false)}
+                style={{
+                    padding: '8px 16px',
+                    background: 'transparent',
+                    color: isDark ? '#888' : '#666',
+                    border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 600
+                }}
+            >
+                Cancelar
+            </button>
+            <button
+                onClick={handleAddQuickCommand}
+                disabled={!newCmdLabel.trim() || !newCmdValue.trim()}
+                style={{
+                    padding: '8px 20px',
+                    background: (!newCmdLabel.trim() || !newCmdValue.trim()) ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
+                    color: (!newCmdLabel.trim() || !newCmdValue.trim()) ? (isDark ? '#444' : '#999') : (isDark ? '#4fc3f7' : '#0070f3'),
+                    border: `1px solid ${(!newCmdLabel.trim() || !newCmdValue.trim()) ? (isDark ? '#333' : '#eee') : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    transition: 'all 0.2s'
+                }}
+            >
+                Criar Comando
+            </button>
+        </>
+    );
+
     return (
         <div style={{
             flex: 1,
@@ -151,6 +189,63 @@ export const GitTerminalView: React.FC = () => {
             flexDirection: 'column',
             overflow: 'hidden'
         }}>
+            {/* Quick Command Modal */}
+            <Modal
+                isOpen={showAddCommand}
+                onClose={() => setShowAddCommand(false)}
+                title="Novo Comando Rápido"
+                isDark={isDark}
+                headerIcon={<Zap size={16} color={isDark ? '#4fc3f7' : '#0070f3'} />}
+                footer={addCommandModalFooter}
+                maxWidth="350px"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div>
+                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>Nome do Atalho</label>
+                        <input
+                            autoFocus
+                            placeholder="Ex: Start Dev"
+                            value={newCmdLabel}
+                            onChange={(e) => setNewCmdLabel(e.target.value)}
+                            style={{
+                                width: '100%',
+                                background: isDark ? '#252525' : '#fff',
+                                border: `1px solid ${isDark ? '#444' : '#ddd'}`,
+                                borderRadius: '8px',
+                                fontSize: '0.9rem',
+                                padding: '10px 12px',
+                                color: isDark ? '#fff' : '#000',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                    </div>
+                    <div>
+                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>Comando</label>
+                        <input
+                            placeholder="Ex: npm run dev"
+                            value={newCmdValue}
+                            onChange={(e) => setNewCmdValue(e.target.value)}
+                            style={{
+                                width: '100%',
+                                background: isDark ? '#252525' : '#fff',
+                                border: `1px solid ${isDark ? '#444' : '#ddd'}`,
+                                borderRadius: '8px',
+                                fontSize: '0.9rem',
+                                padding: '10px 12px',
+                                color: isDark ? '#fff' : '#000',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddQuickCommand()}
+                        />
+                        <div style={{ marginTop: '6px', fontSize: '0.65rem', color: isDark ? '#555' : '#aaa' }}>
+                            O comando será executado no terminal atual.
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
             {/* Terminal Header */}
             <div style={{
                 height: '40px',
@@ -275,78 +370,31 @@ export const GitTerminalView: React.FC = () => {
                             </div>
                         ))}
 
-                        {!showAddCommand ? (
-                            <button
-                                onClick={() => setShowAddCommand(true)}
-                                style={{
-                                    background: 'transparent',
-                                    border: `1px dashed ${isDark ? '#444' : '#ccc'}`,
-                                    borderRadius: '4px',
-                                    width: '24px',
-                                    height: '24px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: isDark ? '#444' : '#ccc',
-                                    cursor: 'pointer'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = isDark ? '#666' : '#999';
-                                    e.currentTarget.style.color = isDark ? '#666' : '#999';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.borderColor = isDark ? '#444' : '#ccc';
-                                    e.currentTarget.style.color = isDark ? '#444' : '#ccc';
-                                }}
-                            >
-                                <Plus size={14} />
-                            </button>
-                        ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <input
-                                    autoFocus
-                                    placeholder="Nome"
-                                    value={newCmdLabel}
-                                    onChange={(e) => setNewCmdLabel(e.target.value)}
-                                    style={{
-                                        background: isDark ? '#252525' : '#fff',
-                                        border: `1px solid ${isDark ? '#444' : '#ddd'}`,
-                                        borderRadius: '4px',
-                                        fontSize: '0.7rem',
-                                        padding: '2px 6px',
-                                        color: isDark ? '#fff' : '#000',
-                                        width: '80px'
-                                    }}
-                                />
-                                <input
-                                    placeholder="Comando"
-                                    value={newCmdValue}
-                                    onChange={(e) => setNewCmdValue(e.target.value)}
-                                    style={{
-                                        background: isDark ? '#252525' : '#fff',
-                                        border: `1px solid ${isDark ? '#444' : '#ddd'}`,
-                                        borderRadius: '4px',
-                                        fontSize: '0.7rem',
-                                        padding: '2px 6px',
-                                        color: isDark ? '#fff' : '#000',
-                                        width: '120px'
-                                    }}
-                                    onKeyDown={(e) => e.key === 'Enter' && handleAddQuickCommand()}
-                                />
-                                <button
-                                    onClick={handleAddQuickCommand}
-                                    style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: '4px', padding: '2px 6px', cursor: 'pointer' }}
-                                >
-                                    <Zap size={12} />
-                                </button>
-                                <button
-                                    onClick={() => setShowAddCommand(false)}
-                                    style={{ background: 'transparent', border: 'none', color: isDark ? '#888' : '#666', cursor: 'pointer' }}
-                                >
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        )}
+                        <button
+                            onClick={() => setShowAddCommand(true)}
+                            style={{
+                                background: 'transparent',
+                                border: `1px dashed ${isDark ? '#444' : '#ccc'}`,
+                                borderRadius: '4px',
+                                width: '24px',
+                                height: '24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: isDark ? '#444' : '#ccc',
+                                cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = isDark ? '#666' : '#999';
+                                e.currentTarget.style.color = isDark ? '#666' : '#999';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = isDark ? '#444' : '#ccc';
+                                e.currentTarget.style.color = isDark ? '#444' : '#ccc';
+                            }}
+                        >
+                            <Plus size={14} />
+                        </button>
                     </div>
                 </div>
             </div>

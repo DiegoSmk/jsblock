@@ -10,7 +10,7 @@ import {
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
-import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Layers, Terminal, Edit2 } from 'lucide-react';
+import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Layers, Terminal, Edit2, Trash2 } from 'lucide-react';
 import { GitPanel } from './components/GitPanel';
 import { CommitHistory } from './components/git/CommitHistory';
 import { ContextRibbon } from './components/ui/ContextRibbon';
