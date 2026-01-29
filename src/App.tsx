@@ -91,6 +91,7 @@ function FlowContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [saveFile]);
 
+
   const { fitView, deleteElements, getEdge, updateEdge } = useReactFlow();
   const isDark = theme === 'dark';
 
@@ -319,6 +320,16 @@ function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [saveFile]);
+
+  useEffect(() => {
+    // Professional approach: Wait for the next tick to ensure DOM is rendered
+    const timer = setTimeout(() => {
+      if ((window as any).electronAPI?.appReady) {
+        (window as any).electronAPI.appReady();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (value !== undefined) setCode(value);

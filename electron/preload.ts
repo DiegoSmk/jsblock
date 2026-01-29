@@ -25,5 +25,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     terminalResize: (cols: number, rows: number) => ipcRenderer.send('terminal-resize', { cols, rows }),
     terminalKill: () => ipcRenderer.send('terminal-kill'),
-    openSystemTerminal: (path: string) => ipcRenderer.invoke('open-system-terminal', path)
+    openSystemTerminal: (path: string) => ipcRenderer.invoke('open-system-terminal', path),
+    appReady: () => ipcRenderer.send('app-ready')
 });

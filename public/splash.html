@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS BLOCK</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        /* Floating blocks background */
+        .floating-blocks {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .block {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            opacity: 0;
+            animation: blockAppear 3s ease-in-out infinite;
+        }
+
+        .block:nth-child(1) {
+            top: 10%;
+            left: 15%;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            animation-delay: 0s;
+        }
+
+        .block:nth-child(2) {
+            top: 70%;
+            left: 80%;
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            animation-delay: 0.5s;
+        }
+
+        .block:nth-child(3) {
+            top: 30%;
+            left: 70%;
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            animation-delay: 1s;
+        }
+
+        .block:nth-child(4) {
+            top: 80%;
+            left: 20%;
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            animation-delay: 1.5s;
+        }
+
+        .block:nth-child(5) {
+            top: 50%;
+            left: 10%;
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+            animation-delay: 2s;
+        }
+
+        .block:nth-child(6) {
+            top: 20%;
+            left: 85%;
+            background: linear-gradient(135deg, #0284c7 0%, #075985 100%);
+            animation-delay: 2.5s;
+        }
+
+        /* Logo container */
+        .logo-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            animation: logoFadeIn 0.8s ease-out;
+        }
+
+        /* Logo */
+        .app-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-js {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: -2px;
+        }
+
+        .logo-blocks {
+            display: flex;
+            gap: 6px;
+        }
+
+        .logo-block {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 900;
+            animation: blockPulse 2s ease-in-out infinite;
+        }
+
+        .logo-block:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .logo-block:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .logo-block:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .logo-block:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .logo-block:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        /* Loading text */
+        .loading-text {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: textPulse 1.5s ease-in-out infinite;
+        }
+
+        /* Animations */
+        @keyframes blockAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(20px);
+            }
+
+            50% {
+                opacity: 0.3;
+                transform: scale(1) translateY(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.8) translateY(-20px);
+            }
+        }
+
+        @keyframes logoFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes blockPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+        }
+
+        @keyframes textPulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Floating blocks background -->
+    <div class="floating-blocks">
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+        <div class="block"></div>
+    </div>
+
+    <!-- Logo -->
+    <div class="logo-container">
+        <div class="app-logo">
+            <span class="logo-js">JS</span>
+            <div class="logo-blocks">
+                <div class="logo-block">B</div>
+                <div class="logo-block">L</div>
+                <div class="logo-block">O</div>
+                <div class="logo-block">C</div>
+                <div class="logo-block">K</div>
+            </div>
+        </div>
+        <div class="loading-text">Carregando</div>
+    </div>
+</body>
+
+</html>

@@ -17,11 +17,39 @@ app.commandLine.appendSwitch('disable-features', 'Autofill');
 
 
 let mainWindow: BrowserWindow | null;
+let splashWindow: BrowserWindow | null;
+
+function createSplashWindow() {
+    splashWindow = new BrowserWindow({
+        width: 500,
+        height: 400,
+        transparent: true,
+        frame: false,
+        alwaysOnTop: true,
+        resizable: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true
+        }
+    });
+
+    // Use app.isPackaged for reliable path resolution
+    const splashPath = !app.isPackaged
+        ? path.join(__dirname, '../../public/splash.html')
+        : path.join(__dirname, '../public/splash.html');
+
+    splashWindow.loadFile(splashPath);
+    splashWindow.center();
+}
 
 function createWindow() {
+    const startLoadTime = Date.now();
+
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
+        show: false, // Don't show until ready
+        backgroundColor: '#0f172a', // Match app's dark theme background
         titleBarStyle: 'hidden',
         trafficLightPosition: { x: 12, y: 12 }, // For macOS
         webPreferences: {
@@ -29,6 +57,21 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true
         },
+    });
+
+    // Surgical transition: Close splash and show main window only when UI is 100% ready
+    ipcMain.once('app-ready', () => {
+        const elapsedTime = Date.now() - startLoadTime;
+        const minimumTime = 1000;
+        const remainingTime = Math.max(0, minimumTime - elapsedTime);
+
+        setTimeout(() => {
+            if (splashWindow && !splashWindow.isDestroyed()) {
+                splashWindow.close();
+                splashWindow = null;
+            }
+            mainWindow?.show();
+        }, remainingTime);
     });
 
     if (app.isPackaged) {
@@ -43,6 +86,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    createSplashWindow();
     createWindow();
 
     app.on('activate', () => {
