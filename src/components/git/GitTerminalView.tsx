@@ -209,15 +209,26 @@ export const GitTerminalView: React.FC = () => {
 
                 <div style={{
                     flex: 1,
-                    height: '32px',
+                    height: '40px',
                     overflowX: 'auto',
                     display: 'flex',
                     alignItems: 'center',
-                    scrollbarWidth: 'none', // hide on firefox
-                    msOverflowStyle: 'none' // hide on IE/Edge
-                }}>
+                    paddingBottom: '4px',
+                }} className="terminal-quick-commands-scroll">
                     <style>{`
-                        div::-webkit-scrollbar { display: none; }
+                        .terminal-quick-commands-scroll::-webkit-scrollbar {
+                            height: 4px;
+                        }
+                        .terminal-quick-commands-scroll::-webkit-scrollbar-track {
+                            background: transparent;
+                        }
+                        .terminal-quick-commands-scroll::-webkit-scrollbar-thumb {
+                            background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
+                            border-radius: 4px;
+                        }
+                        .terminal-quick-commands-scroll::-webkit-scrollbar-thumb:hover {
+                            background: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};
+                        }
                     `}</style>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '100%' }}>
                         {quickCommands.map((cmd) => (
@@ -346,7 +357,25 @@ export const GitTerminalView: React.FC = () => {
                 position: 'relative',
                 background: isDark ? '#1a1a1a' : '#fff',
                 padding: '4px'
-            }}>
+            }} className="terminal-viewport-container">
+                <style>{`
+                    .xterm-viewport::-webkit-scrollbar {
+                        width: 8px;
+                    }
+                    .xterm-viewport::-webkit-scrollbar-track {
+                        background: transparent;
+                    }
+                    .xterm-viewport::-webkit-scrollbar-thumb {
+                        background: ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'};
+                        border-radius: 4px;
+                        border: 2px solid transparent;
+                        background-clip: content-box;
+                    }
+                    .xterm-viewport::-webkit-scrollbar-thumb:hover {
+                        background: ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'};
+                        background-clip: content-box;
+                    }
+                `}</style>
                 <div
                     ref={terminalRef}
                     style={{
