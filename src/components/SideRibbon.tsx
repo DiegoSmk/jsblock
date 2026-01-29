@@ -6,7 +6,6 @@ export const SideRibbon: React.FC = () => {
     const {
         theme, toggleTheme,
         activeSidebarTab, setSidebarTab,
-        autoSave, toggleAutoSave,
         openedFolder,
         git
     } = useStore();
@@ -152,56 +151,7 @@ export const SideRibbon: React.FC = () => {
 
             {renderMiddleSlot()}
 
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '12px',
-                paddingBottom: '12px',
-                borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,
-                marginBottom: '8px',
-                width: '100%',
-                zIndex: 2 // Above the line
-            }}>
-                <button
-                    onClick={toggleAutoSave}
-                    title={autoSave ? "Desativar Auto-save" : "Ativar Auto-save"}
-                    style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: autoSave ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#555' : '#ccc'),
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        fontSize: '9px',
-                        fontWeight: 700,
-                        gap: '2px',
-                        transition: 'all 0.2s'
-                    }}
-                >
-                    <div style={{
-                        width: '24px',
-                        height: '14px',
-                        backgroundColor: autoSave ? (isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.1)') : (isDark ? '#333' : '#eee'),
-                        borderRadius: '10px',
-                        position: 'relative',
-                        border: `1px solid ${autoSave ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#444' : '#ddd')}`
-                    }}>
-                        <div style={{
-                            position: 'absolute',
-                            left: autoSave ? '11px' : '2px',
-                            top: '2px',
-                            width: '8px',
-                            height: '8px',
-                            backgroundColor: autoSave ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#666' : '#bbb'),
-                            borderRadius: '50%',
-                            transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-                        }} />
-                    </div>
-                    <span>AUTO</span>
-                </button>
-            </div>
+            <div style={{ flex: 1 }} />
 
             <RibbonButton
                 icon={isDark ? Sun : Moon}
@@ -210,7 +160,8 @@ export const SideRibbon: React.FC = () => {
             />
             <RibbonButton
                 icon={Settings}
-                onClick={() => { }}
+                active={activeSidebarTab === 'settings'}
+                onClick={() => setSidebarTab('settings')}
                 title="Configurações"
             />
         </div>

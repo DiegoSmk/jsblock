@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { X, Check, AlertTriangle } from 'lucide-react';
+import { Check, AlertCircle } from 'lucide-react';
 import type { Node } from '@xyflow/react';
+import { Modal } from './ui/Modal';
+import pkg from '../../package.json';
 
 export const ModernModal = () => {
     const { modal, closeModal, theme, nodes } = useStore();
@@ -27,6 +29,7 @@ export const ModernModal = () => {
     if (!modal.isOpen) return null;
 
     const validate = (value: string) => {
+        if (modal.type === 'about') return null;
         if (!value.trim() && modal.type !== 'optional-prompt') return "Campo obrigatório";
 
         if (modal.type === 'variable' || modal.type.startsWith('var-')) {
@@ -50,8 +53,14 @@ export const ModernModal = () => {
         return null;
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+
+        if (modal.type === 'about') {
+            closeModal();
+            return;
+        }
+
         const validationError = validate(inputValue);
         if (validationError) {
             setError(validationError);
@@ -62,127 +71,107 @@ export const ModernModal = () => {
     };
 
     const currentError = error || validate(inputValue);
-    const isValid = (modal.type === 'optional-prompt') || (inputValue.trim() && !currentError);
+    const isValid = (modal.type === 'about' || modal.type === 'optional-prompt') || (inputValue.trim() && !currentError);
 
-    return (
+    const footer = (
         <>
-            <style>{`
-                @keyframes modalFadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes modalSlideIn {
-                    from { 
-                        opacity: 0;
-                        transform: scale(0.96) translateY(-10px);
-                    }
-                    to { 
-                        opacity: 1;
-                        transform: scale(1) translateY(0);
-                    }
-                }
-                .modal-input:focus {
-                    border-color: ${isDark ? '#7c4dff' : '#6200ea'} !important;
-                }
-                .modal-button-primary:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 8px 20px rgba(124, 77, 255, 0.4);
-                }
-                .modal-button-secondary:hover {
-                    background: ${isDark ? '#333' : '#e8e8e8'};
-                }
-            `}</style>
-
-            <div
-                onClick={closeModal}
+            {modal.type !== 'about' && (
+                <button
+                    onClick={closeModal}
+                    style={{
+                        padding: '10px 16px',
+                        background: 'transparent',
+                        color: isDark ? '#888' : '#666',
+                        border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#2a2a2a' : '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                    Cancelar
+                </button>
+            )}
+            <button
+                onClick={() => handleSubmit()}
+                disabled={!isValid}
                 style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    width: '100vw',
-                    height: '100vh',
-                    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(0, 0, 0, 0.5)',
-                    backdropFilter: 'blur(4px)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    animation: 'modalFadeIn 0.15s ease-out'
+                    padding: '10px 24px',
+                    borderRadius: '8px',
+                    cursor: isValid ? 'pointer' : 'default',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    background: !isValid
+                        ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)')
+                        : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
+                    color: !isValid
+                        ? (isDark ? '#444' : '#aaa')
+                        : (isDark ? '#4fc3f7' : '#0070f3'),
+                    border: `1px solid ${!isValid
+                        ? (isDark ? '#333' : '#eee')
+                        : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
+                    transition: 'all 0.2s',
+                    opacity: !isValid ? 0.6 : 1
                 }}
             >
-                <div
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                        width: '90%',
-                        maxWidth: '480px',
-                        background: isDark ? '#1a1a1a' : '#ffffff',
-                        borderRadius: '16px',
-                        boxShadow: isDark
-                            ? '0 20px 60px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255,255,255,0.1) inset'
-                            : '0 20px 60px rgba(0, 0, 0, 0.15)',
-                        border: `1px solid ${isDark ? '#2a2a2a' : '#f0f0f0'}`,
-                        animation: 'modalSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                        overflow: 'hidden'
-                    }}
-                >
-                    {/* Header */}
+                {modal.confirmLabel || 'Confirmar'}
+            </button>
+        </>
+    );
+
+    return (
+        <Modal
+            isOpen={modal.isOpen}
+            onClose={closeModal}
+            title={modal.title}
+            isDark={isDark}
+            footer={footer}
+            maxWidth="420px"
+        >
+            <form onSubmit={handleSubmit}>
+                {modal.type === 'about' ? (
                     <div style={{
-                        padding: '24px 24px 20px',
-                        borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#f0f0f0'}`
+                        fontSize: '0.95rem',
+                        lineHeight: '1.6',
+                        color: isDark ? '#ccc' : '#444'
                     }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <h2 style={{
-                                    margin: '0 0 6px 0',
-                                    fontSize: '1.3rem',
-                                    fontWeight: 700,
-                                    color: isDark ? '#fff' : '#1a1a1a',
-                                    letterSpacing: '-0.02em'
-                                }}>
-                                    {modal.title}
-                                </h2>
-                                <p style={{
-                                    margin: 0,
-                                    fontSize: '0.875rem',
-                                    color: isDark ? '#888' : '#666',
-                                    fontWeight: 400
-                                }}>
-                                    {modal.type === 'variable' ? 'Transforme este valor em uma variável reutilizável' : ''}
-                                </p>
-                            </div>
-                            <button
-                                onClick={closeModal}
-                                style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: isDark ? '#666' : '#999',
-                                    padding: '4px',
-                                    display: 'flex',
-                                    transition: 'color 0.2s',
-                                    borderRadius: '6px'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#2a2a2a' : '#f0f0f0'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                            >
-                                <X size={20} strokeWidth={2} />
-                            </button>
+                        <p style={{ margin: '0 0 16px 0' }}>
+                            <strong>JS BLOCK</strong> é uma IDE baseada em fluxo para engenharia de código JavaScript e Node.js.
+                        </p>
+                        <p style={{ margin: 0 }}>
+                            Desenvolva lógicas complexas visualmente através de Blueprints e gere código limpo e performático instantaneamente.
+                        </p>
+                        <div style={{
+                            marginTop: '24px',
+                            padding: '12px',
+                            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: '8px',
+                            fontSize: '0.8rem',
+                            color: isDark ? '#666' : '#999',
+                            textAlign: 'center',
+                            border: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`
+                        }}>
+                            Versão {pkg.version} • 2026
                         </div>
                     </div>
-
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
-                        <div style={{ marginBottom: '24px' }}>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
                             <label style={{
+                                fontSize: '0.7rem',
+                                color: isDark ? '#666' : '#999',
                                 display: 'block',
-                                fontSize: '0.8125rem',
-                                fontWeight: 600,
-                                color: isDark ? '#aaa' : '#555',
                                 marginBottom: '8px',
-                                letterSpacing: '0.01em'
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
                             }}>
-                                {modal.type === 'variable' ? 'Nome da Variável' : (modal.type.startsWith('prompt') ? '' : 'Valor')}
+                                {modal.type === 'variable' ? 'Nome da Variável' : (modal.type.startsWith('prompt') ? 'Valor' : 'Entrada')}
                             </label>
+
                             <div style={{ position: 'relative' }}>
                                 <input
                                     autoFocus
@@ -191,118 +180,59 @@ export const ModernModal = () => {
                                         setInputValue(e.target.value);
                                         setError(null);
                                     }}
-                                    placeholder={modal.placeholder || (modal.type === 'variable' ? "totalVendas" : "Digite aqui...")}
-                                    className="modal-input"
+                                    placeholder={modal.placeholder || (modal.type === 'variable' ? "ex: minhaVariavel" : "Digite aqui...")}
                                     style={{
                                         width: '100%',
-                                        padding: '13px 16px',
-                                        paddingRight: isValid ? '44px' : '16px',
-                                        background: isDark ? '#0f0f0f' : '#fafafa',
-                                        border: `1.5px solid ${error ? '#ff5252' :
-                                            isValid ? '#4caf50' :
-                                                (isDark ? '#2a2a2a' : '#e0e0e0')
-                                            }`,
-                                        borderRadius: '10px',
-                                        color: isDark ? '#fff' : '#1a1a1a',
+                                        padding: '12px 14px',
+                                        background: isDark ? '#252525' : '#fff',
+                                        border: `1px solid ${error ? '#ef4444' : (isDark ? '#333' : '#ddd')}`,
+                                        borderRadius: '8px',
                                         fontSize: '0.95rem',
+                                        color: isDark ? '#fff' : '#000',
                                         outline: 'none',
-                                        transition: 'all 0.2s',
                                         boxSizing: 'border-box',
-                                        fontFamily: 'monospace',
-                                        fontWeight: 500
+                                        transition: 'border-color 0.2s',
+                                        fontFamily: 'monospace'
                                     }}
+                                    onFocus={(e) => e.currentTarget.style.borderColor = error ? '#ef4444' : (isDark ? '#4fc3f7' : '#0070f3')}
+                                    onBlur={(e) => e.currentTarget.style.borderColor = error ? '#ef4444' : (isDark ? '#333' : '#ddd')}
                                 />
-                                {isValid && (
+                                {isValid && modal.type !== 'about' && (
                                     <div style={{
                                         position: 'absolute',
                                         right: '12px',
                                         top: '50%',
                                         transform: 'translateY(-50%)',
-                                        color: '#4caf50',
+                                        color: isDark ? '#4ade80' : '#22c55e',
                                         display: 'flex',
                                         alignItems: 'center'
                                     }}>
-                                        <Check size={18} strokeWidth={2.5} />
+                                        <Check size={18} />
                                     </div>
                                 )}
                             </div>
+
                             {error && (
                                 <div style={{
-                                    marginTop: '10px',
-                                    padding: '10px 12px',
-                                    background: isDark ? 'rgba(255, 82, 82, 0.1)' : 'rgba(255, 82, 82, 0.08)',
-                                    borderRadius: '8px',
+                                    marginTop: '8px',
+                                    padding: '8px 12px',
+                                    background: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+                                    borderRadius: '6px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '8px',
-                                    border: `1px solid ${isDark ? 'rgba(255, 82, 82, 0.2)' : 'rgba(255, 82, 82, 0.15)'}`
+                                    border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)'}`
                                 }}>
-                                    <AlertTriangle size={16} color="#ff5252" strokeWidth={2} />
-                                    <span style={{
-                                        color: '#ff5252',
-                                        fontSize: '0.8125rem',
-                                        fontWeight: 500
-                                    }}>
+                                    <AlertCircle size={14} color="#ef4444" />
+                                    <span style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 500 }}>
                                         {error}
                                     </span>
                                 </div>
                             )}
                         </div>
-
-                        {/* Actions */}
-                        <div style={{
-                            display: 'flex',
-                            gap: '10px',
-                            paddingTop: '4px'
-                        }}>
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="modal-button-secondary"
-                                style={{
-                                    flex: 1,
-                                    padding: '12px 20px',
-                                    background: isDark ? '#2a2a2a' : '#f5f5f5',
-                                    border: 'none',
-                                    borderRadius: '10px',
-                                    color: isDark ? '#aaa' : '#666',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    letterSpacing: '0.01em'
-                                }}
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={!isValid}
-                                className="modal-button-primary"
-                                style={{
-                                    flex: 2,
-                                    padding: '12px 20px',
-                                    background: isValid
-                                        ? 'linear-gradient(135deg, #7c4dff 0%, #536dfe 100%)'
-                                        : (isDark ? '#333' : '#e0e0e0'),
-                                    border: 'none',
-                                    borderRadius: '10px',
-                                    color: isValid ? '#fff' : (isDark ? '#666' : '#aaa'),
-                                    fontSize: '0.9rem',
-                                    fontWeight: 700,
-                                    cursor: isValid ? 'pointer' : 'not-allowed',
-                                    transition: 'all 0.2s',
-                                    boxShadow: isValid ? '0 4px 12px rgba(124, 77, 255, 0.25)' : 'none',
-                                    letterSpacing: '0.01em',
-                                    opacity: isValid ? 1 : 0.6
-                                }}
-                            >
-                                {modal.confirmLabel || 'Confirmar'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </>
+                    </div>
+                )}
+            </form>
+        </Modal>
     );
 };

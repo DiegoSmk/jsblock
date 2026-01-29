@@ -48,6 +48,7 @@ import { Tooltip } from './components/Tooltip';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { FileControls } from './components/FileControls';
 import { ToastContainer } from './components/ToastContainer';
+import { SettingsView } from './components/SettingsView';
 
 const nodeTypes: NodeTypes = {
   variableNode: VariableNode,
@@ -297,7 +298,7 @@ function App() {
     showCode, showCanvas, showSidebar, activeSidebarTab, toggleSidebar, setSidebarTab,
     saveFile, setOpenedFolder, setSelectedFile,
     selectedFile, openedFolder, isBlockFile,
-    confirmationModal, isDirty, git
+    confirmationModal, isDirty, git, openModal
   } = useStore();
 
   const isDark = theme === 'dark';
@@ -429,17 +430,45 @@ function App() {
             <div
               className="app-logo"
               style={{ transform: 'scale(0.8)', cursor: 'pointer', marginLeft: '8px' }}
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                openModal({
+                  title: 'Sobre o JS BLOCK',
+                  initialValue: '',
+                  type: 'about',
+                  confirmLabel: 'Fechar',
+                  onSubmit: () => { }
+                });
+              }}
             >
               <span className="logo-js" style={{ fontSize: '14px' }}>JS</span>
               <div className="logo-blocks" style={{ gap: '2px' }}>
                 {['B', 'L', 'O', 'C', 'K'].map((letter, i) => (
-                  <div key={i} className="logo-block" style={{ width: '14px', height: '14px', fontSize: '9px', borderRadius: '3px' }}>{letter}</div>
+                  <div
+                    key={i}
+                    className="logo-block"
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      fontSize: '9px',
+                      borderRadius: '3px',
+                      background: `var(--block-bg-${i + 1})`,
+                      color: '#000',
+                      fontWeight: 900
+                    }}
+                  >
+                    {letter}
+                  </div>
                 ))}
               </div>
             </div>
 
-            {folderName && (
+            {activeSidebarTab === 'settings' && (
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.5, color: isDark ? '#fff' : '#000', marginLeft: '12px' }}>
+                SISTEMA / CONFIGURAÇÕES
+              </div>
+            )}
+
+            {folderName && activeSidebarTab !== 'settings' && (
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -550,92 +579,96 @@ function App() {
         </header>
 
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <Allotment key={activeSidebarTab}>
-            <Allotment.Pane minSize={150} preferredSize={240} maxSize={450} visible={showSidebar}>
-              {activeSidebarTab === 'git' ? (
-                <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff' }}>
-                  <CommitHistory
-                    isDark={isDark}
-                    logs={git.log}
-                    isOpen={true}
-                    onToggle={() => { }}
-                    hideToggle={true}
-                  />
-                </div>
-              ) : (!openedFolder || activeSidebarTab === 'explorer') ? (
-                <FileExplorer />
-              ) : (
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <ReactFlowProvider>
-                    <FunctionLibrary />
-                  </ReactFlowProvider>
-                </div>
-              )}
-            </Allotment.Pane>
+          {activeSidebarTab === 'settings' ? (
+            <SettingsView />
+          ) : (
+            <Allotment key={activeSidebarTab}>
+              <Allotment.Pane minSize={150} preferredSize={240} maxSize={450} visible={showSidebar}>
+                {activeSidebarTab === 'git' ? (
+                  <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff' }}>
+                    <CommitHistory
+                      isDark={isDark}
+                      logs={git.log}
+                      isOpen={true}
+                      onToggle={() => { }}
+                      hideToggle={true}
+                    />
+                  </div>
+                ) : (!openedFolder || activeSidebarTab === 'explorer') ? (
+                  <FileExplorer />
+                ) : (
+                  <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <ReactFlowProvider>
+                      <FunctionLibrary />
+                    </ReactFlowProvider>
+                  </div>
+                )}
+              </Allotment.Pane>
 
-            <Allotment.Pane minSize={200} preferredSize={350} visible={activeSidebarTab === 'git' || (!isBlockFile && showCode)}>
-              {activeSidebarTab === 'git' ? (
-                <GitPanel />
-              ) : (
-                <div
-                  style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
-                  onKeyDown={(e) => e.stopPropagation()}
-                >
-                  {selectedFile && (
-                    <div style={{
-                      height: '32px',
-                      background: isDark ? '#2d2d2d' : '#f0f0f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0 12px',
-                      fontSize: '0.75rem',
-                      color: isDark ? '#aaa' : '#666',
-                      borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
-                    }}>
-                      <Code size={14} style={{ marginRight: '8px' }} />
-                      {selectedFile.split(/[\\/]/).pop()}
+              <Allotment.Pane minSize={200} preferredSize={350} visible={activeSidebarTab === 'git' || (!isBlockFile && showCode)}>
+                {activeSidebarTab === 'git' ? (
+                  <GitPanel />
+                ) : (
+                  <div
+                    style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    {selectedFile && (
+                      <div style={{
+                        height: '32px',
+                        background: isDark ? '#2d2d2d' : '#f0f0f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0 12px',
+                        fontSize: '0.75rem',
+                        color: isDark ? '#aaa' : '#666',
+                        borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
+                      }}>
+                        <Code size={14} style={{ marginRight: '8px' }} />
+                        {selectedFile.split(/[\\/]/).pop()}
+                      </div>
+                    )}
+                    {!selectedFile ? (
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                        <Code size={48} opacity={0.3} />
+                        <p>{t('app.select_file')}</p>
+                      </div>
+                    ) : (
+                      <Editor
+                        height="100%"
+                        defaultLanguage="typescript"
+                        value={code}
+                        onChange={handleEditorChange}
+                        onMount={handleEditorDidMount}
+                        theme={isDark ? "vs-dark" : "light"}
+                        options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
+                      />
+                    )}
+                  </div>
+                )}
+              </Allotment.Pane>
+
+              <Allotment.Pane minSize={400} visible={activeSidebarTab !== 'git' && (isBlockFile || showCanvas)}>
+                <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
+                    <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
+                      <ScopeBreadcrumbs />
                     </div>
-                  )}
+                  </div>
                   {!selectedFile ? (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                      <Code size={48} opacity={0.3} />
-                      <p>{t('app.select_file')}</p>
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                      <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
+                      <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
                     </div>
                   ) : (
-                    <Editor
-                      height="100%"
-                      defaultLanguage="typescript"
-                      value={code}
-                      onChange={handleEditorChange}
-                      onMount={handleEditorDidMount}
-                      theme={isDark ? "vs-dark" : "light"}
-                      options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
-                    />
+                    <ReactFlowProvider>
+                      <FlowContent />
+                    </ReactFlowProvider>
                   )}
                 </div>
-              )}
-            </Allotment.Pane>
-
-            <Allotment.Pane minSize={400} visible={activeSidebarTab !== 'git' && (isBlockFile || showCanvas)}>
-              <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
-                  <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
-                    <ScopeBreadcrumbs />
-                  </div>
-                </div>
-                {!selectedFile ? (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                    <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
-                    <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
-                  </div>
-                ) : (
-                  <ReactFlowProvider>
-                    <FlowContent />
-                  </ReactFlowProvider>
-                )}
-              </div>
-            </Allotment.Pane>
-          </Allotment>
+              </Allotment.Pane>
+            </Allotment>
+          )}
         </div>
       </div>
       {confirmationModal && (

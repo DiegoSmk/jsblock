@@ -62,6 +62,13 @@ export type Toast = {
     duration?: number;
 };
 
+export type Settings = {
+    terminalCopyOnSelect: boolean;
+    terminalRightClickPaste: boolean;
+    autoLayoutNodes: boolean;
+    fontSize: number;
+};
+
 type AppState = {
     code: string;
     nodes: Node[];
@@ -124,11 +131,11 @@ type AppState = {
 
     // UI State
     showSidebar: boolean;
-    activeSidebarTab: 'explorer' | 'library' | 'git';
+    activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings';
     showCode: boolean;
     showCanvas: boolean;
     toggleSidebar: () => void;
-    setSidebarTab: (tab: 'explorer' | 'library' | 'git') => void;
+    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings') => void;
     toggleCode: () => void;
     toggleCanvas: () => void;
 
@@ -194,6 +201,10 @@ type AppState = {
     toasts: Toast[];
     addToast: (toast: Omit<Toast, 'id'>) => void;
     removeToast: (id: string) => void;
+
+    // Settings
+    settings: Settings;
+    updateSettings: (updates: Partial<Settings>) => void;
 };
 
 export interface QuickCommand {
@@ -235,6 +246,21 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
     quickCommands: JSON.parse(localStorage.getItem('quickCommands') || '[]'),
+
+    settings: {
+        terminalCopyOnSelect: localStorage.getItem('settings_terminalCopyOnSelect') !== 'false',
+        terminalRightClickPaste: localStorage.getItem('settings_terminalRightClickPaste') !== 'false',
+        autoLayoutNodes: localStorage.getItem('settings_autoLayoutNodes') === 'true',
+        fontSize: parseInt(localStorage.getItem('settings_fontSize') || '14'),
+    },
+
+    updateSettings: (updates: Partial<Settings>) => {
+        const newSettings = { ...get().settings, ...updates };
+        Object.keys(updates).forEach(key => {
+            localStorage.setItem(`settings_${key}`, String((updates as any)[key]));
+        });
+        set({ settings: newSettings });
+    },
 
     addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => {
         const newCmd = { ...cmd, id: Date.now().toString() };
@@ -331,7 +357,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
     toggleSidebar: () => set({ showSidebar: !get().showSidebar }),
-    setSidebarTab: (tab: 'explorer' | 'library' | 'git') => set({ activeSidebarTab: tab, showSidebar: true }),
+    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings') => set({ activeSidebarTab: tab, showSidebar: true }),
     toggleCode: () => {
         if (get().showCode && !get().showCanvas) return;
         set({ showCode: !get().showCode });

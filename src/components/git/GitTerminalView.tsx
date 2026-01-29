@@ -7,7 +7,8 @@ import {
     ExternalLink,
     Plus,
     X,
-    Zap
+    Zap,
+    Check
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import 'xterm/css/xterm.css';
@@ -18,7 +19,8 @@ export const GitTerminalView: React.FC = () => {
         openedFolder,
         quickCommands,
         addQuickCommand,
-        removeQuickCommand
+        removeQuickCommand,
+        settings
     } = useStore();
 
     const isDark = theme === 'dark';
@@ -101,20 +103,48 @@ export const GitTerminalView: React.FC = () => {
                 term.write(data);
             });
 
+            term.onSelectionChange(() => {
+                if (settings.terminalCopyOnSelect && term.hasSelection()) {
+                    const selection = term.getSelection();
+                    if (selection) {
+                        navigator.clipboard.writeText(selection);
+                    }
+                }
+            });
+
             term.onData((data) => {
                 (window as any).electronAPI.terminalSendInput(data);
             });
 
+            const handleContextMenu = (e: MouseEvent) => {
+                if (!settings.terminalRightClickPaste) return;
+                e.preventDefault();
+                navigator.clipboard.readText().then(text => {
+                    (window as any).electronAPI.terminalSendInput(text);
+                });
+            };
+
+            const terminalElement = terminalRef.current;
+            terminalElement?.addEventListener('contextmenu', handleContextMenu);
+
             const resizeObserver = new ResizeObserver(() => {
-                if (terminalRef.current) {
-                    fitAddon.fit();
-                    (window as any).electronAPI.terminalResize(term.cols, term.rows);
+                if (terminalRef.current && xtermRef.current) {
+                    try {
+                        fitAddon.fit();
+                        (window as any).electronAPI.terminalResize(term.cols, term.rows);
+                    } catch (e) {
+                        console.warn('Terminal resize failed:', e);
+                    }
                 }
             });
             resizeObserver.observe(terminalRef.current);
 
             return () => {
+                terminalElement?.removeEventListener('contextmenu', handleContextMenu);
                 resizeObserver.disconnect();
+                if (xtermRef.current === term) {
+                    xtermRef.current = null;
+                }
                 unsubscribe();
                 term.dispose();
                 (window as any).electronAPI.terminalKill();
@@ -261,6 +291,25 @@ export const GitTerminalView: React.FC = () => {
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.5px', color: isDark ? '#ccc' : '#444' }}>
                         TERMINAL INTEGRADO
                     </span>
+                    <div style={{
+                        fontSize: '0.65rem',
+                        color: isDark ? '#666' : '#999',
+                        display: 'flex',
+                        gap: '12px',
+                        marginLeft: '12px',
+                        fontWeight: 500
+                    }}>
+                        {settings.terminalCopyOnSelect && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Check size={10} color="#4ade80" /> Auto-Copy
+                            </span>
+                        )}
+                        {settings.terminalRightClickPaste && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Check size={10} color="#4ade80" /> Click-Paste
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
