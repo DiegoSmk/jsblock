@@ -28,6 +28,18 @@
     display: flex;
     gap: 8px;
     padding: 10px 16px;
+    flex-wrap: wrap;
+    container-type: inline-size;
+}
+
+@container (max-width: 220px) {
+    .btn-text {
+        display: none;
+    }
+
+    .git-button-base {
+        padding: 6px;
+    }
 }
 
 .git-button-base {
@@ -41,6 +53,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     transition: all 0.12s ease;
+    white-space: nowrap;
 }
 
 .git-file-item {

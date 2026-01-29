@@ -10,7 +10,7 @@ import {
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
-import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Layers, Terminal } from 'lucide-react';
+import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Layers, Terminal, Edit2 } from 'lucide-react';
 import { GitPanel } from './components/GitPanel';
 import { CommitHistory } from './components/git/CommitHistory';
 import { ContextRibbon } from './components/ui/ContextRibbon';
@@ -550,7 +550,7 @@ function App() {
         </header>
 
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <Allotment>
+          <Allotment key={activeSidebarTab}>
             <Allotment.Pane minSize={150} preferredSize={240} visible={showSidebar}>
               {activeSidebarTab === 'git' ? (
                 <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff' }}>
@@ -573,7 +573,7 @@ function App() {
               )}
             </Allotment.Pane>
 
-            <Allotment.Pane minSize={200} preferredSize={activeSidebarTab === 'git' ? 800 : 350} visible={activeSidebarTab === 'git' || (!isBlockFile && showCode)}>
+            <Allotment.Pane minSize={200} preferredSize={350} visible={activeSidebarTab === 'git' || (!isBlockFile && showCode)}>
               {activeSidebarTab === 'git' ? (
                 <GitPanel />
               ) : (

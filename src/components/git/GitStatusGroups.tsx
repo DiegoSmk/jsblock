@@ -54,7 +54,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                         }}
                     >
                         <Minus size={14} />
-                        Unstage All
+                        <span className="btn-text">Unstage All</span>
                     </button>
                 </ActionToolbar>
             )}
@@ -108,7 +108,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                         }}
                     >
                         <Plus size={14} />
-                        Stage All Changes
+                        <span className="btn-text">Stage All Changes</span>
                     </button>
                     <button
                         onClick={gitDiscardAll}
@@ -127,7 +127,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                         }}
                     >
                         <RotateCcw size={14} />
-                        Discard All Changes
+                        <span className="btn-text">Discard All Changes</span>
                     </button>
                 </ActionToolbar>
             )}
