@@ -1,68 +1,97 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { CSSProperties } from 'react';
 
+// Injects styles once to avoid duplication
+const injectGlobalStyles = () => {
+    if (typeof document === 'undefined') return;
+    const styleId = 'scroll-area-global-styles';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML = `
+        .scroll-area-native-viewport {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .scroll-area-native-viewport::-webkit-scrollbar {
+            display: none;
+        }
+    `;
+    document.head.appendChild(style);
+};
+
+export type ScrollVisibility = 'auto' | 'hover' | 'always';
+
 interface ScrollAreaProps {
     children: React.ReactNode;
     className?: string;
     style?: CSSProperties;
     maxHeight?: string | number;
-    autoHide?: boolean;
+    visibility?: ScrollVisibility;
     autoHideDelay?: number;
     thumbColor?: string;
     trackColor?: string;
     thumbHoverColor?: string;
     thumbWidth?: number;
+
+    // Deprecated props (kept for backward compat, but mapped to visibility)
+    autoHide?: boolean;
+    alwaysVisible?: boolean;
 }
 
-/**
- * ScrollArea - Professional custom scrollbar component
- * 
- * Features:
- * - Native scroll performance (uses native overflow with hidden scrollbar)
- * - Custom styled scrollbar overlay
- * - Auto-hide functionality
- * - Smooth animations
- * - Full keyboard/mouse/trackpad support
- * - Electron/Chromium optimized
- * - Zero external dependencies
- * 
- * @example
- * <ScrollArea maxHeight="400px" autoHide>
- *   <YourContent />
- * </ScrollArea>
- */
 export const ScrollArea: React.FC<ScrollAreaProps> = ({
     children,
     className = '',
     style = {},
     maxHeight,
-    autoHide = true,
+    visibility = 'auto',
     autoHideDelay = 1000,
     thumbColor,
     trackColor,
     thumbHoverColor,
-    thumbWidth = 6
+    thumbWidth = 6,
+    // Compat handling
+    autoHide,
+    alwaysVisible
 }) => {
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    // Resolve visibility mode prioritizing the new prop, falling back to legacy props
+    const mode: ScrollVisibility = alwaysVisible ? 'always' : (autoHide === false ? 'always' : visibility);
+
+    const viewportRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
     const thumbRef = useRef<HTMLDivElement>(null);
     const trackRef = useRef<HTMLDivElement>(null);
 
     const [isScrolling, setIsScrolling] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
     const [thumbHeight, setThumbHeight] = useState(0);
     const [thumbTop, setThumbTop] = useState(0);
     const [hasScroll, setHasScroll] = useState(false);
+    const [reduceMotion, setReduceMotion] = useState(false);
 
-    const scrollTimeoutRef = useRef<number | null>(null);
+    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dragStartRef = useRef<{ y: number; scrollTop: number } | null>(null);
 
-    // Calculate thumb dimensions and position
-    const updateScrollbar = useCallback(() => {
-        const container = scrollContainerRef.current;
-        if (!container) return;
+    useEffect(() => {
+        injectGlobalStyles();
 
-        const { scrollHeight, clientHeight, scrollTop } = container;
+        // Check for reduced motion preference
+        const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        setReduceMotion(mediaQuery.matches);
+
+        const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+    }, []);
+
+    const updateScrollbar = useCallback(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+
+        const { scrollHeight, clientHeight, scrollTop } = viewport;
         const hasScrollableContent = scrollHeight > clientHeight;
 
         setHasScroll(hasScrollableContent);
@@ -72,11 +101,9 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
             return;
         }
 
-        // Calculate thumb height (proportional to visible area)
         const ratio = clientHeight / scrollHeight;
-        const calculatedThumbHeight = Math.max(clientHeight * ratio, 40); // Min 40px for usability
+        const calculatedThumbHeight = Math.max(clientHeight * ratio, 32); // Min thumb height 32px
 
-        // Calculate thumb position
         const maxScrollTop = scrollHeight - clientHeight;
         const maxThumbTop = clientHeight - calculatedThumbHeight;
         const calculatedThumbTop = (scrollTop / maxScrollTop) * maxThumbTop;
@@ -85,62 +112,63 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
         setThumbTop(calculatedThumbTop);
     }, []);
 
-    // Handle scroll events
+    // Handle scroll
     const handleScroll = useCallback(() => {
         updateScrollbar();
         setIsScrolling(true);
 
-        // Auto-hide timer
         if (scrollTimeoutRef.current) {
             clearTimeout(scrollTimeoutRef.current);
         }
 
-        scrollTimeoutRef.current = setTimeout(() => {
-            setIsScrolling(false);
-        }, autoHideDelay);
-    }, [updateScrollbar, autoHideDelay]);
+        if (mode === 'auto') {
+            scrollTimeoutRef.current = setTimeout(() => {
+                setIsScrolling(false);
+            }, autoHideDelay);
+        }
+    }, [updateScrollbar, autoHideDelay, mode]);
 
-    // Handle mouse down on thumb (start drag)
+    // Handle drag
     const handleThumbMouseDown = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
-        const container = scrollContainerRef.current;
-        if (!container) return;
+        const viewport = viewportRef.current;
+        if (!viewport) return;
 
         setIsDragging(true);
         dragStartRef.current = {
             y: e.clientY,
-            scrollTop: container.scrollTop
+            scrollTop: viewport.scrollTop
         };
 
         document.body.style.userSelect = 'none';
+        document.body.style.cursor = 'grabbing';
     }, []);
 
-    // Handle mouse move during drag
     useEffect(() => {
         if (!isDragging) return;
 
         const handleMouseMove = (e: MouseEvent) => {
-            const container = scrollContainerRef.current;
-            if (!container || !dragStartRef.current) return;
+            const viewport = viewportRef.current;
+            if (!viewport || !dragStartRef.current) return;
 
             const deltaY = e.clientY - dragStartRef.current.y;
-            const { scrollHeight, clientHeight } = container;
-            const maxScrollTop = scrollHeight - clientHeight;
+            const { scrollHeight, clientHeight } = viewport;
             const maxThumbTop = clientHeight - thumbHeight;
+            const maxScroll = scrollHeight - clientHeight;
 
-            // Calculate new scroll position
-            const scrollRatio = deltaY / maxThumbTop;
-            const newScrollTop = dragStartRef.current.scrollTop + (scrollRatio * maxScrollTop);
+            const scrollRatio = maxScroll / maxThumbTop;
+            const newScrollTop = dragStartRef.current.scrollTop + (deltaY * scrollRatio);
 
-            container.scrollTop = Math.max(0, Math.min(newScrollTop, maxScrollTop));
+            viewport.scrollTop = Math.max(0, Math.min(newScrollTop, maxScroll));
         };
 
         const handleMouseUp = () => {
             setIsDragging(false);
             dragStartRef.current = null;
             document.body.style.userSelect = '';
+            document.body.style.cursor = '';
         };
 
         document.addEventListener('mousemove', handleMouseMove);
@@ -152,32 +180,44 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
         };
     }, [isDragging, thumbHeight]);
 
-    // Handle click on track (jump to position)
+    // Handle track click
     const handleTrackClick = useCallback((e: React.MouseEvent) => {
-        const container = scrollContainerRef.current;
+        const viewport = viewportRef.current;
         const track = trackRef.current;
-        if (!container || !track) return;
+        if (!viewport || !track) return;
 
         const trackRect = track.getBoundingClientRect();
         const clickY = e.clientY - trackRect.top;
-        const { scrollHeight, clientHeight } = container;
+        const targetThumbTop = clickY - (thumbHeight / 2);
+
+        const { scrollHeight, clientHeight } = viewport;
         const maxScrollTop = scrollHeight - clientHeight;
+        const maxThumbTop = clientHeight - thumbHeight;
 
-        // Jump to clicked position
-        const scrollRatio = clickY / trackRect.height;
-        container.scrollTop = scrollRatio * maxScrollTop;
-    }, []);
+        const scrollRatio = targetThumbTop / maxThumbTop;
+        const targetScrollTop = scrollRatio * maxScrollTop;
 
-    // Update scrollbar on mount and content changes
+        viewport.scrollTo({
+            top: Math.max(0, Math.min(targetScrollTop, maxScrollTop)),
+            behavior: reduceMotion ? 'auto' : 'smooth'
+        });
+    }, [thumbHeight, reduceMotion]);
+
+    // Observer
     useEffect(() => {
-        const container = scrollContainerRef.current;
-        if (!container) return;
+        const viewport = viewportRef.current;
+        const content = contentRef.current;
+        if (!viewport || !content) return;
 
         updateScrollbar();
 
-        // Observer for content size changes
-        const resizeObserver = new ResizeObserver(updateScrollbar);
-        resizeObserver.observe(container);
+        const resizeObserver = new ResizeObserver(() => {
+            updateScrollbar();
+        });
+
+        // Observe elements
+        resizeObserver.observe(viewport);
+        resizeObserver.observe(content);
 
         return () => {
             resizeObserver.disconnect();
@@ -187,65 +227,83 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
         };
     }, [updateScrollbar]);
 
-    // Determine if scrollbar should be visible
-    const isVisible = hasScroll && (!autoHide || isScrolling || isDragging || isHovering);
+    // Determine visibility based on mode
+    const isVisible = hasScroll && (
+        mode === 'always' ||
+        isDragging ||
+        isHovering ||
+        isFocused ||
+        (mode === 'auto' && isScrolling) ||
+        (mode === 'hover' && (isHovering || isDragging))
+    );
 
     return (
         <div
+            className={className}
             style={{
                 position: 'relative',
                 width: '100%',
                 height: maxHeight ? undefined : '100%',
                 maxHeight: maxHeight || undefined,
                 overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
                 ...style
             }}
-            className={className}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
         >
-            {/* Scroll Container - Native scroll with hidden scrollbar */}
             <div
-                ref={scrollContainerRef}
+                ref={viewportRef}
                 onScroll={handleScroll}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                className="scroll-area-native-viewport"
                 style={{
+                    flex: 1,
                     width: '100%',
-                    height: '100%',
-                    overflow: 'auto',
-                    scrollbarWidth: 'none', // Firefox
-                    msOverflowStyle: 'none', // IE/Edge
-                    // Hide webkit scrollbar
-                    ...({
-                        '::-webkit-scrollbar': {
-                            display: 'none'
-                        }
-                    } as any)
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    outline: 'none',
+                    display: 'flex',
+                    flexDirection: 'column'
                 }}
-                className="scroll-area-content"
+                tabIndex={0}
+                role="region"
+                aria-label="Scrollable content"
             >
-                {children}
+                <div
+                    ref={contentRef}
+                    style={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}
+                >
+                    {children}
+                </div>
             </div>
 
-            {/* Custom Scrollbar Track */}
             {hasScroll && (
                 <div
                     ref={trackRef}
+                    aria-hidden="true"
                     onClick={handleTrackClick}
                     style={{
                         position: 'absolute',
                         top: 2,
                         bottom: 2,
-                        right: 4, // Increased offset to avoid window resize zone
+                        right: 4,
                         width: thumbWidth + 4,
                         background: trackColor || 'transparent',
                         opacity: isVisible ? 1 : 0,
-                        transition: 'opacity 0.2s ease',
+                        transition: reduceMotion ? 'none' : 'opacity 0.2s ease',
                         pointerEvents: isVisible ? 'auto' : 'none',
                         zIndex: 50,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        userSelect: 'none'
                     }}
                 >
-                    {/* Custom Scrollbar Thumb */}
                     <div
                         ref={thumbRef}
                         onMouseDown={handleThumbMouseDown}
@@ -255,26 +313,18 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
                             top: thumbTop,
                             width: thumbWidth,
                             height: thumbHeight,
-                            background: isDragging || isHovering
-                                ? (thumbHoverColor || 'rgba(255, 255, 255, 0.4)')
-                                : (thumbColor || 'rgba(255, 255, 255, 0.2)'),
+                            background: isDragging || isHovering || isFocused
+                                ? (thumbHoverColor || 'rgba(150, 150, 150, 0.5)')
+                                : (thumbColor || 'rgba(150, 150, 150, 0.3)'),
                             borderRadius: thumbWidth / 2,
-                            transition: isDragging ? 'none' : 'background 0.15s ease, width 0.15s ease',
-                            cursor: 'grab',
-                            ...(isDragging && {
-                                cursor: 'grabbing'
-                            })
+                            transition: isDragging || reduceMotion
+                                ? 'none'
+                                : 'background 0.15s ease, width 0.15s ease',
+                            cursor: isDragging ? 'grabbing' : 'grab',
                         }}
                     />
                 </div>
             )}
-
-            {/* Global style injection for webkit scrollbar hiding */}
-            <style>{`
-                .scroll-area-content::-webkit-scrollbar {
-                    display: none;
-                }
-            `}</style>
         </div>
     );
 };
