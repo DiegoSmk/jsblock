@@ -11,6 +11,8 @@ import {
     Check
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import { Radio } from '../ui/Radio';
+import { Tooltip } from '../Tooltip';
 import 'xterm/css/xterm.css';
 
 export const GitTerminalView: React.FC = () => {
@@ -29,12 +31,15 @@ export const GitTerminalView: React.FC = () => {
     const [showAddCommand, setShowAddCommand] = useState(false);
     const [newCmdLabel, setNewCmdLabel] = useState('');
     const [newCmdValue, setNewCmdValue] = useState('');
+    const [newCmdAutoExecute, setNewCmdAutoExecute] = useState(true);
 
     useEffect(() => {
         if (!terminalRef.current) return;
 
+        // Cleanup previous instance
         if (xtermRef.current) {
             xtermRef.current.dispose();
+            xtermRef.current = null;
         }
 
         const term = new XTerm({
@@ -92,7 +97,24 @@ export const GitTerminalView: React.FC = () => {
         term.loadAddon(fitAddon);
         term.open(terminalRef.current);
 
-        setTimeout(() => fitAddon.fit(), 100);
+        const safeFit = () => {
+            if (terminalRef.current && terminalRef.current.offsetWidth > 0 && (term as any)._core?.viewport) {
+                try {
+                    fitAddon.fit();
+                    if ((window as any).electronAPI) {
+                        (window as any).electronAPI.terminalResize(term.cols, term.rows);
+                    }
+                } catch (e) {
+                    console.warn('Fit failed:', e);
+                }
+            }
+        };
+
+        // Initial fit and focus
+        setTimeout(() => {
+            safeFit();
+            term.focus();
+        }, 150);
 
         xtermRef.current = term;
 
@@ -128,14 +150,7 @@ export const GitTerminalView: React.FC = () => {
             terminalElement?.addEventListener('contextmenu', handleContextMenu);
 
             const resizeObserver = new ResizeObserver(() => {
-                if (terminalRef.current && xtermRef.current) {
-                    try {
-                        fitAddon.fit();
-                        (window as any).electronAPI.terminalResize(term.cols, term.rows);
-                    } catch (e) {
-                        console.warn('Terminal resize failed:', e);
-                    }
-                }
+                requestAnimationFrame(() => safeFit());
             });
             resizeObserver.observe(terminalRef.current);
 
@@ -150,20 +165,25 @@ export const GitTerminalView: React.FC = () => {
                 (window as any).electronAPI.terminalKill();
             };
         }
-    }, [isDark, openedFolder]);
+    }, [isDark, openedFolder, settings.terminalCopyOnSelect, settings.terminalRightClickPaste]);
 
-    const handleRunQuickCommand = (cmd: string) => {
+    const handleRunQuickCommand = (cmd: string, autoExecute: boolean = true) => {
         if ((window as any).electronAPI) {
-            // Send command + enter
-            (window as any).electronAPI.terminalSendInput(cmd + '\r');
+            // Send command + enter if autoExecute (default), otherwise just send command
+            (window as any).electronAPI.terminalSendInput(cmd + (autoExecute !== false ? '\r' : ''));
         }
     };
 
     const handleAddQuickCommand = () => {
         if (!newCmdLabel.trim() || !newCmdValue.trim()) return;
-        addQuickCommand({ label: newCmdLabel.trim(), command: newCmdValue.trim() });
+        addQuickCommand({
+            label: newCmdLabel.trim(),
+            command: newCmdValue.trim(),
+            autoExecute: newCmdAutoExecute
+        });
         setNewCmdLabel('');
         setNewCmdValue('');
+        setNewCmdAutoExecute(true);
         setShowAddCommand(false);
     };
 
@@ -205,7 +225,7 @@ export const GitTerminalView: React.FC = () => {
                     transition: 'all 0.2s'
                 }}
             >
-                Criar Comando
+                Criar Atalho
             </button>
         </>
     );
@@ -223,11 +243,11 @@ export const GitTerminalView: React.FC = () => {
             <Modal
                 isOpen={showAddCommand}
                 onClose={() => setShowAddCommand(false)}
-                title="Novo Comando Rápido"
+                title="Configurar Atalho de Execução"
                 isDark={isDark}
                 headerIcon={<Zap size={16} color={isDark ? '#4fc3f7' : '#0070f3'} />}
                 footer={addCommandModalFooter}
-                maxWidth="350px"
+                maxWidth="400px"
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div>
@@ -251,7 +271,7 @@ export const GitTerminalView: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>Comando</label>
+                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>Instrução SQL/Bash</label>
                         <input
                             placeholder="Ex: npm run dev"
                             value={newCmdValue}
@@ -269,8 +289,61 @@ export const GitTerminalView: React.FC = () => {
                             }}
                             onKeyDown={(e) => e.key === 'Enter' && handleAddQuickCommand()}
                         />
-                        <div style={{ marginTop: '6px', fontSize: '0.65rem', color: isDark ? '#555' : '#aaa' }}>
-                            O comando será executado no terminal atual.
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Modo de Interação</label>
+
+                        <div
+                            onClick={() => setNewCmdAutoExecute(true)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px',
+                                borderRadius: '10px',
+                                background: newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.08)' : 'rgba(0, 112, 243, 0.04)') : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
+                                border: `1px solid ${newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)') : (isDark ? '#333' : '#eee')}`,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <Radio
+                                checked={newCmdAutoExecute}
+                                onChange={() => setNewCmdAutoExecute(true)}
+                                activeColor={isDark ? '#4fc3f7' : '#0070f3'}
+                                isDark={isDark}
+                            />
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>Execução Automática</div>
+                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>O comando é enviado e processado imediatamente ao clicar no atalho.</div>
+                            </div>
+                        </div>
+
+                        <div
+                            onClick={() => setNewCmdAutoExecute(false)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px',
+                                borderRadius: '10px',
+                                background: !newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.08)' : 'rgba(0, 112, 243, 0.04)') : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
+                                border: `1px solid ${!newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)') : (isDark ? '#333' : '#eee')}`,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            <Radio
+                                checked={!newCmdAutoExecute}
+                                onChange={() => setNewCmdAutoExecute(false)}
+                                activeColor={isDark ? '#4fc3f7' : '#0070f3'}
+                                isDark={isDark}
+                            />
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>Apenas Preencher</div>
+                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>Insere o código no prompt, permitindo revisão antes da execução manual.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -291,23 +364,32 @@ export const GitTerminalView: React.FC = () => {
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.5px', color: isDark ? '#ccc' : '#444' }}>
                         TERMINAL INTEGRADO
                     </span>
+                    <div style={{ height: '12px', width: '1px', background: isDark ? '#333' : '#ddd', margin: '0 4px' }} />
+                    <Tooltip content="Atalhos personalizados para execução rápida de comandos" side="bottom">
+                        <span style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999', fontWeight: 600, textTransform: 'uppercase', cursor: 'help' }}>Macros</span>
+                    </Tooltip>
+
                     <div style={{
                         fontSize: '0.65rem',
-                        color: isDark ? '#666' : '#999',
+                        color: isDark ? '#555' : '#aaa',
                         display: 'flex',
                         gap: '12px',
                         marginLeft: '12px',
                         fontWeight: 500
                     }}>
                         {settings.terminalCopyOnSelect && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Check size={10} color="#4ade80" /> Auto-Copy
-                            </span>
+                            <Tooltip content="Texto selecionado é copiado automaticamente" side="bottom">
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
+                                    <Check size={10} color="#4ade80" /> Auto-Copy
+                                </span>
+                            </Tooltip>
                         )}
                         {settings.terminalRightClickPaste && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Check size={10} color="#4ade80" /> Click-Paste
-                            </span>
+                            <Tooltip content="Botão direito cola conteúdo da área de transferência" side="bottom">
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
+                                    <Check size={10} color="#4ade80" /> Click-Paste
+                                </span>
+                            </Tooltip>
                         )}
                     </div>
                 </div>
@@ -337,7 +419,7 @@ export const GitTerminalView: React.FC = () => {
                 </div>
             </div>
 
-            {/* Quick Commands Bar */}
+            {/* Macros Bar */}
             <div style={{
                 padding: '8px 16px',
                 borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
@@ -358,19 +440,19 @@ export const GitTerminalView: React.FC = () => {
                     display: 'flex',
                     alignItems: 'center',
                     paddingBottom: '4px',
-                }} className="terminal-quick-commands-scroll">
+                }} className="terminal-macros-scroll">
                     <style>{`
-                        .terminal-quick-commands-scroll::-webkit-scrollbar {
+                        .terminal-macros-scroll::-webkit-scrollbar {
                             height: 4px;
                         }
-                        .terminal-quick-commands-scroll::-webkit-scrollbar-track {
+                        .terminal-macros-scroll::-webkit-scrollbar-track {
                             background: transparent;
                         }
-                        .terminal-quick-commands-scroll::-webkit-scrollbar-thumb {
+                        .terminal-macros-scroll::-webkit-scrollbar-thumb {
                             background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
                             border-radius: 4px;
                         }
-                        .terminal-quick-commands-scroll::-webkit-scrollbar-thumb:hover {
+                        .terminal-macros-scroll::-webkit-scrollbar-thumb:hover {
                             background: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};
                         }
                     `}</style>
@@ -392,8 +474,8 @@ export const GitTerminalView: React.FC = () => {
                                 }}
                             >
                                 <span
-                                    onClick={() => handleRunQuickCommand(cmd.command)}
-                                    title={`Executar: ${cmd.command}`}
+                                    onClick={() => handleRunQuickCommand(cmd.command, cmd.autoExecute)}
+                                    title={`${cmd.autoExecute ? 'Executar' : 'Preencher'}: ${cmd.command}`}
                                     style={{ cursor: 'pointer', fontWeight: 600, marginRight: '4px' }}
                                     onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#4fc3f7' : '#0070f3'}
                                     onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}

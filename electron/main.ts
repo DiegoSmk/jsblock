@@ -266,32 +266,68 @@ ipcMain.on('window-close', () => {
 
 // --- Terminal (PTY) Management ---
 let ptyProcess: pty.IPty | null = null;
+let currentTerminalId: number = 0;
 
 ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
-    // Kill existing process if any
+    const terminalId = ++currentTerminalId;
+
     if (ptyProcess) {
-        ptyProcess.kill();
+        try {
+            ptyProcess.kill();
+        } catch (e) { }
         ptyProcess = null;
     }
 
-    const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+    let shell = 'bash';
+    let args: string[] = ['-i'];
 
-    ptyProcess = pty.spawn(shell, [], {
-        name: 'xterm-color',
-        cols: 80,
-        rows: 24,
-        cwd: options.cwd || os.homedir(),
-        env: process.env as any
-    });
+    if (process.platform === 'win32') {
+        shell = 'powershell.exe';
+        args = [];
+    } else {
+        // Use user's preferred shell if available
+        shell = process.env.SHELL || (process.platform === 'darwin' ? 'zsh' : 'bash');
+        args = process.platform === 'darwin' ? ['-l'] : ['-i'];
+    }
 
-    ptyProcess.onData((data) => {
-        mainWindow?.webContents.send('terminal-data', data);
-    });
+    const workingDir = options.cwd && fs.existsSync(options.cwd) ? options.cwd : os.homedir();
 
-    ptyProcess.onExit(() => {
-        mainWindow?.webContents.send('terminal-data', '\r\n[Processo finalizado]\r\n');
-        ptyProcess = null;
-    });
+    try {
+        const newPty = pty.spawn(shell, args, {
+            name: 'xterm-256color',
+            cols: 80,
+            rows: 24,
+            cwd: workingDir,
+            env: {
+                ...process.env,
+                TERM: 'xterm-256color',
+                COLORTERM: 'truecolor',
+                LANG: process.env.LANG || 'en_US.UTF-8'
+            } as any
+        });
+
+        newPty.onData((data) => {
+            if (currentTerminalId === terminalId) {
+                mainWindow?.webContents.send('terminal-data', data);
+            }
+        });
+
+        newPty.onExit(({ exitCode, signal }) => {
+            if (currentTerminalId === terminalId) {
+                mainWindow?.webContents.send('terminal-data', `\r\n[Processo finalizado com código ${exitCode}${signal ? ` e sinal ${signal}` : ''}]\r\n`);
+                if (ptyProcess === newPty) {
+                    ptyProcess = null;
+                }
+            }
+        });
+
+        ptyProcess = newPty;
+    } catch (err) {
+        console.error('Failed to spawn terminal:', err);
+        if (currentTerminalId === terminalId) {
+            mainWindow?.webContents.send('terminal-data', `\r\n[Erro ao iniciar terminal: ${err instanceof Error ? err.message : String(err)}]\r\n`);
+        }
+    }
 });
 
 ipcMain.on('terminal-input', (event, data: string) => {
@@ -303,8 +339,12 @@ ipcMain.on('terminal-resize', (event, { cols, rows }: { cols: number, rows: numb
 });
 
 ipcMain.on('terminal-kill', () => {
-    ptyProcess?.kill();
-    ptyProcess = null;
+    // Incrementing ID invalidates any pending exit callbacks from the current process
+    currentTerminalId++;
+    if (ptyProcess) {
+        ptyProcess.kill();
+        ptyProcess = null;
+    }
 });
 
 // Ensure cleanup on quit

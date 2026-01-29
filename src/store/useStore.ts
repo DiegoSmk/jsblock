@@ -212,6 +212,7 @@ export interface QuickCommand {
     id: string;
     label: string;
     command: string;
+    autoExecute: boolean;
 }
 
 const initialCode = '';
@@ -264,7 +265,11 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
 
     addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => {
-        const newCmd = { ...cmd, id: Date.now().toString() };
+        const newCmd = {
+            ...cmd,
+            id: Date.now().toString(),
+            autoExecute: cmd.autoExecute ?? true // Default to true if not provided
+        };
         const quickCommands = [...get().quickCommands, newCmd];
         localStorage.setItem('quickCommands', JSON.stringify(quickCommands));
         set({ quickCommands });
