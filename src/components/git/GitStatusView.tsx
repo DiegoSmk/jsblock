@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
 import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile } from 'lucide-react';
@@ -24,6 +24,26 @@ export const GitStatusView: React.FC = () => {
     const [isAmend, setIsAmend] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showAuthorMenu, setShowAuthorMenu] = useState(false);
+    const authorMenuRef = useRef<HTMLDivElement>(null);
+
+    // Handle click outside for author menu
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (authorMenuRef.current && !authorMenuRef.current.contains(event.target as Node)) {
+                setShowAuthorMenu(false);
+            }
+        };
+
+        if (showAuthorMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showAuthorMenu]);
 
     // Author Management State
     const [showAuthorConfigModal, setShowAuthorConfigModal] = useState(false);
@@ -112,161 +132,118 @@ export const GitStatusView: React.FC = () => {
                 gap: '12px'
             }}>
                 <BranchSwitcher isDark={isDark} />
-                <button
-                    onClick={handleRefresh}
-                    disabled={isLoading}
-                    style={{
-                        background: isDark ? '#2d2d2d' : '#f5f5f5',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: isDark ? '#aaa' : '#666',
-                        padding: '8px',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-                </button>
 
-                {/* Author Avatar Menu */}
-                <div style={{ position: 'relative' }}>
-                    <div
-                        onClick={() => setShowAuthorMenu(!showAuthorMenu)}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={isLoading}
                         style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '8px',
                             background: isDark ? '#2d2d2d' : '#f5f5f5',
-                            border: `1px solid ${isDark ? '#444' : '#e5e7eb'}`,
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: isDark ? '#aaa' : '#666',
+                            padding: '8px',
+                            borderRadius: '8px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            cursor: 'pointer',
-                            color: isDark ? '#aaa' : '#666'
+                            outline: 'none'
                         }}
-                        title={git.projectAuthor?.name || git.globalAuthor?.name || 'Autor não configurado'}
                     >
-                        <User size={16} />
-                    </div>
+                        <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                    </button>
 
-                    {showAuthorMenu && (
-                        <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            right: 0,
-                            marginTop: '8px',
-                            background: isDark ? '#1a1a1a' : '#fff',
-                            border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                            borderRadius: '8px',
-                            minWidth: '280px',
-                            boxShadow: isDark ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                            zIndex: 1000,
-                            overflow: 'hidden'
-                        }}>
-                            {/* Current Author */}
-                            <div style={{ padding: '12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    Autor Atual
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <div style={{
-                                        width: '28px',
-                                        height: '28px',
-                                        borderRadius: '6px',
-                                        background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: isDark ? '#4fc3f7' : '#0070f3'
-                                    }}>
-                                        <User size={14} />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {git.projectAuthor?.name || git.globalAuthor?.name || 'Não configurado'}
-                                        </div>
-                                        <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {git.projectAuthor?.email || git.globalAuthor?.email || ''}
-                                        </div>
-                                    </div>
-                                    <div style={{
-                                        fontSize: '0.65rem',
-                                        background: git.projectAuthor
-                                            ? 'rgba(79, 195, 247, 0.1)'
-                                            : 'rgba(74, 222, 128, 0.1)',
-                                        color: git.projectAuthor
-                                            ? (isDark ? '#4fc3f7' : '#0070f3')
-                                            : '#10b981',
-                                        padding: '3px 6px',
-                                        borderRadius: '4px',
-                                        border: git.projectAuthor
-                                            ? `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.15)'}`
-                                            : '1px solid rgba(74, 222, 128, 0.2)'
-                                    }}>
-                                        {git.projectAuthor ? 'Local' : 'Global'}
-                                    </div>
-                                </div>
-                            </div>
+                    {/* Author Avatar Menu */}
+                    <div style={{ position: 'relative' }} ref={authorMenuRef}>
+                        <div
+                            onClick={() => setShowAuthorMenu(!showAuthorMenu)}
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                border: `1px solid ${isDark ? '#444' : '#e5e7eb'}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: isDark ? '#aaa' : '#666'
+                            }}
+                            title={git.projectAuthor?.name || git.globalAuthor?.name || 'Autor não configurado'}
+                        >
+                            <User size={16} />
+                        </div>
 
-                            {/* Saved Profiles */}
-                            <div style={{ padding: '8px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', padding: '4px 8px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                    Trocar para
-                                </div>
-
-                                {/* Global Author Option */}
-                                {git.globalAuthor && git.projectAuthor && (
-                                    <div
-                                        onClick={async () => {
-                                            await resetToGlobal();
-                                            setShowAuthorMenu(false);
-                                        }}
-                                        style={{
-                                            padding: '8px',
+                        {showAuthorMenu && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                marginTop: '8px',
+                                background: isDark ? '#1a1a1a' : '#fff',
+                                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                                borderRadius: '8px',
+                                minWidth: '280px',
+                                boxShadow: isDark ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                zIndex: 1000,
+                                overflow: 'hidden'
+                            }}>
+                                {/* Current Author */}
+                                <div style={{ padding: '12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
+                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        Autor Atual
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <div style={{
+                                            width: '28px',
+                                            height: '28px',
                                             borderRadius: '6px',
-                                            cursor: 'pointer',
+                                            background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.1)',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '8px',
-                                            fontSize: '0.8rem'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = 'transparent';
-                                        }}
-                                    >
-                                        <span style={{ color: '#10b981', flexShrink: 0 }}>
-                                            <Globe size={14} />
-                                        </span>
+                                            justifyContent: 'center',
+                                            color: isDark ? '#4fc3f7' : '#0070f3'
+                                        }}>
+                                            <User size={14} />
+                                        </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {git.globalAuthor.name}
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {git.projectAuthor?.name || git.globalAuthor?.name || 'Não configurado'}
                                             </div>
                                             <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {git.globalAuthor.email} <span style={{ opacity: 0.7 }}>(Global)</span>
+                                                {git.projectAuthor?.email || git.globalAuthor?.email || ''}
                                             </div>
                                         </div>
-                                        {!git.projectAuthor && (
-                                            <Check size={14} color="#10b981" />
-                                        )}
+                                        <div style={{
+                                            fontSize: '0.65rem',
+                                            background: git.projectAuthor
+                                                ? 'rgba(79, 195, 247, 0.1)'
+                                                : 'rgba(74, 222, 128, 0.1)',
+                                            color: git.projectAuthor
+                                                ? (isDark ? '#4fc3f7' : '#0070f3')
+                                                : '#10b981',
+                                            padding: '3px 6px',
+                                            borderRadius: '4px',
+                                            border: git.projectAuthor
+                                                ? `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.15)'}`
+                                                : '1px solid rgba(74, 222, 128, 0.2)'
+                                        }}>
+                                            {git.projectAuthor ? 'Local' : 'Global'}
+                                        </div>
                                     </div>
-                                )}
+                                </div>
 
-                                {gitProfiles
-                                    .filter(profile => {
-                                        const current = git.projectAuthor || git.globalAuthor;
-                                        if (!current) return true;
-                                        return !(profile.email === current.email && profile.name === current.name);
-                                    })
-                                    .map(profile => (
+                                {/* Saved Profiles */}
+                                <div style={{ padding: '8px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
+                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', padding: '4px 8px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        Trocar para
+                                    </div>
+
+                                    {/* Global Author Option */}
+                                    {git.globalAuthor && git.projectAuthor && (
                                         <div
-                                            key={profile.id}
                                             onClick={async () => {
-                                                await setGitConfig({ name: profile.name, email: profile.email }, false);
+                                                await resetToGlobal();
                                                 setShowAuthorMenu(false);
                                             }}
                                             style={{
@@ -285,55 +262,102 @@ export const GitStatusView: React.FC = () => {
                                                 e.currentTarget.style.background = 'transparent';
                                             }}
                                         >
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: getTagColor(profile.tag), flexShrink: 0 }}>
-                                                {getTagIcon(profile.tag)}
-                                            </div>
+                                            <span style={{ color: '#10b981', flexShrink: 0 }}>
+                                                <Globe size={14} />
+                                            </span>
                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                 <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {profile.name}
+                                                    {git.globalAuthor.name}
                                                 </div>
                                                 <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {profile.email}
+                                                    {git.globalAuthor.email} <span style={{ opacity: 0.7 }}>(Global)</span>
                                                 </div>
                                             </div>
-                                            {git.projectAuthor?.email === profile.email && git.projectAuthor?.name === profile.name && (
+                                            {!git.projectAuthor && (
                                                 <Check size={14} color="#10b981" />
                                             )}
                                         </div>
-                                    ))}
-                            </div>
+                                    )}
 
-                            {/* Actions */}
-                            <div style={{ padding: '8px' }}>
-                                <div
-                                    onClick={() => {
-                                        setShowAuthorMenu(false);
-                                        setAuthorConfigBuffer({ name: '', email: '', isGlobal: false });
-                                        setShowAuthorConfigModal(true);
-                                    }}
-                                    style={{
-                                        padding: '8px',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        fontSize: '0.8rem',
-                                        color: isDark ? '#4fc3f7' : '#0070f3'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.08)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = 'transparent';
-                                    }}
-                                >
-                                    <Settings size={14} />
-                                    Configurar Novo Autor
+                                    {gitProfiles
+                                        .filter(profile => {
+                                            const current = git.projectAuthor || git.globalAuthor;
+                                            if (!current) return true;
+                                            return !(profile.email === current.email && profile.name === current.name);
+                                        })
+                                        .map(profile => (
+                                            <div
+                                                key={profile.id}
+                                                onClick={async () => {
+                                                    await setGitConfig({ name: profile.name, email: profile.email }, false);
+                                                    setShowAuthorMenu(false);
+                                                }}
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    fontSize: '0.8rem'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = 'transparent';
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: getTagColor(profile.tag), flexShrink: 0 }}>
+                                                    {getTagIcon(profile.tag)}
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {profile.name}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {profile.email}
+                                                    </div>
+                                                </div>
+                                                {git.projectAuthor?.email === profile.email && git.projectAuthor?.name === profile.name && (
+                                                    <Check size={14} color="#10b981" />
+                                                )}
+                                            </div>
+                                        ))}
+                                </div>
+
+                                {/* Actions */}
+                                <div style={{ padding: '8px' }}>
+                                    <div
+                                        onClick={() => {
+                                            setShowAuthorMenu(false);
+                                            setAuthorConfigBuffer({ name: '', email: '', isGlobal: false });
+                                            setShowAuthorConfigModal(true);
+                                        }}
+                                        style={{
+                                            padding: '8px',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            fontSize: '0.8rem',
+                                            color: isDark ? '#4fc3f7' : '#0070f3'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.08)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'transparent';
+                                        }}
+                                    >
+                                        <Settings size={14} />
+                                        Configurar Novo Autor
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
 

@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
-import { Archive, ArrowUpCircle, RotateCcw, HelpCircle, Layers, Trash2, ChevronDown, Monitor } from 'lucide-react';
+import { Archive, ArrowUpCircle, RotateCcw, Layers, Trash2, ChevronDown, Monitor } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 import { ScrollArea } from '../ui/ScrollArea';
 
 interface ProductivityToolbarProps {
     isDark: boolean;
+    children?: React.ReactNode;
 }
 
-export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark }) => {
+export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark, children }) => {
     const { git, gitStash, gitPopStash, gitUndoLastCommit, gitApplyStash, gitDropStash, setConfirmationModal } = useStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
@@ -77,9 +78,6 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
                     Ações Rápidas
                 </span>
-                <Tooltip content="Ferramentas para agilizar seu fluxo de trabalho" side="right">
-                    <HelpCircle size={10} color={isDark ? '#444' : '#ccc'} style={{ cursor: 'help' }} />
-                </Tooltip>
             </div>
 
             {/* Stash Group */}
@@ -100,7 +98,8 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                             fontSize: '0.75rem',
                             color: (!hasChanges || isProcessing) ? (isDark ? '#444' : '#ccc') : (isDark ? '#aaa' : '#666'),
                             transition: 'all 0.2s',
-                            opacity: (!hasChanges || isProcessing) ? 0.6 : 1
+                            opacity: (!hasChanges || isProcessing) ? 0.6 : 1,
+                            outline: 'none'
                         }}
                         onMouseEnter={(e) => {
                             if (!hasChanges || isProcessing) return;
@@ -108,7 +107,6 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                             e.currentTarget.style.color = isDark ? '#4fc3f7' : '#0070f3';
                         }}
                         onMouseLeave={(e) => {
-                            if (!hasChanges || isProcessing) return;
                             e.currentTarget.style.borderColor = isDark ? '#333' : '#ddd';
                             e.currentTarget.style.color = isDark ? '#aaa' : '#666';
                         }}
@@ -119,9 +117,9 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                 </Tooltip>
 
                 <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                    <Tooltip content={hasStashes ? `Ver gavetas (${stashCount})` : "Gaveta vazia"} side="bottom">
+                    <Tooltip content={hasStashes ? "Restaurar última gaveta (Pop)" : "Gaveta vazia"} side="bottom">
                         <button
-                            onClick={() => setIsOpen(!isOpen)}
+                            onClick={() => handleAction(() => gitPopStash(0))}
                             disabled={isProcessing || !hasStashes}
                             style={{
                                 background: isDark ? '#252525' : '#fff',
@@ -136,45 +134,45 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                                 fontSize: '0.75rem',
                                 color: (!hasStashes || isProcessing) ? (isDark ? '#444' : '#ccc') : (isDark ? '#aaa' : '#666'),
                                 transition: 'all 0.2s',
-                                opacity: (!hasStashes || isProcessing) ? 0.6 : 1
+                                opacity: (!hasStashes || isProcessing) ? 0.6 : 1,
+                                outline: 'none'
                             }}
                         >
                             <ArrowUpCircle size={12} />
-                            <span style={{ fontWeight: 600 }}>Pop</span>
-                            {stashCount > 0 && (
-                                <span style={{
-                                    fontSize: '0.6rem',
-                                    background: isDark ? '#4fc3f7' : '#0070f3',
-                                    color: '#fff',
-                                    padding: '0 5px',
-                                    borderRadius: '10px',
-                                    fontWeight: 800,
-                                    height: '14px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
-                                    {stashCount}
-                                </span>
-                            )}
+                            <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                Pop
+                                {stashCount > 0 && (
+                                    <span style={{
+                                        width: '6px',
+                                        height: '6px',
+                                        background: isDark ? '#4fc3f7' : '#0070f3',
+                                        borderRadius: '50%',
+                                        boxShadow: isDark ? '0 0 4px rgba(79, 195, 247, 0.4)' : '0 0 4px rgba(0, 112, 243, 0.3)',
+                                    }} />
+                                )}
+                            </span>
                         </button>
                     </Tooltip>
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        disabled={isProcessing || !hasStashes}
-                        style={{
-                            background: isDark ? '#252525' : '#fff',
-                            border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                            borderRadius: '0 6px 6px 0',
-                            cursor: (!hasStashes || isProcessing) ? 'not-allowed' : 'pointer',
-                            padding: '4px 4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            opacity: (!hasStashes || isProcessing) ? 0.6 : 1
-                        }}
-                    >
-                        <ChevronDown size={14} color={isDark ? '#666' : '#999'} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                    </button>
+                    <Tooltip content={hasStashes ? `Ver todas as gavetas (${stashCount})` : "Gaveta vazia"} side="bottom">
+                        <button
+                            onClick={() => setIsOpen(!isOpen)}
+                            disabled={isProcessing || !hasStashes}
+                            style={{
+                                background: isDark ? '#252525' : '#fff',
+                                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                borderRadius: '0 6px 6px 0',
+                                cursor: (!hasStashes || isProcessing) ? 'not-allowed' : 'pointer',
+                                padding: '4px 4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                opacity: (!hasStashes || isProcessing) ? 0.6 : 1,
+                                outline: 'none'
+                            }}
+                        >
+                            <ChevronDown size={14} color={isDark ? '#666' : '#999'} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                        </button>
+                    </Tooltip>
+
 
                     {/* Stash Dropdown Menu */}
                     {isOpen && hasStashes && (
@@ -192,8 +190,28 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                             transformOrigin: 'top right'
                         }}>
                             <div style={{ padding: '12px', background: isDark ? '#222' : '#f9fafb', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#888' : '#666', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <Layers size={14} /> GAVETAS DISPONÍVEIS
+                                <div style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    color: isDark ? '#888' : '#666',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    letterSpacing: '0.05em'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Layers size={14} /> GAVETAS DISPONÍVEIS
+                                    </div>
+                                    <span style={{
+                                        background: isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)',
+                                        color: isDark ? '#4fc3f7' : '#0070f3',
+                                        padding: '2px 8px',
+                                        borderRadius: '12px',
+                                        fontSize: '0.65rem',
+                                        border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.1)'}`
+                                    }}>
+                                        {stashCount}
+                                    </span>
                                 </div>
                             </div>
                             <ScrollArea style={{ maxHeight: '300px' }}>
@@ -314,7 +332,8 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                         fontSize: '0.75rem',
                         color: (!hasHistory || isProcessing) ? (isDark ? '#444' : '#ccc') : (isDark ? '#f87171' : '#dc2626'),
                         transition: 'all 0.2s',
-                        opacity: (!hasHistory || isProcessing) ? 0.6 : 1
+                        opacity: (!hasHistory || isProcessing) ? 0.6 : 1,
+                        outline: 'none'
                     }}
                     onMouseEnter={(e) => {
                         if (!hasHistory || isProcessing) return;
@@ -322,7 +341,6 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                         e.currentTarget.style.borderColor = isDark ? '#f87171' : '#dc2626';
                     }}
                     onMouseLeave={(e) => {
-                        if (!hasHistory || isProcessing) return;
                         e.currentTarget.style.background = isDark ? '#252525' : '#fff';
                         e.currentTarget.style.borderColor = isDark ? '#333' : '#ddd';
                     }}
@@ -331,6 +349,15 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                     <span style={{ fontWeight: 600 }}>Undo Commit</span>
                 </button>
             </Tooltip>
-        </div>
+
+            {/* Right Aligned Content (Refresh & Profile) */}
+            {
+                children && (
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {children}
+                    </div>
+                )
+            }
+        </div >
     );
 };
