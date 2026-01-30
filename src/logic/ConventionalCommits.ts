@@ -1,0 +1,15 @@
+export const COMMIT_TYPES = [
+    { value: 'feat', label: 'Feature', color: '#3b82f6', description: 'Inclui um novo recurso (MINOR).' },
+    { value: 'fix', label: 'Fix', color: '#ef4444', description: 'Soluciona um problema (PATCH).' },
+    { value: 'docs', label: 'Docs', color: '#f97316', description: 'Mudanças na documentação.' },
+    { value: 'test', label: 'Test', color: '#eab308', description: 'Alterações em testes.' },
+    { value: 'build', label: 'Build', color: '#6366f1', description: 'Modificações em arquivos de build e dependências.' },
+    { value: 'perf', label: 'Perf', color: '#10b981', description: 'Alterações de código relacionadas a performance.' },
+    { value: 'style', label: 'Style', color: '#ec4899', description: 'Alterações de formatação, lint, etc. (sem mudar código).' },
+    { value: 'refactor', label: 'Refactor', color: '#8b5cf6', description: 'Refatoração sem alterar funcionalidade.' },
+    { value: 'chore', label: 'Chore', color: '#6b7280', description: 'Atualizações de tarefas de build, configs, etc.' },
+    { value: 'ci', label: 'CI', color: '#14b8a6', description: 'Mudanças relacionadas a integração contínua.' },
+    { value: 'raw', label: 'Raw', color: '#06b6d4', description: 'Mudanças em configs, dados, features, parâmetros.' },
+    { value: 'cleanup', label: 'Cleanup', color: '#f43f5e', description: 'Remover código comentado, limpeza, etc.' },
+    { value: 'remove', label: 'Remove', color: '#991b1b', description: 'Exclusão de arquivos ou funcionalidades obsoletas.' },
+];

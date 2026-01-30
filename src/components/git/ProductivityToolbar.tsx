@@ -103,12 +103,13 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                         }}
                         onMouseEnter={(e) => {
                             if (!hasChanges || isProcessing) return;
-                            e.currentTarget.style.borderColor = isDark ? '#4fc3f7' : '#0070f3';
-                            e.currentTarget.style.color = isDark ? '#4fc3f7' : '#0070f3';
+                            e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                            e.currentTarget.style.background = isDark ? '#333' : '#f5f5f5';
                         }}
                         onMouseLeave={(e) => {
                             e.currentTarget.style.borderColor = isDark ? '#333' : '#ddd';
                             e.currentTarget.style.color = isDark ? '#aaa' : '#666';
+                            e.currentTarget.style.background = isDark ? '#252525' : '#fff';
                         }}
                     >
                         <Archive size={12} />
@@ -337,18 +338,20 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                     }}
                     onMouseEnter={(e) => {
                         if (!hasHistory || isProcessing) return;
+                        e.currentTarget.style.color = isDark ? '#f87171' : '#dc2626';
                         e.currentTarget.style.background = isDark ? 'rgba(248, 113, 113, 0.1)' : 'rgba(220, 38, 38, 0.05)';
-                        e.currentTarget.style.borderColor = isDark ? '#f87171' : '#dc2626';
                     }}
                     onMouseLeave={(e) => {
                         e.currentTarget.style.background = isDark ? '#252525' : '#fff';
                         e.currentTarget.style.borderColor = isDark ? '#333' : '#ddd';
+                        e.currentTarget.style.color = (!hasHistory || isProcessing) ? (isDark ? '#444' : '#ccc') : (isDark ? '#f87171' : '#dc2626');
                     }}
                 >
                     <RotateCcw size={12} />
                     <span style={{ fontWeight: 600 }}>Undo Commit</span>
                 </button>
             </Tooltip>
+
 
             {/* Right Aligned Content (Refresh & Profile) */}
             {
@@ -358,6 +361,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                     </div>
                 )
             }
+
         </div >
     );
 };

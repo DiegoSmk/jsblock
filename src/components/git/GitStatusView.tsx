@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
-import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile } from 'lucide-react';
+import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile, FileText, ChevronDown } from 'lucide-react';
 import { GitStatusGroups } from './GitStatusGroups';
 import { CommitSection } from './CommitSection';
 import { AuthorModal } from './AuthorModal';
+import { CommitTemplateModal } from './CommitTemplateModal';
 import { BranchSwitcher } from './BranchSwitcher';
 import { ProductivityToolbar } from './ProductivityToolbar';
 import './GitPanel.css'; // basic shared styles
@@ -14,9 +15,8 @@ export const GitStatusView: React.FC = () => {
         theme, git, refreshGit,
         gitStage, gitUnstage, gitCommit,
         gitStageAll, gitUnstageAll, gitDiscard, gitDiscardAll,
-        setGitConfig, gitProfiles,
         addGitProfile, removeGitProfile,
-        resetToGlobal
+        resetToGlobal, commitTemplates, setGitConfig, gitProfiles
     } = useStore();
 
     const isDark = theme === 'dark';
@@ -26,11 +26,19 @@ export const GitStatusView: React.FC = () => {
     const [showAuthorMenu, setShowAuthorMenu] = useState(false);
     const authorMenuRef = useRef<HTMLDivElement>(null);
 
+    // Template State
+    const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const templateDropdownRef = useRef<HTMLDivElement>(null);
+
     // Handle click outside for author menu
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (authorMenuRef.current && !authorMenuRef.current.contains(event.target as Node)) {
                 setShowAuthorMenu(false);
+            }
+            if (templateDropdownRef.current && !templateDropdownRef.current.contains(event.target as Node)) {
+                setIsTemplateDropdownOpen(false);
             }
         };
 
@@ -43,7 +51,7 @@ export const GitStatusView: React.FC = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showAuthorMenu]);
+    }, [showAuthorMenu, isTemplateDropdownOpen]);
 
     // Author Management State
     const [showAuthorConfigModal, setShowAuthorConfigModal] = useState(false);
@@ -134,6 +142,119 @@ export const GitStatusView: React.FC = () => {
                 <BranchSwitcher isDark={isDark} />
 
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Templates Button & Dropdown */}
+                    <div style={{ position: 'relative' }} ref={templateDropdownRef}>
+                        <button
+                            onClick={() => setIsTemplateDropdownOpen(!isTemplateDropdownOpen)}
+                            style={{
+                                background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 10px',
+                                fontSize: '0.75rem',
+                                color: isDark ? '#aaa' : '#666',
+                                transition: 'all 0.2s',
+                                outline: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.color = isDark ? '#aaa' : '#666';
+                            }}
+                            title="Modelos de mensagem de commit"
+                        >
+                            <FileText size={14} />
+                            <ChevronDown size={12} style={{ transform: isTemplateDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                        </button>
+
+                        {isTemplateDropdownOpen && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                marginTop: '8px',
+                                background: isDark ? '#1a1a1a' : '#fff',
+                                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                                borderRadius: '8px',
+                                minWidth: '240px',
+                                boxShadow: isDark ? '0 10px 25px rgba(0,0,0,0.5)' : '0 10px 25px rgba(0,0,0,0.1)',
+                                zIndex: 1000,
+                                overflow: 'hidden',
+                                transformOrigin: 'top right'
+                            }}>
+                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
+                                    SEUS TEMPLATES
+                                </div>
+
+                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                    {commitTemplates.length === 0 ? (
+                                        <div style={{ padding: '12px', fontSize: '0.75rem', color: isDark ? '#666' : '#999', fontStyle: 'italic', textAlign: 'center' }}>
+                                            Nenhum template salvo
+                                        </div>
+                                    ) : (
+                                        commitTemplates.map((template) => (
+                                            <div
+                                                key={template.id}
+                                                onClick={() => {
+                                                    setCommitMsg(template.content);
+                                                    setIsTemplateDropdownOpen(false);
+                                                }}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    fontSize: '0.8rem',
+                                                    color: isDark ? '#ddd' : '#333',
+                                                    borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#f5f5f5'}`
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <FileText size={14} color={isDark ? '#4fc3f7' : '#0070f3'} />
+                                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{template.name}</span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                <div style={{ padding: '8px', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, background: isDark ? '#222' : '#f9fafb' }}>
+                                    <button
+                                        onClick={() => {
+                                            setIsTemplateModalOpen(true);
+                                            setIsTemplateDropdownOpen(false);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '6px',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            background: isDark ? '#333' : '#e5e7eb',
+                                            color: isDark ? '#ccc' : '#666',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#444' : '#d1d5db'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = isDark ? '#333' : '#e5e7eb'}
+                                    >
+                                        <Settings size={12} />
+                                        Gerenciar Templates
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={handleRefresh}
                         disabled={isLoading}
@@ -361,8 +482,6 @@ export const GitStatusView: React.FC = () => {
                 </div>
             </div>
 
-            <ProductivityToolbar isDark={isDark} />
-
             <CommitSection
                 isDark={isDark}
                 commitMessage={commitMsg}
@@ -371,6 +490,10 @@ export const GitStatusView: React.FC = () => {
                 stagedCount={staged.length}
                 isAmend={isAmend}
                 setIsAmend={setIsAmend}
+            />
+
+            <ProductivityToolbar
+                isDark={isDark}
             />
 
             <ScrollArea
@@ -414,6 +537,13 @@ export const GitStatusView: React.FC = () => {
                 removeGitProfile={removeGitProfile}
                 newProfile={newProfile}
                 setNewProfile={setNewProfile}
+            />
+
+            <CommitTemplateModal
+                isOpen={isTemplateModalOpen}
+                onClose={() => setIsTemplateModalOpen(false)}
+                isDark={isDark}
+                onSelectTemplate={(content) => setCommitMsg(content)}
             />
         </div>
     );

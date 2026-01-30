@@ -60,6 +60,12 @@ type GitProfile = {
     customTagName?: string;
 };
 
+type CommitTemplate = {
+    id: string;
+    name: string;
+    content: string;
+};
+
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export type Toast = {
@@ -186,6 +192,7 @@ type AppState = {
         stashes: GitStashEntry[];
     };
     gitProfiles: GitProfile[];
+    commitTemplates: CommitTemplate[];
     setGitView: (view: 'status' | 'terminal') => void;
     refreshGit: () => Promise<void>;
     fetchGitConfig: () => Promise<void>;
@@ -211,6 +218,10 @@ type AppState = {
     removeGitProfile: (id: string) => void;
     updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
     resetToGlobal: () => Promise<void>;
+
+    // Commit Templates
+    addCommitTemplate: (template: Omit<CommitTemplate, 'id'>) => void;
+    removeCommitTemplate: (id: string) => void;
 
     // Quick Commands
     quickCommands: QuickCommand[];
@@ -268,6 +279,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         stashes: []
     },
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
+    commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') || '[]'),
     quickCommands: JSON.parse(localStorage.getItem('quickCommands') || '[]'),
 
     settings: {
@@ -1311,6 +1323,20 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         );
         localStorage.setItem('gitProfiles', JSON.stringify(newProfiles));
         set({ gitProfiles: newProfiles });
+    },
+
+
+    addCommitTemplate: (template: Omit<CommitTemplate, 'id'>) => {
+        const id = generateId();
+        const newTemplates = [...get().commitTemplates, { ...template, id }];
+        localStorage.setItem('commitTemplates', JSON.stringify(newTemplates));
+        set({ commitTemplates: newTemplates });
+    },
+
+    removeCommitTemplate: (id: string) => {
+        const newTemplates = get().commitTemplates.filter((t: CommitTemplate) => t.id !== id);
+        localStorage.setItem('commitTemplates', JSON.stringify(newTemplates));
+        set({ commitTemplates: newTemplates });
     },
 
     addToast: (toast) => {
