@@ -50,41 +50,59 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
         <div style={{ padding: '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#e5e7eb'} ` }}>
 
             {/* Productivity Bar (Conventional Commits) */}
-            <div style={{ marginBottom: '16px', overflowX: 'auto', display: 'flex', gap: '8px', paddingBottom: '4px' }} className="no-scrollbar">
+            <div style={{
+                marginBottom: '16px',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '6px',
+                paddingBottom: '4px'
+            }}>
                 {COMMIT_TYPES.map(type => (
                     <button
                         key={type.value}
                         onClick={() => handleTypeClick(type.value)}
                         title={type.description}
                         style={{
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'}`,
-                            background: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)',
-                            color: isDark ? '#ccc' : '#555',
+                            padding: '4px 8px',
+                            borderRadius: '5px',
+                            border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+                            background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                            color: isDark ? '#999' : '#666',
                             cursor: 'pointer',
-                            fontSize: '0.75rem',
-                            fontWeight: 500,
-                            whiteSpace: 'nowrap',
-                            flexShrink: 0,
-                            transition: 'all 0.2s',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            transition: 'all 0.15s ease',
                             outline: 'none',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            justifyContent: 'center',
+                            gap: '5px',
+                            letterSpacing: '0.02em',
+                            flex: '1 0 calc(33.33% - 12px)', // Tries to put at least 3 per row if possible, but grows
+                            minWidth: '65px',
+                            maxWidth: '120px' // Prevents single buttons from becoming too stretched
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
-                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
                             e.currentTarget.style.color = isDark ? '#fff' : '#000';
                         }}
                         onMouseLeave={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.03)';
-                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-                            e.currentTarget.style.color = isDark ? '#ccc' : '#555';
+                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)';
+                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+                            e.currentTarget.style.color = isDark ? '#999' : '#666';
                         }}
                     >
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: type.color, display: 'inline-block', opacity: 0.8 }}></span>
+                        <span style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            background: type.color,
+                            display: 'inline-block',
+                            opacity: 0.6,
+                            filter: 'saturate(0.5) contrast(0.9)',
+                            boxShadow: `0 0 4px ${type.color}33`
+                        }}></span>
                         {type.label}
                     </button>
                 ))}

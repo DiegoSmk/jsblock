@@ -57,9 +57,9 @@ export const GitGraphView: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             background: isDark ? '#1a1a1a' : '#fff'
-        }}>
+        }} className="git-graph-view">
             <ScrollArea style={{ flex: 1 }}>
-                <div style={{ padding: '20px', minWidth: '600px' }}>
+                <div style={{ padding: '20px', width: '100%' }}>
                     {git.log.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: isDark ? '#444' : '#ccc' }}>
                             <History size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
@@ -211,14 +211,6 @@ export const GitGraphView: React.FC = () => {
                 </div>
             </ScrollArea>
 
-            <style>{`
-                .git-graph-row:hover .graph-actions {
-                    opacity: 1 !important;
-                }
-                .no-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-            `}</style>
         </div>
     );
 };

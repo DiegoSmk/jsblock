@@ -644,12 +644,25 @@ function App() {
           {activeSidebarTab === 'settings' ? (
             <SettingsView />
           ) : (
-            <Allotment key={activeSidebarTab}>
+            <Allotment>
               <Allotment.Pane minSize={150} preferredSize={240} maxSize={450} visible={showSidebar}>
                 {activeSidebarTab === 'git' ? (
-                  <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff' }}>
+                  <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff', overflow: 'hidden' }}>
                     {git.sidebarView === 'graph' ? (
-                      <GitGraphView />
+                      <div
+                        style={{
+                          height: '100%',
+                          background: isDark ? '#1a1a1a' : '#fff'
+                        }}
+                        className="git-graph-view"
+                      >
+                        <GitGraphView />
+                        <style>{`
+                          .git-graph-view .git-graph-row:hover .graph-actions {
+                              opacity: 1 !important;
+                          }
+                        `}</style>
+                      </div>
                     ) : (
                       <CommitHistory
                         isDark={isDark}

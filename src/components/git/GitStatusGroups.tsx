@@ -29,36 +29,54 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
 }) => {
     const [isTreeView, setIsTreeView] = useState(false);
 
-    const TreeToggle = () => (
+    const TreeToggle = ({ count }: { count: number }) => (
         <button
-            onClick={(e) => { e.stopPropagation(); setIsTreeView(!isTreeView); }}
-            title={isTreeView ? "Alternar para Lista" : "Alternar para Árvore"}
+            onClick={(e) => {
+                e.stopPropagation();
+                if (count > 0) setIsTreeView(!isTreeView);
+            }}
+            disabled={count === 0}
+            title={count === 0 ? "Nenhuma alteração para visualizar" : (isTreeView ? "Alternar para Lista" : "Alternar para Árvore")}
             style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: isDark ? '#aaa' : '#666',
-                padding: '4px',
+                background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
+                borderRadius: '4px',
+                cursor: count === 0 ? 'not-allowed' : 'pointer',
+                color: count === 0 ? (isDark ? '#444' : '#ccc') : (isDark ? '#aaa' : '#666'),
+                padding: '4px 6px',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: count === 0 ? 0.5 : 1,
+                transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+                if (count > 0) {
+                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)';
+                    e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                }
+            }}
+            onMouseLeave={(e) => {
+                if (count > 0) {
+                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)';
+                    e.currentTarget.style.color = isDark ? '#aaa' : '#666';
+                }
             }}
         >
-            {isTreeView ? <ListIcon size={14} /> : <Indent size={14} />}
+            {isTreeView ? <ListIcon size={13} /> : <Indent size={13} />}
         </button>
     );
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
             {/* Staged Changes */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px' }}>
-                <SectionHeader
-                    title="Alterações Preparadas"
-                    count={staged.length}
-                    isOpen={true}
-                    isDark={isDark}
-                />
-                {staged.length > 0 && <TreeToggle />}
-            </div>
+            <SectionHeader
+                title="Alterações Preparadas"
+                count={staged.length}
+                isOpen={true}
+                isDark={isDark}
+                rightElement={<TreeToggle count={staged.length} />}
+            />
             {staged.length > 0 && (
                 <ActionToolbar isDark={isDark}>
                     <button
@@ -117,15 +135,13 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
             </div>
 
             {/* Unstaged Changes */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px' }}>
-                <SectionHeader
-                    title="Alterações Não Preparadas"
-                    count={unstaged.length}
-                    isOpen={true}
-                    isDark={isDark}
-                />
-                {unstaged.length > 0 && <TreeToggle />}
-            </div>
+            <SectionHeader
+                title="Alterações Não Preparadas"
+                count={unstaged.length}
+                isOpen={true}
+                isDark={isDark}
+                rightElement={<TreeToggle count={unstaged.length} />}
+            />
             {unstaged.length > 0 && (
                 <ActionToolbar isDark={isDark}>
                     <button
