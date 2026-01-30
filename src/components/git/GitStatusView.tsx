@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
-import { RefreshCw, GitBranch, User, Check, Settings, Globe, Briefcase, Sparkles, Smile } from 'lucide-react';
+import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile } from 'lucide-react';
 import { GitStatusGroups } from './GitStatusGroups';
 import { CommitSection } from './CommitSection';
 import { AuthorModal } from './AuthorModal';
+import { BranchSwitcher } from './BranchSwitcher';
+import { ProductivityToolbar } from './ProductivityToolbar';
 import './GitPanel.css'; // basic shared styles
 
 export const GitStatusView: React.FC = () => {
@@ -19,6 +21,7 @@ export const GitStatusView: React.FC = () => {
 
     const isDark = theme === 'dark';
     const [commitMsg, setCommitMsg] = useState('');
+    const [isAmend, setIsAmend] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showAuthorMenu, setShowAuthorMenu] = useState(false);
 
@@ -38,11 +41,21 @@ export const GitStatusView: React.FC = () => {
         }
     };
 
+    // Auto-fill message when Amend is checked
+    React.useEffect(() => {
+        if (isAmend && git.log.length > 0) {
+            setCommitMsg(git.log[0].message);
+        } else if (!isAmend) {
+            // Optional: clear message or keep it? user might have been typing
+        }
+    }, [isAmend, git.log]);
+
     const handleCommit = async () => {
         if (!commitMsg.trim()) return;
         setIsLoading(true);
-        await gitCommit(commitMsg);
+        await gitCommit(commitMsg, isAmend);
         setCommitMsg('');
+        setIsAmend(false);
         setIsLoading(false);
     };
 
@@ -98,24 +111,7 @@ export const GitStatusView: React.FC = () => {
                 alignItems: 'center',
                 gap: '12px'
             }}>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '8px',
-                        background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: isDark ? '#4fc3f7' : '#0070f3'
-                    }}>
-                        <GitBranch size={18} />
-                    </div>
-                    <div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>{git.currentBranch || 'master'}</div>
-                        <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999' }}>Repositório Ativo</div>
-                    </div>
-                </div>
+                <BranchSwitcher isDark={isDark} />
                 <button
                     onClick={handleRefresh}
                     disabled={isLoading}
@@ -341,12 +337,16 @@ export const GitStatusView: React.FC = () => {
                 </div>
             </div>
 
+            <ProductivityToolbar isDark={isDark} />
+
             <CommitSection
                 isDark={isDark}
                 commitMessage={commitMsg}
                 setCommitMessage={setCommitMsg}
                 onCommit={handleCommit}
                 stagedCount={staged.length}
+                isAmend={isAmend}
+                setIsAmend={setIsAmend}
             />
 
             <ScrollArea

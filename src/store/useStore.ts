@@ -45,6 +45,13 @@ type GitAuthor = {
     email: string;
 };
 
+type GitStashEntry = {
+    index: number;
+    branch: string;
+    message: string;
+    description: string;
+};
+
 type GitProfile = {
     id: string;
     name: string;
@@ -125,6 +132,7 @@ type AppState = {
         confirmLabel?: string;
         cancelLabel?: string;
         discardLabel?: string;
+        variant?: 'danger' | 'warning' | 'info';
     } | null;
     openModal: (config: Omit<AppState['modal'], 'isOpen'>) => void;
     closeModal: () => void;
@@ -174,18 +182,29 @@ type AppState = {
         globalAuthor: GitAuthor | null;
         projectAuthor: GitAuthor | null;
         activeView: 'status' | 'terminal';
+        branches: string[];
+        stashes: GitStashEntry[];
     };
     gitProfiles: GitProfile[];
     setGitView: (view: 'status' | 'terminal') => void;
     refreshGit: () => Promise<void>;
     fetchGitConfig: () => Promise<void>;
+    changeBranch: (branch: string) => Promise<void>;
+    createBranch: (branch: string) => Promise<void>;
+    deleteBranch: (branch: string) => Promise<void>;
     gitStage: (path: string) => Promise<void>;
     gitStageAll: () => Promise<void>;
     gitUnstage: (path: string) => Promise<void>;
     gitUnstageAll: () => Promise<void>;
     gitDiscard: (path: string) => Promise<void>;
     gitDiscardAll: () => Promise<void>;
-    gitCommit: (message: string) => Promise<void>;
+    gitCommit: (message: string, isAmend?: boolean) => Promise<void>;
+    gitStash: (message?: string) => Promise<void>;
+    gitPopStash: (index?: number) => Promise<void>;
+    gitApplyStash: (index: number) => Promise<void>;
+    gitDropStash: (index: number) => Promise<void>;
+    fetchStashes: () => Promise<void>;
+    gitUndoLastCommit: () => Promise<void>;
     gitInit: (author?: GitAuthor, isGlobal?: boolean) => Promise<void>;
     setGitConfig: (author: GitAuthor, isGlobal: boolean) => Promise<void>;
     addGitProfile: (profile: Omit<GitProfile, 'id'>) => void;
@@ -244,7 +263,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         rawLog: '',
         globalAuthor: null,
         projectAuthor: null,
-        activeView: 'status'
+        activeView: 'status',
+        branches: [],
+        stashes: []
     },
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
     quickCommands: JSON.parse(localStorage.getItem('quickCommands') || '[]'),
@@ -866,6 +887,10 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             const branchRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', 'HEAD']);
             const currentBranch = branchRes.stdout.trim();
 
+            // Get all branches
+            const branchesRes = await (window as any).electronAPI.gitCommand(openedFolder, ['branch', '--format=%(refname:short)']);
+            const branches = branchesRes.stdout.split('\n').filter((b: string) => b.trim() !== '');
+
             // Get status with -z for robust path handling
             // This is critical for files with spaces or special characters
             const statusRes = await (window as any).electronAPI.gitCommand(openedFolder, ['status', '--porcelain', '-b', '-z']);
@@ -933,9 +958,12 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                     currentBranch,
                     changes,
                     log: logEntries,
-                    rawLog
+                    rawLog,
+                    branches
                 }
             }));
+
+            await get().fetchStashes();
         } catch (err) {
             console.error('Git refresh failed:', err);
             set((state: any) => ({
@@ -1071,11 +1099,114 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
 
-    gitCommit: async (message: string) => {
+    gitCommit: async (message: string, isAmend: boolean = false) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
-        await (window as any).electronAPI.gitCommand(openedFolder, ['commit', '-m', message]);
+        const args = ['commit', '-m', message];
+        if (isAmend) {
+            args.push('--amend');
+        }
+        await (window as any).electronAPI.gitCommand(openedFolder, args);
         await refreshGit();
+    },
+
+    gitStash: async (message?: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            const args = ['stash', 'push', '-u'];
+            if (message) {
+                args.push('-m', message);
+            } else {
+                args.push('-m', `Rascunho: ${new Date().toLocaleTimeString()} em ${get().git.currentBranch}`);
+            }
+            await (window as any).electronAPI.gitCommand(openedFolder, args);
+            await refreshGit();
+            get().addToast({ type: 'success', message: 'Alterações salvas na gaveta (Stash).' });
+        } catch (e: any) {
+            console.error('Stash error:', e);
+            const msg = e.stderr || e.message || '';
+            if (msg.includes('No local changes to save')) {
+                get().addToast({ type: 'info', message: 'Nada para guardar no stash.' });
+            } else {
+                get().addToast({ type: 'error', message: 'Erro ao salvar stash.' });
+            }
+        }
+    },
+
+    gitPopStash: async (index: number = 0) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'pop', `stash@{${index}}`]);
+            await refreshGit();
+            get().addToast({ type: 'success', message: 'Gaveta recuperada com sucesso.' });
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao recuperar stash (pode haver conflitos).' });
+        }
+    },
+
+    gitApplyStash: async (index: number) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'apply', `stash@{${index}}`]);
+            await refreshGit();
+            get().addToast({ type: 'success', message: 'Alterações aplicadas com sucesso.' });
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao aplicar stash (pode haver conflitos).' });
+        }
+    },
+
+    gitDropStash: async (index: number) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'drop', `stash@{${index}}`]);
+            await refreshGit();
+            get().addToast({ type: 'success', message: 'Gaveta removida.' });
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao remover stash.' });
+        }
+    },
+
+    fetchStashes: async () => {
+        const { openedFolder } = get();
+        if (!openedFolder) return;
+        try {
+            const res = await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'list']);
+            const output = res.stdout || '';
+            const stashes: GitStashEntry[] = output.split('\n')
+                .filter((l: string) => l.trim())
+                .map((line: string, index: number) => {
+                    // stash@{0}: On main: Rascunho: 17:50:08 em main
+                    const match = line.match(/stash@{(\d+)}: (On [^:]+): (.*)/);
+                    if (match) {
+                        return {
+                            index: parseInt(match[1]),
+                            branch: match[2].replace('On ', ''),
+                            message: match[3],
+                            description: line
+                        };
+                    }
+                    return { index, branch: '?', message: line, description: line };
+                });
+            set((state: any) => ({ git: { ...state.git, stashes } }));
+        } catch (e) {
+            console.error('Error fetching stashes', e);
+        }
+    },
+
+    gitUndoLastCommit: async () => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['reset', '--soft', 'HEAD~1']);
+            await refreshGit();
+            get().addToast({ type: 'success', message: 'Último commit desfeito (Soft Reset).' });
+        } catch (e) {
+            get().addToast({ type: 'error', message: 'Erro ao desfazer commit.' });
+        }
     },
 
     gitInit: async (author?: GitAuthor, isGlobal: boolean = false) => {
@@ -1194,5 +1325,41 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
     removeToast: (id) => {
         set((state: any) => ({ toasts: state.toasts.filter((t: Toast) => t.id !== id) }));
+    },
+
+    changeBranch: async (branch: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['checkout', branch]);
+            await refreshGit();
+            get().addToast({ type: 'success', message: `Mudou para o branch ${branch}` });
+        } catch (e) {
+            get().addToast({ type: 'error', message: `Erro ao mudar para o branch ${branch}` });
+        }
+    },
+
+    createBranch: async (branch: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['checkout', '-b', branch]);
+            await refreshGit();
+            get().addToast({ type: 'success', message: `Branch ${branch} criado com sucesso!` });
+        } catch (e) {
+            get().addToast({ type: 'error', message: `Erro ao criar branch ${branch}` });
+        }
+    },
+
+    deleteBranch: async (branch: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['branch', '-D', branch]);
+            await refreshGit();
+            get().addToast({ type: 'success', message: `Branch ${branch} deletado.` });
+        } catch (e) {
+            get().addToast({ type: 'error', message: `Erro ao deletar branch ${branch}` });
+        }
     }
 }));

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Radio } from '../ui/Radio';
 
 interface CommitSectionProps {
     isDark: boolean;
@@ -6,11 +7,16 @@ interface CommitSectionProps {
     setCommitMessage: (msg: string) => void;
     onCommit: () => void;
     stagedCount: number;
+    isAmend: boolean;
+    setIsAmend: (amend: boolean) => void;
 }
 
 export const CommitSection: React.FC<CommitSectionProps> = ({
-    isDark, commitMessage, setCommitMessage, onCommit, stagedCount
+    isDark, commitMessage, setCommitMessage, onCommit, stagedCount, isAmend, setIsAmend
 }) => {
+    // Softer blue, colorful but not "neon"
+    const activeColor = isDark ? '#5da5db' : '#217dbb';
+
     return (
         <div style={{ padding: '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#e5e7eb'}` }}>
             <div style={{ position: 'relative' }}>
@@ -35,7 +41,29 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
             </div>
 
             <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div />
+                <div
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                    onClick={() => setIsAmend(!isAmend)}
+                >
+                    <Radio
+                        checked={isAmend}
+                        onChange={() => setIsAmend(!isAmend)}
+                        activeColor={activeColor}
+                        isDark={isDark}
+                        size={16}
+                    />
+                    <label
+                        style={{
+                            fontSize: '0.75rem',
+                            color: isDark ? '#aaa' : '#666',
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                            fontWeight: 500
+                        }}
+                    >
+                        Amend Last Commit
+                    </label>
+                </div>
                 <button
                     onClick={onCommit}
                     disabled={!commitMessage || stagedCount === 0}

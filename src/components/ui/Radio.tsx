@@ -37,18 +37,14 @@ export const Radio: React.FC<RadioProps> = ({
             {checked && (
                 <div
                     style={{
-                        width: `${Math.round(size * 0.45)}px`,
-                        height: `${Math.round(size * 0.45)}px`,
+                        width: '55%',
+                        height: '55%',
                         background: activeColor,
-                        borderRadius: '50%', // Now a circle
+                        borderRadius: '50%',
                         transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                         transform: 'scale(1)',
-                        position: 'absolute',
-                        left: '50%',
-                        top: '50%',
-                        marginTop: `-${Math.round(size * 0.45) / 2}px`,
-                        marginLeft: `-${Math.round(size * 0.45) / 2}px`,
-                        boxShadow: `0 0 4px ${activeColor}40`
+                        boxShadow: `0 0 4px ${activeColor}40`,
+                        flexShrink: 0
                     }}
                 />
             )}

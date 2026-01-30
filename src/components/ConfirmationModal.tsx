@@ -1,17 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useStore } from '../store/useStore';
-import { FileWarning, Save } from 'lucide-react';
+import { AlertTriangle, RotateCcw, Trash2, Check } from 'lucide-react';
+import { Modal } from './ui/Modal';
 
 interface ConfirmationModalProps {
     isOpen: boolean;
     onConfirm: () => void;
     onCancel: () => void;
-    onDiscard?: () => void; // Optional "Discard Changes" for exit flow
+    onDiscard?: () => void;
     title: string;
     message: string;
     confirmLabel?: string;
     cancelLabel?: string;
     discardLabel?: string;
+    variant?: 'danger' | 'warning' | 'info';
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -21,159 +23,124 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     onDiscard,
     title,
     message,
-    confirmLabel = "Confirm",
-    cancelLabel = "Cancel",
-    discardLabel
+    confirmLabel = "Confirmar",
+    cancelLabel = "Cancelar",
+    discardLabel,
+    variant = 'warning'
 }) => {
     const { theme } = useStore();
     const isDark = theme === 'dark';
 
-    // Animation state
-    const [animateIn, setAnimateIn] = useState(false);
-
-    useEffect(() => {
-        if (isOpen) {
-            setAnimateIn(true);
-        } else {
-            setAnimateIn(false);
-        }
-    }, [isOpen]);
-
     if (!isOpen) return null;
 
-    return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(3px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            opacity: animateIn ? 1 : 0,
-            transition: 'opacity 0.2s ease-out'
-        }}>
-            <div style={{
-                width: '90%',
-                maxWidth: '420px',
-                background: isDark ? '#1e1e1e' : '#fff',
-                borderRadius: '12px',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
-                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                padding: '24px',
-                transform: animateIn ? 'scale(1)' : 'scale(0.95)',
-                transition: 'transform 0.2s ease-out',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '20px'
-            }}>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-                    <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '10px',
-                        background: isDark ? 'rgba(234, 179, 8, 0.15)' : 'rgba(234, 179, 8, 0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        color: '#eab308'
-                    }}>
-                        <FileWarning size={22} />
-                    </div>
-                    <div>
-                        <h3 style={{
-                            margin: '0 0 8px 0',
-                            fontSize: '1.1rem',
-                            fontWeight: 700,
-                            color: isDark ? '#fff' : '#111'
-                        }}>
-                            {title}
-                        </h3>
-                        <p style={{
-                            margin: 0,
-                            fontSize: '0.9rem',
-                            lineHeight: '1.5',
-                            color: isDark ? '#ccc' : '#555'
-                        }}>
-                            {message}
-                        </p>
-                    </div>
-                </div>
+    const getIcon = () => {
+        const isDanger = variant === 'danger' || title.toLowerCase().includes('deletar') || title.toLowerCase().includes('excluir');
+        const isUndo = title.toLowerCase().includes('desfazer') || title.toLowerCase().includes('undo');
+        const color = isDanger ? '#ef4444' : (isUndo ? (isDark ? '#4fc3f7' : '#0070f3') : '#eab308');
 
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-                    <button
-                        onClick={onCancel}
-                        style={{
-                            padding: '10px 16px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            background: 'transparent',
-                            color: isDark ? '#aaa' : '#666',
-                            fontSize: '0.9rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'background 0.2s'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                        {cancelLabel}
-                    </button>
+        if (isUndo) {
+            return <RotateCcw size={20} color={color} />;
+        }
+        if (isDanger) {
+            return <Trash2 size={20} color={color} />;
+        }
+        return <AlertTriangle size={20} color={color} />;
+    };
 
-                    {onDiscard && (
-                        <button
-                            onClick={onDiscard}
-                            style={{
-                                padding: '10px 16px',
-                                borderRadius: '8px',
-                                border: `1px solid ${isDark ? '#ef4444' : '#ef4444'}`,
-                                background: 'transparent',
-                                color: '#ef4444',
-                                fontSize: '0.9rem',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#ef4444';
-                                e.currentTarget.style.color = '#fff';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'transparent';
-                                e.currentTarget.style.color = '#ef4444';
-                            }}
-                        >
-                            {discardLabel || "Discard"}
-                        </button>
-                    )}
+    const footer = (
+        <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'flex-end' }}>
+            <button
+                onClick={onCancel}
+                style={{
+                    padding: '10px 16px',
+                    background: 'transparent',
+                    color: isDark ? '#888' : '#666',
+                    border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#2a2a2a' : '#f3f4f6'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+            >
+                {cancelLabel}
+            </button>
 
-                    <button
-                        onClick={onConfirm}
-                        style={{
-                            padding: '10px 20px',
-                            borderRadius: '8px',
-                            border: 'none',
-                            background: isDark ? '#0070f3' : '#0070f3',
-                            color: '#fff',
-                            fontSize: '0.9rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            boxShadow: '0 4px 12px rgba(0, 112, 243, 0.3)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                        }}
-                    >
-                        <Save size={16} />
-                        {confirmLabel}
-                    </button>
-                </div>
-            </div>
+            {onDiscard && (
+                <button
+                    onClick={onDiscard}
+                    style={{
+                        padding: '10px 16px',
+                        background: 'transparent',
+                        color: '#ef4444',
+                        border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                        transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.borderColor = isDark ? '#333' : '#e5e7eb';
+                    }}
+                >
+                    {discardLabel || "Descartar"}
+                </button>
+            )}
+
+            <button
+                onClick={onConfirm}
+                style={{
+                    padding: '10px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.9rem',
+                    fontWeight: 700,
+                    background: variant === 'danger'
+                        ? (isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)')
+                        : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
+                    color: variant === 'danger' ? '#f87171' : (isDark ? '#4fc3f7' : '#0070f3'),
+                    border: `1px solid ${variant === 'danger'
+                        ? (isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)')
+                        : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}
+            >
+                {title.toLowerCase().includes('undo') || title.toLowerCase().includes('desfazer')
+                    ? <RotateCcw size={16} />
+                    : (variant === 'danger' ? <Trash2 size={16} /> : <Check size={16} />)}
+                {confirmLabel}
+            </button>
         </div>
+    );
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onClose={onCancel}
+            title={title}
+            isDark={isDark}
+            footer={footer}
+            headerIcon={getIcon()}
+            maxWidth="420px"
+        >
+            <div style={{
+                fontSize: '0.95rem',
+                lineHeight: '1.6',
+                color: isDark ? '#ccc' : '#444'
+            }}>
+                {message}
+            </div>
+        </Modal>
     );
 };
