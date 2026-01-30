@@ -40,6 +40,11 @@ type GitLogEntry = {
     graph?: string;
 };
 
+type GitCommitFile = {
+    path: string;
+    status: string;
+};
+
 type GitAuthor = {
     name: string;
     email: string;
@@ -188,17 +193,20 @@ type AppState = {
         globalAuthor: GitAuthor | null;
         projectAuthor: GitAuthor | null;
         activeView: 'status' | 'terminal';
+        sidebarView: 'history' | 'graph';
         branches: string[];
         stashes: GitStashEntry[];
     };
     gitProfiles: GitProfile[];
     commitTemplates: CommitTemplate[];
     setGitView: (view: 'status' | 'terminal') => void;
+    setGitSidebarView: (view: 'history' | 'graph') => void;
     refreshGit: () => Promise<void>;
     fetchGitConfig: () => Promise<void>;
     changeBranch: (branch: string) => Promise<void>;
-    createBranch: (branch: string) => Promise<void>;
+    createBranch: (branch: string, startPoint?: string) => Promise<void>;
     deleteBranch: (branch: string) => Promise<void>;
+    checkoutCommit: (hash: string) => Promise<void>;
     gitStage: (path: string) => Promise<void>;
     gitStageAll: () => Promise<void>;
     gitUnstage: (path: string) => Promise<void>;
@@ -218,6 +226,7 @@ type AppState = {
     removeGitProfile: (id: string) => void;
     updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
     resetToGlobal: () => Promise<void>;
+    getCommitFiles: (hash: string) => Promise<GitCommitFile[]>;
 
     // Commit Templates
     addCommitTemplate: (template: Omit<CommitTemplate, 'id'>) => void;
@@ -275,6 +284,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         globalAuthor: null,
         projectAuthor: null,
         activeView: 'status',
+        sidebarView: 'history',
         branches: [],
         stashes: []
     },
@@ -314,9 +324,14 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         set({ quickCommands });
     },
 
-    setGitView: (view: 'status' | 'terminal') => {
+    setGitView: (view: 'status' | 'terminal' | 'history' | 'graph') => {
         set((state: any) => ({
             git: { ...state.git, activeView: view }
+        }));
+    },
+    setGitSidebarView: (view: 'history' | 'graph') => {
+        set((state: any) => ({
+            git: { ...state.git, sidebarView: view }
         }));
     },
 
@@ -948,20 +963,48 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 i++;
             }
 
-            // Get Log
-            const logRes = await (window as any).electronAPI.gitCommand(openedFolder, ['log', '--graph', '--oneline', '--all', '-n', '20', '--pretty=format:"%h|%an|%ar|%s"']);
+            // Get Log with Graph and Decorations
+            // We use -n 100 for the full graph view, and include %d for branch/tag info
+            const logRes = await (window as any).electronAPI.gitCommand(openedFolder, [
+                'log', '--graph', '--all', '-n', '100',
+                '--pretty=format:%h|%d|%s|%an|%aI'
+            ]);
             const rawLog = logRes.stdout;
 
-            // Parse log entries from raw output (hacky but works for simplified view)
-            const logEntries: GitLogEntry[] = logRes.stdout.split('\n')
-                .filter((l: string) => l.includes('|'))
-                .map((line: string) => {
-                    // line might look like "* \"hash|author|date|msg\""
-                    const content = line.match(/"([^"]+)"/)?.[1] || "";
-                    const [hash, author, date, message] = content.split('|');
-                    const graph = line.split('"')[0]; // Everything before the quote is the graph part
-                    return { hash, author, date, message, graph };
-                });
+            const refinedEntries: GitLogEntry[] = [];
+            const lines = logRes.stdout.split('\n');
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+
+                // Regex to find: hash | (decorations) | message | author | date
+                // Hash is usually 7 chars, but can be more. It follows most graph chars.
+                const match = line.match(/([0-9a-f]{7,40})\|(.*)\|(.*)\|(.*)\|(.*)$/);
+
+                if (match) {
+                    const [_, hash, refs, message, author, date] = match;
+                    const graph = line.substring(0, line.indexOf(hash));
+
+                    refinedEntries.push({
+                        hash,
+                        author: author || '?',
+                        date: date || new Date().toISOString(),
+                        message: message || 'Sem mensagem',
+                        graph,
+                        refs: refs.trim() // Decorations like (HEAD -> main, origin/main)
+                    } as any);
+                } else {
+                    // It's a graph-only line
+                    refinedEntries.push({
+                        hash: '',
+                        author: '',
+                        date: '',
+                        message: '',
+                        graph: line,
+                        isGraphOnly: true
+                    } as any);
+                }
+            }
 
             set((state: any) => ({
                 git: {
@@ -969,7 +1012,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                     isRepo: true,
                     currentBranch,
                     changes,
-                    log: logEntries,
+                    log: refinedEntries,
                     rawLog,
                     branches
                 }
@@ -1304,6 +1347,26 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         await fetchGitConfig();
     },
 
+    getCommitFiles: async (hash: string) => {
+        const { openedFolder } = get();
+        if (!openedFolder || !(window as any).electronAPI) return [];
+
+        try {
+            const res = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--name-status', '--pretty=format:', hash]);
+            return res.stdout.split('\n')
+                .filter((line: string) => line.trim() !== '')
+                .map((line: string) => {
+                    const parts = line.split(/\t/);
+                    const status = parts[0];
+                    const path = parts[1] || "";
+                    return { status, path };
+                });
+        } catch (err) {
+            console.error('Failed to get commit files:', err);
+            return [];
+        }
+    },
+
     addGitProfile: (profile: Omit<GitProfile, 'id'>) => {
         const id = `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const newProfiles = [...get().gitProfiles, { ...profile, id }];
@@ -1365,15 +1428,29 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
 
-    createBranch: async (branch: string) => {
+    createBranch: async (branch: string, startPoint?: string) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['checkout', '-b', branch]);
+            const args = ['checkout', '-b', branch];
+            if (startPoint) args.push(startPoint);
+            await (window as any).electronAPI.gitCommand(openedFolder, args);
             await refreshGit();
             get().addToast({ type: 'success', message: `Branch ${branch} criado com sucesso!` });
         } catch (e) {
             get().addToast({ type: 'error', message: `Erro ao criar branch ${branch}` });
+        }
+    },
+
+    checkoutCommit: async (hash: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['checkout', hash]);
+            await refreshGit();
+            get().addToast({ type: 'info', message: `Versão ${hash.substring(0, 7)} visualizada (Detached HEAD).` });
+        } catch (e) {
+            get().addToast({ type: 'error', message: `Erro ao mudar para a versão ${hash}` });
         }
     },
 

@@ -22,6 +22,16 @@ export const CommitTemplateModal: React.FC<CommitTemplateModalProps> = ({
     const [newTemplateContent, setNewTemplateContent] = useState('');
     const [isCreationExpanded, setIsCreationExpanded] = useState(false);
 
+    // Reset state when modal opens
+    React.useEffect(() => {
+        if (isOpen) {
+            setView('list');
+            setNewTemplateName('');
+            setNewTemplateContent('');
+            setIsCreationExpanded(false);
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     const handleSave = () => {

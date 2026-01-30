@@ -10,9 +10,11 @@ import {
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
-import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Layers, Terminal, Edit2, Trash2 } from 'lucide-react';
+import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Edit2, Trash2, History as HistoryIcon, Network, Layers, Terminal } from 'lucide-react';
 import { GitPanel } from './components/GitPanel';
 import { CommitHistory } from './components/git/CommitHistory';
+import { GitGraphView } from './components/git/GitGraphView';
+import { SideRibbon } from './components/SideRibbon';
 import { ContextRibbon } from './components/ui/ContextRibbon';
 import { useTranslation } from 'react-i18next';
 import 'allotment/dist/style.css';
@@ -42,7 +44,6 @@ import { NativeApiNode } from './components/NativeApiNode';
 import { ModernModal } from './components/ModernModal';
 import { FunctionLibrary } from './components/FunctionLibrary';
 import { FileExplorer } from './components/FileExplorer';
-import { SideRibbon } from './components/SideRibbon';
 import { NoteNode } from './components/NoteNode';
 import { Tooltip } from './components/Tooltip';
 import { ConfirmationModal } from './components/ConfirmationModal';
@@ -299,7 +300,8 @@ function App() {
     showCode, showCanvas, showSidebar, activeSidebarTab, toggleSidebar, setSidebarTab,
     saveFile, setOpenedFolder, setSelectedFile,
     selectedFile, openedFolder, isBlockFile,
-    confirmationModal, isDirty, git, openModal
+    confirmationModal, isDirty, openModal, git,
+    setGitView, setGitSidebarView
   } = useStore();
 
   const isDark = theme === 'dark';
@@ -352,13 +354,12 @@ function App() {
     }}>
       <SideRibbon />
 
-      {/* Context Ribbon (Module Level Navigation) */}
       {activeSidebarTab === 'git' && (
         <ContextRibbon
-          activeId={useStore.getState().git.activeView}
-          onSelect={(id) => useStore.getState().setGitView(id as 'status' | 'terminal')}
+          activeId={git.activeView}
+          onSelect={(id) => setGitView(id as 'status' | 'terminal')}
           items={[
-            { id: 'status', icon: Layers, label: 'Status & Changes' },
+            { id: 'status', icon: Layers, label: 'Status & Alterações' },
             { id: 'terminal', icon: Terminal, label: 'Terminal Integrado' }
           ]}
         />
@@ -434,6 +435,43 @@ function App() {
                   }}
                 >
                   <Library size={18} />
+                </button>
+              </div>
+            )}
+
+            {showSidebar && activeSidebarTab === 'git' && (
+              <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
+                <button
+                  onClick={() => setGitSidebarView('history')}
+                  title="Histórico de Commits"
+                  style={{
+                    background: git.sidebarView === 'history' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: git.sidebarView === 'history' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                    padding: '6px',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <HistoryIcon size={18} />
+                </button>
+                <button
+                  onClick={() => setGitSidebarView('graph')}
+                  title="Grafo de Commits"
+                  style={{
+                    background: git.sidebarView === 'graph' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: git.sidebarView === 'graph' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                    padding: '6px',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Network size={18} />
                 </button>
               </div>
             )}
@@ -610,13 +648,17 @@ function App() {
               <Allotment.Pane minSize={150} preferredSize={240} maxSize={450} visible={showSidebar}>
                 {activeSidebarTab === 'git' ? (
                   <div style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, background: isDark ? '#1a1a1a' : '#fff' }}>
-                    <CommitHistory
-                      isDark={isDark}
-                      logs={git.log}
-                      isOpen={true}
-                      onToggle={() => { }}
-                      hideToggle={true}
-                    />
+                    {git.sidebarView === 'graph' ? (
+                      <GitGraphView />
+                    ) : (
+                      <CommitHistory
+                        isDark={isDark}
+                        logs={git.log}
+                        isOpen={true}
+                        onToggle={() => { }}
+                        hideToggle={true}
+                      />
+                    )}
                   </div>
                 ) : (!openedFolder || activeSidebarTab === 'explorer') ? (
                   <FileExplorer />

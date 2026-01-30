@@ -7,6 +7,7 @@ import './git/GitPanel.css';
 import { GitInitView } from './git/GitInitView';
 import { GitStatusView } from './git/GitStatusView';
 import { GitTerminalView } from './git/GitTerminalView';
+import { GitGraphView } from './git/GitGraphView';
 
 // Reusing some helper logic for InitView props from previous implementation (simplified)
 // Ideally GitInitView should also be connected to store to avoid prop drilling, 
@@ -131,7 +132,7 @@ export const GitPanel: React.FC = () => {
     }
 
     // Active View Router
-    return git.activeView === 'terminal'
-        ? <GitTerminalView />
-        : <GitStatusView />;
+    if (git.activeView === 'terminal') return <GitTerminalView />;
+    if (git.activeView === 'graph') return <GitGraphView />;
+    return <GitStatusView />;
 };

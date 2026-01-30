@@ -1,6 +1,7 @@
-import React from 'react';
-import { Plus, Minus, RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Minus, RotateCcw, List as ListIcon, Indent } from 'lucide-react';
 import { SectionHeader, ActionToolbar } from './SharedComponents';
+import { FileTreeView } from './FileTreeView';
 
 interface GitFile {
     path: string;
@@ -26,15 +27,38 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
     gitUnstageAll, gitStageAll, gitDiscardAll,
     gitUnstage, gitStage, gitDiscard
 }) => {
+    const [isTreeView, setIsTreeView] = useState(false);
+
+    const TreeToggle = () => (
+        <button
+            onClick={(e) => { e.stopPropagation(); setIsTreeView(!isTreeView); }}
+            title={isTreeView ? "Alternar para Lista" : "Alternar para Árvore"}
+            style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: isDark ? '#aaa' : '#666',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center'
+            }}
+        >
+            {isTreeView ? <ListIcon size={14} /> : <Indent size={14} />}
+        </button>
+    );
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
             {/* Staged Changes */}
-            <SectionHeader
-                title="Alterações Preparadas"
-                count={staged.length}
-                isOpen={true}
-                isDark={isDark}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px' }}>
+                <SectionHeader
+                    title="Alterações Preparadas"
+                    count={staged.length}
+                    isOpen={true}
+                    isDark={isDark}
+                />
+                {staged.length > 0 && <TreeToggle />}
+            </div>
             {staged.length > 0 && (
                 <ActionToolbar isDark={isDark}>
                     <button
@@ -59,36 +83,49 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                 </ActionToolbar>
             )}
             <div style={{ padding: '4px 0' }}>
-                {staged.map((file, i) => (
-                    <div key={i} className="git-file-item">
-                        <div style={{ width: '18px', height: '18px', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#4ade80', fontWeight: 800 }}>
-                            {file.index}
-                        </div>
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</span>
-                        <button
-                            onClick={() => gitUnstage(file.path)}
-                            title="Remover do Stage"
-                            className="git-file-action-button discard"
-                            style={{ color: '#f87171' }}
-                        >
-                            <Minus size={14} />
-                        </button>
-                    </div>
-                ))}
-                {staged.length === 0 && (
-                    <div style={{ padding: '20px', textAlign: 'center', fontSize: '0.75rem', color: isDark ? '#444' : '#ccc' }}>
-                        Nenhuma alteração preparada
-                    </div>
+                {isTreeView && staged.length > 0 ? (
+                    <FileTreeView
+                        files={staged}
+                        onUnstage={gitUnstage}
+                        isDark={isDark}
+                    />
+                ) : (
+                    <>
+                        {staged.map((file, i) => (
+                            <div key={i} className="git-file-item">
+                                <div style={{ width: '18px', height: '18px', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#4ade80', fontWeight: 800 }}>
+                                    {file.index}
+                                </div>
+                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</span>
+                                <button
+                                    onClick={() => gitUnstage(file.path)}
+                                    title="Remover do Stage"
+                                    className="git-file-action-button discard"
+                                    style={{ color: '#f87171' }}
+                                >
+                                    <Minus size={14} />
+                                </button>
+                            </div>
+                        ))}
+                        {staged.length === 0 && (
+                            <div style={{ padding: '20px', textAlign: 'center', fontSize: '0.75rem', color: isDark ? '#444' : '#ccc' }}>
+                                Nenhuma alteração preparada
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
             {/* Unstaged Changes */}
-            <SectionHeader
-                title="Alterações Não Preparadas"
-                count={unstaged.length}
-                isOpen={true}
-                isDark={isDark}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: '8px' }}>
+                <SectionHeader
+                    title="Alterações Não Preparadas"
+                    count={unstaged.length}
+                    isOpen={true}
+                    isDark={isDark}
+                />
+                {unstaged.length > 0 && <TreeToggle />}
+            </div>
             {unstaged.length > 0 && (
                 <ActionToolbar isDark={isDark}>
                     <button
@@ -132,47 +169,58 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                 </ActionToolbar>
             )}
             <div style={{ padding: '4px 0' }}>
-                {unstaged.map((file, i) => (
-                    <div key={i} className="git-file-item">
-                        <div style={{
-                            width: '18px',
-                            height: '18px',
-                            borderRadius: '4px',
-                            background: file.status === 'untracked' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(96, 165, 250, 0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '10px',
-                            color: file.status === 'untracked' ? '#fbbf24' : '#60a5fa',
-                            fontWeight: 800
-                        }}>
-                            {file.workingTree === '?' ? 'U' : file.workingTree}
-                        </div>
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            <button
-                                onClick={() => gitDiscard(file.path)}
-                                title="Descartar Alterações"
-                                className="git-file-action-button discard"
-                                style={{ color: '#f87171' }}
-                            >
-                                <RotateCcw size={14} />
-                            </button>
-                            <button
-                                onClick={() => gitStage(file.path)}
-                                title="Preparar Alteração (Stage)"
-                                className="git-file-action-button stage"
-                                style={{ color: '#4ade80' }}
-                            >
-                                <Plus size={14} />
-                            </button>
-                        </div>
-                    </div>
-                ))}
-                {unstaged.length === 0 && (
-                    <div style={{ padding: '20px', textAlign: 'center', fontSize: '0.75rem', color: isDark ? '#444' : '#ccc' }}>
-                        Nenhuma alteração pendente
-                    </div>
+                {isTreeView && unstaged.length > 0 ? (
+                    <FileTreeView
+                        files={unstaged}
+                        onStage={gitStage}
+                        onDiscard={gitDiscard}
+                        isDark={isDark}
+                    />
+                ) : (
+                    <>
+                        {unstaged.map((file, i) => (
+                            <div key={i} className="git-file-item">
+                                <div style={{
+                                    width: '18px',
+                                    height: '18px',
+                                    borderRadius: '4px',
+                                    background: file.status === 'untracked' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(96, 165, 250, 0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '10px',
+                                    color: file.status === 'untracked' ? '#fbbf24' : '#60a5fa',
+                                    fontWeight: 800
+                                }}>
+                                    {file.workingTree === '?' ? 'U' : file.workingTree}
+                                </div>
+                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</span>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button
+                                        onClick={() => gitDiscard(file.path)}
+                                        title="Descartar Alterações"
+                                        className="git-file-action-button discard"
+                                        style={{ color: '#f87171' }}
+                                    >
+                                        <RotateCcw size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => gitStage(file.path)}
+                                        title="Preparar Alteração (Stage)"
+                                        className="git-file-action-button stage"
+                                        style={{ color: '#4ade80' }}
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {unstaged.length === 0 && (
+                            <div style={{ padding: '20px', textAlign: 'center', fontSize: '0.75rem', color: isDark ? '#444' : '#ccc' }}>
+                                Nenhuma alteração pendente
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>
