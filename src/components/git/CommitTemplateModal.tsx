@@ -20,6 +20,7 @@ export const CommitTemplateModal: React.FC<CommitTemplateModalProps> = ({
     const [view, setView] = useState<'list' | 'add'>('list');
     const [newTemplateName, setNewTemplateName] = useState('');
     const [newTemplateContent, setNewTemplateContent] = useState('');
+    const [isCreationExpanded, setIsCreationExpanded] = useState(false);
 
     if (!isOpen) return null;
 
@@ -179,13 +180,14 @@ export const CommitTemplateModal: React.FC<CommitTemplateModalProps> = ({
                                     onClick={() => setView('add')}
                                     style={{
                                         width: '100%',
-                                        padding: '10px',
-                                        background: isDark ? '#4fc3f7' : '#0070f3',
-                                        color: isDark ? '#000' : '#fff',
-                                        border: 'none',
+                                        padding: '8px 16px',
+                                        background: isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)',
+                                        color: isDark ? '#4fc3f7' : '#0070f3',
+                                        border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)'}`,
                                         borderRadius: '6px',
                                         cursor: 'pointer',
-                                        fontWeight: 600,
+                                        fontWeight: 700,
+                                        fontSize: '0.75rem',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -198,83 +200,185 @@ export const CommitTemplateModal: React.FC<CommitTemplateModalProps> = ({
                             </div>
                         </>
                     ) : (
-                        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.8rem', color: isDark ? '#aaa' : '#666', marginBottom: '8px' }}>
-                                    Nome do Template
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newTemplateName}
-                                    onChange={(e) => setNewTemplateName(e.target.value)}
-                                    placeholder="Ex: Daily Update, Release Notes..."
-                                    style={{
-                                        width: '100%',
-                                        padding: '8px 12px',
-                                        borderRadius: '6px',
-                                        background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                        border: `1px solid ${isDark ? '#444' : '#ddd'}`,
-                                        color: isDark ? '#fff' : '#000',
-                                        outline: 'none'
-                                    }}
-                                />
+                        <ScrollArea style={{ flex: 1 }}>
+                            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', color: isDark ? '#aaa' : '#666', marginBottom: '8px' }}>
+                                        Nome do Template (Identificador)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newTemplateName}
+                                        onChange={(e) => setNewTemplateName(e.target.value)}
+                                        placeholder="Ex: Daily Update, Release Notes..."
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            borderRadius: '6px',
+                                            background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                            border: `1px solid ${isDark ? '#444' : '#ddd'}`,
+                                            color: isDark ? '#fff' : '#000',
+                                            outline: 'none',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+
+                                <div style={{ borderTop: `1px solid ${isDark ? '#333' : '#eee'}`, paddingTop: '16px' }}>
+                                    {!isCreationExpanded ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: isDark ? '#aaa' : '#666' }}>
+                                                Conteúdo do Template
+                                            </label>
+                                            <textarea
+                                                value={newTemplateContent}
+                                                onChange={(e) => setNewTemplateContent(e.target.value)}
+                                                placeholder="Digite o modelo da mensagem..."
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100px',
+                                                    padding: '12px',
+                                                    borderRadius: '6px',
+                                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                                    border: `1px solid ${isDark ? '#444' : '#ddd'}`,
+                                                    color: isDark ? '#fff' : '#000',
+                                                    outline: 'none',
+                                                    resize: 'none',
+                                                    fontFamily: 'monospace',
+                                                    boxSizing: 'border-box'
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => setIsCreationExpanded(true)}
+                                                style={{
+                                                    alignSelf: 'flex-start',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: isDark ? '#4fc3f7' : '#0070f3',
+                                                    fontSize: '0.75rem',
+                                                    cursor: 'pointer',
+                                                    padding: '0 4px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px'
+                                                }}
+                                            >
+                                                + Adicionar Descrição ao Template
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: isDark ? '#aaa' : '#666' }}>
+                                                Título (Assunto)
+                                            </label>
+                                            <input
+                                                type="text"
+                                                placeholder="Título do template..."
+                                                value={newTemplateContent.split('\n\n')[0]}
+                                                onChange={(e) => {
+                                                    const parts = newTemplateContent.split('\n\n');
+                                                    const body = parts.slice(1).join('\n\n');
+                                                    setNewTemplateContent(`${e.target.value}${body ? '\n\n' + body : ''}`);
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '8px 10px',
+                                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                                    border: `1px solid ${isDark ? '#444' : '#ddd'}`,
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.85rem',
+                                                    color: isDark ? '#fff' : '#000',
+                                                    outline: 'none',
+                                                    boxSizing: 'border-box'
+                                                }}
+                                            />
+                                            <label style={{ display: 'block', fontSize: '0.8rem', color: isDark ? '#aaa' : '#666', marginTop: '4px' }}>
+                                                Corpo (Descrição)
+                                            </label>
+                                            <textarea
+                                                placeholder="Descrição detalhada..."
+                                                value={newTemplateContent.split('\n\n').slice(1).join('\n\n')}
+                                                onChange={(e) => {
+                                                    const title = newTemplateContent.split('\n\n')[0] || '';
+                                                    setNewTemplateContent(`${title}\n\n${e.target.value}`);
+                                                }}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100px',
+                                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                                    border: `1px solid ${isDark ? '#444' : '#ddd'}`,
+                                                    borderRadius: '6px',
+                                                    padding: '10px',
+                                                    fontSize: '0.8rem',
+                                                    color: isDark ? '#ccc' : '#333',
+                                                    resize: 'none',
+                                                    outline: 'none',
+                                                    boxSizing: 'border-box'
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => setIsCreationExpanded(false)}
+                                                style={{
+                                                    alignSelf: 'flex-start',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    color: isDark ? '#aaa' : '#666',
+                                                    fontSize: '0.75rem',
+                                                    cursor: 'pointer',
+                                                    padding: '0 4px'
+                                                }}
+                                            >
+                                                - Recolher Descrição
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '16px' }}>
+                                    <button
+                                        onClick={() => setView('list')}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 16px',
+                                            background: 'transparent',
+                                            border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                            color: isDark ? '#aaa' : '#666',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: 700,
+                                            fontSize: '0.75rem'
+                                        }}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={!newTemplateName.trim() || !newTemplateContent.trim()}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 16px',
+                                            background: (!newTemplateName.trim() || !newTemplateContent.trim())
+                                                ? (isDark ? 'rgba(79, 195, 247, 0.05)' : 'rgba(0, 112, 243, 0.05)')
+                                                : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
+                                            color: (!newTemplateName.trim() || !newTemplateContent.trim())
+                                                ? (isDark ? '#444' : '#aaa')
+                                                : (isDark ? '#4fc3f7' : '#0070f3'),
+                                            border: `1px solid ${(!newTemplateName.trim() || !newTemplateContent.trim())
+                                                ? (isDark ? '#333' : '#eee')
+                                                : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')
+                                                }`,
+                                            borderRadius: '6px',
+                                            cursor: (!newTemplateName.trim() || !newTemplateContent.trim()) ? 'not-allowed' : 'pointer',
+                                            fontWeight: 700,
+                                            fontSize: '0.75rem',
+                                            opacity: 1
+                                        }}
+                                    >
+                                        Salvar Template
+                                    </button>
+                                </div>
                             </div>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <label style={{ display: 'block', fontSize: '0.8rem', color: isDark ? '#aaa' : '#666', marginBottom: '8px' }}>
-                                    Conteúdo
-                                </label>
-                                <textarea
-                                    value={newTemplateContent}
-                                    onChange={(e) => setNewTemplateContent(e.target.value)}
-                                    placeholder="Digite o modelo da mensagem..."
-                                    style={{
-                                        flex: 1,
-                                        width: '100%',
-                                        padding: '12px',
-                                        borderRadius: '6px',
-                                        background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                        border: `1px solid ${isDark ? '#444' : '#ddd'}`,
-                                        color: isDark ? '#fff' : '#000',
-                                        outline: 'none',
-                                        resize: 'none',
-                                        fontFamily: 'monospace'
-                                    }}
-                                />
-                            </div>
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                <button
-                                    onClick={() => setView('list')}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px',
-                                        background: 'transparent',
-                                        border: `1px solid ${isDark ? '#444' : '#ddd'}`,
-                                        color: isDark ? '#aaa' : '#666',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    disabled={!newTemplateName.trim() || !newTemplateContent.trim()}
-                                    style={{
-                                        flex: 1,
-                                        padding: '10px',
-                                        background: isDark ? '#4fc3f7' : '#0070f3',
-                                        color: isDark ? '#000' : '#fff',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontWeight: 600,
-                                        opacity: (!newTemplateName.trim() || !newTemplateContent.trim()) ? 0.5 : 1
-                                    }}
-                                >
-                                    Salvar
-                                </button>
-                            </div>
-                        </div>
+                        </ScrollArea>
                     )}
                 </div>
             </div>

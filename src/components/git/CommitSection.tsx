@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Radio } from '../ui/Radio';
 import { COMMIT_TYPES } from '../../logic/ConventionalCommits';
 
@@ -15,8 +16,15 @@ interface CommitSectionProps {
 export const CommitSection: React.FC<CommitSectionProps> = ({
     isDark, commitMessage, setCommitMessage, onCommit, stagedCount, isAmend, setIsAmend
 }) => {
-    // Softer blue, colorful but not "neon"
     const activeColor = isDark ? '#5da5db' : '#217dbb';
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Auto-expand if message comes with a body (e.g. from a template)
+    useEffect(() => {
+        if (commitMessage.includes('\n\n') && !isExpanded) {
+            setIsExpanded(true);
+        }
+    }, [commitMessage]);
 
     const handleTypeClick = (type: string) => {
         const prefix = `${type}: `;
@@ -83,24 +91,105 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
             </div>
 
             <div style={{ position: 'relative' }}>
-                <textarea
-                    placeholder="Mensagem de commit..."
-                    value={commitMessage}
-                    onChange={(e) => setCommitMessage(e.target.value)}
-                    style={{
-                        width: '100%',
-                        height: '70px',
-                        background: isDark ? '#2d2d2d' : '#f9fafb',
-                        border: `1px solid ${isDark ? '#3d3d3d' : '#d1d5db'} `,
-                        borderRadius: '6px',
-                        padding: '10px',
-                        fontSize: '0.85rem',
-                        color: isDark ? '#fff' : '#000',
-                        resize: 'none',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                    }}
-                />
+                {!isExpanded ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <textarea
+                            placeholder="Mensagem de commit..."
+                            value={commitMessage}
+                            onChange={(e) => setCommitMessage(e.target.value)}
+                            style={{
+                                width: '100%',
+                                height: '70px',
+                                background: isDark ? '#2d2d2d' : '#f9fafb',
+                                border: `1px solid ${isDark ? '#3d3d3d' : '#d1d5db'} `,
+                                borderRadius: '6px',
+                                padding: '10px',
+                                fontSize: '0.85rem',
+                                color: isDark ? '#fff' : '#000',
+                                resize: 'none',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                        <button
+                            onClick={() => setIsExpanded(true)}
+                            style={{
+                                alignSelf: 'flex-start',
+                                background: 'transparent',
+                                border: 'none',
+                                color: isDark ? '#5da5db' : '#0070f3',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                padding: '0 4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            + Adicionar Descrição
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <input
+                            type="text"
+                            placeholder="Título do Commit (Resumo)"
+                            value={commitMessage.split('\n\n')[0]} // First part is title
+                            onChange={(e) => {
+                                const parts = commitMessage.split('\n\n');
+                                const body = parts.slice(1).join('\n\n');
+                                setCommitMessage(`${e.target.value}${body ? '\n\n' + body : ''}`);
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '8px 10px',
+                                background: isDark ? '#2d2d2d' : '#f9fafb',
+                                border: `1px solid ${isDark ? '#3d3d3d' : '#d1d5db'}`,
+                                borderRadius: '6px',
+                                fontSize: '0.9rem',
+                                fontWeight: 600,
+                                color: isDark ? '#fff' : '#000',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                        <textarea
+                            placeholder="Corpo da mensagem (Detalhes)..."
+                            value={commitMessage.split('\n\n').slice(1).join('\n\n')} // Rest is body
+                            onChange={(e) => {
+                                const title = commitMessage.split('\n\n')[0] || '';
+                                setCommitMessage(`${title}\n\n${e.target.value}`);
+                            }}
+                            style={{
+                                width: '100%',
+                                height: '120px',
+                                background: isDark ? '#2d2d2d' : '#f9fafb',
+                                border: `1px solid ${isDark ? '#3d3d3d' : '#d1d5db'}`,
+                                borderRadius: '6px',
+                                padding: '10px',
+                                fontSize: '0.85rem',
+                                color: isDark ? '#ccc' : '#333',
+                                resize: 'none',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                        <button
+                            onClick={() => setIsExpanded(false)}
+                            style={{
+                                alignSelf: 'flex-start',
+                                background: 'transparent',
+                                border: 'none',
+                                color: isDark ? '#5da5db' : '#0070f3',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                padding: '0 4px'
+                            }}
+                        >
+                            - Recolher (Modo Simples)
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
