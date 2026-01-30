@@ -199,8 +199,16 @@ type AppState = {
     };
     gitProfiles: GitProfile[];
     commitTemplates: CommitTemplate[];
+    commitDetail: {
+        isOpen: boolean;
+        commit: GitLogEntry | null;
+        files: GitCommitFile[];
+        fullMessage: string;
+    };
     setGitView: (view: 'status' | 'terminal') => void;
     setGitSidebarView: (view: 'history' | 'graph') => void;
+    openCommitDetail: (commit: GitLogEntry) => Promise<void>;
+    closeCommitDetail: () => void;
     refreshGit: () => Promise<void>;
     fetchGitConfig: () => Promise<void>;
     changeBranch: (branch: string) => Promise<void>;
@@ -290,6 +298,12 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
     commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') || '[]'),
+    commitDetail: {
+        isOpen: false,
+        commit: null,
+        files: [],
+        fullMessage: ''
+    },
     quickCommands: JSON.parse(localStorage.getItem('quickCommands') || '[]'),
 
     settings: {
@@ -333,6 +347,40 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         set((state: any) => ({
             git: { ...state.git, sidebarView: view }
         }));
+    },
+
+    openCommitDetail: async (commit: GitLogEntry) => {
+        const { openedFolder, getCommitFiles } = get();
+        if (!openedFolder || !(window as any).electronAPI) return;
+
+        try {
+            // Fetch full message and files
+            const res = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--pretty=format:%B', '-s', commit.hash]);
+            const fullMessage = res.stdout.trim();
+            const files = await getCommitFiles(commit.hash);
+
+            set({
+                commitDetail: {
+                    isOpen: true,
+                    commit,
+                    files,
+                    fullMessage
+                }
+            });
+        } catch (err) {
+            console.error('Failed to open commit detail:', err);
+        }
+    },
+
+    closeCommitDetail: () => {
+        set({
+            commitDetail: {
+                isOpen: false,
+                commit: null,
+                files: [],
+                fullMessage: ''
+            }
+        });
     },
 
     selectedFile: null,
@@ -1448,7 +1496,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         try {
             await (window as any).electronAPI.gitCommand(openedFolder, ['checkout', hash]);
             await refreshGit();
-            get().addToast({ type: 'info', message: `Versão ${hash.substring(0, 7)} visualizada (Detached HEAD).` });
         } catch (e) {
             get().addToast({ type: 'error', message: `Erro ao mudar para a versão ${hash}` });
         }

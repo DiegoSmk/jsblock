@@ -14,6 +14,7 @@ import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Librar
 import { GitPanel } from './components/GitPanel';
 import { CommitHistory } from './components/git/CommitHistory';
 import { GitGraphView } from './components/git/GitGraphView';
+import { CommitDetailModal } from './components/git/CommitDetailModal';
 import { SideRibbon } from './components/SideRibbon';
 import { ContextRibbon } from './components/ui/ContextRibbon';
 import { useTranslation } from 'react-i18next';
@@ -367,6 +368,7 @@ function App() {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <ModernModal />
+        <CommitDetailModal />
         <header style={{
           height: '40px',
           padding: '0 16px',

@@ -1,15 +1,19 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
 import { ScrollArea } from '../ui/ScrollArea';
-import { GitBranch, History, User, Calendar, Tag } from 'lucide-react';
+import { GitBranch, History, Tag, RefreshCw } from 'lucide-react';
+import { SectionHeader } from './SharedComponents';
 
 export const GitGraphView: React.FC = () => {
-    const { git, theme, checkoutCommit } = useStore();
+    const { git, theme, openCommitDetail, refreshGit } = useStore();
     const isDark = theme === 'dark';
+
+    const LANE_COLORS = isDark
+        ? ['#60a5fa', '#f472b6', '#2dd4bf', '#fbbf24', '#a78bfa', '#fb7185', '#22d3ee', '#fb923c']
+        : ['#2563eb', '#db2777', '#0d9488', '#d97706', '#7c3aed', '#dc2626', '#0891b2', '#ea580c'];
 
     const parseRefs = (refs: string) => {
         if (!refs) return [];
-        // refs usually looks like "(HEAD -> main, origin/main, tag: v1.0)"
         return refs
             .replace(/[()]/g, '')
             .split(',')
@@ -32,23 +36,91 @@ export const GitGraphView: React.FC = () => {
 
     const getRefColor = (type: string) => {
         switch (type) {
-            case 'head': return isDark ? '#4fc3f7' : '#0070f3';
-            case 'branch': return isDark ? '#10b981' : '#059669';
-            case 'tag': return isDark ? '#fbbf24' : '#d97706';
-            case 'remote': return isDark ? '#f472b6' : '#db2777';
+            case 'head': return isDark ? '#3b82f6' : '#2563eb';
+            case 'branch': return isDark ? '#ec4899' : '#db2777';
+            case 'remote': return isDark ? '#14b8a6' : '#0d9488';
+            case 'tag': return isDark ? '#f59e0b' : '#d97706';
             default: return isDark ? '#888' : '#666';
         }
     };
 
-    const getGraphColor = (char: string) => {
-        // Standard git log graph colors logic (simplified)
-        switch (char) {
-            case '*': return isDark ? '#fff' : '#000';
-            case '|': return isDark ? '#333' : '#eee';
-            case '/': return isDark ? '#4fc3f7' : '#0070f3';
-            case '\\': return isDark ? '#f472b6' : '#db2777';
-            default: return isDark ? '#555' : '#ccc';
-        }
+    const renderGraphRow = (graph: string) => {
+        const charWidth = 12;
+        const rowHeight = 32;
+        const nodeSize = 7.5;
+        const centerX = charWidth / 2;
+        const centerY = rowHeight / 2;
+
+        return (
+            <svg width={charWidth * 7} height={rowHeight} style={{ overflow: 'visible' }}>
+                {graph.split('').map((char, cIdx) => {
+                    const x = cIdx * charWidth + centerX;
+                    const color = LANE_COLORS[cIdx % LANE_COLORS.length];
+
+                    const elements = [];
+
+                    // Vertical lines
+                    if (char === '|' || char === '*') {
+                        elements.push(
+                            <line
+                                key={`v-${cIdx}`}
+                                x1={x} y1={0} x2={x} y2={rowHeight}
+                                stroke={color} strokeWidth="2.2" strokeLinecap="round"
+                                opacity={char === '|' ? 0.3 : 1}
+                            />
+                        );
+                    }
+
+                    // Branching paths
+                    if (char === '/') {
+                        elements.push(
+                            <path
+                                key={`d-${cIdx}`}
+                                d={`M ${x + charWidth} 0 C ${x + charWidth} ${centerY}, ${x} ${centerY}, ${x} ${rowHeight}`}
+                                fill="none" stroke={LANE_COLORS[(cIdx + 1) % LANE_COLORS.length]}
+                                strokeWidth="2.2" strokeLinecap="round" opacity="0.45"
+                            />
+                        );
+                    }
+
+                    if (char === '\\') {
+                        elements.push(
+                            <path
+                                key={`d-${cIdx}`}
+                                d={`M ${x - charWidth} 0 C ${x - charWidth} ${centerY}, ${x} ${centerY}, ${x} ${rowHeight}`}
+                                fill="none" stroke={LANE_COLORS[(cIdx - 1 + LANE_COLORS.length) % LANE_COLORS.length]}
+                                strokeWidth="2.2" strokeLinecap="round" opacity="0.45"
+                            />
+                        );
+                    }
+
+                    // Node (Commit)
+                    if (char === '*') {
+                        elements.push(
+                            <rect
+                                key={`n-halo-${cIdx}`}
+                                x={x - (nodeSize + 6) / 2} y={centerY - (nodeSize + 6) / 2}
+                                width={nodeSize + 6} height={nodeSize + 6}
+                                rx={3}
+                                fill={color} opacity="0.18"
+                            />
+                        );
+                        elements.push(
+                            <rect
+                                key={`n-${cIdx}`}
+                                x={x - nodeSize / 2} y={centerY - nodeSize / 2}
+                                width={nodeSize} height={nodeSize}
+                                rx={2}
+                                fill={isDark ? '#fff' : '#000'}
+                                stroke={color} strokeWidth="2.5"
+                            />
+                        );
+                    }
+
+                    return elements;
+                })}
+            </svg>
+        );
     };
 
     return (
@@ -58,54 +130,77 @@ export const GitGraphView: React.FC = () => {
             flexDirection: 'column',
             background: isDark ? '#1a1a1a' : '#fff'
         }} className="git-graph-view">
+            <SectionHeader
+                title="Histórico de Commits"
+                count={git.log.filter(l => l.hash !== '').length}
+                isDark={isDark}
+                rightElement={
+                    <button
+                        onClick={(e) => { e.stopPropagation(); refreshGit(); }}
+                        title="Atualizar Histórico"
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            padding: '4px',
+                            cursor: 'pointer',
+                            color: isDark ? '#888' : '#777',
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderRadius: '4px'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                        <RefreshCw size={14} />
+                    </button>
+                }
+            />
+
             <ScrollArea style={{ flex: 1 }}>
-                <div style={{ padding: '20px', width: '100%' }}>
+                <div style={{ padding: '8px 4px', width: '100%' }}>
                     {git.log.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: isDark ? '#444' : '#ccc' }}>
                             <History size={48} style={{ marginBottom: '16px', opacity: 0.2 }} />
                             <p>Nenhum histórico disponível</p>
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
                             {git.log.map((entry, idx) => {
                                 const refs = parseRefs((entry as any).refs || '');
                                 const isCommit = entry.hash !== '';
+                                const tooltipText = isCommit ? `${entry.author} • ${new Date(entry.date).toLocaleString()}\n${entry.hash}` : '';
 
                                 return (
                                     <div
                                         key={idx}
+                                        title={tooltipText}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'stretch',
-                                            minHeight: '28px',
+                                            height: '32px',
                                             cursor: isCommit ? 'pointer' : 'default',
                                             transition: 'background 0.1s',
-                                            borderRadius: '4px',
-                                            margin: '0 -4px'
+                                            borderRadius: '4px'
                                         }}
                                         className="git-graph-row"
                                         onMouseEnter={(e) => {
-                                            if (isCommit) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)';
+                                            if (isCommit) e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)';
                                         }}
                                         onMouseLeave={(e) => {
                                             if (isCommit) e.currentTarget.style.background = 'transparent';
                                         }}
+                                        onClick={() => isCommit && openCommitDetail(entry)}
                                     >
-                                        {/* Graph Visualization Column */}
+                                        {/* Graph Column */}
                                         <div style={{
-                                            width: '100px',
-                                            fontFamily: 'monospace',
-                                            fontSize: '14px',
-                                            lineHeight: '28px',
-                                            whiteSpace: 'pre',
-                                            color: isDark ? '#555' : '#ccc',
+                                            width: '65px',
+                                            flexShrink: 0,
                                             paddingLeft: '12px',
-                                            position: 'relative',
-                                            userSelect: 'none'
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            overflow: 'visible'
                                         }}>
-                                            {(entry.graph || '').split('').map((char, cIdx) => (
-                                                <span key={cIdx} style={{ color: getGraphColor(char) }}>{char}</span>
-                                            ))}
+                                            {renderGraphRow(entry.graph || '')}
                                         </div>
 
                                         {/* Commit Info Column */}
@@ -114,38 +209,63 @@ export const GitGraphView: React.FC = () => {
                                                 flex: 1,
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: '12px',
-                                                padding: '0 12px',
-                                                minWidth: 0
+                                                gap: '8px',
+                                                padding: '0 4px',
+                                                minWidth: 0,
+                                                overflow: 'hidden'
                                             }}>
-                                                {/* Hash */}
                                                 <div style={{
                                                     fontFamily: 'monospace',
                                                     fontSize: '0.7rem',
-                                                    color: isDark ? '#555' : '#999',
+                                                    color: isDark ? '#888' : '#666',
                                                     width: '55px',
                                                     flexShrink: 0
                                                 }}>
                                                     {entry.hash.substring(0, 7)}
                                                 </div>
 
-                                                {/* Refs / Branches */}
+                                                <div style={{
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 600,
+                                                    color: isDark ? '#eee' : '#111',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    flex: 1,
+                                                    minWidth: 0
+                                                }}>
+                                                    {entry.message}
+                                                </div>
+
+                                                <div style={{
+                                                    fontSize: '0.7rem',
+                                                    color: isDark ? '#666' : '#888',
+                                                    whiteSpace: 'nowrap',
+                                                    flexShrink: 0,
+                                                    opacity: 0.7,
+                                                    paddingRight: '4px'
+                                                }}>
+                                                    {entry.author ? (entry.author.split('<')[0].trim() || 'System') : '...'}
+                                                </div>
+
                                                 {refs.length > 0 && (
                                                     <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                                                         {refs.map((ref, rIdx) => (
                                                             <div
                                                                 key={rIdx}
                                                                 style={{
-                                                                    fontSize: '0.65rem',
+                                                                    fontSize: '0.6rem',
                                                                     fontWeight: 700,
                                                                     padding: '1px 6px',
                                                                     borderRadius: '4px',
-                                                                    background: `${getRefColor(ref.type)}22`,
-                                                                    border: `1px solid ${getRefColor(ref.type)}44`,
+                                                                    background: ref.type === 'head'
+                                                                        ? (isDark ? '#3b82f622' : '#2563eb11')
+                                                                        : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                                                                    border: `1px solid ${getRefColor(ref.type)}55`,
                                                                     color: getRefColor(ref.type),
                                                                     display: 'flex',
                                                                     alignItems: 'center',
-                                                                    gap: '4px'
+                                                                    gap: '2px'
                                                                 }}
                                                             >
                                                                 {ref.type === 'tag' ? <Tag size={8} /> : <GitBranch size={8} />}
@@ -154,51 +274,6 @@ export const GitGraphView: React.FC = () => {
                                                         ))}
                                                     </div>
                                                 )}
-
-                                                {/* Message */}
-                                                <div style={{
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 500,
-                                                    color: isDark ? '#ddd' : '#333',
-                                                    whiteSpace: 'nowrap',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis',
-                                                    flex: 1
-                                                }}>
-                                                    {entry.message}
-                                                </div>
-
-                                                {/* Author & Date */}
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    fontSize: '0.7rem',
-                                                    color: isDark ? '#555' : '#999',
-                                                    flexShrink: 0,
-                                                    marginLeft: 'auto'
-                                                }}>
-                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                                        <User size={10} />
-                                                        {entry.author.split('<')[0].trim()}
-                                                    </span>
-                                                    <span>•</span>
-                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                                        <Calendar size={10} />
-                                                        {new Date(entry.date).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-
-                                                {/* Simple Actions */}
-                                                <div style={{ display: 'flex', gap: '4px', opacity: 0, transition: 'opacity 0.2s' }} className="graph-actions">
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); checkoutCommit(entry.hash); }}
-                                                        style={{ background: 'none', border: 'none', padding: '4px', cursor: 'pointer', color: isDark ? '#888' : '#777' }}
-                                                        title="Checkout"
-                                                    >
-                                                        <History size={14} />
-                                                    </button>
-                                                </div>
                                             </div>
                                         ) : (
                                             <div style={{ flex: 1 }} />
@@ -210,7 +285,6 @@ export const GitGraphView: React.FC = () => {
                     )}
                 </div>
             </ScrollArea>
-
         </div>
     );
 };
