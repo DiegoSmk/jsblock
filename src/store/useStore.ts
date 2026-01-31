@@ -192,8 +192,8 @@ type AppState = {
         rawLog: string;
         globalAuthor: GitAuthor | null;
         projectAuthor: GitAuthor | null;
-        activeView: 'status' | 'terminal';
-        sidebarView: 'history' | 'graph';
+        activeView: 'status' | 'terminal' | 'graph';
+        sidebarView: 'history' | 'graph' | 'info';
         branches: string[];
         stashes: GitStashEntry[];
     };
@@ -204,9 +204,14 @@ type AppState = {
         commit: GitLogEntry | null;
         files: GitCommitFile[];
         fullMessage: string;
+        stats?: {
+            insertions: number;
+            deletions: number;
+            filesChanged: number;
+        };
     };
-    setGitView: (view: 'status' | 'terminal') => void;
-    setGitSidebarView: (view: 'history' | 'graph') => void;
+    setGitView: (view: 'status' | 'terminal' | 'graph') => void;
+    setGitSidebarView: (view: 'history' | 'graph' | 'info') => void;
     openCommitDetail: (commit: GitLogEntry) => Promise<void>;
     closeCommitDetail: () => void;
     refreshGit: () => Promise<void>;
@@ -292,7 +297,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         globalAuthor: null,
         projectAuthor: null,
         activeView: 'status',
-        sidebarView: 'history',
+        sidebarView: 'info',
         branches: [],
         stashes: []
     },
@@ -302,7 +307,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         isOpen: false,
         commit: null,
         files: [],
-        fullMessage: ''
+        fullMessage: '',
+        stats: undefined
     },
     quickCommands: JSON.parse(localStorage.getItem('quickCommands') || '[]'),
 
@@ -338,12 +344,12 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         set({ quickCommands });
     },
 
-    setGitView: (view: 'status' | 'terminal' | 'history' | 'graph') => {
+    setGitView: (view: 'status' | 'terminal' | 'graph') => {
         set((state: any) => ({
             git: { ...state.git, activeView: view }
         }));
     },
-    setGitSidebarView: (view: 'history' | 'graph') => {
+    setGitSidebarView: (view: 'history' | 'graph' | 'info') => {
         set((state: any) => ({
             git: { ...state.git, sidebarView: view }
         }));
@@ -359,12 +365,34 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             const fullMessage = res.stdout.trim();
             const files = await getCommitFiles(commit.hash);
 
+            // Fetch shortstat
+            let stats = { insertions: 0, deletions: 0, filesChanged: 0 };
+            try {
+                const statRes = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--shortstat', '--format=', commit.hash]);
+                const statLine = statRes.stdout.trim();
+                // Format example: " 2 files changed, 10 insertions(+), 5 deletions(-)"
+                if (statLine) {
+                    const filesMatch = statLine.match(/(\d+) files? changed/);
+                    const insMatch = statLine.match(/(\d+) insertions?\(\+\)/);
+                    const delMatch = statLine.match(/(\d+) deletions?\(-\)/);
+
+                    stats = {
+                        filesChanged: filesMatch ? parseInt(filesMatch[1]) : 0,
+                        insertions: insMatch ? parseInt(insMatch[1]) : 0,
+                        deletions: delMatch ? parseInt(delMatch[1]) : 0
+                    };
+                }
+            } catch (e) {
+                console.warn('Failed to fetch commit stats:', e);
+            }
+
             set({
                 commitDetail: {
                     isOpen: true,
                     commit,
                     files,
-                    fullMessage
+                    fullMessage,
+                    stats
                 }
             });
         } catch (err) {
@@ -378,7 +406,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 isOpen: false,
                 commit: null,
                 files: [],
-                fullMessage: ''
+                fullMessage: '',
+                stats: undefined
             }
         });
     },

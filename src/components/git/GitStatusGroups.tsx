@@ -71,7 +71,12 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column' }}>
             {/* Staged Changes */}
             <SectionHeader
-                title="Alterações Preparadas"
+                title={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '10px', height: '10px', marginTop: '-1px', borderRadius: '3px', backgroundColor: isDark ? '#4ade80' : '#22c55e', opacity: 0.5 }} />
+                        <span>Alterações Preparadas</span>
+                    </div>
+                }
                 count={staged.length}
                 isOpen={true}
                 isDark={isDark}
@@ -136,7 +141,12 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
 
             {/* Unstaged Changes */}
             <SectionHeader
-                title="Alterações Não Preparadas"
+                title={
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '10px', height: '10px', marginTop: '-1px', borderRadius: '3px', backgroundColor: isDark ? '#fbbf24' : '#f59e0b', opacity: 0.5 }} />
+                        <span>Alterações Não Preparadas</span>
+                    </div>
+                }
                 count={unstaged.length}
                 isOpen={true}
                 isDark={isDark}

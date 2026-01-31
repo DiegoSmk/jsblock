@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface SectionHeaderProps {
-    title: string;
+    title: React.ReactNode | string;
     count: number;
     onToggle?: () => void;
     isOpen?: boolean;
@@ -46,14 +46,16 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             )}
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
-                <span className="git-badge" style={{
-                    background: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
-                    color: isDark ? '#eee' : '#555',
-                    border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'}`,
-                    padding: '1px 6px',
-                    borderRadius: '10px',
-                    fontSize: '0.65rem'
-                }}>{count}</span>
+                {count >= 0 && (
+                    <span className="git-badge" style={{
+                        background: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
+                        color: isDark ? '#eee' : '#555',
+                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'}`,
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        fontSize: '0.65rem'
+                    }}>{count}</span>
+                )}
                 {rightElement}
             </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
-import { Archive, ArrowUpCircle, RotateCcw, Layers, Trash2, ChevronDown, Monitor } from 'lucide-react';
+import { Archive, ArrowUpCircle, RotateCcw, Layers, Trash2, ChevronDown, Monitor, ChevronRight } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 import { ScrollArea } from '../ui/ScrollArea';
 
@@ -75,6 +75,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
             position: 'relative'
         }}>
             <div style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ChevronRight size={12} color={isDark ? '#666' : '#999'} />
                 <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
                     Ações Rápidas
                 </span>

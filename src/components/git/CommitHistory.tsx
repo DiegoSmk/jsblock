@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SectionHeader } from './SharedComponents';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, ChevronRight, History, GitBranch, FileText, Plus, Minus } from 'lucide-react';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
 
@@ -14,8 +14,12 @@ interface GitHistoryProps {
 export const CommitHistory: React.FC<GitHistoryProps> = ({
     isDark, logs, isOpen, onToggle
 }) => {
-    const { openCommitDetail } = useStore();
+    const { getCommitFiles, openModal, checkoutCommit, createBranch, openedFolder } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
+    const [expandedCommits, setExpandedCommits] = useState<Set<string>>(new Set());
+    const [commitFiles, setCommitFiles] = useState<Record<string, any[]>>({});
+    const [commitStats, setCommitStats] = useState<Record<string, { insertions: number, deletions: number }>>({});
+    const [loadingFiles, setLoadingFiles] = useState<Set<string>>(new Set());
 
     const formatDate = (dateStr: string) => {
         try {
@@ -25,6 +29,54 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
         } catch (e) {
             return dateStr;
         }
+    };
+
+    const toggleCommit = async (hash: string) => {
+        const newExpanded = new Set(expandedCommits);
+        if (newExpanded.has(hash)) {
+            newExpanded.delete(hash);
+        } else {
+            newExpanded.add(hash);
+            if (!commitFiles[hash]) {
+                setLoadingFiles(prev => new Set(prev).add(hash));
+                try {
+                    // Fetch files
+                    const files = await getCommitFiles(hash);
+
+                    // Fetch stats
+                    let stats = { insertions: 0, deletions: 0 };
+                    try {
+                        if ((window as any).electronAPI && openedFolder) {
+                            const statRes = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--shortstat', '--format=', hash]);
+                            const statLine = statRes.stdout.trim();
+                            if (statLine) {
+                                const insMatch = statLine.match(/(\d+) insertions?\(\+\)/);
+                                const delMatch = statLine.match(/(\d+) deletions?\(-\)/);
+                                stats = {
+                                    insertions: insMatch ? parseInt(insMatch[1]) : 0,
+                                    deletions: delMatch ? parseInt(delMatch[1]) : 0
+                                };
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch stats for history:', e);
+                    }
+
+                    setCommitFiles(prev => ({ ...prev, [hash]: files }));
+                    setCommitStats(prev => ({ ...prev, [hash]: stats }));
+
+                } catch (err) {
+                    console.error('Erro ao buscar arquivos do commit:', err);
+                } finally {
+                    setLoadingFiles(prev => {
+                        const next = new Set(prev);
+                        next.delete(hash);
+                        return next;
+                    });
+                }
+            }
+        }
+        setExpandedCommits(newExpanded);
     };
 
     const filteredCommits = useMemo(() => {
@@ -37,75 +89,14 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
         );
     }, [logs, searchTerm]);
 
-    const heatmapData = useMemo(() => {
-        const data: Record<string, number> = {};
-        logs.forEach(commit => {
-            try {
-                const date = new Date(commit.date);
-                if (isNaN(date.getTime())) return;
-                const key = date.toISOString().split('T')[0];
-                data[key] = (data[key] || 0) + 1;
-            } catch (e) { }
-        });
-        return data;
-    }, [logs]);
 
-    const renderHeatmap = () => {
-        const weeks = [];
-        const today = new Date();
-        const startDate = new Date();
-        startDate.setDate(today.getDate() - (15 * 7));
 
-        while (startDate.getDay() !== 0) {
-            startDate.setDate(startDate.getDate() - 1);
-        }
 
-        let currentDate = new Date(startDate);
-        while (currentDate <= today) {
-            const week = [];
-            for (let i = 0; i < 7; i++) {
-                const dayKey = currentDate.toISOString().split('T')[0];
-                const count = heatmapData[dayKey] || 0;
-                week.push({ date: dayKey, count });
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-            weeks.push(week);
-        }
-
-        const getGithubColor = (count: number) => {
-            if (count === 0) return isDark ? '#2d2d2d' : '#ebedf0';
-            if (count <= 2) return isDark ? '#0e4429' : '#9be9a8';
-            if (count <= 5) return isDark ? '#006d32' : '#40c463';
-            if (count <= 10) return isDark ? '#26a641' : '#30a14e';
-            return isDark ? '#39d353' : '#216e39';
-        };
-
-        return (
-            <div style={{ display: 'flex', gap: '2px', overflowX: 'auto', padding: '10px 0' }} className="no-scrollbar">
-                {weeks.map((week, wIndex) => (
-                    <div key={wIndex} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        {week.map((day) => (
-                            <div
-                                key={day.date}
-                                title={`${day.date}: ${day.count} commits`}
-                                style={{
-                                    width: '9px',
-                                    height: '9px',
-                                    borderRadius: '1px',
-                                    backgroundColor: getGithubColor(day.count),
-                                }}
-                            />
-                        ))}
-                    </div>
-                ))}
-            </div>
-        );
-    };
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}>
             <SectionHeader
-                title="Histórico de Commits"
+                title="Lista de Commits"
                 count={logs.length}
                 isOpen={isOpen}
                 onToggle={onToggle}
@@ -156,11 +147,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                             />
                         </div>
 
-                        {!searchTerm && (
-                            <div style={{ marginTop: '8px' }}>
-                                {renderHeatmap()}
-                            </div>
-                        )}
+
                     </div>
 
                     <ScrollArea style={{ flex: 1 }}>
@@ -170,62 +157,182 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                     Nenhum commit encontrado
                                 </div>
                             ) : (
-                                filteredCommits.map((commit, i) => (
-                                    <div
-                                        key={commit.hash}
-                                        style={{
-                                            borderBottom: `1px solid ${isDark ? '#252525' : '#f5f5f5'}`,
-                                            padding: '10px 16px',
-                                            cursor: 'pointer',
-                                            transition: 'background 0.2s',
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                        onClick={() => openCommitDetail(commit)}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                                            <div style={{ marginTop: '4px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                                <div style={{
-                                                    width: '10px',
-                                                    height: '10px',
-                                                    borderRadius: '50%',
-                                                    background: isDark ? '#1a1a1a' : '#fff',
-                                                    border: `2px solid ${isDark ? '#0070f3' : '#0070f3'}`,
-                                                    zIndex: 2,
-                                                    flexShrink: 0
-                                                }} />
-                                                {i !== filteredCommits.length - 1 && (
+                                filteredCommits.map((commit, i) => {
+                                    const isExpanded = expandedCommits.has(commit.hash);
+                                    const files = commitFiles[commit.hash] || [];
+                                    const isLoading = loadingFiles.has(commit.hash);
+
+                                    return (
+                                        <div
+                                            key={commit.hash}
+                                            style={{
+                                                borderBottom: `1px solid ${isDark ? '#252525' : '#f5f5f5'}`,
+                                                transition: 'background 0.2s',
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    padding: '10px 16px',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'flex-start',
+                                                    gap: '10px',
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}
+                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                                onClick={() => toggleCommit(commit.hash)}
+                                            >
+                                                <div style={{ marginTop: '4px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                                     <div style={{
-                                                        width: '1px',
-                                                        height: '40px',
-                                                        background: isDark ? '#333' : '#eee',
-                                                        position: 'absolute',
-                                                        top: '10px',
-                                                        zIndex: 1
+                                                        width: '10px',
+                                                        height: '10px',
+                                                        borderRadius: '50%',
+                                                        background: isDark ? '#1a1a1a' : '#fff',
+                                                        border: `2px solid #0070f3`,
+                                                        zIndex: 2,
+                                                        flexShrink: 0
                                                     }} />
-                                                )}
+                                                    {i !== filteredCommits.length - 1 && (
+                                                        <div style={{
+                                                            width: '1px',
+                                                            height: '100%',
+                                                            minHeight: '20px',
+                                                            background: isDark ? '#333' : '#eee',
+                                                            position: 'absolute',
+                                                            top: '10px',
+                                                            zIndex: 1
+                                                        }} />
+                                                    )}
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <div style={{
+                                                            fontSize: '0.8rem',
+                                                            fontWeight: 600,
+                                                            color: isDark ? '#ddd' : '#333',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            flex: 1
+                                                        }}>
+                                                            {commit.message}
+                                                        </div>
+                                                        <div style={{ color: isDark ? '#555' : '#ccc' }}>
+                                                            {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem', color: isDark ? '#666' : '#999' }}>
+                                                        <span style={{ fontWeight: 500 }}>{(commit.author || 'Desconhecido').split('<')[0].trim()}</span>
+                                                        <span>•</span>
+                                                        <span>{formatDate(commit.date)}</span>
+                                                        <span style={{ fontFamily: 'monospace', opacity: 0.6 }}>{commit.hash.substring(0, 7)}</span>
+                                                        {isExpanded && commitStats && commitStats[commit.hash] && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '2px' }}>
+                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0px', color: '#10b981' }} title={`${commitStats[commit.hash].insertions} inserções`}>
+                                                                    <Plus size={8} strokeWidth={3} />{commitStats[commit.hash].insertions}
+                                                                </span>
+                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0px', color: '#ef4444' }} title={`${commitStats[commit.hash].deletions} deleções`}>
+                                                                    <Minus size={8} strokeWidth={3} />{commitStats[commit.hash].deletions}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
+
+                                            {isExpanded && (
                                                 <div style={{
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 600,
-                                                    color: isDark ? '#ddd' : '#333',
-                                                    marginBottom: '2px',
-                                                    whiteSpace: 'nowrap',
-                                                    overflow: 'hidden',
-                                                    textOverflow: 'ellipsis'
+                                                    padding: '0 16px 12px 36px',
+                                                    background: isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
+                                                    fontSize: '0.75rem'
                                                 }}>
-                                                    {commit.message}
+                                                    {/* Quick Actions */}
+                                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); checkoutCommit(commit.hash); }}
+                                                            style={{
+                                                                background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.05)',
+                                                                border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.1)'}`,
+                                                                color: isDark ? '#4fc3f7' : '#0070f3',
+                                                                padding: '4px 10px',
+                                                                borderRadius: '4px',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: 600,
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px'
+                                                            }}
+                                                        >
+                                                            <History size={12} /> Checkout
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openModal({
+                                                                    title: 'Criar Branch a partir deste Commit',
+                                                                    type: 'input',
+                                                                    placeholder: 'Nome da nova branch',
+                                                                    confirmLabel: 'Criar',
+                                                                    initialValue: '',
+                                                                    onSubmit: (name) => {
+                                                                        if (name) createBranch(name, commit.hash);
+                                                                    }
+                                                                });
+                                                            }}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                                                color: isDark ? '#999' : '#666',
+                                                                padding: '4px 10px',
+                                                                borderRadius: '4px',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: 600,
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px'
+                                                            }}
+                                                        >
+                                                            <GitBranch size={12} /> Branch
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Files List */}
+                                                    <div style={{ color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <FileText size={10} /> Arquivos Alterados
+                                                    </div>
+
+                                                    {isLoading ? (
+                                                        <div style={{ padding: '10px 0', color: isDark ? '#444' : '#ccc' }}>Carregando arquivos...</div>
+                                                    ) : files.length === 0 ? (
+                                                        <div style={{ padding: '10px 0', color: isDark ? '#444' : '#ccc' }}>Nenhum arquivo listado</div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                            {files.map((file, idx) => (
+                                                                <div key={idx} style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '8px',
+                                                                    color: isDark ? '#bbb' : '#555',
+                                                                    fontFamily: 'monospace'
+                                                                }}>
+                                                                    <span style={{
+                                                                        fontSize: '0.6rem',
+                                                                        fontWeight: 800,
+                                                                        color: file.status === 'A' ? '#10b981' : file.status === 'M' ? '#fbbf24' : '#ef4444',
+                                                                        width: '12px'
+                                                                    }}>{file.status}</span>
+                                                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem', color: isDark ? '#666' : '#999' }}>
-                                                    <span style={{ fontWeight: 500 }}>{(commit.author || 'Desconhecido').split('<')[0].trim()}</span>
-                                                    <span>•</span>
-                                                    <span>{formatDate(commit.date)}</span>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     </ScrollArea>

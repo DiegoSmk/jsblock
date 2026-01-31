@@ -111,7 +111,7 @@ export const GitGraphView: React.FC = () => {
                                 x={x - nodeSize / 2} y={centerY - nodeSize / 2}
                                 width={nodeSize} height={nodeSize}
                                 rx={2}
-                                fill={isDark ? '#fff' : '#000'}
+                                fill="#fff"
                                 stroke={color} strokeWidth="2.5"
                             />
                         );
@@ -131,7 +131,7 @@ export const GitGraphView: React.FC = () => {
             background: isDark ? '#1a1a1a' : '#fff'
         }} className="git-graph-view">
             <SectionHeader
-                title="Histórico de Commits"
+                title="Grafo de Commits"
                 count={git.log.filter(l => l.hash !== '').length}
                 isDark={isDark}
                 rightElement={

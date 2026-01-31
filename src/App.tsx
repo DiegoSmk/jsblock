@@ -10,10 +10,11 @@ import {
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
-import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Edit2, Trash2, History as HistoryIcon, Network, Layers, Terminal } from 'lucide-react';
+import { RefreshCw, Code, FolderOpen, Minus, Square, X, PanelLeft, Files, Library, Box, Edit2, Trash2, History as HistoryIcon, Network, Layers, Terminal, Info } from 'lucide-react';
 import { GitPanel } from './components/GitPanel';
 import { CommitHistory } from './components/git/CommitHistory';
 import { GitGraphView } from './components/git/GitGraphView';
+import { GitInfoPanel } from './components/git/GitInfoPanel';
 import { CommitDetailModal } from './components/git/CommitDetailModal';
 import { SideRibbon } from './components/SideRibbon';
 import { ContextRibbon } from './components/ui/ContextRibbon';
@@ -444,6 +445,22 @@ function App() {
             {showSidebar && activeSidebarTab === 'git' && (
               <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
                 <button
+                  onClick={() => setGitSidebarView('info')}
+                  title="Informações do Repositório"
+                  style={{
+                    background: git.sidebarView === 'info' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: git.sidebarView === 'info' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                    padding: '6px',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Info size={18} />
+                </button>
+                <button
                   onClick={() => setGitSidebarView('history')}
                   title="Histórico de Commits"
                   style={{
@@ -665,13 +682,16 @@ function App() {
                           }
                         `}</style>
                       </div>
+                    ) : git.sidebarView === 'info' ? (
+                      <div style={{ height: '100%', background: isDark ? '#1a1a1a' : '#fff', overflowY: 'auto' }}>
+                        <GitInfoPanel isDark={isDark} logs={git.log} />
+                      </div>
                     ) : (
                       <CommitHistory
                         isDark={isDark}
                         logs={git.log}
                         isOpen={true}
                         onToggle={() => { }}
-                        hideToggle={true}
                       />
                     )}
                   </div>
