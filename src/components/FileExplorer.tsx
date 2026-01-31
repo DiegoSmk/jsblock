@@ -362,11 +362,11 @@ export const FileExplorer: React.FC = () => {
                 transition: 'all 0.2s',
                 flex: 1
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
                 e.currentTarget.style.color = color ?? (isDark ? '#fff' : '#000');
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
                 e.currentTarget.style.color = color ?? (isDark ? '#888' : '#666');
             }}

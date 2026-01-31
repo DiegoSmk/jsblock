@@ -1,7 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
 import { LogicHandler } from './LogicHandler';
-import type { Node as BabelNode, IfStatement, Identifier } from '@babel/types';
+import type { Node as BabelNode, IfStatement } from '@babel/types';
 
 export const IfHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'IfStatement',

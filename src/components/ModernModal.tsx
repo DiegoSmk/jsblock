@@ -150,7 +150,7 @@ export const ModernModal = () => {
                             <span className="logo-js" style={{ fontSize: '36px' }}>JS</span>
                             <div style={{ display: 'flex', gap: '6px' }}>
                                 {['B', 'L', 'O', 'C', 'K'].map((letter, i) => {
-                                    const isFallen = modal.payload?.fallenIndex === i;
+                                    const isFallen = (modal.payload as { fallenIndex?: number })?.fallenIndex === i;
                                     const rotation = isFallen ? (i % 2 === 0 ? -15 : 15) + (i * 2) : 0;
                                     const translateY = isFallen ? 8 : 0;
 

@@ -48,7 +48,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }
 
     const getHeaderLabel = (): string => {
         if (isDecl) return 'Definition';
-        if (isBuiltin) return data.label || '';
+        if (isBuiltin) return data.label ?? '';
         return 'Function Call';
     };
 
@@ -139,7 +139,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }
                         </div>
                     )}
                     <span style={{ color: identityColor, fontWeight: 800, fontSize: '1rem', fontFamily: 'monospace' }}>
-                        {(data.label || '').replace('Definition: ', '')}()
+                        {(data.label ?? '').replace('Definition: ', '')}()
                     </span>
                     {/* Reference Handles */}
                     {isDecl ? (

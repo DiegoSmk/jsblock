@@ -2,7 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { ExternalLink, Split } from 'lucide-react';
 
-import { AppNodeData } from '../store/useStore';
+import type { AppNodeData } from '../store/useStore';
 
 export const IfNode = ({ data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);

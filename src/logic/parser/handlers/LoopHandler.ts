@@ -3,7 +3,7 @@ import { createEdge, generateId } from '../utils';
 import { LogicHandler } from './LogicHandler';
 import { VariableHandler } from './VariableHandler';
 import { AssignmentHandler } from './AssignmentHandler';
-import type { Node as BabelNode, WhileStatement, ForStatement, Identifier, UpdateExpression, VariableDeclaration } from '@babel/types';
+import type { Node as BabelNode, WhileStatement, ForStatement, Identifier, VariableDeclaration } from '@babel/types';
 
 export const LoopHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'WhileStatement' || node.type === 'ForStatement',

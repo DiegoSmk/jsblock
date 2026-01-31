@@ -10,7 +10,7 @@ import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { generateId } from './utils';
-import type { Node as BabelNode, BlockStatement, Statement } from '@babel/types';
+import type { Node as BabelNode, Statement } from '@babel/types';
 import type { AppNode } from '../../store/useStore';
 
 export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {

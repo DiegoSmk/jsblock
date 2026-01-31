@@ -539,8 +539,7 @@ export const parseCodeToFlow = (code: string) => {
 
                 statement.cases.forEach((c: any, i: number) => {
                     // 'consequent' in SwitchCase is an array of statements, not a BlockStatement
-                    const caseHandle = c.test ? `case-${i}` : 'default';
-                    // Wait, our Switch Node creates handles based on index in 'cases' array.
+                    // Match the handle ID created in SwitchNode?
                     // If c.test is null, it's default.
 
                     // We need to match the handle ID created in SwitchNode?

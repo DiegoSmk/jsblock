@@ -1,31 +1,25 @@
-import dagre from 'dagre';
-import type { Node, Edge } from '@xyflow/react';
+import * as dagre from 'dagre';
+import type { Edge } from '@xyflow/react';
 import { Position } from '@xyflow/react';
+import type { AppNode } from '../types/store';
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-// Substantially increased base dimensions for layout calculation
-const nodeWidth = 350;
-const nodeHeight = 150;
-
-export const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
-    const scopes: Record<string, Node[]> = {};
+export const getLayoutedElements = (nodes: AppNode[], edges: Edge[]) => {
+    const scopes: Record<string, AppNode[]> = {};
     nodes.forEach(node => {
-        const scopeId = (node.data as any)?.scopeId || 'root';
+        const scopeId = node.data.scopeId || 'root';
         if (!scopes[scopeId]) scopes[scopeId] = [];
         scopes[scopeId].push(node);
     });
 
-    const processedNodes: Node[] = [];
+    const processedNodes: AppNode[] = [];
     const PADDING = 60;
 
     Object.keys(scopes).forEach(scopeId => {
         const allNodes = scopes[scopeId].filter(n => n.type !== 'groupNode' && n.id !== 'node-js-runtime');
 
         // 1. Separate Definitions from Flow
-        const definitions = allNodes.filter(n => (n.data as any)?.isDecl);
-        const flowNodes = allNodes.filter(n => !(n.data as any)?.isDecl);
+        const definitions = allNodes.filter(n => n.data.isDecl);
+        const flowNodes = allNodes.filter(n => !n.data.isDecl);
 
         // 2. Position Definitions in a dedicated vertical column on the left
         definitions.forEach((node, i) => {
@@ -49,11 +43,11 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
             else if (node.type === 'literalNode') { width = 180; height = 60; }
             else if (node.type === 'variableNode') {
                 width = 320;
-                height = !!(node.data as any).nestedCall || (node.data as any).value === '(computed)' ? 180 : 120;
+                height = !!node.data.nestedCall || node.data.value === '(computed)' ? 180 : 120;
             }
             else if (node.type === 'functionCallNode') {
                 width = 350;
-                const argCount = (node.data as any).args?.length || 0;
+                const argCount = node.data.args?.length || 0;
                 height = 100 + (argCount * 40);
             }
             else if (node.type === 'ifNode' || node.type === 'forNode' || node.type === 'whileNode') {
@@ -89,7 +83,7 @@ export const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
     const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
     if (runtimeNode) processedNodes.push({ ...runtimeNode, position: { x: 500, y: -200 } });
 
-    const nodesWithGroups = [...processedNodes];
+    const nodesWithGroups: AppNode[] = [...processedNodes];
     nodes.filter(n => n.type === 'groupNode').forEach(group => {
         const children = processedNodes.filter(n => n.parentId === group.id);
         if (children.length > 0) {

@@ -1,7 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { isNativeApi } from '../utils';
 import { LogicHandler } from './LogicHandler';
-import type { Node as BabelNode, VariableDeclaration, Identifier, VariableDeclarator, Expression, CallExpression, MemberExpression } from '@babel/types';
+import type { Node as BabelNode, VariableDeclaration, VariableDeclarator } from '@babel/types';
 
 const getExpressionCode = (node: BabelNode | null | undefined): string => {
     if (!node) return '';

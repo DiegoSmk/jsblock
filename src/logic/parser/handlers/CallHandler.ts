@@ -1,6 +1,6 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId, isNativeApi } from '../utils';
-import type { Node as BabelNode, CallExpression, ExpressionStatement, Identifier, MemberExpression, StringLiteral, NumericLiteral, TemplateLiteral, BooleanLiteral, Expression } from '@babel/types';
+import type { Node as BabelNode, CallExpression } from '@babel/types';
 
 export const CallHandler: ParserHandler = {
     canHandle: (node: BabelNode) => {

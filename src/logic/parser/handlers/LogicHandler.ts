@@ -1,7 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
 import { CallHandler } from './CallHandler';
-import type { Node as BabelNode, ExpressionStatement, BinaryExpression, LogicalExpression, Identifier, NumericLiteral, StringLiteral, BooleanLiteral } from '@babel/types';
+import type { Node as BabelNode, BinaryExpression, LogicalExpression, Identifier, NumericLiteral, StringLiteral, BooleanLiteral } from '@babel/types';
 
 export const LogicHandler: ParserHandler = {
     canHandle: (node: BabelNode) => {

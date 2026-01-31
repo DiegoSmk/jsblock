@@ -68,11 +68,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     transition: 'all 0.2s',
                     minWidth: '80px'
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb';
                     e.currentTarget.style.borderColor = isDark ? '#444' : '#c1c5cb';
                 }}
-                onMouseLeave={(e) => {
+                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.currentTarget.style.background = 'transparent';
                     e.currentTarget.style.borderColor = isDark ? '#333' : '#d1d5db';
                 }}
@@ -96,7 +96,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             ? (isDark ? 'rgba(248, 113, 113, 0.05)' : 'rgba(239, 68, 68, 0.02)')
                             : 'transparent'
                     }}
-                    onMouseEnter={(e) => {
+                    onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                         if (discardVariant === 'danger') {
                             e.currentTarget.style.background = isDark ? 'rgba(248, 113, 113, 0.1)' : 'rgba(239, 68, 68, 0.05)';
                             e.currentTarget.style.borderColor = '#f87171';
@@ -105,7 +105,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             e.currentTarget.style.borderColor = isDark ? '#444' : '#c1c5cb';
                         }
                     }}
-                    onMouseLeave={(e) => {
+                    onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.currentTarget.style.background = discardVariant === 'danger'
                             ? (isDark ? 'rgba(248, 113, 113, 0.05)' : 'rgba(239, 68, 68, 0.02)')
                             : 'transparent';
@@ -141,11 +141,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     gap: '6px',
                     boxShadow: 'none'
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.currentTarget.style.filter = 'brightness(1.1)';
                     e.currentTarget.style.transform = 'translateY(-1px)';
                 }}
-                onMouseLeave={(e) => {
+                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                     e.currentTarget.style.filter = 'none';
                     e.currentTarget.style.transform = 'translateY(0)';
                 }}

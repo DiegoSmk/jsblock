@@ -12,330 +12,38 @@ import {
     applyEdgeChanges,
 } from '@xyflow/react';
 
-export interface AppNodeData {
-    label?: string;
-    expression?: string;
-    value?: unknown;
-    scopeId?: string;
-    isDecl?: boolean;
-    isStandalone?: boolean;
-    hasReturn?: boolean;
-    usageCount?: number;
-    connectedValues?: Record<string | number, string>;
-    type?: string;
-    name?: string;
-    args?: string[];
-    nestedArgsCall?: Record<string, { expression: string }>;
-    nestedCall?: { name: string, args: string[] };
-    scopes?: Record<string, { id: string; label: string }>;
-    fallenIndex?: number;
-    text?: string;
-    [key: string]: unknown;
-}
-
-export type AppNode = Node<AppNodeData>;
+import type {
+    AppNodeData,
+    AppNode,
+    RecentEnvironment,
+    GitFileStatus,
+    GitLogEntry,
+    GitAuthor,
+    GitStashEntry,
+    GitProfile,
+    GitTag,
+    CommitTemplate,
+    Toast,
+    Settings,
+    GitPanelSection,
+    GitPanelConfig,
+    QuickCommand,
+    AppState
+} from '../types/store';
 
 // import { v4 as uuidv4 } from 'uuid'; // Removed to avoid dependency check
 const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
 import { parseCodeToFlow } from '../logic/CodeParser';
 import { generateCodeFromFlow } from '../logic/CodeGenerator';
 import { getLayoutedElements } from '../logic/layout';
 import i18n from '../i18n/config';
 
-interface RecentEnvironment {
-    path: string;
-    lastOpened: number; // timestamp
-    label?: 'personal' | 'work' | 'fun' | 'other';
-    isFavorite?: boolean;
-}
-
-interface GitFileStatus {
-    path: string;
-    status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked' | 'staged';
-    index: string;
-    workingTree: string;
-}
-
-interface GitLogEntry {
-    hash: string;
-    author: string;
-    date: string;
-    message: string;
-    graph?: string;
-}
-
-interface GitCommitFile {
-    path: string;
-    status: string;
-}
-
-interface GitAuthor {
-    name: string;
-    email: string;
-}
-
-interface GitStashEntry {
-    index: number;
-    branch: string;
-    message: string;
-    description: string;
-}
-
-interface GitProfile {
-    id: string;
-    name: string;
-    email: string;
-    tag: 'work' | 'personal' | 'ai' | 'custom';
-    customTagName?: string;
-}
-
-interface GitTag {
-    name: string;
-    hash: string;
-    message?: string;
-    date?: string;
-}
-
-interface CommitTemplate {
-    id: string;
-    name: string;
-    content: string;
-}
-
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
-
-export interface Toast {
-    id: string;
-    type: ToastType;
-    message: string;
-    duration?: number;
-}
-
-export interface Settings {
-    terminalCopyOnSelect: boolean;
-    terminalRightClickPaste: boolean;
-    autoLayoutNodes: boolean;
-    fontSize: number;
-}
-
-interface AppState {
-    code: string;
-    nodes: AppNode[];
-    edges: Edge[];
-    theme: 'light' | 'dark';
-    runtimeValues: Record<string, unknown>;
-
-    navigationStack: { id: string, label: string }[];
-    activeScopeId: string; // 'root' by default
-
-    // File System State
-    openedFolder: string | null;
-    selectedFile: string | null;
-    autoSave: boolean;
-    isDirty: boolean;
-
-    toggleAutoSave: () => void;
-    setDirty: (dirty: boolean) => void;
-
-    setCode: (code: string, shouldSetDirty?: boolean) => void;
-    onNodesChange: (changes: NodeChange<AppNode>[]) => void;
-    onEdgesChange: (changes: EdgeChange[]) => void;
-    onConnect: (connection: Connection) => void;
-    forceLayout: () => void;
-    toggleTheme: () => void;
-    updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => void;
-    addFunctionCall: (funcName: string, args?: string[]) => void;
-    addLogicNode: () => void;
-    addIfNode: () => void;
-    addSwitchNode: () => void;
-    addWhileNode: () => void;
-    addForNode: () => void;
-    promoteToVariable: (literalNodeId: string, literalValue: unknown, type: string) => void;
-    promoteCallToVariable: (callNodeId: string, funcName: string) => void;
-
-    // Modal State
-    modal: {
-        isOpen: boolean;
-        title: string;
-        initialValue: string;
-        type: string;
-        placeholder?: string;
-        confirmLabel?: string;
-        payload?: unknown;
-        onSubmit: (name: string) => void;
-    };
-    confirmationModal: {
-        isOpen: boolean;
-        title: string;
-        message: string;
-        onConfirm: () => void;
-        onCancel: () => void;
-        onDiscard?: () => void;
-        confirmLabel?: string;
-        cancelLabel?: string;
-        discardLabel?: string;
-        variant?: 'danger' | 'warning' | 'info' | 'primary';
-        discardVariant?: 'danger' | 'warning' | 'info' | 'primary' | 'secondary';
-    } | null;
-    openModal: (config: Omit<AppState['modal'], 'isOpen'>) => void;
-    closeModal: () => void;
-    setConfirmationModal: (config: AppState['confirmationModal']) => void;
-
-    // UI State
-    showSidebar: boolean;
-    activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings';
-    showCode: boolean;
-    showCanvas: boolean;
-    toggleSidebar: () => void;
-    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings') => void;
-    toggleCode: () => void;
-    toggleCanvas: () => void;
-
-    // Scope Navigation Actions
-    navigateInto: (scopeId: string, label: string) => void;
-    navigateBack: () => void;
-    navigateToScope: (index: number) => void;
-
-    // Block Note Actions
-    addNoteNode: () => void;
-    isBlockFile: boolean;
-
-    // File System Actions
-    // File System Actions
-    setOpenedFolder: (path: string | null) => void;
-    setSelectedFile: (path: string | null) => Promise<void>;
-    loadContentForFile: (path: string | null) => Promise<void>;
-    saveFile: () => Promise<void>;
-
-    // Recent Environments
-    recentEnvironments: RecentEnvironment[];
-    addRecent: (path: string) => Promise<void>;
-    removeRecent: (path: string) => void;
-    toggleFavorite: (path: string) => void;
-    setRecentLabel: (path: string, label: 'personal' | 'work' | 'fun' | 'other' | undefined) => void;
-    validateRecents: () => Promise<void>;
-
-    // Git Actions
-    git: {
-        isRepo: boolean;
-        currentBranch: string;
-        changes: GitFileStatus[];
-        log: GitLogEntry[];
-        rawLog: string;
-        globalAuthor: GitAuthor | null;
-        projectAuthor: GitAuthor | null;
-        activeView: 'status' | 'terminal' | 'graph';
-        sidebarView: 'history' | 'graph' | 'info';
-        branches: string[];
-        stashes: GitStashEntry[];
-        stats: {
-            fileCount: number;
-            repoSize: string;
-            projectSize: string;
-        };
-        tags: GitTag[];
-        isInitialized: boolean;
-    };
-    gitProfiles: GitProfile[];
-    commitTemplates: CommitTemplate[];
-
-    commitDetail: {
-        isOpen: boolean;
-        commit: GitLogEntry | null;
-        files: GitCommitFile[];
-        fullMessage: string;
-        stats?: {
-            insertions: number;
-            deletions: number;
-            filesChanged: number;
-        };
-    };
-    setGitView: (view: 'status' | 'terminal' | 'graph') => void;
-    setGitSidebarView: (view: 'history' | 'graph' | 'info') => void;
-    openCommitDetail: (commit: GitLogEntry) => Promise<void>;
-    closeCommitDetail: () => void;
-    refreshGit: () => Promise<void>;
-    fetchGitConfig: () => Promise<void>;
-    changeBranch: (branch: string) => Promise<void>;
-    createBranch: (branch: string, startPoint?: string) => Promise<void>;
-    deleteBranch: (branch: string) => Promise<void>;
-    checkoutCommit: (hash: string) => Promise<void>;
-    gitStage: (path: string) => Promise<void>;
-    gitStageAll: () => Promise<void>;
-    gitUnstage: (path: string) => Promise<void>;
-    gitUnstageAll: () => Promise<void>;
-    gitDiscard: (path: string) => Promise<void>;
-    gitDiscardAll: () => Promise<void>;
-    gitCommit: (message: string, isAmend?: boolean) => Promise<void>;
-    gitStash: (message?: string) => Promise<void>;
-    gitPopStash: (index?: number) => Promise<void>;
-    gitApplyStash: (index: number) => Promise<void>;
-    gitDropStash: (index: number) => Promise<void>;
-    fetchStashes: () => Promise<void>;
-    gitUndoLastCommit: () => Promise<void>;
-    gitInit: (author?: GitAuthor, isGlobal?: boolean) => Promise<void>;
-    setGitConfig: (author: GitAuthor, isGlobal: boolean) => Promise<void>;
-    addGitProfile: (profile: Omit<GitProfile, 'id'>) => void;
-    removeGitProfile: (id: string) => void;
-    updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
-    resetToGlobal: () => Promise<void>;
-    getCommitFiles: (hash: string) => Promise<GitCommitFile[]>;
-
-    // Tags
-    gitCreateTag: (name: string, hash: string, message?: string) => Promise<void>;
-    gitDeleteTag: (name: string) => Promise<void>;
-    fetchTags: () => Promise<void>;
-    gitClean: () => Promise<void>;
-    gitIgnore: (pattern: string) => Promise<void>;
-
-    // Commit Templates
-    addCommitTemplate: (template: Omit<CommitTemplate, 'id'>) => void;
-    removeCommitTemplate: (id: string) => void;
-
-    // Quick Commands
-    quickCommands: QuickCommand[];
-    addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => void;
-    removeQuickCommand: (id: string) => void;
-
-    // Toast Actions
-    toasts: Toast[];
-    addToast: (toast: Omit<Toast, 'id'>) => void;
-    removeToast: (id: string) => void;
-
-    // Settings
-    settings: Settings;
-    updateSettings: (updates: Partial<Settings>) => void;
-
-    // Git Panel Configuration
-    gitPanelConfig: GitPanelConfig;
-    updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => void;
-    resetGitPanelConfig: () => void;
-}
-
-export interface GitPanelSection {
-    id: string;
-    label: string;
-    visible: boolean;
-    expanded?: boolean;
-}
-
-export interface GitPanelConfig {
-    sections: GitPanelSection[];
-}
-
-
-export interface QuickCommand {
-    id: string;
-    label: string;
-    command: string;
-    autoExecute: boolean;
-}
-
 
 
 const initialCode = '';
 
-let saveTimeout: any = null;
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const useStore = create<AppState>((set, get) => ({
     code: initialCode,
@@ -389,7 +97,7 @@ export const useStore = create<AppState>((set, get) => ({
         };
         if (saved) {
             try {
-                const parsed = JSON.parse(saved);
+                const parsed = JSON.parse(saved) as GitPanelConfig;
                 // Merge with defaults but keep ALL sections from parsed to avoid losing dynamic ones
                 const sections = [...defaultView.sections];
 
@@ -402,7 +110,7 @@ export const useStore = create<AppState>((set, get) => ({
                     }
                 });
                 return { sections };
-            } catch (e) {
+            } catch {
                 return defaultView;
             }
         }
@@ -429,8 +137,8 @@ export const useStore = create<AppState>((set, get) => ({
         set({ gitPanelConfig: defaultView });
     },
 
-    gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
-    commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') || '[]'),
+    gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') ?? '[]') as GitProfile[],
+    commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') ?? '[]') as CommitTemplate[],
     commitDetail: {
         isOpen: false,
         commit: null,
@@ -438,13 +146,13 @@ export const useStore = create<AppState>((set, get) => ({
         fullMessage: '',
         stats: undefined
     },
-    quickCommands: JSON.parse(localStorage.getItem('quickCommands') || '[]'),
+    quickCommands: JSON.parse(localStorage.getItem('quickCommands') ?? '[]') as QuickCommand[],
 
     settings: {
         terminalCopyOnSelect: localStorage.getItem('settings_terminalCopyOnSelect') !== 'false',
         terminalRightClickPaste: localStorage.getItem('settings_terminalRightClickPaste') !== 'false',
         autoLayoutNodes: localStorage.getItem('settings_autoLayoutNodes') === 'true',
-        fontSize: parseInt(localStorage.getItem('settings_fontSize') || '14'),
+        fontSize: parseInt(localStorage.getItem('settings_fontSize') ?? '14'),
     },
 
     updateSettings: (updates: Partial<Settings>) => {
@@ -489,14 +197,14 @@ export const useStore = create<AppState>((set, get) => ({
 
         try {
             // Fetch full message and files
-            const res = await window.electronAPI.executeGitCommand(`show --pretty=format:%B -s ${commit.hash}`, openedFolder);
+            const res = await window.electronAPI.gitCommand(openedFolder, ['show', '--pretty=format:%B', '-s', commit.hash]);
             const fullMessage = res.stdout.trim();
             const files = await getCommitFiles(commit.hash);
 
             // Fetch shortstat
             let stats = { insertions: 0, deletions: 0, filesChanged: 0 };
             try {
-                const statRes = await window.electronAPI.executeGitCommand(`show --shortstat --format= ${commit.hash}`, openedFolder);
+                const statRes = await window.electronAPI.gitCommand(openedFolder, ['show', '--shortstat', '--format=', commit.hash]);
                 const statLine = statRes.stdout.trim();
                 // Format example: " 2 files changed, 10 insertions(+), 5 deletions(-)"
                 if (statLine) {
@@ -510,8 +218,8 @@ export const useStore = create<AppState>((set, get) => ({
                         deletions: delMatch ? parseInt(delMatch[1]) : 0
                     };
                 }
-            } catch (e) {
-                console.warn('Failed to fetch commit stats:', e);
+            } catch (err) {
+                console.warn('Failed to fetch commit stats:', err);
             }
 
             set({
@@ -643,7 +351,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (shouldSetDirty) {
             if (get().autoSave) {
                 saveTimeout = setTimeout(() => {
-                    get().saveFile();
+                    void get().saveFile();
                 }, 1000);
             } else {
                 set({ isDirty: true });
@@ -700,7 +408,7 @@ export const useStore = create<AppState>((set, get) => ({
                         try {
                             ${code}
                             return { ${returnObject} };
-                        } catch (e) {
+                        } catch {
                             return {};
                         }
                     })()
@@ -746,14 +454,14 @@ export const useStore = create<AppState>((set, get) => ({
         });
     },
 
-    onNodesChange: (changes: NodeChange[]) => {
+    onNodesChange: (changes: NodeChange<AppNode>[]) => {
         const nextNodes = applyNodeChanges(changes, get().nodes);
         set({ nodes: nextNodes });
         if (get().isBlockFile) {
             if (get().autoSave) {
                 if (saveTimeout) clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
-                    get().saveFile();
+                    void get().saveFile();
                 }, 1000);
             } else {
                 set({ isDirty: true });
@@ -770,7 +478,7 @@ export const useStore = create<AppState>((set, get) => ({
             if (autoSave) {
                 if (saveTimeout) clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
-                    get().saveFile();
+                    void get().saveFile();
                 }, 1000);
             } else {
                 set({ isDirty: true });
@@ -807,16 +515,16 @@ export const useStore = create<AppState>((set, get) => ({
         set({ theme: get().theme === 'light' ? 'dark' : 'light' });
     },
 
-    updateNodeData: (nodeId: string, newData: any) => {
+    updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => {
         const { nodes, code, edges, isBlockFile, autoSave } = get();
-        const updatedNodes = nodes.map((n: Node) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n);
+        const updatedNodes = nodes.map((n: AppNode) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n);
         set({ nodes: updatedNodes });
 
         if (isBlockFile) {
             if (autoSave) {
                 if (saveTimeout) clearTimeout(saveTimeout);
                 saveTimeout = setTimeout(() => {
-                    get().saveFile();
+                    void get().saveFile();
                 }, 1000);
             } else {
                 set({ isDirty: true });
@@ -1042,7 +750,7 @@ export const useStore = create<AppState>((set, get) => ({
     loadContentForFile: async (path: string | null) => {
         if (path && window.electronAPI) {
             try {
-                const content = await (window as any).electronAPI.readFile(path);
+                const content = await window.electronAPI.readFile(path);
                 const isBlock = path.endsWith('.block');
                 set({ isBlockFile: isBlock });
 
@@ -1055,7 +763,7 @@ export const useStore = create<AppState>((set, get) => ({
                             showCode: false,
                             showCanvas: true
                         });
-                    } catch (e) {
+                    } catch {
                         // If empty or invalid, start fresh
                         set({
                             nodes: [],
@@ -1109,27 +817,27 @@ export const useStore = create<AppState>((set, get) => ({
 
         try {
             // Check if it's a repo
-            const isRepoRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--is-inside-work-tree']);
+            const isRepoRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--is-inside-work-tree']);
             const isRepo = isRepoRes.stdout.trim() === 'true';
 
             if (!isRepo) {
-                set((state: any) => ({
+                set((state: AppState) => ({
                     git: { ...state.git, isRepo: false }
                 }));
                 return;
             }
 
             // Get current branch
-            const branchRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', 'HEAD']);
+            const branchRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', 'HEAD']);
             const currentBranch = branchRes.stdout.trim();
 
             // Get all branches
-            const branchesRes = await (window as any).electronAPI.gitCommand(openedFolder, ['branch', '--format=%(refname:short)']);
+            const branchesRes = await window.electronAPI.gitCommand(openedFolder, ['branch', '--format=%(refname:short)']);
             const branches = branchesRes.stdout.split('\n').filter((b: string) => b.trim() !== '');
 
             // Get status with -z for robust path handling
             // This is critical for files with spaces or special characters
-            const statusRes = await (window as any).electronAPI.gitCommand(openedFolder, ['status', '--porcelain', '-b', '-z']);
+            const statusRes = await window.electronAPI.gitCommand(openedFolder, ['status', '--porcelain', '-b', '-z']);
 
             // Output format with -z:
             // "## branch_info\0XY path\0XY path2\0R  old\0new\0"
@@ -1174,7 +882,7 @@ export const useStore = create<AppState>((set, get) => ({
 
             // Get Log with Graph and Decorations
             const delimiter = '|||';
-            const logRes = await (window as any).electronAPI.gitCommand(openedFolder, [
+            const logRes = await window.electronAPI.gitCommand(openedFolder, [
                 'log', '--graph', '--all', '-n', '100', '--no-color',
                 `--pretty=format:%h${delimiter}%d${delimiter}%s${delimiter}%an${delimiter}%aI`
             ]);
@@ -1229,12 +937,12 @@ export const useStore = create<AppState>((set, get) => ({
 
             try {
                 // File Count
-                const filesRes = await (window as any).electronAPI.gitCommand(openedFolder, ['ls-files']);
+                const filesRes = await window.electronAPI.gitCommand(openedFolder, ['ls-files']);
                 // Count non-empty lines
                 fileCount = filesRes.stdout.split('\n').filter((l: string) => l.trim()).length;
 
                 // Repo Size
-                const sizeRes = await (window as any).electronAPI.gitCommand(openedFolder, ['count-objects', '-vH']);
+                const sizeRes = await window.electronAPI.gitCommand(openedFolder, ['count-objects', '-vH']);
                 const sizeOutput = sizeRes.stdout;
 
                 // Prioritize size-pack (packed objects), then size (loose objects).
@@ -1257,7 +965,7 @@ export const useStore = create<AppState>((set, get) => ({
 
                 // Project Size (Tracked files)
                 try {
-                    const treeRes = await (window as any).electronAPI.gitCommand(openedFolder, ['ls-tree', '-r', '-l', 'HEAD']);
+                    const treeRes = await window.electronAPI.gitCommand(openedFolder, ['ls-tree', '-r', '-l', 'HEAD']);
                     const treeLines = treeRes.stdout.split('\n');
                     let totalBytes = 0;
                     for (const line of treeLines) {
@@ -1272,13 +980,13 @@ export const useStore = create<AppState>((set, get) => ({
                     if (totalBytes < 1024) projectSize = totalBytes + ' B';
                     else if (totalBytes < 1024 * 1024) projectSize = (totalBytes / 1024).toFixed(1) + ' KB';
                     else projectSize = (totalBytes / (1024 * 1024)).toFixed(1) + ' MB';
-                } catch (e) { }
+                } catch { }
 
-            } catch (e) {
-                console.warn('Failed to fetch repo stats', e);
+            } catch (err) {
+                console.warn('Failed to fetch repo stats', err);
             }
 
-            set((state: any) => ({
+            set((state: AppState) => ({
                 git: {
                     ...state.git,
                     isRepo: true,
@@ -1300,7 +1008,7 @@ export const useStore = create<AppState>((set, get) => ({
             await get().fetchTags();
         } catch (err) {
             console.error('Git refresh failed:', err);
-            set((state: any) => ({
+            set((state: AppState) => ({
                 git: { ...state.git, isRepo: false, isInitialized: true }
             }));
         }
@@ -1326,8 +1034,8 @@ export const useStore = create<AppState>((set, get) => ({
             let projectAuthor = null;
             if (openedFolder) {
                 // Explicitly check local config to differentiate from global inheritance
-                const lName = await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.name']);
-                const lEmail = await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.email']);
+                const lName = await window.electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.name']);
+                const lEmail = await window.electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.email']);
 
                 // Only treat as project author if explicitly defined locally
                 if (lName.stdout.trim() || lEmail.stdout.trim()) {
@@ -1338,7 +1046,7 @@ export const useStore = create<AppState>((set, get) => ({
                 }
             }
 
-            set((state: any) => ({
+            set((state: AppState) => ({
                 git: {
                     ...state.git,
                     globalAuthor: globalAuthor.name || globalAuthor.email ? globalAuthor : null,
@@ -1354,9 +1062,9 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['add', path]);
+            await window.electronAPI.gitCommand(openedFolder, ['add', path]);
             await refreshGit();
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao adicionar arquivo (stage).' });
         }
     },
@@ -1366,18 +1074,18 @@ export const useStore = create<AppState>((set, get) => ({
         if (!openedFolder) return;
         try {
             // Check if HEAD exists (to handle initial commit state where HEAD is invalid)
-            const headRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
+            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
             const hasHead = !headRes.stderr && headRes.stdout.trim();
 
             if (hasHead) {
-                await (window as any).electronAPI.gitCommand(openedFolder, ['reset', 'HEAD', path]);
+                await window.electronAPI.gitCommand(openedFolder, ['reset', 'HEAD', path]);
             } else {
                 // Initial commit: use rm --cached to unstage
-                await (window as any).electronAPI.gitCommand(openedFolder, ['rm', '--cached', path]);
+                await window.electronAPI.gitCommand(openedFolder, ['rm', '--cached', path]);
             }
 
             await refreshGit();
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao remover arquivo (unstage).' });
         }
     },
@@ -1386,9 +1094,9 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['add', '.']);
+            await window.electronAPI.gitCommand(openedFolder, ['add', '.']);
             await refreshGit();
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao adicionar todos os arquivos.' });
         }
     },
@@ -1398,15 +1106,15 @@ export const useStore = create<AppState>((set, get) => ({
         if (!openedFolder) return;
         try {
             // Check if HEAD exists
-            const headRes = await (window as any).electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
+            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
             const hasHead = !headRes.stderr && headRes.stdout.trim();
             if (hasHead) {
-                await (window as any).electronAPI.gitCommand(openedFolder, ['reset', 'HEAD']);
+                await window.electronAPI.gitCommand(openedFolder, ['reset', 'HEAD']);
             } else {
-                await (window as any).electronAPI.gitCommand(openedFolder, ['rm', '--cached', '-r', '.']);
+                await window.electronAPI.gitCommand(openedFolder, ['rm', '--cached', '-r', '.']);
             }
             await refreshGit();
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao remover todos os arquivos (unstage).' });
         }
     },
@@ -1415,9 +1123,9 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['restore', path]);
+            await window.electronAPI.gitCommand(openedFolder, ['restore', path]);
             await refreshGit();
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao descartar alterações.' });
         }
     },
@@ -1426,9 +1134,9 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['restore', '.']);
+            await window.electronAPI.gitCommand(openedFolder, ['restore', '.']);
             await refreshGit();
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao descartar todas as alterações.' });
         }
     },
@@ -1440,7 +1148,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (isAmend) {
             args.push('--amend');
         }
-        await (window as any).electronAPI.gitCommand(openedFolder, args);
+        await window.electronAPI.gitCommand(openedFolder, args);
         await refreshGit();
     },
 
@@ -1454,7 +1162,7 @@ export const useStore = create<AppState>((set, get) => ({
             } else {
                 args.push('-m', `Rascunho: ${new Date().toLocaleTimeString()} em ${get().git.currentBranch}`);
             }
-            await (window as any).electronAPI.gitCommand(openedFolder, args);
+            await window.electronAPI.gitCommand(openedFolder, args);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Alterações salvas na gaveta (Stash).' });
         } catch (e: any) {
@@ -1472,10 +1180,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'pop', `stash@{${index}}`]);
+            await window.electronAPI.gitCommand(openedFolder, ['stash', 'pop', `stash@{${index}}`]);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Gaveta recuperada com sucesso.' });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao recuperar stash (pode haver conflitos).' });
         }
     },
@@ -1484,10 +1192,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'apply', `stash@{${index}}`]);
+            await window.electronAPI.gitCommand(openedFolder, ['stash', 'apply', `stash@{${index}}`]);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Alterações aplicadas com sucesso.' });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao aplicar stash (pode haver conflitos).' });
         }
     },
@@ -1496,10 +1204,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'drop', `stash@{${index}}`]);
+            await window.electronAPI.gitCommand(openedFolder, ['stash', 'drop', `stash@{${index}}`]);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Gaveta removida.' });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao remover stash.' });
         }
     },
@@ -1508,7 +1216,7 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder } = get();
         if (!openedFolder) return;
         try {
-            const res = await (window as any).electronAPI.gitCommand(openedFolder, ['stash', 'list']);
+            const res = await window.electronAPI.gitCommand(openedFolder, ['stash', 'list']);
             const output = res.stdout || '';
             const stashes: GitStashEntry[] = output.split('\n')
                 .filter((l: string) => l.trim())
@@ -1525,9 +1233,9 @@ export const useStore = create<AppState>((set, get) => ({
                     }
                     return { index, branch: '?', message: line, description: line };
                 });
-            set((state: any) => ({ git: { ...state.git, stashes } }));
-        } catch (e) {
-            console.error('Error fetching stashes', e);
+            set((state: AppState) => ({ git: { ...state.git, stashes } }));
+        } catch (err) {
+            console.error('Error fetching stashes', err);
         }
     },
 
@@ -1536,7 +1244,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (!openedFolder || !(window as any).electronAPI) return;
         try {
             // Using for-each-ref for structured output: name | hash | subject (message) | date
-            const res = await (window as any).electronAPI.gitCommand(openedFolder, [
+            const res = await window.electronAPI.gitCommand(openedFolder, [
                 'for-each-ref',
                 '--sort=-creatordate',
                 '--format=%(refname:short)|||%(objectname)|||%(contents:subject)|||%(creatordate:iso8601)',
@@ -1545,7 +1253,7 @@ export const useStore = create<AppState>((set, get) => ({
 
             const tags: GitTag[] = res.stdout.split('\n')
                 .filter((l: string) => l.trim())
-                .map((line: string) => {
+                .map((line: string): GitTag | null => {
                     const parts = line.split('|||');
                     if (parts.length >= 2) {
                         return {
@@ -1557,11 +1265,11 @@ export const useStore = create<AppState>((set, get) => ({
                     }
                     return null;
                 })
-                .filter(Boolean);
+                .filter((tag): tag is GitTag => tag !== null);
 
-            set((state: any) => ({ git: { ...state.git, tags } }));
-        } catch (e) {
-            console.error('Error fetching tags', e);
+            set((state: AppState) => ({ git: { ...state.git, tags } }));
+        } catch (err) {
+            console.error('Error fetching tags', err);
         }
     },
 
@@ -1575,11 +1283,11 @@ export const useStore = create<AppState>((set, get) => ({
             } else {
                 args.push(name, hash);
             }
-            await (window as any).electronAPI.gitCommand(openedFolder, args);
+            await window.electronAPI.gitCommand(openedFolder, args);
             await refreshGit();
             get().addToast({ type: 'success', message: `Tag ${name} criada com sucesso!` });
-        } catch (e) {
-            console.error(e);
+        } catch (err) {
+            console.error(err);
             get().addToast({ type: 'error', message: `Erro ao criar tag ${name}` });
         }
     },
@@ -1588,10 +1296,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['tag', '-d', name]);
+            await window.electronAPI.gitCommand(openedFolder, ['tag', '-d', name]);
             await refreshGit();
             get().addToast({ type: 'success', message: `Tag ${name} deletada.` });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: `Erro ao deletar tag ${name}` });
         }
     },
@@ -1600,11 +1308,11 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['clean', '-fd']);
+            await window.electronAPI.gitCommand(openedFolder, ['clean', '-fd']);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Diretório limpo com sucesso (arquivos untracked removidos).' });
-        } catch (e) {
-            console.error(e);
+        } catch (err) {
+            console.error(err);
             get().addToast({ type: 'error', message: 'Erro ao limpar diretório.' });
         }
     },
@@ -1621,8 +1329,8 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             let content = '';
             try {
-                content = await (window as any).electronAPI.readFile(gitignorePath);
-            } catch (e) {
+                content = await window.electronAPI.readFile(gitignorePath);
+            } catch {
                 // File likely doesn't exist, start empty
             }
 
@@ -1631,14 +1339,14 @@ export const useStore = create<AppState>((set, get) => ({
                 const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
                 const newContent = `${content}${separator}${pattern}\n`;
 
-                await (window as any).electronAPI.writeFile(gitignorePath, newContent);
+                await window.electronAPI.writeFile(gitignorePath, newContent);
                 await refreshGit();
                 get().addToast({ type: 'success', message: `"${pattern}" adicionado ao .gitignore` });
             } else {
                 get().addToast({ type: 'info', message: `"${pattern}" já está no .gitignore` });
             }
-        } catch (e) {
-            console.error(e);
+        } catch (err) {
+            console.error(err);
             get().addToast({ type: 'error', message: 'Erro ao atualizar .gitignore' });
         }
     },
@@ -1647,10 +1355,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['reset', '--soft', 'HEAD~1']);
+            await window.electronAPI.gitCommand(openedFolder, ['reset', '--soft', 'HEAD~1']);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Último commit desfeito (Soft Reset).' });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: 'Erro ao desfazer commit.' });
         }
     },
@@ -1659,7 +1367,7 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit, setGitConfig } = get();
         if (!openedFolder) return;
 
-        await (window as any).electronAPI.gitCommand(openedFolder, ['init']);
+        await window.electronAPI.gitCommand(openedFolder, ['init']);
 
         if (author) {
             await setGitConfig(author, isGlobal);
@@ -1685,7 +1393,7 @@ export const useStore = create<AppState>((set, get) => ({
                     type: 'success',
                     message: 'Autor Global atualizado com sucesso!'
                 });
-            } catch (e) {
+            } catch {
                 get().addToast({
                     type: 'error',
                     message: 'Erro ao atualizar Autor Global.'
@@ -1705,7 +1413,7 @@ export const useStore = create<AppState>((set, get) => ({
                     type: 'success',
                     message: `Autor Local definido para: ${author.name}`
                 });
-            } catch (e) {
+            } catch {
                 get().addToast({
                     type: 'error',
                     message: 'Erro ao definir Autor Local.'
@@ -1722,14 +1430,14 @@ export const useStore = create<AppState>((set, get) => ({
         if (!(window as any).electronAPI || !openedFolder) return;
 
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.name']);
-            await (window as any).electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.email']);
+            await window.electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.name']);
+            await window.electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.email']);
 
             get().addToast({
                 type: 'info',
                 message: 'Usando configuração Global (Local resetado).'
             });
-        } catch (e) {
+        } catch {
             get().addToast({
                 type: 'error',
                 message: 'Erro ao resetar para configuração Global.'
@@ -1743,7 +1451,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (!openedFolder || !(window as any).electronAPI) return [];
 
         try {
-            const res = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--name-status', '--pretty=format:', hash]);
+            const res = await window.electronAPI.gitCommand(openedFolder, ['show', '--name-status', '--pretty=format:', hash]);
             return res.stdout.split('\n')
                 .filter((line: string) => line.trim() !== '')
                 .map((line: string) => {
@@ -1795,8 +1503,8 @@ export const useStore = create<AppState>((set, get) => ({
 
     addToast: (toast) => {
         const id = generateId();
-        const duration = toast.duration || 3000;
-        set((state: any) => ({ toasts: [...state.toasts, { ...toast, id }] }));
+        const duration = toast.duration ?? 3000;
+        set((state: AppState) => ({ toasts: [...state.toasts, { ...toast, id }] }));
 
         setTimeout(() => {
             get().removeToast(id);
@@ -1804,17 +1512,17 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     removeToast: (id) => {
-        set((state: any) => ({ toasts: state.toasts.filter((t: Toast) => t.id !== id) }));
+        set((state: AppState) => ({ toasts: state.toasts.filter((t: Toast) => t.id !== id) }));
     },
 
     changeBranch: async (branch: string) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['checkout', branch]);
+            await window.electronAPI.gitCommand(openedFolder, ['checkout', branch]);
             await refreshGit();
             get().addToast({ type: 'success', message: `Mudou para o branch ${branch}` });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: `Erro ao mudar para o branch ${branch}` });
         }
     },
@@ -1825,10 +1533,10 @@ export const useStore = create<AppState>((set, get) => ({
         try {
             const args = ['checkout', '-b', branch];
             if (startPoint) args.push(startPoint);
-            await (window as any).electronAPI.gitCommand(openedFolder, args);
+            await window.electronAPI.gitCommand(openedFolder, args);
             await refreshGit();
             get().addToast({ type: 'success', message: `Branch ${branch} criado com sucesso!` });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: `Erro ao criar branch ${branch}` });
         }
     },
@@ -1837,9 +1545,9 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['checkout', hash]);
+            await window.electronAPI.gitCommand(openedFolder, ['checkout', hash]);
             await refreshGit();
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: `Erro ao mudar para a versão ${hash}` });
         }
     },
@@ -1848,10 +1556,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await (window as any).electronAPI.gitCommand(openedFolder, ['branch', '-D', branch]);
+            await window.electronAPI.gitCommand(openedFolder, ['branch', '-D', branch]);
             await refreshGit();
             get().addToast({ type: 'success', message: `Branch ${branch} deletado.` });
-        } catch (e) {
+        } catch {
             get().addToast({ type: 'error', message: `Erro ao deletar branch ${branch}` });
         }
     }

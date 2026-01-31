@@ -1,6 +1,6 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
-import type { Node as BabelNode, SwitchStatement, Identifier, SwitchCase } from '@babel/types';
+import type { Node as BabelNode, SwitchStatement, SwitchCase } from '@babel/types';
 
 export const SwitchHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'SwitchStatement',

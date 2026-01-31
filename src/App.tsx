@@ -182,7 +182,7 @@ function FlowContent() {
   const hasComment = !!currentEdgeLabel;
 
   const isValidConnection = useCallback(
-    (connection: Connection) => connection.source !== connection.target,
+    (edge: Connection | Edge) => edge.source !== edge.target,
     []
   );
 
@@ -348,7 +348,7 @@ function App() {
   const handleEditorDidMount = useCallback((editor: unknown, monaco: unknown) => {
     const editorInstance = editor as { addCommand: (keyMod: number, callback: () => void) => void };
     const monacoInstance = monaco as { KeyMod: { CtrlCmd: number }; KeyCode: { KeyS: number } };
-    
+
     editorInstance.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS, () => {
       saveFile().catch(console.error);
     });

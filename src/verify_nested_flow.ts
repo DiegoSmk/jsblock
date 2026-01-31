@@ -86,6 +86,5 @@ if (true) {
 }
 
 if (!allPassed) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    process.exit(1);
+    throw new Error("Verification FAILED");
 }

@@ -1,6 +1,6 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { generateId } from '../utils';
-import type { Node as BabelNode, FunctionDeclaration, Identifier } from '@babel/types';
+import type { Node as BabelNode, FunctionDeclaration } from '@babel/types';
 import type { AppNode } from '../../../store/useStore';
 
 export const FunctionHandler: ParserHandler = {

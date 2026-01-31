@@ -1,7 +1,8 @@
-
 import { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import type { RecentEnvironment } from '../store/useStore';
 
 import {
     Clock,
@@ -15,7 +16,7 @@ import {
     User
 } from 'lucide-react';
 
-const formatTimeAgo = (timestamp: number, t: any) => {
+const formatTimeAgo = (timestamp: number, t: TFunction) => {
     const seconds = Math.floor((Date.now() - timestamp) / 1000);
 
     let interval = seconds / 31536000;
@@ -63,12 +64,12 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
     }, []);
 
     const handleOpen = async (path: string) => {
-        if ((window as any).electronAPI) {
-            const exists = await (window as any).electronAPI.checkPathExists(path);
+        if (window.electronAPI) {
+            const exists = await window.electronAPI.checkPathExists(path);
             if (exists) {
                 setOpenedFolder(path);
             } else {
-                validateRecents();
+                void validateRecents();
             }
         }
     };
@@ -99,7 +100,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                             fontSize: '0.65rem',
                             fontWeight: 700,
                             color: isDark ? '#555' : '#aaa',
-                            
+
                             letterSpacing: '0.05em',
                             padding: '4px 8px',
                             display: 'flex',
@@ -130,7 +131,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                             fontSize: '0.65rem',
                             fontWeight: 700,
                             color: isDark ? '#555' : '#aaa',
-                            
+
                             letterSpacing: '0.05em',
                             padding: '4px 8px',
                             display: 'flex',
@@ -195,8 +196,8 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                     <button
                         onClick={async () => {
-                            if ((window as any).electronAPI) {
-                                const path = await (window as any).electronAPI.selectFolder();
+                            if (window.electronAPI) {
+                                const path = await window.electronAPI.selectFolder();
                                 if (path) setOpenedFolder(path);
                             }
                         }}
@@ -289,7 +290,18 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
     );
 };
 
-const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, t }: any) => {
+interface EnvironmentProps {
+    env: RecentEnvironment;
+    isDark: boolean;
+    onOpen: (path: string) => void;
+    onToggleFavorite: (path: string) => void;
+    onSetLabel: (path: string, label?: 'personal' | 'work' | 'fun' | 'other') => void;
+    onRemove: (path: string) => void;
+    t: TFunction;
+    compact?: boolean;
+}
+
+const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, t }: EnvironmentProps) => {
     const [showActions, setShowActions] = useState(false);
 
     return (
@@ -371,7 +383,7 @@ const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, on
                     borderRadius: '8px',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }} onClick={e => e.stopPropagation()}>
-                    <LabelSelector currentLabel={env.label} onSelect={(l: any) => onSetLabel(env.path, l)} isDark={isDark} t={t} />
+                    <LabelSelector currentLabel={env.label} onSelect={(l: RecentEnvironment['label']) => onSetLabel(env.path, l)} isDark={isDark} t={t} />
                     <button
                         onClick={(e) => { e.stopPropagation(); onRemove(env.path); }}
                         style={{ padding: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}
@@ -385,7 +397,7 @@ const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, on
     );
 };
 
-const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, compact, t }: any) => {
+const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, compact, t }: EnvironmentProps) => {
     const [isHovered, setIsHovered] = useState(false);
 
     return (
@@ -473,7 +485,7 @@ const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onR
                 >
                     <Star size={12} fill={env.isFavorite ? "#eab308" : "none"} />
                 </button>
-                <LabelSelector currentLabel={env.label} onSelect={(l: any) => onSetLabel(env.path, l)} isDark={isDark} compact={compact} t={t} />
+                <LabelSelector currentLabel={env.label} onSelect={(l: RecentEnvironment['label']) => onSetLabel(env.path, l)} isDark={isDark} compact={compact} t={t} />
                 <button
                     onClick={(e) => { e.stopPropagation(); onRemove(env.path); }}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: isDark ? '#555' : '#ccc' }}
@@ -490,10 +502,16 @@ const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onR
     );
 };
 
-const LabelSelector = ({ currentLabel, onSelect, isDark, compact, t }: any) => {
+const LabelSelector = ({ currentLabel, onSelect, isDark, compact, t }: {
+    currentLabel?: RecentEnvironment['label'];
+    onSelect: (label?: RecentEnvironment['label']) => void;
+    isDark: boolean;
+    compact?: boolean;
+    t: TFunction;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
 
-    const labels = ['personal', 'work', 'fun', 'other'];
+    const labels: Exclude<RecentEnvironment['label'], undefined>[] = ['personal', 'work', 'fun', 'other'];
 
     return (
         <div style={{ position: 'relative' }}>
