@@ -1,16 +1,18 @@
 import React from 'react';
 import { FileCode, FolderPlus, Trash2 } from 'lucide-react';
 
+type TranslationFunction = (key: string) => string;
+
 interface FolderContextMenuProps {
     x: number;
     y: number;
     onClose: () => void;
     onAction: (type: 'file' | 'folder' | 'delete', ext?: string) => void;
     isDark: boolean;
-    t: any;
+    t: TranslationFunction;
 }
 
-const menuButtonStyle = (isDark: boolean) => ({
+const menuButtonStyle = (isDark: boolean): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
@@ -21,13 +23,9 @@ const menuButtonStyle = (isDark: boolean) => ({
     color: isDark ? '#ccc' : '#444',
     fontSize: '0.8rem',
     borderRadius: '4px',
-    textAlign: 'left' as const,
-    transition: 'background 0.2s',
-    '&:hover': {
-        background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-        color: isDark ? '#fff' : '#000'
-    }
-} as any);
+    textAlign: 'left',
+    transition: 'background 0.2s'
+});
 
 export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({ x, y, onClose, onAction, isDark, t }) => {
     return (
@@ -57,21 +55,21 @@ export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({ x, y, onCl
                     style={menuButtonStyle(isDark)}
                 >
                     <FileCode size={14} color="#f7df1e" />
-                    <span>{t('file_explorer.new_js') || 'Novo Arquivo JS'}</span>
+                    <span>{t('file_explorer.new_js') ?? 'New JS File'}</span>
                 </button>
                 <button
                     onClick={() => onAction('file', '.ts')}
                     style={menuButtonStyle(isDark)}
                 >
                     <FileCode size={14} color="#3178c6" />
-                    <span>{t('file_explorer.new_ts') || 'Novo Arquivo TS'}</span>
+                    <span>{t('file_explorer.new_ts') ?? 'New TS File'}</span>
                 </button>
                 <button
                     onClick={() => onAction('folder')}
                     style={menuButtonStyle(isDark)}
                 >
                     <FolderPlus size={14} color={isDark ? '#888' : '#666'} />
-                    <span>{t('file_explorer.new_folder') || 'Nova Pasta'}</span>
+                    <span>{t('file_explorer.new_folder') ?? 'New Folder'}</span>
                 </button>
                 <div style={{ height: '1px', background: isDark ? '#333' : '#eee', margin: '4px 0' }} />
                 <button
@@ -79,7 +77,7 @@ export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({ x, y, onCl
                     style={{ ...menuButtonStyle(isDark), color: '#ef4444' }}
                 >
                     <Trash2 size={14} />
-                    <span>{t('file_explorer.delete') || 'Excluir'}</span>
+                    <span>{t('file_explorer.delete') ?? 'Delete'}</span>
                 </button>
             </div>
         </>

@@ -7,6 +7,7 @@ import { FolderContextMenu } from './FolderContextMenu';
 import 'allotment/dist/style.css';
 import { useStore } from '../store/useStore';
 import { DESIGN_TOKENS } from '../constants/design';
+import type { ElectronAPI } from '../types/electron';
 
 interface FileEntry {
     name: string;
@@ -16,9 +17,10 @@ interface FileEntry {
     children?: FileEntry[];
 }
 
-
-
-
+interface FileSystemEntry {
+    name: string;
+    isDirectory: boolean;
+}
 
 export const FileExplorer: React.FC = () => {
     const { t } = useTranslation();
@@ -38,15 +40,21 @@ export const FileExplorer: React.FC = () => {
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, path: string } | null>(null);
 
     const loadFiles = async (dirPath: string): Promise<FileEntry[]> => {
-        if (!(window as any).electronAPI) return [];
-        const result = await (window as any).electronAPI.readDir(dirPath);
+        const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+        if (!electronAPI) return [];
+        const result = await electronAPI.readDir(dirPath) as FileSystemEntry[];
         const ignored = ['.git', '.vscode', 'node_modules', '.block'];
         return result
-            .filter((file: any) => !ignored.includes(file.name))
-            .sort((a: any, b: any) => {
+            .filter((file: FileSystemEntry) => !ignored.includes(file.name))
+            .sort((a: FileSystemEntry, b: FileSystemEntry) => {
                 if (a.isDirectory === b.isDirectory) return a.name.localeCompare(b.name);
                 return a.isDirectory ? -1 : 1;
-            });
+            })
+            .map((file: FileSystemEntry) => ({
+                name: file.name,
+                path: `${dirPath}/${file.name}`,
+                isDirectory: file.isDirectory
+            }));
     };
 
     useEffect(() => {
@@ -56,9 +64,9 @@ export const FileExplorer: React.FC = () => {
                 return;
             }
             setSelectedDirPath(openedFolder);
-            loadFiles(openedFolder).then(setFiles);
+            loadFiles(openedFolder).then(setFiles).catch(console.error);
         }
-    }, [openedFolder]);
+    }, [openedFolder, setOpenedFolder]);
 
     useEffect(() => {
         if (isCreating && inputRef.current) {
@@ -91,7 +99,7 @@ export const FileExplorer: React.FC = () => {
 
     const handleFileClick = (path: string) => {
         // Find parent directory of this file if possible, or keep existing selectedDir
-        setSelectedFile(path);
+        void setSelectedFile(path);
     };
 
     const handleCreateSubmit = async (e?: React.FormEvent) => {
@@ -105,18 +113,21 @@ export const FileExplorer: React.FC = () => {
         const parentPath = isCreating.parentPath;
 
         try {
+            const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+            if (!electronAPI) return;
+
             if (isCreating.type === 'folder') {
                 const dirPath = `${parentPath}/${newName}`;
-                await (window as any).electronAPI.createDirectory(dirPath);
+                await electronAPI.createDirectory(dirPath);
             } else {
-                const ext = isCreating.ext || '';
+                const ext = isCreating.ext ?? '';
                 const fileName = newName.endsWith(ext) ? newName : `${newName}${ext}`;
                 const filePath = `${parentPath}/${fileName}`;
                 let initialContent = '';
-                if (ext === '.block') initialContent = `// JS Block - Nova nota de código\n\n`;
+                if (ext === '.block') initialContent = `// JS Block - New code note\n\n`;
                 if (ext === '.md') initialContent = `# ${newName}\n\n`;
-                await (window as any).electronAPI.createFile(filePath, initialContent);
-                setSelectedFile(filePath);
+                await electronAPI.createFile(filePath, initialContent);
+                void setSelectedFile(filePath);
             }
 
             // Refresh the specific folder or root
@@ -179,6 +190,9 @@ export const FileExplorer: React.FC = () => {
         }
 
         try {
+            const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+            if (!electronAPI) return;
+
             const fileName = sourcePath.split(/[\\/]/).pop();
             const newPath = `${targetPath}/${fileName}`;
 
@@ -187,12 +201,12 @@ export const FileExplorer: React.FC = () => {
                 return;
             }
 
-            if (await (window as any).electronAPI.checkPathExists(newPath)) {
-                alert(t('file_explorer.already_exists') || 'Já existe um item com este nome no destino.');
+            if (await electronAPI.checkPathExists(newPath)) {
+                alert(t('file_explorer.already_exists') ?? 'An item with this name already exists at the destination.');
                 return;
             }
 
-            await (window as any).electronAPI.moveFile(sourcePath, newPath);
+            await electronAPI.moveFile(sourcePath, newPath);
 
             // Refresh tree
             if (openedFolder) {
@@ -206,8 +220,9 @@ export const FileExplorer: React.FC = () => {
     };
 
     const openFolderDialog = async () => {
-        if (!(window as any).electronAPI) return;
-        const path = await (window as any).electronAPI.selectFolder();
+        const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+        if (!electronAPI) return;
+        const path = await electronAPI.selectFolder();
         if (path) {
             setOpenedFolder(path);
         }
@@ -229,11 +244,13 @@ export const FileExplorer: React.FC = () => {
         return nodes.map((node) => (
             <div key={node.path}
                 onDragOver={(e) => onDragOver(e, node.path, node.isDirectory)}
-                onDrop={(e) => onDrop(e, node.path, node.isDirectory)}
+                onDrop={(e) => {
+                    void onDrop(e, node.path, node.isDirectory);
+                }}
                 onDragLeave={() => setDragOverTarget(null)}
             >
                 <div
-                    onClick={() => node.isDirectory ? handleFolderClick(node.path) : handleFileClick(node.path)}
+                    onClick={() => node.isDirectory ? (() => { void handleFolderClick(node.path); })() : handleFileClick(node.path)}
                     draggable
                     onDragStart={(e) => onDragStart(e, node.path)}
                     style={{
@@ -324,7 +341,13 @@ export const FileExplorer: React.FC = () => {
         ));
     };
 
-    const ActionButton = ({ icon: Icon, color, onClick, title, label }: any) => (
+    const ActionButton = ({ icon: Icon, color, onClick, title, label }: {
+        icon?: React.ComponentType<{ size: number }>;
+        color?: string;
+        onClick: () => void;
+        title: string;
+        label: string;
+    }) => (
         <button
             onClick={onClick}
             title={title}
@@ -332,7 +355,7 @@ export const FileExplorer: React.FC = () => {
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
-                color: color || (isDark ? '#888' : '#666'),
+                color: color ?? (isDark ? '#888' : '#666'),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -343,11 +366,11 @@ export const FileExplorer: React.FC = () => {
             }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-                e.currentTarget.style.color = color || (isDark ? '#fff' : '#000');
+                e.currentTarget.style.color = color ?? (isDark ? '#fff' : '#000');
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = color || (isDark ? '#888' : '#666');
+                e.currentTarget.style.color = color ?? (isDark ? '#888' : '#666');
             }}
         >
             {Icon ? <Icon size={18} /> : <span style={{ fontSize: '10px', fontWeight: 900 }}>{label}</span>}
@@ -392,7 +415,7 @@ export const FileExplorer: React.FC = () => {
                         opacity: 0.6,
                         whiteSpace: 'nowrap'
                     }}>
-                        {openedFolder ? (openedFolder.split(/[\\/]/).pop() || t('app.file_explorer')) : t('app.file_explorer')}
+                        {openedFolder ? (openedFolder.split(/[\\/]/).pop() ?? t('app.file_explorer')) : t('app.file_explorer')}
                     </span>
                     {selectedFile && (
                         <>
@@ -417,7 +440,7 @@ export const FileExplorer: React.FC = () => {
                         <button
                             onClick={() => {
                                 setOpenedFolder(null);
-                                setSelectedFile(null);
+                                void setSelectedFile(null);
                             }}
                             style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#aaa' : '#666', padding: 4 }}
                             title={t('file_explorer.close_folder')}
@@ -436,8 +459,16 @@ export const FileExplorer: React.FC = () => {
                     position: 'relative',
                     minHeight: 0
                 }}
-                onDragOver={(e) => openedFolder && onDragOver(e, openedFolder, true)}
-                onDrop={(e) => openedFolder && onDrop(e, openedFolder, true)}
+                onDragOver={(e) => {
+                    if (openedFolder) {
+                        onDragOver(e, openedFolder, true);
+                    }
+                }}
+                onDrop={(e) => {
+                    if (openedFolder) {
+                        void onDrop(e, openedFolder, true);
+                    }
+                }}
             >
                 {openedFolder ? (
                     <>
@@ -457,7 +488,9 @@ export const FileExplorer: React.FC = () => {
                         </div>
 
                         <button
-                            onClick={openFolderDialog}
+                            onClick={() => {
+                                void openFolderDialog();
+                            }}
                             style={{
                                 backgroundColor: isDark ? '#2d2d2d' : '#fff',
                                 border: `1px solid ${isDark ? '#444' : '#ccc'}`,
@@ -488,7 +521,9 @@ export const FileExplorer: React.FC = () => {
                     {isCreating && (
                         <div style={{ padding: '8px', background: isDark ? '#252525' : '#fff' }}>
                             <form
-                                onSubmit={handleCreateSubmit}
+                                onSubmit={(e) => {
+                                    void handleCreateSubmit(e);
+                                }}
                                 style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Escape') {
@@ -503,7 +538,7 @@ export const FileExplorer: React.FC = () => {
                                     onChange={(e) => setNewName(e.target.value)}
                                     placeholder={isCreating.type === 'folder'
                                         ? t('file_explorer.new_folder_placeholder')
-                                        : t('file_explorer.new_file_placeholder', { ext: isCreating.ext || '' })}
+                                        : t('file_explorer.new_file_placeholder', { ext: isCreating.ext ?? '' })}
                                     style={{
                                         flex: 1,
                                         minWidth: 0,
@@ -547,31 +582,36 @@ export const FileExplorer: React.FC = () => {
                     }}>
                         <ActionButton
                             icon={FolderPlus}
-                            onClick={() => setIsCreating({ type: 'folder', parentPath: selectedDirPath || openedFolder || '' })}
+                            onClick={() => setIsCreating({ type: 'folder', parentPath: selectedDirPath ?? openedFolder ?? '' })}
                             title={t('file_explorer.actions.new_folder')}
+                            label=""
                         />
                         <ActionButton
                             icon={FileCode}
                             color="#f7df1e"
-                            onClick={() => setIsCreating({ type: 'file', ext: '.js', parentPath: selectedDirPath || openedFolder || '' })}
+                            onClick={() => setIsCreating({ type: 'file', ext: '.js', parentPath: selectedDirPath ?? openedFolder ?? '' })}
                             title={t('file_explorer.actions.new_js')}
+                            label=""
                         />
                         <ActionButton
                             icon={FileCode}
                             color="#3178c6"
-                            onClick={() => setIsCreating({ type: 'file', ext: '.ts', parentPath: selectedDirPath || openedFolder || '' })}
+                            onClick={() => setIsCreating({ type: 'file', ext: '.ts', parentPath: selectedDirPath ?? openedFolder ?? '' })}
                             title={t('file_explorer.actions.new_ts')}
+                            label=""
                         />
                         <ActionButton
                             icon={FileText}
                             color="#0ea5e9"
-                            onClick={() => setIsCreating({ type: 'file', ext: '.md', parentPath: selectedDirPath || openedFolder || '' })}
+                            onClick={() => setIsCreating({ type: 'file', ext: '.md', parentPath: selectedDirPath ?? openedFolder ?? '' })}
                             title={t('file_explorer.actions.new_md')}
+                            label=""
                         />
                         <ActionButton
-                            label="BLK"
+                            icon={undefined}
+                            label="Block"
                             color="#a855f7"
-                            onClick={() => setIsCreating({ type: 'file', ext: '.block', parentPath: selectedDirPath || openedFolder || '' })}
+                            onClick={() => setIsCreating({ type: 'file', ext: '.block', parentPath: selectedDirPath ?? openedFolder ?? '' })}
                             title={t('file_explorer.actions.new_block')}
                         />
                     </div>

@@ -114,7 +114,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             : (isDark ? '#333' : '#d1d5db');
                     }}
                 >
-                    {discardLabel || "Descartar"}
+                    {discardLabel ?? "Discard"}
                 </button>
             )}
 

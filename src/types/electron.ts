@@ -9,10 +9,13 @@ export interface ElectronAPI {
   openDirectory: () => Promise<string | null>;
   selectFolder: () => Promise<string | null>;
   readDirectory: (dirPath: string) => Promise<string[]>;
+  readDir: (dirPath: string) => Promise<unknown[]>;
   createFile: (filePath: string, content: string) => Promise<void>;
   createDirectory: (dirPath: string) => Promise<void>;
   deleteFile: (filePath: string) => Promise<void>;
   deleteDirectory: (dirPath: string) => Promise<void>;
+  checkPathExists: (path: string) => Promise<boolean>;
+  moveFile: (sourcePath: string, targetPath: string) => Promise<void>;
   
   // Git operations
   executeGitCommand: (command: string, cwd?: string) => Promise<{ stdout: string; stderr: string }>;
