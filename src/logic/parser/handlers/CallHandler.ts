@@ -65,12 +65,12 @@ export const CallHandler: ParserHandler = {
 
 
         // Try to propagate scope from definition to call node for easier navigation
-        const scopes: Record<string, any> = {};
-        const declId = ctx.variableNodes[`decl:${label}`];
-        if (declId) {
-            const declNode = ctx.nodes.find(n => n.id === declId);
-            if (declNode && (declNode.data as any).scopes?.body) {
-                scopes.body = (declNode.data as any).scopes.body;
+        const scopes: Record<string, { id: string, label: string }> = {};
+        const dId = ctx.variableNodes[`decl:${label}`];
+        if (dId) {
+            const declNode = ctx.nodes.find(n => n.id === dId);
+            if (declNode && declNode.data.scopes?.body) {
+                scopes.body = declNode.data.scopes.body;
             }
         }
 

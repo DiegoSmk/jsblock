@@ -1,17 +1,19 @@
 import { parse, print, types } from 'recast';
 import * as parser from '@babel/parser';
-import type { Edge, Node } from '@xyflow/react';
+import type { Edge } from '@xyflow/react';
+import type { AppNode } from '../types/store';
+import type { Expression, Statement, CallExpression, IfStatement, SwitchStatement, WhileStatement, ForStatement, VariableDeclaration, Pattern, Identifier } from '@babel/types';
 
 const b = types.builders;
 
-function createExpression(op: string, left: any, right: any) {
+function createExpression(op: string, left: Expression | Pattern, right: Expression): Expression {
     const isLogical = op === '&&' || op === '||' || op === '??';
-    return isLogical ? b.logicalExpression(op as any, left, right) : b.binaryExpression(op as any, left, right);
+    return (isLogical ? b.logicalExpression(op as any, left as any, right as any) : b.binaryExpression(op as any, left as any, right as any)) as any;
 }
 
 export const generateCodeFromFlow = (
     currentCode: string,
-    nodes: Node[],
+    nodes: AppNode[],
     edges: Edge[]
 ) => {
     try {
@@ -36,33 +38,34 @@ export const generateCodeFromFlow = (
         });
 
         const varNodeMap: Record<string, string> = {};
-        const varValueMap: Record<string, any> = {};
+        const varValueMap: Record<string, unknown> = {};
         const varLabelToId: Record<string, string> = {}; // Reverse map for lookup
         const callOverrideMap: Record<string, Record<number, string>> = {};
 
-        nodes.forEach(n => {
+        nodes.forEach((n: AppNode) => {
+            const data = n.data;
             if (n.type === 'variableNode') {
-                const label = n.data.label as string;
+                const label = data.label as string;
                 varNodeMap[n.id] = label;
                 varLabelToId[label] = n.id;
 
-                if (n.data.value !== undefined) {
-                    varValueMap[n.id] = n.data.value;
-                    varValueMap[label] = n.data.value;
+                if (data.value !== undefined) {
+                    varValueMap[n.id] = data.value;
+                    varValueMap[label] = data.value;
                 }
             } else if (n.type === 'literalNode') {
-                varValueMap[n.id] = n.data.value;
+                varValueMap[n.id] = data.value;
             } else if (n.type === 'functionCallNode') {
-                if (n.data.connectedValues) {
-                    callOverrideMap[n.id] = n.data.connectedValues as Record<number, string>;
+                if (data.connectedValues) {
+                    callOverrideMap[n.id] = data.connectedValues as Record<number, string>;
                 }
             }
         });
 
         // 1. Identify standalone calls using the EXACT SAME indexing as CodeParser.ts
-        const standaloneCalls: Record<string, any> = {};
-        const body = ast.program.body;
-        body.forEach((statement: any, index: number) => {
+        const standaloneCalls: Record<string, Expression> = {};
+        const body: Statement[] = (ast.program as any).body;
+        body.forEach((statement: Statement, index: number) => {
             if (statement.type === 'ExpressionStatement' && statement.expression.type === 'CallExpression') {
                 // This matches CodeParser logic: `call-exec-${index}`
                 standaloneCalls[`call-exec-${index}`] = statement.expression;
@@ -83,30 +86,17 @@ export const generateCodeFromFlow = (
             });
 
             // We only support IF nodes as sources for now
-            nodes.forEach(n => {
+            nodes.forEach((n: AppNode) => {
                 if (n.type === 'ifNode') {
-                    // Find the corresponding AST Node
-                    // The ID is if-{index}. But wait, indices shift if we splice!
-                    // We need a stable way to link.
-                    // The Parser indexed them by initial position.
-                    // If we only Move items, the initial objects are still references.
-
-                    // Challenge: Mapping 'if-{index}' to the actual AST object reliably.
-                    // Since we haven't mutated yet, the index should match.
                     const index = parseInt(n.id.replace('if-', ''));
-                    const ifStmt = body[index];
+                    const ifStmt = body[index] as IfStatement | undefined;
 
                     if (ifStmt?.type === 'IfStatement') {
 
                         const moveBlock = (handle: 'flow-true' | 'flow-false', targetBlock: 'consequent' | 'alternate') => {
                             const conn = flowConnections.find(c => c.source === n.id && c.handle === handle);
                             if (conn) {
-                                // Who is the target?
                                 const targetId = conn.target;
-
-                                // Target is likely a Function Call (call-exec-{index})
-                                // or another If (if-{index})
-
                                 let targetIndex = -1;
                                 if (targetId.startsWith('call-exec-')) targetIndex = parseInt(targetId.replace('call-exec-', ''));
                                 else if (targetId.startsWith('if-')) targetIndex = parseInt(targetId.replace('if-', ''));
@@ -117,25 +107,11 @@ export const generateCodeFromFlow = (
                                 if (targetIndex !== -1) {
                                     const targetStmt = body[targetIndex];
                                     if (targetStmt) {
-                                        // MOVE IT!
-                                        // 1. Remove from body (later, to avoid index mess during loop?) 
-                                        //    Actually, we can't look up by index if we mutate.
-                                        //    But we are looking up by Initial Index provided by Parser?
-                                        //    Yes, 'body' array changes, but 'standaloneCalls' map? 
-                                        //    No, we are operating on the AST 'body' array directly.
-
-                                        // SAFE APPROACH: Clone the node to the new location, mark original for deletion.
-                                        // Since we might chain multiple items, this simple version only supports ONE item per branch.
-                                        // (Chaining is Phase 4).
-
                                         if (targetBlock === 'consequent') {
-                                            ifStmt.consequent = b.blockStatement([targetStmt]);
+                                            ifStmt.consequent = b.blockStatement([targetStmt as any]) as any;
                                         } else {
-                                            ifStmt.alternate = b.blockStatement([targetStmt]);
+                                            ifStmt.alternate = b.blockStatement([targetStmt as any]) as any;
                                         }
-
-                                        // Mark for global pruning (so it doesn't appear at root)
-                                        // We use the ID string we know
                                         nodesToPrune.add(targetId);
                                     }
                                 }
@@ -149,10 +125,10 @@ export const generateCodeFromFlow = (
             });
 
             // Handle Switch Nodes
-            nodes.forEach(n => {
+            nodes.forEach((n: AppNode) => {
                 if (n.type === 'switchNode') {
                     const index = parseInt(n.id.replace('switch-', ''));
-                    const switchStmt = body[index];
+                    const switchStmt = body[index] as SwitchStatement | undefined;
 
                     if (switchStmt?.type === 'SwitchStatement') {
                         const cases = (n.data.cases as string[]) || [];
@@ -173,8 +149,7 @@ export const generateCodeFromFlow = (
                                 if (targetIndex !== -1) {
                                     const targetStmt = body[targetIndex];
                                     if (targetStmt && switchStmt.cases[i]) {
-                                        // Move statement to case consequent and add break
-                                        switchStmt.cases[i].consequent = [targetStmt, b.breakStatement()];
+                                        switchStmt.cases[i].consequent = [targetStmt as any, b.breakStatement() as any];
                                         nodesToPrune.add(targetId);
                                     }
                                 }
@@ -186,10 +161,10 @@ export const generateCodeFromFlow = (
 
 
             // Handle While Nodes
-            nodes.forEach(n => {
+            nodes.forEach((n: AppNode) => {
                 if (n.type === 'whileNode') {
                     const index = parseInt(n.id.replace('while-', ''));
-                    const whileStmt = body[index];
+                    const whileStmt = body[index] as WhileStatement | undefined;
 
                     if (whileStmt?.type === 'WhileStatement') {
                         const conn = flowConnections.find(c => c.source === n.id && c.handle === 'flow-body');
@@ -205,7 +180,7 @@ export const generateCodeFromFlow = (
                             if (targetIndex !== -1) {
                                 const targetStmt = body[targetIndex];
                                 if (targetStmt) {
-                                    whileStmt.body = b.blockStatement([targetStmt]);
+                                    whileStmt.body = b.blockStatement([targetStmt as any]) as any;
                                     nodesToPrune.add(targetId);
                                 }
                             }
@@ -216,10 +191,10 @@ export const generateCodeFromFlow = (
 
 
             // Handle For Nodes
-            nodes.forEach(n => {
+            nodes.forEach((n: AppNode) => {
                 if (n.type === 'forNode') {
                     const index = parseInt(n.id.replace('for-', ''));
-                    const forStmt = body[index];
+                    const forStmt = body[index] as ForStatement | undefined;
 
                     if (forStmt?.type === 'ForStatement') {
                         const conn = flowConnections.find(c => c.source === n.id && c.handle === 'flow-body');
@@ -237,7 +212,7 @@ export const generateCodeFromFlow = (
                             if (targetIndex !== -1) {
                                 const targetStmt = body[targetIndex];
                                 if (targetStmt) {
-                                    forStmt.body = b.blockStatement([targetStmt]);
+                                    forStmt.body = b.blockStatement([targetStmt as any]) as any;
                                     nodesToPrune.add(targetId);
                                 }
                             }
@@ -271,72 +246,34 @@ export const generateCodeFromFlow = (
         // 4. Main Generation Pass (Visitor)
         types.visit(ast, {
             visitIfStatement(path: any) {
-                // Find index of this statement in the program body if possible
-                // Note: This is simpler for root-level statements. Nested ones need better ID tracking.
-                const index = body.indexOf(path.node);
+                const ifStmt = path.node as IfStatement;
+                const index = body.indexOf(ifStmt);
                 const ifNodeId = `if-${index}`;
-
-                // If not found in root body, we might need a fallback or skip for MVP
-                // But wait! We need to handle root-level IFs first.
 
                 const node = nodes.find(n => n.id === ifNodeId);
                 if (node) {
-                    // Check 'condition' handle
                     const conditionSourceId = connections[ifNodeId]?.condition;
                     if (conditionSourceId) {
                         if (varNodeMap[conditionSourceId]) {
-                            path.node.test = b.identifier(varNodeMap[conditionSourceId]);
+                            ifStmt.test = b.identifier(varNodeMap[conditionSourceId]) as any;
                         } else if (conditionSourceId.startsWith('logic-')) {
-                            // It's coming from a Logic Node!
-                            // We need to find the Logic Expression corresponding to that node.
-                            // THIS IS TRICKY: The Logic Expression might be a standalone statement we pruned,
-                            // OR it might calculate inline.
-
-                            // STRATEGY: 
-                            // If a Logic Node feeds into an IF, we should move its expression INTO the if test.
-                            // We need to find where that logic expression is currently living in the AST.
-                            // If it was a standalone statement, 'statement.expression' is what we want.
-
-                            // Let's rely on 'nodesToPrune' logic. If we use a logic node here, we should prune its original statement.
-                            // But we need to Find it first.
-
-                            // Hacky MVP: We find the logic node data and Re-Construct the expression here.
-                            // This avoids moving AST nodes around which is complex.
                             const logicNode = nodes.find(n => n.id === conditionSourceId);
                             if (logicNode) {
-                                // We need to reconstruct the binary expression
-                                // Recursively resolve inputs A and B?
-                                // For now, let's assume simple 1-level depth or just take what we can get.
-                                // Better: We rely on the fact that we updated the Logic Node expression in the 'visitExpressionStatement' pass?
-                                // No, that pass happens in the same traversal.
-
-                                // Let's reconstruct!
-                                const op = logicNode.data.op as any;
-                                let left: any = b.identifier('undefined');
-                                let right: any = b.identifier('undefined');
+                                const op = logicNode.data.op as string;
+                                let left: Expression = b.identifier('undefined') as any;
+                                let right: Expression = b.identifier('undefined') as any;
 
                                 const leftSource = connections[logicNode.id]?.['input-a'];
                                 const rightSource = connections[logicNode.id]?.['input-b'];
 
-                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]);
+                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
                                 if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
 
-                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]);
+                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
                                 if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
 
-                                path.node.test = createExpression(op, left, right);
-
-                                // IMPORTANT: If this logic node corresponded to a standalone statement, we must prune it to avoid duplication!
-                                // The LogicNode ID is 'logic-{index}'. We can derive the standalone call ID?
-                                // Yes, if it was logic-5, it was statement 5.
-                                const match = /logic-(\d+)/.exec(conditionSourceId);
-                                if (match) {
-                                    // We can't prune purely by index here safely during traversal... 
-                                    // actually we can add to nodesToPrune if we haven't visited it yet? 
-                                    // Or just let it be for now? 
-                                    // Let's add it to a prune set that we check in ExpressionStatement visitor.
-                                    nodesToPrune.add(conditionSourceId);
-                                }
+                                ifStmt.test = createExpression(op, left, right);
+                                nodesToPrune.add(conditionSourceId);
                             }
                         }
                     }
@@ -347,7 +284,8 @@ export const generateCodeFromFlow = (
             },
 
             visitSwitchStatement(path: any) {
-                const index = body.indexOf(path.node);
+                const switchStmt = path.node as SwitchStatement;
+                const index = body.indexOf(switchStmt);
                 const nodeId = `switch-${index}`;
                 const node = nodes.find(n => n.id === nodeId);
 
@@ -355,9 +293,9 @@ export const generateCodeFromFlow = (
                     const discSourceId = connections[nodeId]?.discriminant;
                     if (discSourceId) {
                         if (varNodeMap[discSourceId]) {
-                            path.node.discriminant = b.identifier(varNodeMap[discSourceId]);
+                            switchStmt.discriminant = b.identifier(varNodeMap[discSourceId]) as any;
                         } else if (varValueMap[discSourceId] !== undefined) {
-                            path.node.discriminant = createLiteral(varValueMap[discSourceId]);
+                            switchStmt.discriminant = createLiteral(varValueMap[discSourceId]);
                         }
                     }
                 }
@@ -366,7 +304,8 @@ export const generateCodeFromFlow = (
             },
 
             visitWhileStatement(path: any) {
-                const index = body.indexOf(path.node);
+                const whileStmt = path.node as WhileStatement;
+                const index = body.indexOf(whileStmt);
                 const nodeId = `while-${index}`;
                 const node = nodes.find(n => n.id === nodeId);
 
@@ -374,29 +313,25 @@ export const generateCodeFromFlow = (
                     const conditionSourceId = connections[nodeId]?.condition;
                     if (conditionSourceId) {
                         if (varNodeMap[conditionSourceId]) {
-                            path.node.test = b.identifier(varNodeMap[conditionSourceId]);
+                            whileStmt.test = b.identifier(varNodeMap[conditionSourceId]) as any;
                         } else if (conditionSourceId.startsWith('logic-')) {
                             const logicNode = nodes.find(n => n.id === conditionSourceId);
                             if (logicNode) {
-                                const op = logicNode.data.op as any;
-                                let left: any = b.identifier('undefined');
-                                let right: any = b.identifier('undefined');
+                                const op = logicNode.data.op as string;
+                                let left: Expression = b.identifier('undefined') as any;
+                                let right: Expression = b.identifier('undefined') as any;
 
                                 const leftSource = connections[logicNode.id]?.['input-a'];
                                 const rightSource = connections[logicNode.id]?.['input-b'];
 
-                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]);
+                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
                                 if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
 
-                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]);
+                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
                                 if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
 
-                                path.node.test = createExpression(op, left, right);
-
-                                const match = /logic-(\d+)/.exec(conditionSourceId);
-                                if (match) {
-                                    nodesToPrune.add(conditionSourceId);
-                                }
+                                whileStmt.test = createExpression(op, left, right);
+                                nodesToPrune.add(conditionSourceId);
                             }
                         }
                     }
@@ -406,7 +341,8 @@ export const generateCodeFromFlow = (
             },
 
             visitForStatement(path: any) {
-                const index = body.indexOf(path.node);
+                const forStmt = path.node as ForStatement;
+                const index = body.indexOf(forStmt);
                 const nodeId = `for-${index}`;
                 const node = nodes.find(n => n.id === nodeId);
 
@@ -416,10 +352,13 @@ export const generateCodeFromFlow = (
                     if (initSourceId) {
                         if (varNodeMap[initSourceId]) {
                             const varName = varNodeMap[initSourceId];
-                            if (path.node.init?.type === 'VariableDeclaration') {
-                                path.node.init.declarations[0].id.name = varName;
-                                if (varValueMap[initSourceId] !== undefined) {
-                                    path.node.init.declarations[0].init = createLiteral(varValueMap[initSourceId]);
+                            if (forStmt.init?.type === 'VariableDeclaration') {
+                                const decl = forStmt.init.declarations[0];
+                                if (decl.id.type === 'Identifier') {
+                                    decl.id.name = varName;
+                                    if (varValueMap[initSourceId] !== undefined) {
+                                        decl.init = createLiteral(varValueMap[initSourceId]);
+                                    }
                                 }
                             }
                         }
@@ -429,26 +368,24 @@ export const generateCodeFromFlow = (
                     const testSourceId = connections[nodeId]?.test;
                     if (testSourceId) {
                         if (varNodeMap[testSourceId]) {
-                            path.node.test = b.identifier(varNodeMap[testSourceId]);
+                            forStmt.test = b.identifier(varNodeMap[testSourceId]) as any;
                         } else if (testSourceId.startsWith('logic-')) {
                             const logicNode = nodes.find(n => n.id === testSourceId);
                             if (logicNode) {
-                                const op = logicNode.data.op as any;
-                                let left: any = b.identifier('undefined');
-                                let right: any = b.identifier('undefined');
+                                const op = logicNode.data.op as string;
+                                let left: Expression = b.identifier('undefined') as any;
+                                let right: Expression = b.identifier('undefined') as any;
                                 const leftSource = connections[logicNode.id]?.['input-a'];
                                 const rightSource = connections[logicNode.id]?.['input-b'];
 
-                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]);
+                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
                                 if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
 
-                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]);
+                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
                                 if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
 
-                                path.node.test = createExpression(op, left, right);
-
-                                const match = /logic-(\d+)/.exec(testSourceId);
-                                if (match) nodesToPrune.add(testSourceId);
+                                forStmt.test = createExpression(op, left, right);
+                                nodesToPrune.add(testSourceId);
                             }
                         }
                     }
@@ -458,7 +395,8 @@ export const generateCodeFromFlow = (
             },
 
             visitVariableDeclaration(path: any) {
-                const decl = path.node.declarations[0];
+                const varDecl = path.node as VariableDeclaration;
+                const decl = varDecl.declarations[0];
                 if (decl.id.type !== 'Identifier') return false;
 
                 const varName = decl.id.name;
@@ -466,25 +404,23 @@ export const generateCodeFromFlow = (
 
                 if (!nodeId) return false;
 
-                // Check if we have an incoming Logic Node connection driving this variable
-                // We typically look for ANY connection targeting the variable if it's acting as a value sink
                 const nodeConns = connections[nodeId] || {};
                 const logicSourceId = Object.values(nodeConns).find(source => source && source.startsWith('logic-'));
 
                 if (logicSourceId) {
                     const logicNode = nodes.find(n => n.id === logicSourceId);
                     if (logicNode) {
-                        const op = logicNode.data.op as any;
-                        let left: any = b.identifier('undefined');
-                        let right: any = b.identifier('undefined');
+                        const op = logicNode.data.op as string;
+                        let left: Expression = b.identifier('undefined') as any;
+                        let right: Expression = b.identifier('undefined') as any;
 
                         const leftSource = connections[logicNode.id]?.['input-a'];
                         const rightSource = connections[logicNode.id]?.['input-b'];
 
-                        if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]);
+                        if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
                         if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
 
-                        if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]);
+                        if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
                         if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
 
                         decl.init = createExpression(op, left, right);
@@ -492,7 +428,7 @@ export const generateCodeFromFlow = (
                 } else if (decl.init?.type === 'CallExpression') {
                     updateCallArguments(decl.init, nodeId, connections, varNodeMap, varValueMap, undefined, standaloneCalls);
                 } else if (!decl.init || isLiteral(decl.init)) {
-                    const newValue = varValueMap[varName] || varValueMap[nodeId];
+                    const newValue = varValueMap[varName] ?? varValueMap[nodeId];
                     if (newValue !== undefined && newValue !== '(computed)') {
                         decl.init = createLiteral(newValue);
                     }
@@ -501,27 +437,24 @@ export const generateCodeFromFlow = (
             },
 
             visitExpressionStatement(path: any) {
-                // Find index of this statement in the program body
+                const exprStmt = path.node as any; // Recast path.node is often more than ExpressionStatement
                 const index = body.indexOf(path.node);
-                if (path.node.expression.type === 'CallExpression') {
+                if (exprStmt.expression.type === 'CallExpression') {
                     const callNodeId = `call-exec-${index}`;
-                    // Do not prune here! Filter pass handles root removal.
-                    // If we prune here, we delete valid nodes inside blocks.
-                    updateCallArguments(path.node.expression, callNodeId, connections, varNodeMap, varValueMap, callOverrideMap[callNodeId], standaloneCalls);
-                } else if (path.node.expression.type === 'BinaryExpression' || path.node.expression.type === 'LogicalExpression') {
-                    // Logic Node Generation
+                    updateCallArguments(exprStmt.expression, callNodeId, connections, varNodeMap, varValueMap, callOverrideMap[callNodeId], standaloneCalls);
+                } else if (exprStmt.expression.type === 'BinaryExpression' || exprStmt.expression.type === 'LogicalExpression') {
                     const logicNodeId = `logic-${index}`;
                     const node = nodes.find(n => n.id === logicNodeId);
 
                     if (node && node.data.op) {
                         const op = node.data.op as string;
-                        let left = path.node.expression.left;
-                        let right = path.node.expression.right;
+                        let left = exprStmt.expression.left;
+                        let right = exprStmt.expression.right;
 
                         const updateOperand = (handleId: 'input-a' | 'input-b', current: any) => {
                             const sourceId = connections[logicNodeId]?.[handleId];
                             if (sourceId) {
-                                if (varNodeMap[sourceId]) return b.identifier(varNodeMap[sourceId]);
+                                if (varNodeMap[sourceId]) return b.identifier(varNodeMap[sourceId]) as any;
                                 if (varValueMap[sourceId] !== undefined) return createLiteral(varValueMap[sourceId]);
                             }
                             return current;
@@ -530,7 +463,7 @@ export const generateCodeFromFlow = (
                         left = updateOperand('input-a', left);
                         right = updateOperand('input-b', right);
 
-                        path.node.expression = createExpression(op, left, right);
+                        exprStmt.expression = createExpression(op, left, right);
                     }
                 }
                 return false;
@@ -548,24 +481,31 @@ function isLiteral(node: any) {
     return node.type === 'NumericLiteral' || node.type === 'StringLiteral' || node.type === 'BooleanLiteral' || node.type === 'Literal';
 }
 
-function createLiteral(val: any) {
-    if (!isNaN(Number(val)) && String(val).trim() !== '') {
-        return b.numericLiteral(Number(val));
-    } else if (val === 'true' || val === 'false') {
-        return b.booleanLiteral(val === 'true');
-    } else {
-        return b.stringLiteral(String(val));
+function createLiteral(val: unknown): Expression {
+    if (typeof val === 'number') {
+        return b.numericLiteral(val) as any;
+    } else if (typeof val === 'boolean') {
+        return b.booleanLiteral(val) as any;
+    } else if (typeof val === 'string') {
+        if (!isNaN(Number(val)) && val.trim() !== '') {
+            return b.numericLiteral(Number(val)) as any;
+        } else if (val === 'true' || val === 'false') {
+            return b.booleanLiteral(val === 'true') as any;
+        } else {
+            return b.stringLiteral(val) as any;
+        }
     }
+    return b.identifier('undefined') as any;
 }
 
 function updateCallArguments(
-    callExpr: any,
+    callExpr: CallExpression,
     parentId: string,
     connections: Record<string, Record<string, string>>,
     varMap: Record<string, string>,
-    valMap: Record<string, any>,
+    valMap: Record<string, unknown>,
     overrides?: Record<number, string>,
-    standaloneCalls?: Record<string, any>
+    standaloneCalls?: Record<string, Expression>
 ) {
     const nodeConns = connections[parentId] || {};
 
@@ -591,16 +531,14 @@ function updateCallArguments(
         const handleName = isVarNode ? `nested-arg-${i}` : `arg-${i}`;
         const sourceId = nodeConns[handleName];
 
-        let newArgValue: any = null;
+        let newArgValue: Expression | null = null;
 
         if (sourceId) {
             if (varMap[sourceId]) {
-                newArgValue = b.identifier(varMap[sourceId]);
+                newArgValue = b.identifier(varMap[sourceId]) as any;
             } else if (valMap[sourceId] !== undefined) {
                 newArgValue = createLiteral(valMap[sourceId]);
             } else if (standaloneCalls?.[sourceId]) {
-                // If it's a standalone call, we use its expression
-                // Note: standaloneCalls now stores the expression directly
                 newArgValue = standaloneCalls[sourceId];
             }
         }
@@ -610,20 +548,20 @@ function updateCallArguments(
         }
 
         if (newArgValue) {
-            callExpr.arguments[i] = newArgValue;
-        } else if (i < currentArgCount && callExpr.arguments[i].type === 'CallExpression') {
-            const nestedArg = callExpr.arguments[i];
+            (callExpr.arguments as any)[i] = newArgValue;
+        } else if (i < currentArgCount && (callExpr.arguments[i] as any).type === 'CallExpression') {
+            const nestedArg = callExpr.arguments[i] as CallExpression;
             nestedArg.arguments.forEach((_: any, j: number) => {
                 const nestedHandleId = `arg-${i}-nested-arg-${j}`;
                 const nestedSourceId = nodeConns[nestedHandleId];
                 if (nestedSourceId && varMap[nestedSourceId]) {
-                    nestedArg.arguments[j] = b.identifier(varMap[nestedSourceId]);
+                    (nestedArg.arguments as any)[j] = b.identifier(varMap[nestedSourceId]) as any;
                 } else if (nestedSourceId && valMap[nestedSourceId] !== undefined) {
-                    nestedArg.arguments[j] = createLiteral(valMap[nestedSourceId]);
+                    (nestedArg.arguments as any)[j] = createLiteral(valMap[nestedSourceId]);
                 }
             });
         } else if (i >= currentArgCount) {
-            callExpr.arguments[i] = b.identifier('undefined');
+            (callExpr.arguments as any)[i] = b.identifier('undefined') as any;
         }
     }
 }

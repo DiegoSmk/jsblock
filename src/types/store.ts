@@ -54,6 +54,8 @@ export interface GitLogEntry {
   date: string;
   message: string;
   graph?: string;
+  refs?: string;
+  isGraphOnly?: boolean;
 }
 
 export interface GitCommitFile {

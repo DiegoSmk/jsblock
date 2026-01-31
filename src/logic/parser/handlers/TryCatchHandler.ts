@@ -2,9 +2,12 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
 
+import type { Node as BabelNode, TryStatement } from '@babel/types';
+
 export const TryCatchHandler: ParserHandler = {
-    canHandle: (stmt: any) => stmt.type === 'TryStatement',
-    handle: (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+    canHandle: (node: BabelNode) => node.type === 'TryStatement',
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+        const stmt = node as TryStatement;
         const nodeId = idSuffix ? `try-${idSuffix}` : generateId('trycatch');
 
         ctx.nodes.push({
@@ -16,7 +19,7 @@ export const TryCatchHandler: ParserHandler = {
                 label: 'Try/Catch',
                 scopeId: ctx.currentScopeId
             }
-        } as any);
+        });
 
         if (parentId && handleName) {
             ctx.edges.push(createEdge(parentId, nodeId, handleName, 'flow-in'));

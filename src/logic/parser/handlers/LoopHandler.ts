@@ -40,7 +40,7 @@ export const LoopHandler: ParserHandler = {
                     const initDecl = forStmt.init as VariableDeclaration;
                     const firstDecl = initDecl.declarations?.[0];
                     if (firstDecl?.id?.type === 'Identifier') {
-                        const varName = (firstDecl.id).name;
+                        const varName = firstDecl.id.name;
                         const varId = ctx.variableNodes[varName];
                         if (varId) {
                             ctx.edges.push(createEdge(varId, nodeId, 'output', 'init'));

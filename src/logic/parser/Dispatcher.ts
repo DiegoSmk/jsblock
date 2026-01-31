@@ -11,7 +11,7 @@ import { FunctionHandler } from './handlers/FunctionHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
-import type { AppNode } from '../../store/useStore';
+import type { AppNode } from '../../types/store';
 
 export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
     const idSuffix = index !== undefined ? `${index}` : undefined;
@@ -105,7 +105,7 @@ export const processBlockInScope = (
 
     let prevId: string | undefined = undefined;
 
-    statements.forEach((stmt: any) => {
+    statements.forEach((stmt: BabelNode) => {
         const nodeId = parseStatement(stmt, ctx, prevId, 'flow-next');
         if (nodeId) {
             prevId = nodeId;

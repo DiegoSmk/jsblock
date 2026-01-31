@@ -29,7 +29,7 @@ export const IfHandler: ParserHandler = {
         if (test.type === 'BinaryExpression' || test.type === 'LogicalExpression') {
             LogicHandler.handle(test, ctx, nodeId, 'condition');
         } else if (test.type === 'Identifier') {
-            const sourceId = ctx.variableNodes[(test).name];
+            const sourceId = ctx.variableNodes[test.name];
             if (sourceId) {
                 ctx.edges.push(createEdge(sourceId, nodeId, 'output', 'condition'));
             }

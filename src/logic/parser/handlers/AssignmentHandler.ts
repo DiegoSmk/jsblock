@@ -14,7 +14,7 @@ export const AssignmentHandler: ParserHandler = {
         const nodeId = idSuffix ? `assignment-${idSuffix}` : generateId('assignment');
 
         // Left side: variable being assigned to
-        const varName = expr.left.type === 'Identifier' ? (expr.left).name : 'unknown';
+        const varName = expr.left.type === 'Identifier' ? expr.left.name : 'unknown';
 
         ctx.nodes.push({
             id: nodeId,
@@ -36,7 +36,7 @@ export const AssignmentHandler: ParserHandler = {
         // Link right side (value)
         const right = expr.right;
         if (right.type === 'Identifier') {
-            const sourceId = ctx.variableNodes[(right).name];
+            const sourceId = ctx.variableNodes[right.name];
             if (sourceId) {
                 ctx.edges.push(createEdge(sourceId, nodeId, 'output', 'arg-0'));
             }

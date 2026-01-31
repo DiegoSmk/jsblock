@@ -917,16 +917,16 @@ export const useStore = create<AppState>((set, get) => ({
                             message: message || 'Sem mensagem',
                             graph,
                             refs: refs.trim()
-                        } as any);
+                        });
                     } else {
                         refinedEntries.push({
                             hash: '', author: '', date: '', message: '', graph: line, isGraphOnly: true
-                        } as any);
+                        });
                     }
                 } else {
                     refinedEntries.push({
                         hash: '', author: '', date: '', message: '', graph: line, isGraphOnly: true
-                    } as any);
+                    });
                 }
             }
 
@@ -950,8 +950,8 @@ export const useStore = create<AppState>((set, get) => ({
                 // size: 6.75 MiB
                 // size-pack: 0 bytes
 
-                const sizePackMatch = sizeOutput.match(/size-pack:\s*(.+)/);
-                const sizeMatch = sizeOutput.match(/^size:\s*(.+)/m);
+                const sizePackMatch = (/size-pack:\s*(.+)/).exec(sizeOutput);
+                const sizeMatch = (/^size:\s*(.+)/m).exec(sizeOutput);
 
                 const sizePack = sizePackMatch ? sizePackMatch[1].trim() : null;
                 const sizeLoose = sizeMatch ? sizeMatch[1].trim() : null;
@@ -971,7 +971,7 @@ export const useStore = create<AppState>((set, get) => ({
                     for (const line of treeLines) {
                         if (!line.trim()) continue;
                         // Format: <mode> <type> <hash> <size>\t<path>
-                        const match = line.match(/\s+blob\s+[0-9a-f]+\s+(\d+)/);
+                        const match = (/\s+blob\s+[0-9a-f]+\s+(\d+)/).exec(line);
                         if (match) {
                             totalBytes += parseInt(match[1], 10);
                         }
@@ -1016,14 +1016,14 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchGitConfig: async () => {
         const { openedFolder } = get();
-        if (!(window as any).electronAPI) return;
+        if (!window.electronAPI) return;
 
         const baseDir = openedFolder || '.';
 
         try {
             // Fetch Global
-            const gName = await (window as any).electronAPI.gitCommand(baseDir, ['config', '--global', 'user.name']);
-            const gEmail = await (window as any).electronAPI.gitCommand(baseDir, ['config', '--global', 'user.email']);
+            const gName = await window.electronAPI.gitCommand(baseDir, ['config', '--global', 'user.name']);
+            const gEmail = await window.electronAPI.gitCommand(baseDir, ['config', '--global', 'user.email']);
 
             const globalAuthor = {
                 name: gName.stdout.trim(),
@@ -1165,9 +1165,10 @@ export const useStore = create<AppState>((set, get) => ({
             await window.electronAPI.gitCommand(openedFolder, args);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Alterações salvas na gaveta (Stash).' });
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error('Stash error:', e);
-            const msg = e.stderr || e.message || '';
+            const error = e as { stderr?: string; message?: string };
+            const msg = error.stderr ?? error.message ?? '';
             if (msg.includes('No local changes to save')) {
                 get().addToast({ type: 'info', message: 'Nada para guardar no stash.' });
             } else {
@@ -1378,7 +1379,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     setGitConfig: async (author: GitAuthor, isGlobal: boolean) => {
         const { openedFolder, fetchGitConfig } = get();
-        if (!(window as any).electronAPI) return;
+        if (!window.electronAPI) return;
 
         const dir = openedFolder || '.';
 
@@ -1386,8 +1387,8 @@ export const useStore = create<AppState>((set, get) => ({
             // Setting Global Config
             const argsBase = ['config', '--global'];
             try {
-                if (author.name) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.name', author.name]);
-                if (author.email) await (window as any).electronAPI.gitCommand(dir, [...argsBase, 'user.email', author.email]);
+                if (author.name) await window.electronAPI.gitCommand(dir, [...argsBase, 'user.name', author.name]);
+                if (author.email) await window.electronAPI.gitCommand(dir, [...argsBase, 'user.email', author.email]);
 
                 get().addToast({
                     type: 'success',
@@ -1403,10 +1404,10 @@ export const useStore = create<AppState>((set, get) => ({
             // Setting Local Config (Explicit Override)
             try {
                 if (author.name) {
-                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.name', author.name]);
+                    await window.electronAPI.gitCommand(dir, ['config', '--local', 'user.name', author.name]);
                 }
                 if (author.email) {
-                    await (window as any).electronAPI.gitCommand(dir, ['config', '--local', 'user.email', author.email]);
+                    await window.electronAPI.gitCommand(dir, ['config', '--local', 'user.email', author.email]);
                 }
 
                 get().addToast({

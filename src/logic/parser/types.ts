@@ -1,7 +1,7 @@
 
 import type { Edge } from '@xyflow/react';
 import type { Node as BabelNode } from '@babel/types';
-import type { AppNode } from '../../store/useStore';
+import type { AppNode } from '../../types/store';
 
 
 export interface ParserContext {

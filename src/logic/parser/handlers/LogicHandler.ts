@@ -1,7 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
 import { CallHandler } from './CallHandler';
-import type { Node as BabelNode, BinaryExpression, LogicalExpression, Identifier, NumericLiteral, StringLiteral, BooleanLiteral } from '@babel/types';
+import type { Node as BabelNode, BinaryExpression, LogicalExpression } from '@babel/types';
 
 export const LogicHandler: ParserHandler = {
     canHandle: (node: BabelNode) => {
@@ -30,15 +30,15 @@ export const LogicHandler: ParserHandler = {
             ctx.edges.push(createEdge(nodeId, parentId, 'result', handleName));
         }
 
-        const processOperand = (operand: any, targetHandle: string) => {
+        const processOperand = (operand: BabelNode, targetHandle: string) => {
             if (operand.type === 'Identifier') {
-                const sourceId = ctx.variableNodes[(operand as Identifier).name];
+                const sourceId = ctx.variableNodes[operand.name];
                 if (sourceId) {
                     ctx.edges.push(createEdge(sourceId, nodeId, 'output', targetHandle));
                 }
             } else if (operand.type === 'NumericLiteral' || operand.type === 'StringLiteral' || operand.type === 'BooleanLiteral') {
                 const litId = generateId('literal');
-                const litArg = operand as NumericLiteral | StringLiteral | BooleanLiteral;
+                const litArg = operand;
                 const value = String((litArg as any).value);
                 const type = operand.type === 'NumericLiteral' ? 'number' : (operand.type === 'BooleanLiteral' ? 'boolean' : 'string');
 

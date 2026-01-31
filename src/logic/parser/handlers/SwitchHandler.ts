@@ -11,7 +11,9 @@ export const SwitchHandler: ParserHandler = {
         // Map Cases for UI
         const cases = stmt.cases.map((c: SwitchCase) => {
             if (c.test) {
-                if (c.test.type === 'NumericLiteral' || c.test.type === 'StringLiteral') return String((c.test as any).value);
+                if (c.test.type === 'NumericLiteral' || c.test.type === 'StringLiteral' || c.test.type === 'BooleanLiteral') {
+                    return String((c.test as any).value);
+                }
                 return 'case';
             }
             return 'default';
@@ -35,8 +37,8 @@ export const SwitchHandler: ParserHandler = {
 
         // Link Discriminant
         const disc = stmt.discriminant;
-        if (disc.type === 'Identifier' && ctx.variableNodes[(disc).name]) {
-            ctx.edges.push(createEdge(ctx.variableNodes[(disc).name], nodeId, 'output', 'discriminant'));
+        if (disc.type === 'Identifier' && ctx.variableNodes[disc.name]) {
+            ctx.edges.push(createEdge(ctx.variableNodes[disc.name], nodeId, 'output', 'discriminant'));
         }
 
         // Process Nested Cases with Scoping
@@ -46,6 +48,7 @@ export const SwitchHandler: ParserHandler = {
 
             if (c.consequent && c.consequent.length > 0) {
                 // Wrap consequent array in a block structure for the processBlock utility
+                // Casting to any because of library bridge
                 const dummyBlock = { type: 'BlockStatement', body: c.consequent } as any;
                 ctx.processBlock(dummyBlock, nodeId, handleId, caseLabel);
             }

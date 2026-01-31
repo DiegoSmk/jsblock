@@ -1,7 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { generateId } from '../utils';
 import type { Node as BabelNode, FunctionDeclaration } from '@babel/types';
-import type { AppNode } from '../../../store/useStore';
+import type { AppNode } from '../../../types/store';
 
 export const FunctionHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'FunctionDeclaration',
@@ -13,7 +13,7 @@ export const FunctionHandler: ParserHandler = {
         const nodeId = idSuffix ? `func-${funcName}-${idSuffix}` : `func-${funcName}`;
 
         const params = stmt.params.map((p) =>
-            p.type === 'Identifier' ? (p).name : 'arg'
+            p.type === 'Identifier' ? p.name : 'arg'
         );
 
         ctx.nodes.push({
@@ -35,7 +35,7 @@ export const FunctionHandler: ParserHandler = {
         // Process function parameters as nodes available inside the body scope
         const paramNodes: AppNode[] = stmt.params.map((p) => {
             if (p.type === 'Identifier') {
-                const varName = (p).name;
+                const varName = p.name;
                 const pNodeId = generateId('param-' + varName);
                 return {
                     id: pNodeId,

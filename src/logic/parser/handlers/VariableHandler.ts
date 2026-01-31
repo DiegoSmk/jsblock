@@ -6,12 +6,17 @@ import type { Node as BabelNode, VariableDeclaration, VariableDeclarator } from 
 const getExpressionCode = (node: BabelNode | null | undefined): string => {
     if (!node) return '';
     if (node.type === 'BinaryExpression' || node.type === 'LogicalExpression') {
-        return `${getExpressionCode((node as any).left)} ${(node as any).operator} ${getExpressionCode((node as any).right)}`;
+        const left = (node as any).left as BabelNode;
+        const right = (node as any).right as BabelNode;
+        const operator = (node as any).operator as string;
+        return `${getExpressionCode(left)} ${operator} ${getExpressionCode(right)}`;
     }
-    if (node.type === 'Identifier') return (node).name;
-    if (node.type === 'NumericLiteral' || node.type === 'StringLiteral' || node.type === 'BooleanLiteral') return String((node as any).value);
+    if (node.type === 'Identifier') return node.name;
+    if (node.type === 'NumericLiteral' || node.type === 'StringLiteral' || node.type === 'BooleanLiteral') {
+        return String((node as any).value);
+    }
     if (node.type === 'CallExpression') {
-        const callee = (node).callee;
+        const callee = node.callee;
         const name = callee.type === 'Identifier' ? callee.name : 'function';
         return `${name}(...)`;
     }
@@ -91,9 +96,11 @@ export const VariableHandler: ParserHandler = {
                             }
                         }
 
-                        const argNames = callInit.arguments.map((arg: any) => {
+                        const argNames = callInit.arguments.map((arg) => {
                             if (arg.type === 'Identifier') return arg.name;
-                            if (arg.type === 'NumericLiteral' || arg.type === 'StringLiteral') return String(arg.value);
+                            if (arg.type === 'NumericLiteral' || arg.type === 'StringLiteral' || arg.type === 'BooleanLiteral') {
+                                return String((arg as any).value);
+                            }
                             return 'arg';
                         });
 
@@ -103,10 +110,10 @@ export const VariableHandler: ParserHandler = {
                         };
 
                         callInit.arguments.forEach((arg, i: number) => {
-                            if (arg.type === 'Identifier' && ctx.variableNodes[(arg).name]) {
+                            if (arg.type === 'Identifier' && ctx.variableNodes[arg.name]) {
                                 ctx.edges.push({
-                                    id: `e-${ctx.variableNodes[(arg).name]}-to-${nodeId}-nested-arg-${i}`,
-                                    source: ctx.variableNodes[(arg).name],
+                                    id: `e-${ctx.variableNodes[arg.name]}-to-${nodeId}-nested-arg-${i}`,
+                                    source: ctx.variableNodes[arg.name],
                                     sourceHandle: 'output',
                                     target: nodeId,
                                     targetHandle: `nested-arg-${i}`,
