@@ -1,33 +1,69 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
 import { SectionHeader } from './SharedComponents';
 import { Tooltip } from '../Tooltip';
+import { ScrollArea } from '../ui/ScrollArea';
 
 interface GitInfoPanelProps {
     isDark: boolean;
     logs: any[];
 }
 
-const StatBox: React.FC<{ title: string; value: string | number; isDark: boolean; colSpan?: number }> = ({ title, value, isDark, colSpan = 1 }) => (
+const StatBox: React.FC<{ title: string; value: string | number; isDark: boolean; colSpan?: number; isCompact?: boolean }> = ({ title, value, isDark, colSpan = 1, isCompact = false }) => (
     <div style={{
         flex: 1,
         gridColumn: colSpan > 1 ? `span ${colSpan}` : undefined,
         background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-        padding: '8px 12px',
-        borderRadius: '8px',
+        padding: isCompact ? '4px 6px' : '6px 10px',
+        borderRadius: '6px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '2px'
+        gap: '1px',
+        minWidth: 0
     }}>
-        <span style={{ fontSize: '0.65rem', color: isDark ? '#aaa' : '#666', fontWeight: 500, textAlign: 'center' }}>{title}</span>
-        <span style={{ fontSize: '1rem', fontWeight: 700, color: isDark ? '#fff' : '#333' }}>{value}</span>
+        <span style={{
+            fontSize: isCompact ? '0.55rem' : '0.6rem',
+            color: isDark ? '#aaa' : '#666',
+            fontWeight: 500,
+            textAlign: 'center',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            width: '100%'
+        }}>{title}</span>
+        <span style={{
+            fontSize: isCompact ? '0.8rem' : '0.9rem',
+            fontWeight: 700,
+            color: isDark ? '#fff' : '#333'
+        }}>{value}</span>
     </div>
 );
 
 export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
     const { git } = useStore();
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(600);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setContainerWidth(entry.contentRect.width);
+            }
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        return () => resizeObserver.disconnect();
+    }, []);
+
+    // Breakpoints
+    const isSmall = containerWidth < 400;
+    const isMedium = containerWidth >= 400 && containerWidth < 600;
+    const gridCols = isSmall ? 1 : isMedium ? 2 : 3;
 
     // Reutilizando a lógica do heatmap do CommitHistory
     const heatmapData = useMemo(() => {
@@ -85,7 +121,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
         const weeks: any[] = [];
         const today = new Date();
         const startDate = new Date();
-        startDate.setDate(today.getDate() - (20 * 7));
+        const weeksToShow = isSmall ? 12 : isMedium ? 16 : 20;
+        startDate.setDate(today.getDate() - (weeksToShow * 7));
 
         while (startDate.getDay() !== 0) {
             startDate.setDate(startDate.getDate() - 1);
@@ -111,8 +148,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
             return isDark ? '#0070f3' : '#0070f3';
         };
 
-        const cellSize = 10;
-        const cellGap = 3;
+        const cellSize = isSmall ? 8 : 10;
+        const cellGap = isSmall ? 2 : 3;
 
         const months = weeks.map((week, i) => {
             const date = week[0].dayObj;
@@ -129,17 +166,17 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
         }).filter(m => m !== null);
 
         return (
-            <div style={{ padding: '10px 0', fontSize: '0.65rem', userSelect: 'none', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ padding: isSmall ? '8px 0' : '10px 0', fontSize: '0.65rem', userSelect: 'none', display: 'flex', justifyContent: 'center' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
 
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: isSmall ? '4px' : '6px' }}>
                         <div style={{
                             display: 'flex',
                             flexDirection: 'column',
                             gap: `${cellGap}px`,
-                            marginTop: '20px',
+                            marginTop: isSmall ? '16px' : '20px',
                             color: isDark ? '#666' : '#999',
-                            fontSize: '0.6rem',
+                            fontSize: isSmall ? '0.55rem' : '0.6rem',
                             paddingTop: `${cellSize + cellGap}px`
                         }}>
                             <span style={{ height: `${cellSize}px`, lineHeight: `${cellSize}px` }}>Seg</span>
@@ -149,7 +186,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
 
                         <div style={{ flex: 1, overflowX: 'auto', overflowY: 'hidden' }} className="no-scrollbar">
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', height: '16px', position: 'relative', marginBottom: '4px' }}>
+                                <div style={{ display: 'flex', height: isSmall ? '14px' : '16px', position: 'relative', marginBottom: '4px' }}>
                                     {months.map((m: any) => (
                                         <div
                                             key={m.index}
@@ -157,7 +194,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
                                                 position: 'absolute',
                                                 left: `${m.index * (cellSize + cellGap)}px`,
                                                 color: isDark ? '#888' : '#777',
-                                                fontSize: '0.65rem'
+                                                fontSize: isSmall ? '0.6rem' : '0.65rem'
                                             }}
                                         >
                                             {m.label}
@@ -218,14 +255,14 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
                         }
                     `}</style>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px', marginTop: '4px', color: isDark ? '#666' : '#999', fontSize: '0.6rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px', marginTop: '4px', color: isDark ? '#666' : '#999', fontSize: isSmall ? '0.55rem' : '0.6rem' }}>
                         <span>Menos</span>
                         <div style={{ display: 'flex', gap: '2px' }}>
-                            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getGithubColor(0) }} />
-                            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getGithubColor(2) }} />
-                            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getGithubColor(5) }} />
-                            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getGithubColor(8) }} />
-                            <div style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getGithubColor(15) }} />
+                            <div style={{ width: isSmall ? '8px' : '10px', height: isSmall ? '8px' : '10px', borderRadius: '2px', backgroundColor: getGithubColor(0) }} />
+                            <div style={{ width: isSmall ? '8px' : '10px', height: isSmall ? '8px' : '10px', borderRadius: '2px', backgroundColor: getGithubColor(2) }} />
+                            <div style={{ width: isSmall ? '8px' : '10px', height: isSmall ? '8px' : '10px', borderRadius: '2px', backgroundColor: getGithubColor(5) }} />
+                            <div style={{ width: isSmall ? '8px' : '10px', height: isSmall ? '8px' : '10px', borderRadius: '2px', backgroundColor: getGithubColor(8) }} />
+                            <div style={{ width: isSmall ? '8px' : '10px', height: isSmall ? '8px' : '10px', borderRadius: '2px', backgroundColor: getGithubColor(15) }} />
                         </div>
                         <span>Mais</span>
                     </div>
@@ -234,153 +271,182 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs }) => {
         );
     };
 
+    const chartHeight = isSmall ? 50 : 60;
+    const chartBarHeight = isSmall ? 30 : 40;
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <SectionHeader
-                title="Visão Geral"
-                count={-1}
-                isOpen={true}
-                isDark={isDark}
-            />
-            <div style={{ padding: '0 16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
-                {renderHeatmap()}
-            </div>
-
-            <div style={{ padding: '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-                    <StatBox title="Branches" value={git.branches.length} isDark={isDark} />
-                    <StatBox title="Commits" value={logs.length} isDark={isDark} />
-                    <StatBox title="Stash" value={git.stashes.length} isDark={isDark} />
-                    <StatBox title="Arquivos" value={git.stats?.fileCount || 0} isDark={isDark} />
-                    <StatBox title="Tamanho da pasta .git" value={git.stats?.repoSize || '-'} isDark={isDark} />
-                    <StatBox title="Tamanho do Projeto" value={git.stats?.projectSize || '-'} isDark={isDark} />
+        <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+            <ScrollArea visibility="hover">
+                <SectionHeader
+                    title="Visão Geral"
+                    count={-1}
+                    isOpen={true}
+                    isDark={isDark}
+                />
+                <div style={{ padding: '0 16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
+                    {renderHeatmap()}
                 </div>
-            </div>
 
-            <SectionHeader
-                title="Atividade por Dia da Semana"
-                count={-1}
-                isOpen={true}
-                isDark={isDark}
-            />
-            <div style={{ padding: '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
-                <div style={{ display: 'flex', alignItems: 'flex-end', height: '60px', gap: '4px', justifyContent: 'space-between' }}>
-                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, i) => {
-                        const count = weeklyStats.stats[i];
-                        const height = (count / weeklyStats.max) * 100;
-
-                        return (
-                            <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                                <div style={{
-                                    width: '100%',
-                                    height: '40px',
-                                    display: 'flex',
-                                    alignItems: 'flex-end',
-                                    justifyContent: 'center',
-                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                                    borderRadius: '4px',
-                                    overflow: 'hidden'
-                                }}>
-                                    <div
-                                        title={`${count} commits`}
-                                        style={{
-                                            width: '100%',
-                                            height: `${height}%`,
-                                            background: isDark ? '#4dabf7' : '#0070f3',
-                                            opacity: 0.8,
-                                            transition: 'height 0.3s ease',
-                                            cursor: 'pointer'
-                                        }}
-                                    />
-                                </div>
-                                <span style={{ fontSize: '0.6rem', color: isDark ? '#888' : '#777' }}>{day}</span>
-                            </div>
-                        );
-                    })}
+                <div style={{ padding: isSmall ? '12px' : '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+                        gap: isSmall ? '6px' : '8px'
+                    }}>
+                        <StatBox title="Branches" value={git.branches.length} isDark={isDark} isCompact={isSmall} />
+                        <StatBox title="Commits" value={logs.length} isDark={isDark} isCompact={isSmall} />
+                        <StatBox title="Stash" value={git.stashes.length} isDark={isDark} isCompact={isSmall} />
+                        <StatBox title="Arquivos" value={git.stats?.fileCount || 0} isDark={isDark} isCompact={isSmall} />
+                        <StatBox title="Tamanho da pasta .git" value={git.stats?.repoSize || '-'} isDark={isDark} isCompact={isSmall} />
+                        <StatBox title="Tamanho do Projeto" value={git.stats?.projectSize || '-'} isDark={isDark} isCompact={isSmall} />
+                    </div>
                 </div>
-            </div>
 
-            <SectionHeader
-                title="Horários de Pico"
-                count={-1}
-                isOpen={true}
-                isDark={isDark}
-            />
-            <div style={{ padding: '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
-                <div style={{ display: 'flex', alignItems: 'flex-end', height: '60px', gap: '2px', justifyContent: 'space-between' }}>
-                    {hourlyStats.stats.map((count, hour) => {
-                        const height = (count / hourlyStats.max) * 100;
-                        const showLabel = hour % 6 === 0;
+                <SectionHeader
+                    title="Atividade por Dia da Semana"
+                    count={-1}
+                    isOpen={true}
+                    isDark={isDark}
+                />
+                <div style={{ padding: isSmall ? '12px' : '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', height: `${chartHeight}px`, gap: isSmall ? '3px' : '4px', justifyContent: 'space-between' }}>
+                        {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, i) => {
+                            const count = weeklyStats.stats[i];
+                            const height = (count / weeklyStats.max) * 100;
 
-                        return (
-                            <div key={hour} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                                <div style={{
-                                    width: '100%',
-                                    height: '40px',
-                                    display: 'flex',
-                                    alignItems: 'flex-end',
-                                    justifyContent: 'center',
-                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                                    borderRadius: '2px',
-                                    overflow: 'hidden'
-                                }}>
-                                    <div
-                                        title={`${count} commits às ${hour}h`}
-                                        style={{
-                                            width: '100%',
-                                            height: `${height}%`,
-                                            background: isDark ? '#fbbf24' : '#f59e0b',
-                                            opacity: 0.8,
-                                            transition: 'height 0.3s ease',
-                                            cursor: 'pointer'
-                                        }}
-                                    />
-                                </div>
-                                <span style={{ fontSize: '0.5rem', color: isDark ? '#888' : '#777', opacity: showLabel ? 1 : 0 }}>{hour}h</span>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <SectionHeader
-                title="Principais Colaboradores"
-                count={authorsData.length}
-                isOpen={true}
-                isDark={isDark}
-            />
-            <div style={{ padding: '8px 16px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {authorsData.map((author, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{
-                                    width: '24px', height: '24px', borderRadius: '50%',
-                                    background: isDark ? '#333' : '#e0e0e0',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 600, fontSize: '0.7rem', color: isDark ? '#aaa' : '#555'
-                                }}>
-                                    {(author.name || '?').charAt(0).toUpperCase()}
-                                </div>
-                                <span style={{ color: isDark ? '#ddd' : '#333' }}>{author.name || 'Desconhecido'}</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{
-                                    height: '6px', width: '60px', borderRadius: '3px',
-                                    background: isDark ? '#333' : '#eee', overflow: 'hidden'
-                                }}>
+                            return (
+                                <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
                                     <div style={{
-                                        height: '100%',
-                                        width: `${Math.min((author.count / logs.length) * 100, 100)}%`,
-                                        background: isDark ? '#4ade80' : '#22c55e'
-                                    }} />
+                                        width: '100%',
+                                        height: `${chartBarHeight}px`,
+                                        display: 'flex',
+                                        alignItems: 'flex-end',
+                                        justifyContent: 'center',
+                                        background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                                        borderRadius: '4px',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div
+                                            title={`${count} commits`}
+                                            style={{
+                                                width: '100%',
+                                                height: `${height}%`,
+                                                background: isDark ? '#4dabf7' : '#0070f3',
+                                                opacity: 0.8,
+                                                transition: 'height 0.3s ease',
+                                                cursor: 'pointer'
+                                            }}
+                                        />
+                                    </div>
+                                    <span style={{ fontSize: isSmall ? '0.55rem' : '0.6rem', color: isDark ? '#888' : '#777' }}>{isSmall ? day.substring(0, 1) : day}</span>
                                 </div>
-                                <span style={{ color: isDark ? '#888' : '#777', width: '24px', textAlign: 'right' }}>{author.count}</span>
-                            </div>
-                        </div>
-                    ))}
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+
+                <SectionHeader
+                    title="Horários de Pico"
+                    count={-1}
+                    isOpen={true}
+                    isDark={isDark}
+                />
+                <div style={{ padding: isSmall ? '12px' : '16px', borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}` }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', height: `${chartHeight}px`, gap: isSmall ? '1px' : '2px', justifyContent: 'space-between' }}>
+                        {hourlyStats.stats.map((count, hour) => {
+                            const height = (count / hourlyStats.max) * 100;
+                            const showLabel = hour % 6 === 0;
+
+                            return (
+                                <div key={hour} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                                    <div style={{
+                                        width: '100%',
+                                        height: `${chartBarHeight}px`,
+                                        display: 'flex',
+                                        alignItems: 'flex-end',
+                                        justifyContent: 'center',
+                                        background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                                        borderRadius: '2px',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div
+                                            title={`${count} commits às ${hour}h`}
+                                            style={{
+                                                width: '100%',
+                                                height: `${height}%`,
+                                                background: isDark ? '#fbbf24' : '#f59e0b',
+                                                opacity: 0.8,
+                                                transition: 'height 0.3s ease',
+                                                cursor: 'pointer'
+                                            }}
+                                        />
+                                    </div>
+                                    <span style={{ fontSize: isSmall ? '0.45rem' : '0.5rem', color: isDark ? '#888' : '#777', opacity: showLabel ? 1 : 0 }}>{hour}h</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <SectionHeader
+                    title="Principais Colaboradores"
+                    count={authorsData.length}
+                    isOpen={true}
+                    isDark={isDark}
+                />
+                <div style={{ padding: isSmall ? '6px 12px' : '8px 16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: isSmall ? '6px' : '8px' }}>
+                        {authorsData.map((author, i) => (
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: isSmall ? '0.75rem' : '0.8rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: isSmall ? '6px' : '8px', flex: 1, minWidth: 0 }}>
+                                    <div style={{
+                                        width: isSmall ? '20px' : '24px',
+                                        height: isSmall ? '20px' : '24px',
+                                        borderRadius: '50%',
+                                        background: isDark ? '#333' : '#e0e0e0',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 600,
+                                        fontSize: isSmall ? '0.65rem' : '0.7rem',
+                                        color: isDark ? '#aaa' : '#555',
+                                        flexShrink: 0
+                                    }}>
+                                        {(author.name || '?').charAt(0).toUpperCase()}
+                                    </div>
+                                    <span style={{
+                                        color: isDark ? '#ddd' : '#333',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}>{author.name || 'Desconhecido'}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: isSmall ? '6px' : '8px', flexShrink: 0 }}>
+                                    <div style={{
+                                        height: '6px',
+                                        width: isSmall ? '40px' : '60px',
+                                        borderRadius: '3px',
+                                        background: isDark ? '#333' : '#eee',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div style={{
+                                            height: '100%',
+                                            width: `${Math.min((author.count / logs.length) * 100, 100)}%`,
+                                            background: isDark ? '#4ade80' : '#22c55e'
+                                        }} />
+                                    </div>
+                                    <span style={{
+                                        color: isDark ? '#888' : '#777',
+                                        width: isSmall ? '20px' : '24px',
+                                        textAlign: 'right',
+                                        fontSize: isSmall ? '0.7rem' : '0.75rem'
+                                    }}>{author.count}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </ScrollArea>
         </div>
     );
 };
