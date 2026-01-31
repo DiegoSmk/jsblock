@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
-import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile, FileText, ChevronDown } from 'lucide-react';
+import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile, FileText, ChevronDown, EyeOff, Folder } from 'lucide-react';
 import { GitStatusGroups } from './GitStatusGroups';
 import { CommitSection } from './CommitSection';
 import { AuthorModal } from './AuthorModal';
 import { CommitTemplateModal } from './CommitTemplateModal';
 import { BranchSwitcher } from './BranchSwitcher';
 import { ProductivityToolbar } from './ProductivityToolbar';
+import { GitIgnoreModal } from './GitIgnoreModal';
 import './GitPanel.css'; // basic shared styles
 
 export const GitStatusView: React.FC = () => {
@@ -16,7 +17,7 @@ export const GitStatusView: React.FC = () => {
         gitStage, gitUnstage, gitCommit,
         gitStageAll, gitUnstageAll, gitDiscard, gitDiscardAll,
         addGitProfile, removeGitProfile,
-        resetToGlobal, commitTemplates, setGitConfig, gitProfiles
+        resetToGlobal, commitTemplates, setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal
     } = useStore();
 
     const isDark = theme === 'dark';
@@ -31,6 +32,12 @@ export const GitStatusView: React.FC = () => {
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const templateDropdownRef = useRef<HTMLDivElement>(null);
 
+    // Git Ignore State
+    const [isIgnoreDropdownOpen, setIsIgnoreDropdownOpen] = useState(false);
+    const [isIgnoreModalOpen, setIsIgnoreModalOpen] = useState(false);
+    const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>([]);
+    const ignoreDropdownRef = useRef<HTMLDivElement>(null);
+
     // Handle click outside for author menu
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -40,9 +47,12 @@ export const GitStatusView: React.FC = () => {
             if (templateDropdownRef.current && !templateDropdownRef.current.contains(event.target as Node)) {
                 setIsTemplateDropdownOpen(false);
             }
+            if (ignoreDropdownRef.current && !ignoreDropdownRef.current.contains(event.target as Node)) {
+                setIsIgnoreDropdownOpen(false);
+            }
         };
 
-        if (showAuthorMenu) {
+        if (showAuthorMenu || isTemplateDropdownOpen || isIgnoreDropdownOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         } else {
             document.removeEventListener('mousedown', handleClickOutside);
@@ -51,7 +61,25 @@ export const GitStatusView: React.FC = () => {
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [showAuthorMenu, isTemplateDropdownOpen]);
+    }, [showAuthorMenu, isTemplateDropdownOpen, isIgnoreDropdownOpen]);
+
+    const loadIgnorePatterns = async () => {
+        if (!useStore.getState().openedFolder) return;
+        const folder = useStore.getState().openedFolder!;
+        const path = folder.endsWith('/') || folder.endsWith('\\')
+            ? `${folder}.gitignore`
+            : `${folder}/.gitignore`;
+
+        try {
+            const content = await (window as any).electronAPI.readFile(path);
+            const lines = content.split('\n')
+                .map((l: string) => l.trim())
+                .filter((l: string) => l && !l.startsWith('#'));
+            setIgnoredPatterns(lines);
+        } catch {
+            setIgnoredPatterns([]);
+        }
+    };
 
     // Author Management State
     const [showAuthorConfigModal, setShowAuthorConfigModal] = useState(false);
@@ -152,6 +180,131 @@ export const GitStatusView: React.FC = () => {
                 <BranchSwitcher isDark={isDark} />
 
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Git Ignore Dropdown */}
+                    <div style={{ position: 'relative' }} ref={ignoreDropdownRef}>
+                        <button
+                            onClick={() => {
+                                if (!isIgnoreDropdownOpen) loadIgnorePatterns();
+                                setIsIgnoreDropdownOpen(!isIgnoreDropdownOpen);
+                            }}
+                            style={{
+                                background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 10px',
+                                fontSize: '0.75rem',
+                                color: isDark ? '#aaa' : '#666',
+                                transition: 'all 0.2s',
+                                outline: 'none'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                                e.currentTarget.style.background = isDark ? '#3d3d3d' : '#e5e5e5';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.color = isDark ? '#aaa' : '#666';
+                                e.currentTarget.style.background = isDark ? '#2d2d2d' : '#f5f5f5';
+                            }}
+                            title="Gerenciar .gitignore"
+                        >
+                            <EyeOff size={14} />
+                            <ChevronDown size={12} style={{ transform: isIgnoreDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                        </button>
+
+                        {isIgnoreDropdownOpen && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                marginTop: '8px',
+                                background: isDark ? '#1a1a1a' : '#fff',
+                                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                                borderRadius: '8px',
+                                minWidth: '280px',
+                                boxShadow: isDark ? '0 10px 25px rgba(0,0,0,0.5)' : '0 10px 25px rgba(0,0,0,0.1)',
+                                zIndex: 1000,
+                                overflow: 'hidden',
+                                transformOrigin: 'top right',
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}>
+                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
+                                    ARQUIVOS IGNORADOS
+                                </div>
+
+                                <div style={{ height: '200px' }}>
+                                    <ScrollArea
+                                        style={{ height: '100%' }}
+                                        thumbColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+                                        thumbHoverColor={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+                                    >
+                                        {ignoredPatterns.length === 0 ? (
+                                            <div style={{ padding: '12px', fontSize: '0.75rem', color: isDark ? '#666' : '#999', fontStyle: 'italic', textAlign: 'center' }}>
+                                                Nenhum padrão definido ou .gitignore inexistente.
+                                            </div>
+                                        ) : (
+                                            ignoredPatterns.map((pattern, idx) => {
+                                                const isDir = pattern.endsWith('/');
+                                                const Icon = isDir ? Folder : FileText;
+                                                return (
+                                                    <div
+                                                        key={idx}
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            fontSize: '0.8rem',
+                                                            color: isDark ? '#ddd' : '#333',
+                                                            fontFamily: 'monospace',
+                                                            borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#f5f5f5'}`,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px'
+                                                        }}
+                                                    >
+                                                        <Icon size={12} color={isDark ? '#666' : '#999'} />
+                                                        {pattern}
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </ScrollArea>
+                                </div>
+
+                                <div style={{ padding: '8px', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, background: isDark ? '#222' : '#f9fafb' }}>
+                                    <button
+                                        onClick={() => {
+                                            setIsIgnoreModalOpen(true);
+                                            setIsIgnoreDropdownOpen(false);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            padding: '6px',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            background: isDark ? '#333' : '#e5e7eb',
+                                            color: isDark ? '#ccc' : '#666',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#444' : '#d1d5db'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = isDark ? '#333' : '#e5e7eb'}
+                                    >
+                                        <Settings size={12} />
+                                        Gerenciar .gitignore
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Templates Button & Dropdown */}
                     <div style={{ position: 'relative' }} ref={templateDropdownRef}>
                         <button
@@ -522,6 +675,9 @@ export const GitStatusView: React.FC = () => {
                     gitUnstage={gitUnstage}
                     gitStage={gitStage}
                     gitDiscard={gitDiscard}
+                    gitClean={gitClean}
+                    gitIgnore={gitIgnore}
+                    setConfirmationModal={setConfirmationModal}
                 />
             </ScrollArea>
 
@@ -554,6 +710,12 @@ export const GitStatusView: React.FC = () => {
                 onClose={() => setIsTemplateModalOpen(false)}
                 isDark={isDark}
                 onSelectTemplate={(content) => setCommitMsg(content)}
+            />
+
+            <GitIgnoreModal
+                isOpen={isIgnoreModalOpen}
+                onClose={() => setIsIgnoreModalOpen(false)}
+                isDark={isDark}
             />
         </div>
     );

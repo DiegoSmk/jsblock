@@ -784,6 +784,7 @@ function App() {
           cancelLabel={confirmationModal.cancelLabel}
           discardLabel={confirmationModal.discardLabel}
           variant={confirmationModal.variant}
+          discardVariant={confirmationModal.discardVariant}
         />
       )}
       <ToastContainer />

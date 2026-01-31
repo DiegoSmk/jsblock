@@ -40,9 +40,11 @@ export const GitTerminalView: React.FC = () => {
     });
     const [gitSuggestion, setGitSuggestion] = useState<string | null>(null);
     const [lastCommitHash, setLastCommitHash] = useState<string | null>(null);
+    const [yesNoPrompt, setYesNoPrompt] = useState(false);
     const progressTimeoutRef = useRef<any>(null);
     const suggestionTimeoutRef = useRef<any>(null);
     const commitTimeoutRef = useRef<any>(null);
+    const promptTimeoutRef = useRef<any>(null);
 
     useEffect(() => {
         if (!terminalRef.current) return;
@@ -107,19 +109,6 @@ export const GitTerminalView: React.FC = () => {
         const fitAddon = new FitAddon();
         term.loadAddon(fitAddon);
 
-        try {
-            if (terminalRef.current) {
-                terminalRef.current.innerHTML = ''; // Ensure container is empty
-                term.open(terminalRef.current);
-            } else {
-                console.error('Terminal container not found');
-                return;
-            }
-        } catch (err) {
-            console.error('Failed to open terminal:', err);
-            return;
-        }
-
         const safeFit = () => {
             if (terminalRef.current && terminalRef.current.offsetWidth > 0 && terminalRef.current.offsetHeight > 0) {
                 try {
@@ -127,16 +116,30 @@ export const GitTerminalView: React.FC = () => {
                     if ((window as any).electronAPI) {
                         (window as any).electronAPI.terminalResize(term.cols, term.rows);
                     }
+                    return true;
                 } catch (e) {
-                    // Ignore fit errors during transitions
+                    return false;
                 }
             }
+            return false;
         };
 
-        // Initial fit and focus with a bit more delay to let animation settle
+        // Delay both open and fit to let the animation/container stabilize
         const initialFitTimer = setTimeout(() => {
-            safeFit();
-            if (term.element) term.focus();
+            try {
+                if (terminalRef.current) {
+                    terminalRef.current.innerHTML = '';
+                    term.open(terminalRef.current);
+
+                    // Small additional tick to ensure internal measures are ready
+                    requestAnimationFrame(() => {
+                        safeFit();
+                        if (term.element) term.focus();
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to open terminal safely:', err);
+            }
         }, 300);
 
         xtermRef.current = term;
@@ -206,6 +209,15 @@ export const GitTerminalView: React.FC = () => {
                         commitTimeoutRef.current = setTimeout(() => setLastCommitHash(null), 20000);
                     }
                 }
+
+                // Yes/No Prompt Logic
+                // Detects various forms of (y/n) prompts, including Portuguese [S/n] and phrases
+                if (data.match(/(?:\(y\/n\)|\(Y\/n\)|\(y\/N\)|\? \[y\/N\]|\[S\/n\]|\[s\/N\]|Are you sure.*y\/n|want to continue\?|quer continuar\?)/i)) {
+                    setYesNoPrompt(true);
+                    if (promptTimeoutRef.current) clearTimeout(promptTimeoutRef.current);
+                    // Hide after 30s if no interaction, though prompt usually waits indefinitely
+                    promptTimeoutRef.current = setTimeout(() => setYesNoPrompt(false), 30000);
+                }
             });
 
             term.onSelectionChange(() => {
@@ -271,6 +283,13 @@ export const GitTerminalView: React.FC = () => {
         if ((window as any).electronAPI) {
             // Send command + enter if autoExecute (default), otherwise just send command
             (window as any).electronAPI.terminalSendInput(cmd + (autoExecute !== false ? '\r' : ''));
+        }
+    };
+
+    const handleYesNo = (choice: 'y' | 'n') => {
+        if ((window as any).electronAPI) {
+            (window as any).electronAPI.terminalSendInput(`${choice}\r`);
+            setYesNoPrompt(false);
         }
     };
 
@@ -821,6 +840,105 @@ export const GitTerminalView: React.FC = () => {
                         padding: '8px'
                     }}
                 />
+                {yesNoPrompt && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 102,
+                        background: isDark ? '#1f1f1f' : '#fff',
+                        border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)'}`,
+                        borderRadius: '12px',
+                        padding: '16px 20px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '12px',
+                        animation: 'slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }}>
+                        <style>{`
+                            @keyframes slideUp {
+                                from { transform: translate(-50%, 30px); opacity: 0; }
+                                to { transform: translate(-50%, 0); opacity: 1; }
+                            }
+                        `}</style>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.05)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: isDark ? '#4fc3f7' : '#0070f3'
+                            }}>
+                                <Zap size={18} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: '2px' }}>
+                                    Confirmação Necessária
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: isDark ? '#888' : '#666' }}>
+                                    O terminal está aguardando sua resposta.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', width: '100%', justifyContent: 'center' }}>
+                            <button
+                                onClick={() => handleYesNo('n')}
+                                style={{
+                                    background: 'transparent',
+                                    border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                    color: isDark ? '#aaa' : '#666',
+                                    padding: '6px 16px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    flex: 1
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb';
+                                    e.currentTarget.style.borderColor = isDark ? '#444' : '#ccc';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.borderColor = isDark ? '#333' : '#ddd';
+                                }}
+                            >
+                                Não
+                            </button>
+                            <button
+                                onClick={() => handleYesNo('y')}
+                                style={{
+                                    background: (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
+                                    color: (isDark ? '#4fc3f7' : '#0070f3'),
+                                    border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)'}`,
+                                    padding: '6px 16px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    flex: 1
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = (isDark ? 'rgba(79, 195, 247, 0.25)' : 'rgba(0, 112, 243, 0.15)');
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)');
+                                }}
+                            >
+                                Sim
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

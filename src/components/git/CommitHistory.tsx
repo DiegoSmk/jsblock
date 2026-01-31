@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SectionHeader } from './SharedComponents';
-import { Search, RefreshCw, ChevronDown, ChevronRight, History, GitBranch, FileText, Plus, Minus } from 'lucide-react';
+import { Search, RefreshCw, ChevronDown, ChevronRight, History, GitBranch, FileText, Plus, Minus, Tag } from 'lucide-react';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
 
@@ -14,7 +14,7 @@ interface GitHistoryProps {
 export const CommitHistory: React.FC<GitHistoryProps> = ({
     isDark, logs, isOpen, onToggle
 }) => {
-    const { getCommitFiles, openModal, checkoutCommit, createBranch, openedFolder } = useStore();
+    const { git, getCommitFiles, openModal, checkoutCommit, createBranch, openedFolder, gitCreateTag } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedCommits, setExpandedCommits] = useState<Set<string>>(new Set());
     const [commitFiles, setCommitFiles] = useState<Record<string, any[]>>({});
@@ -195,9 +195,9 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                     <div style={{
                                                         width: '10px',
                                                         height: '10px',
-                                                        borderRadius: '50%',
+                                                        borderRadius: '3px',
                                                         background: isDark ? '#1a1a1a' : '#fff',
-                                                        border: `2px solid #0070f3`,
+                                                        border: `2px solid ${isDark ? '#10b981' : '#059669'}`,
                                                         zIndex: 2,
                                                         flexShrink: 0
                                                     }} />
@@ -222,9 +222,28 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                             whiteSpace: 'nowrap',
                                                             overflow: 'hidden',
                                                             textOverflow: 'ellipsis',
-                                                            flex: 1
+                                                            flex: 1,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px'
                                                         }}>
                                                             {commit.message}
+                                                            {git.tags?.filter(t => t.hash === commit.hash || t.hash.startsWith(commit.hash) || commit.hash.startsWith(t.hash)).map(tag => (
+                                                                <span key={tag.name} style={{
+                                                                    fontSize: '0.6rem',
+                                                                    padding: '0 4px',
+                                                                    borderRadius: '3px',
+                                                                    background: isDark ? 'rgba(234, 179, 8, 0.2)' : 'rgba(234, 179, 8, 0.15)',
+                                                                    color: isDark ? '#facc15' : '#b45309',
+                                                                    border: `1px solid ${isDark ? 'rgba(234, 179, 8, 0.3)' : 'rgba(234, 179, 8, 0.2)'}`,
+                                                                    display: 'inline-flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '2px',
+                                                                    height: '16px'
+                                                                }}>
+                                                                    <Tag size={8} /> {tag.name}
+                                                                </span>
+                                                            ))}
                                                         </div>
                                                         <div style={{ color: isDark ? '#555' : '#ccc' }}>
                                                             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -305,6 +324,36 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                         >
                                                             <GitBranch size={12} /> Branch
                                                         </button>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                openModal({
+                                                                    title: 'Criar Tag neste Commit',
+                                                                    type: 'input',
+                                                                    placeholder: 'Nome da Tag (ex: v1.0.0)',
+                                                                    confirmLabel: 'Criar Tag',
+                                                                    initialValue: '',
+                                                                    onSubmit: (name) => {
+                                                                        if (name) gitCreateTag(name, commit.hash);
+                                                                    }
+                                                                });
+                                                            }}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                                                color: isDark ? '#999' : '#666',
+                                                                padding: '4px 10px',
+                                                                borderRadius: '4px',
+                                                                fontSize: '0.7rem',
+                                                                fontWeight: 600,
+                                                                cursor: 'pointer',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px'
+                                                            }}
+                                                        >
+                                                            <Tag size={12} /> Tag
+                                                        </button>
                                                     </div>
 
                                                     {/* Files List */}
@@ -338,15 +387,17 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                         </div>
                                                     )}
                                                 </div>
-                                            )}
+                                            )
+                                            }
                                         </div>
                                     );
                                 })
                             )}
                         </div>
-                    </ScrollArea>
+                    </ScrollArea >
                 </>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };

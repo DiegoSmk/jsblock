@@ -4,7 +4,7 @@ import { ScrollArea } from '../ui/ScrollArea';
 import { PanelSection } from './PanelSection';
 import { EmptyState } from './EmptyState';
 import { GitPanelConfig } from './GitPanelConfig';
-import { BarChart3, Calendar, Clock, Users, TrendingUp, Settings2 } from 'lucide-react';
+import { BarChart3, Calendar, Clock, Users, TrendingUp, Settings2, Tag, Trash2 } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 
 interface GitInfoPanelProps {
@@ -98,10 +98,10 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
 
     const getGithubColor = (count: number) => {
         if (count === 0) return isDark ? '#2d2d2d' : '#ebedf0';
-        if (count <= 2) return isDark ? '#0e3a66' : '#cce5ff';
-        if (count <= 5) return isDark ? '#1a5c99' : '#99caff';
-        if (count <= 10) return isDark ? '#2580cc' : '#4dabf7';
-        return isDark ? '#0070f3' : '#0070f3';
+        if (count <= 2) return isDark ? '#064e3b' : '#bbf7d0'; // Green-900 / Green-200
+        if (count <= 5) return isDark ? '#166534' : '#86efac'; // Green-800 / Green-300
+        if (count <= 10) return isDark ? '#15803d' : '#4ade80'; // Green-700 / Green-400
+        return isDark ? '#22c55e' : '#16a34a'; // Green-500 / Green-600
     };
 
     const cellSize = 10;
@@ -157,7 +157,7 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
 };
 
 export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] }) => {
-    const { git, gitPanelConfig } = useStore();
+    const { git, gitPanelConfig, gitDeleteTag } = useStore();
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(600);
     const [showSettings, setShowSettings] = useState(false);
@@ -218,10 +218,21 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
     };
 
     const toggleExpanded = (id: string) => {
-        if (!gitPanelConfig || !gitPanelConfig.sections) return;
-        const sections = gitPanelConfig.sections.map(s =>
-            s.id === id ? { ...s, expanded: !isExpanded(id) } : s
-        );
+        const currentConfig = gitPanelConfig || { sections: [] };
+        let sections = currentConfig.sections || [];
+
+        const existingSection = sections.find(s => s.id === id);
+
+        if (existingSection) {
+            sections = sections.map(s =>
+                s.id === id ? { ...s, expanded: !(s.expanded !== false) } : s
+            );
+        } else {
+            // If it doesn't exist in config, it means it's currently using default (Open/True).
+            // So we want to add it as Closed/False.
+            sections = [...sections, { id, visible: true, expanded: false }];
+        }
+
         useStore.getState().updateGitPanelConfig({ sections });
     };
 
@@ -252,8 +263,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                                             width: '100%',
                                             height: `${height}%`,
                                             background: isDark
-                                                ? 'linear-gradient(to top, #3b82f6, #06b6d4)'
-                                                : 'linear-gradient(to top, #2563eb, #2dd4bf)',
+                                                ? 'linear-gradient(to top, #15803d, #4ade80)'
+                                                : 'linear-gradient(to top, #16a34a, #86efac)',
                                             opacity: count === weeklyStats.max ? 1 : 0.8,
                                             transition: 'all 0.3s ease',
                                             cursor: 'pointer',
@@ -291,8 +302,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                                                 width: '100%',
                                                 height: `${height}%`,
                                                 background: isDark
-                                                    ? 'linear-gradient(to top, #d97706, #fbbf24)'
-                                                    : 'linear-gradient(to top, #f59e0b, #ffcc33)',
+                                                    ? 'linear-gradient(to top, #15803d, #4ade80)'
+                                                    : 'linear-gradient(to top, #16a34a, #86efac)',
                                                 opacity: count === hourlyStats.max ? 1 : 0.8,
                                                 transition: 'all 0.3s ease',
                                                 cursor: 'pointer',
@@ -332,6 +343,66 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                     ))}
                 </div>
             );
+            case 'tags': return (
+                <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {!git.tags || git.tags.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', color: isDark ? '#666' : '#999', fontSize: '0.75rem', fontStyle: 'italic' }}>
+                            Nenhuma tag encontrada neste repositório.
+                        </div>
+                    ) : (
+                        git.tags.map((tag) => (
+                            <div key={tag.name} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '8px',
+                                background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                                borderRadius: '6px',
+                                fontSize: '0.8rem'
+                            }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <Tag size={12} color={isDark ? '#eab308' : '#ca8a04'} />
+                                        <span style={{ fontWeight: 600, color: isDark ? '#fff' : '#333' }}>{tag.name}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.65rem', color: isDark ? '#777' : '#888' }}>
+                                        <span style={{ fontFamily: 'monospace' }}>{tag.hash.substring(0, 7)}</span>
+                                        {tag.date && <span>• {new Date(tag.date).toLocaleDateString()}</span>}
+                                    </div>
+                                    {tag.message && (
+                                        <div style={{ fontSize: '0.7rem', color: isDark ? '#aaa' : '#666', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {tag.message}
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (confirm(`Tem certeza que deseja deletar a tag ${tag.name}?`)) {
+                                            gitDeleteTag(tag.name);
+                                        }
+                                    }}
+                                    style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        color: isDark ? '#ef4444' : '#dc2626',
+                                        opacity: 0.6,
+                                        padding: '4px',
+                                        transition: 'opacity 0.2s',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                    onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}
+                                    title="Deletar Tag"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
+            );
             default: return null;
         }
     };
@@ -349,7 +420,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
         { id: 'stats', title: 'Estatísticas', icon: BarChart3, tooltip: 'Métricas reais do repositório' },
         { id: 'weekly', title: 'Atividade Semanal', icon: Calendar, tooltip: 'Distribuição por dia da semana' },
         { id: 'hourly', title: 'Horários de Pico', icon: Clock, tooltip: 'Análise de produtividade 24h' },
-        { id: 'contributors', title: 'Ranking de Contribuidores', icon: Users, tooltip: 'Liderança de commits por autor' }
+        { id: 'contributors', title: 'Ranking de Contribuidores', icon: Users, tooltip: 'Liderança de commits por autor' },
+        { id: 'tags', title: 'Tags & Versões', icon: Tag, tooltip: 'Gerenciamento de Tags do Repositório' }
     ];
 
     return (

@@ -13,7 +13,8 @@ interface ConfirmationModalProps {
     confirmLabel?: string;
     cancelLabel?: string;
     discardLabel?: string;
-    variant?: 'danger' | 'warning' | 'info';
+    variant?: 'danger' | 'warning' | 'info' | 'primary';
+    discardVariant?: 'danger' | 'warning' | 'info' | 'primary' | 'secondary';
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -26,7 +27,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     confirmLabel = "Confirmar",
     cancelLabel = "Cancelar",
     discardLabel,
-    variant = 'warning'
+    variant = 'warning',
+    discardVariant
 }) => {
     const { theme } = useStore();
     const isDark = theme === 'dark';
@@ -34,36 +36,46 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     if (!isOpen) return null;
 
     const getIcon = () => {
-        const isDanger = variant === 'danger' || title.toLowerCase().includes('deletar') || title.toLowerCase().includes('excluir');
-        const isUndo = title.toLowerCase().includes('desfazer') || title.toLowerCase().includes('undo');
+        const titleLower = title.toLowerCase();
+        const isDanger = variant === 'danger' || titleLower.includes('deletar') || titleLower.includes('excluir');
+        const isUndo = titleLower.includes('desfazer') || titleLower.includes('undo');
         const color = isDanger ? '#ef4444' : (isUndo ? (isDark ? '#4fc3f7' : '#0070f3') : '#eab308');
 
-        if (isUndo) {
-            return <RotateCcw size={20} color={color} />;
-        }
-        if (isDanger) {
-            return <Trash2 size={20} color={color} />;
-        }
+        if (isUndo) return <RotateCcw size={20} color={color} />;
+        if (isDanger) return <Trash2 size={20} color={color} />;
         return <AlertTriangle size={20} color={color} />;
     };
 
     const footer = (
-        <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'flex-end' }}>
+        <div style={{
+            display: 'flex',
+            gap: '8px',
+            width: '100%',
+            justifyContent: 'flex-end',
+            flexWrap: 'nowrap'
+        }}>
             <button
                 onClick={onCancel}
                 style={{
-                    padding: '10px 16px',
+                    padding: '8px 14px',
                     background: 'transparent',
-                    color: isDark ? '#888' : '#666',
-                    border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                    borderRadius: '8px',
+                    color: isDark ? '#999' : '#666',
+                    border: `1px solid ${isDark ? '#333' : '#d1d5db'}`,
+                    borderRadius: '6px',
                     cursor: 'pointer',
-                    fontSize: '0.9rem',
+                    fontSize: '0.85rem',
                     fontWeight: 600,
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    minWidth: '80px'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#2a2a2a' : '#f3f4f6'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb';
+                    e.currentTarget.style.borderColor = isDark ? '#444' : '#c1c5cb';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = isDark ? '#333' : '#d1d5db';
+                }}
             >
                 {cancelLabel}
             </button>
@@ -72,23 +84,34 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <button
                     onClick={onDiscard}
                     style={{
-                        padding: '10px 16px',
-                        background: 'transparent',
-                        color: '#ef4444',
-                        border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                        borderRadius: '8px',
+                        padding: '8px 14px',
+                        color: discardVariant === 'danger' ? '#f87171' : (isDark ? '#ccc' : '#444'),
+                        border: `1px solid ${discardVariant === 'danger' ? (isDark ? '#442222' : '#fecaca') : (isDark ? '#333' : '#d1d5db')}`,
+                        borderRadius: '6px',
                         cursor: 'pointer',
-                        fontSize: '0.9rem',
+                        fontSize: '0.85rem',
                         fontWeight: 600,
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
+                        background: discardVariant === 'danger'
+                            ? (isDark ? 'rgba(248, 113, 113, 0.05)' : 'rgba(239, 68, 68, 0.02)')
+                            : 'transparent'
                     }}
                     onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
-                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                        if (discardVariant === 'danger') {
+                            e.currentTarget.style.background = isDark ? 'rgba(248, 113, 113, 0.1)' : 'rgba(239, 68, 68, 0.05)';
+                            e.currentTarget.style.borderColor = '#f87171';
+                        } else {
+                            e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : '#f9fafb';
+                            e.currentTarget.style.borderColor = isDark ? '#444' : '#c1c5cb';
+                        }
                     }}
                     onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.borderColor = isDark ? '#333' : '#e5e7eb';
+                        e.currentTarget.style.background = discardVariant === 'danger'
+                            ? (isDark ? 'rgba(248, 113, 113, 0.05)' : 'rgba(239, 68, 68, 0.02)')
+                            : 'transparent';
+                        e.currentTarget.style.borderColor = discardVariant === 'danger'
+                            ? (isDark ? '#442222' : '#fecaca')
+                            : (isDark ? '#333' : '#d1d5db');
                     }}
                 >
                     {discardLabel || "Descartar"}
@@ -98,27 +121,38 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <button
                 onClick={onConfirm}
                 style={{
-                    padding: '10px 24px',
-                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    borderRadius: '6px',
                     cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
                     background: variant === 'danger'
-                        ? (isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)')
+                        ? (isDark ? '#991b1b' : '#dc2626')
                         : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
-                    color: variant === 'danger' ? '#f87171' : (isDark ? '#4fc3f7' : '#0070f3'),
-                    border: `1px solid ${variant === 'danger'
-                        ? (isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)')
-                        : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
+                    color: variant === 'danger'
+                        ? '#fff'
+                        : (isDark ? '#4fc3f7' : '#0070f3'),
+                    border: variant === 'danger'
+                        ? 'none'
+                        : `1px solid ${isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)'}`,
                     transition: 'all 0.2s',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '6px',
+                    boxShadow: 'none'
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.filter = 'brightness(1.1)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.filter = 'none';
+                    e.currentTarget.style.transform = 'translateY(0)';
                 }}
             >
                 {title.toLowerCase().includes('undo') || title.toLowerCase().includes('desfazer')
-                    ? <RotateCcw size={16} />
-                    : (variant === 'danger' ? <Trash2 size={16} /> : <Check size={16} />)}
+                    ? <RotateCcw size={14} />
+                    : (variant === 'danger' ? <Trash2 size={14} /> : <Check size={14} />)}
                 {confirmLabel}
             </button>
         </div>
@@ -132,7 +166,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             isDark={isDark}
             footer={footer}
             headerIcon={getIcon()}
-            maxWidth="420px"
+            maxWidth="550px"
         >
             <div style={{
                 fontSize: '0.95rem',

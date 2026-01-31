@@ -1,10 +1,10 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
 import { Modal } from '../ui/Modal';
-import { FileText, User, Calendar, Hash, History, GitCommit, Copy, Check, GitBranch, Plus, Minus } from 'lucide-react';
+import { FileText, User, Calendar, Hash, History, GitCommit, Copy, Check, GitBranch, Plus, Minus, Tag } from 'lucide-react';
 
 export const CommitDetailModal: React.FC = () => {
-    const { commitDetail, closeCommitDetail, theme, checkoutCommit, openModal, createBranch } = useStore();
+    const { commitDetail, closeCommitDetail, theme, checkoutCommit, openModal, createBranch, gitCreateTag } = useStore();
     const isDark = theme === 'dark';
     const [copiedHash, setCopiedHash] = React.useState(false);
 
@@ -29,6 +29,21 @@ export const CommitDetailModal: React.FC = () => {
                 initialValue: '',
                 onSubmit: (name) => {
                     if (name) createBranch(name, commit.hash);
+                }
+            });
+        }
+    };
+
+    const handleCreateTag = () => {
+        if (commit) {
+            openModal({
+                title: 'Criar Tag neste Commit',
+                type: 'input',
+                placeholder: 'Nome da Tag (ex: v1.0.0)',
+                confirmLabel: 'Criar Tag',
+                initialValue: '',
+                onSubmit: (name) => {
+                    if (name) gitCreateTag(name, commit.hash);
                 }
             });
         }
@@ -358,6 +373,27 @@ export const CommitDetailModal: React.FC = () => {
                     >
                         <GitBranch size={15} />
                         Nova Branch
+                    </button>
+
+                    <button
+                        onClick={handleCreateTag}
+                        style={{
+                            padding: '9px 16px',
+                            background: 'transparent',
+                            color: isDark ? '#999' : '#666',
+                            border: `1.5px solid ${isDark ? '#3a3a3a' : '#d1d5db'}`,
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.8rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <Tag size={15} />
+                        Nova Tag
                     </button>
 
                     <button

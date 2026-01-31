@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Minus, RotateCcw, List as ListIcon, Indent } from 'lucide-react';
+import { Plus, Minus, RotateCcw, List as ListIcon, Indent, Eraser, EyeOff } from 'lucide-react';
 import { SectionHeader, ActionToolbar } from './SharedComponents';
 import { FileTreeView } from './FileTreeView';
 
@@ -20,14 +20,35 @@ interface GitStatusGroupsProps {
     gitUnstage: (path: string) => void;
     gitStage: (path: string) => void;
     gitDiscard: (path: string) => void;
+    gitClean: () => Promise<void>;
+    gitIgnore: (pattern: string) => Promise<void>;
+    setConfirmationModal: (config: any) => void;
 }
 
 export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
     isDark, staged, unstaged,
     gitUnstageAll, gitStageAll, gitDiscardAll,
-    gitUnstage, gitStage, gitDiscard
+    gitUnstage, gitStage, gitDiscard,
+    gitClean, gitIgnore, setConfirmationModal
 }) => {
     const [isTreeView, setIsTreeView] = useState(false);
+
+    const untrackedCount = unstaged.filter(f => f.status === 'untracked' || f.workingTree === '?').length; // Check strictly for untracked
+
+    const handleClean = () => {
+        setConfirmationModal({
+            isOpen: true,
+            title: 'Limpar Arquivos Não Rastreados',
+            message: `Isso apagará PERMANENTEMENTE ${untrackedCount} arquivos/pastas não rastreados que não estão no .gitignore. Você não poderá desfazer esta ação.`,
+            confirmLabel: 'Limpar Tudo',
+            variant: 'danger',
+            onConfirm: async () => {
+                await gitClean();
+                setConfirmationModal(null);
+            },
+            onCancel: () => setConfirmationModal(null)
+        });
+    };
 
     const TreeToggle = ({ count }: { count: number }) => (
         <button
@@ -192,6 +213,28 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                         <RotateCcw size={14} />
                         <span className="btn-text">Discard All Changes</span>
                     </button>
+                    {untrackedCount > 0 && (
+                        <button
+                            onClick={handleClean}
+                            className="git-button-base"
+                            style={{
+                                border: `1px solid ${isDark ? '#444' : '#ddd'}`,
+                                color: isDark ? '#fbbf24' : '#d97706',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = isDark ? 'rgba(251, 191, 36, 0.08)' : 'rgba(245, 158, 11, 0.06)';
+                                e.currentTarget.style.borderColor = isDark ? '#fbbf24' : '#d97706';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.borderColor = isDark ? '#444' : '#ddd';
+                            }}
+                            title="Remover todos os arquivos não rastreados (Git Clean)"
+                        >
+                            <Eraser size={14} />
+                            <span className="btn-text">Clean Untracked</span>
+                        </button>
+                    )}
                 </ActionToolbar>
             )}
             <div style={{ padding: '4px 0' }}>
@@ -222,6 +265,35 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                                 </div>
                                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</span>
                                 <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button
+                                        onClick={() => {
+                                            const ext = file.path.includes('.') ? `*.${file.path.split('.').pop()}` : null;
+                                            setConfirmationModal({
+                                                isOpen: true,
+                                                title: 'Ignorar Arquivo',
+                                                message: `Como você deseja ignorar "${file.path}" no controle de versão?`,
+                                                confirmLabel: 'Ignorar este Arquivo',
+                                                cancelLabel: 'Cancelar',
+                                                discardLabel: ext ? `Ignorar todos ${ext}` : undefined,
+                                                variant: 'primary',
+                                                discardVariant: 'secondary',
+                                                onConfirm: () => {
+                                                    gitIgnore(file.path);
+                                                    setConfirmationModal(null);
+                                                },
+                                                onDiscard: ext ? () => {
+                                                    gitIgnore(ext);
+                                                    setConfirmationModal(null);
+                                                } : undefined,
+                                                onCancel: () => setConfirmationModal(null)
+                                            });
+                                        }}
+                                        title="Adicionar ao .gitignore"
+                                        className="git-file-action-button"
+                                        style={{ color: isDark ? '#aaa' : '#666' }}
+                                    >
+                                        <EyeOff size={14} />
+                                    </button>
                                     <button
                                         onClick={() => gitDiscard(file.path)}
                                         title="Descartar Alterações"

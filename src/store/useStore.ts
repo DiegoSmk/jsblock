@@ -65,6 +65,13 @@ type GitProfile = {
     customTagName?: string;
 };
 
+type GitTag = {
+    name: string;
+    hash: string;
+    message?: string;
+    date?: string;
+};
+
 type CommitTemplate = {
     id: string;
     name: string;
@@ -143,7 +150,8 @@ type AppState = {
         confirmLabel?: string;
         cancelLabel?: string;
         discardLabel?: string;
-        variant?: 'danger' | 'warning' | 'info';
+        variant?: 'danger' | 'warning' | 'info' | 'primary';
+        discardVariant?: 'danger' | 'warning' | 'info' | 'primary' | 'secondary';
     } | null;
     openModal: (config: Omit<AppState['modal'], 'isOpen'>) => void;
     closeModal: () => void;
@@ -201,6 +209,7 @@ type AppState = {
             repoSize: string;
             projectSize: string;
         };
+        tags: GitTag[];
         isInitialized: boolean;
     };
     gitProfiles: GitProfile[];
@@ -247,6 +256,13 @@ type AppState = {
     updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
     resetToGlobal: () => Promise<void>;
     getCommitFiles: (hash: string) => Promise<GitCommitFile[]>;
+
+    // Tags
+    gitCreateTag: (name: string, hash: string, message?: string) => Promise<void>;
+    gitDeleteTag: (name: string) => Promise<void>;
+    fetchTags: () => Promise<void>;
+    gitClean: () => Promise<void>;
+    gitIgnore: (pattern: string) => Promise<void>;
 
     // Commit Templates
     addCommitTemplate: (template: Omit<CommitTemplate, 'id'>) => void;
@@ -331,6 +347,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             repoSize: '',
             projectSize: ''
         },
+        tags: [],
         isInitialized: false
     },
 
@@ -1244,6 +1261,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }));
 
             await get().fetchStashes();
+            await get().fetchTags();
         } catch (err) {
             console.error('Git refresh failed:', err);
             set((state: any) => ({
@@ -1474,6 +1492,118 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             set((state: any) => ({ git: { ...state.git, stashes } }));
         } catch (e) {
             console.error('Error fetching stashes', e);
+        }
+    },
+
+    fetchTags: async () => {
+        const { openedFolder } = get();
+        if (!openedFolder || !(window as any).electronAPI) return;
+        try {
+            // Using for-each-ref for structured output: name | hash | subject (message) | date
+            const res = await (window as any).electronAPI.gitCommand(openedFolder, [
+                'for-each-ref',
+                '--sort=-creatordate',
+                '--format=%(refname:short)|||%(objectname)|||%(contents:subject)|||%(creatordate:iso8601)',
+                'refs/tags'
+            ]);
+
+            const tags: GitTag[] = res.stdout.split('\n')
+                .filter((l: string) => l.trim())
+                .map((line: string) => {
+                    const parts = line.split('|||');
+                    if (parts.length >= 2) {
+                        return {
+                            name: parts[0],
+                            hash: parts[1],
+                            message: parts[2] || undefined,
+                            date: parts[3] || undefined
+                        };
+                    }
+                    return null;
+                })
+                .filter(Boolean);
+
+            set((state: any) => ({ git: { ...state.git, tags } }));
+        } catch (e) {
+            console.error('Error fetching tags', e);
+        }
+    },
+
+    gitCreateTag: async (name: string, hash: string, message?: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            const args = ['tag'];
+            if (message) {
+                args.push('-a', name, '-m', message, hash);
+            } else {
+                args.push(name, hash);
+            }
+            await (window as any).electronAPI.gitCommand(openedFolder, args);
+            await refreshGit();
+            get().addToast({ type: 'success', message: `Tag ${name} criada com sucesso!` });
+        } catch (e) {
+            console.error(e);
+            get().addToast({ type: 'error', message: `Erro ao criar tag ${name}` });
+        }
+    },
+
+    gitDeleteTag: async (name: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['tag', '-d', name]);
+            await refreshGit();
+            get().addToast({ type: 'success', message: `Tag ${name} deletada.` });
+        } catch (e) {
+            get().addToast({ type: 'error', message: `Erro ao deletar tag ${name}` });
+        }
+    },
+
+    gitClean: async () => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+        try {
+            await (window as any).electronAPI.gitCommand(openedFolder, ['clean', '-fd']);
+            await refreshGit();
+            get().addToast({ type: 'success', message: 'Diretório limpo com sucesso (arquivos untracked removidos).' });
+        } catch (e) {
+            console.error(e);
+            get().addToast({ type: 'error', message: 'Erro ao limpar diretório.' });
+        }
+    },
+
+    gitIgnore: async (pattern: string) => {
+        const { openedFolder, refreshGit } = get();
+        if (!openedFolder) return;
+
+        // Use path separator logic if needed, but for now assuming forward slashes or electron handles it
+        const gitignorePath = openedFolder.endsWith('/') || openedFolder.endsWith('\\')
+            ? `${openedFolder}.gitignore`
+            : `${openedFolder}/.gitignore`;
+
+        try {
+            let content = '';
+            try {
+                content = await (window as any).electronAPI.readFile(gitignorePath);
+            } catch (e) {
+                // File likely doesn't exist, start empty
+            }
+
+            const lines = content.split('\n').map(l => l.trim());
+            if (!lines.includes(pattern)) {
+                const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+                const newContent = `${content}${separator}${pattern}\n`;
+
+                await (window as any).electronAPI.writeFile(gitignorePath, newContent);
+                await refreshGit();
+                get().addToast({ type: 'success', message: `"${pattern}" adicionado ao .gitignore` });
+            } else {
+                get().addToast({ type: 'info', message: `"${pattern}" já está no .gitignore` });
+            }
+        } catch (e) {
+            console.error(e);
+            get().addToast({ type: 'error', message: 'Erro ao atualizar .gitignore' });
         }
     },
 
