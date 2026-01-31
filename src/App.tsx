@@ -6,7 +6,10 @@ import {
   MiniMap,
   useReactFlow,
   ReactFlowProvider,
-  type NodeTypes
+  type NodeTypes,
+  type Node,
+  type Edge,
+  type Connection
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
 import { Allotment } from 'allotment';
@@ -22,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
 import { loader } from '@monaco-editor/react';
+import type { ElectronAPI } from './types/electron';
 
 // Configure Monaco loader to use local files copied to public/monaco-editor
 loader.config({
@@ -87,7 +91,7 @@ function FlowContent() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        saveFile();
+        saveFile().catch(console.error);
       }
     };
 
@@ -102,7 +106,7 @@ function FlowContent() {
   // Edge Context Menu state
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
-  const onEdgeClick = useCallback((event: React.MouseEvent, edge: any) => {
+  const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
     event.stopPropagation();
     setEdgeMenu({
@@ -120,17 +124,17 @@ function FlowContent() {
     if (!edgeMenu) return;
 
     if (action === 'delete') {
-      deleteElements({ edges: [{ id: edgeMenu.id }] });
+      void deleteElements({ edges: [{ id: edgeMenu.id }] });
     } else if (action === 'comment') {
       const edge = getEdge(edgeMenu.id);
       if (edge) {
-        const currentLabel = edge.label as string || '';
+        const currentLabel = (edge.label as string) ?? '';
         openModal({
           title: currentLabel ? t('edge.edit_comment') : t('edge.add_comment'),
           initialValue: currentLabel,
           type: 'prompt',
           placeholder: t('edge.comment_prompt'),
-          confirmLabel: 'Salvar',
+          confirmLabel: 'Save',
           onSubmit: (newLabel: string) => {
             updateEdge(edgeMenu.id, { label: newLabel });
           }
@@ -140,24 +144,24 @@ function FlowContent() {
     setEdgeMenu(null);
   };
 
-  const scopeNodes = nodes.filter((n: any) =>
+  const scopeNodes = nodes.filter((n: Node) =>
     n.id !== 'node-js-runtime' && (
       n.data?.scopeId === activeScopeId ||
       (activeScopeId === 'root' && (!n.data?.scopeId || n.data?.scopeId === 'root'))
     )
   );
 
-  const hasNativeCalls = edges.some((e: any) =>
+  const hasNativeCalls = edges.some((e: Edge) =>
     e.source === 'node-js-runtime' &&
-    scopeNodes.some((n: any) => n.id === e.target)
+    scopeNodes.some((n: Node) => n.id === e.target)
   );
 
   const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
-  const filteredNodes: any[] = (hasNativeCalls && runtimeNode)
+  const filteredNodes: Node[] = (hasNativeCalls && runtimeNode)
     ? [...scopeNodes, runtimeNode]
     : scopeNodes;
 
-  const visibleNodeIds = new Set(filteredNodes.map((n: any) => n.id));
+  const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
   const filteredEdges = edges.filter(e => {
     if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
     if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
@@ -167,7 +171,7 @@ function FlowContent() {
   useEffect(() => {
     if (filteredNodes.length > 0) {
       const timer = setTimeout(() => {
-        fitView({ padding: 0.2, duration: 400, includeHiddenNodes: false });
+        fitView({ padding: 0.2, duration: 400, includeHiddenNodes: false }).catch(console.error);
       }, 50);
       return () => clearTimeout(timer);
     }
@@ -178,7 +182,7 @@ function FlowContent() {
   const hasComment = !!currentEdgeLabel;
 
   const isValidConnection = useCallback(
-    (connection: any) => connection.source !== connection.target,
+    (connection: Connection) => connection.source !== connection.target,
     []
   );
 
@@ -319,7 +323,7 @@ function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        saveFile();
+        saveFile().catch(console.error);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -329,8 +333,9 @@ function App() {
   useEffect(() => {
     // Professional approach: Wait for the next tick to ensure DOM is rendered
     const timer = setTimeout(() => {
-      if ((window as any).electronAPI?.appReady) {
-        (window as any).electronAPI.appReady();
+      const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+      if (electronAPI?.appReady) {
+        void electronAPI.appReady();
       }
     }, 100);
     return () => clearTimeout(timer);
@@ -340,10 +345,17 @@ function App() {
     if (value !== undefined) setCode(value);
   }, [setCode]);
 
-  const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      saveFile();
+  const handleEditorDidMount = useCallback((editor: unknown, monaco: unknown) => {
+    const editorInstance = editor as { addCommand: (keyMod: number, callback: () => void) => void };
+    const monacoInstance = monaco as { KeyMod: { CtrlCmd: number }; KeyCode: { KeyS: number } };
+    
+    editorInstance.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS, () => {
+      saveFile().catch(console.error);
     });
+  }, [saveFile]);
+
+  const handleSaveFile = useCallback(() => {
+    void saveFile();
   }, [saveFile]);
 
   return (
@@ -382,8 +394,8 @@ function App() {
           zIndex: 10,
           userSelect: 'none',
           WebkitAppRegion: 'drag'
-        } as any}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', WebkitAppRegion: 'no-drag' } as any}>
+        } as React.CSSProperties}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
             {['explorer', 'library', 'git'].includes(activeSidebarTab) && (
               <button
                 onClick={toggleSidebar}
@@ -502,20 +514,22 @@ function App() {
               onClick={() => {
                 const randomIndex = Math.floor(Math.random() * 5); // Fallback random
                 openModal({
-                  title: 'Sobre',
+                  title: 'About',
                   initialValue: '',
                   type: 'about',
                   payload: { fallenIndex: randomIndex },
-                  confirmLabel: 'Fechar',
-                  onSubmit: () => { }
+                  confirmLabel: 'Close',
+                  onSubmit: () => {
+                    // Modal closed
+                  }
                 });
               }}
             >
               <span className="logo-js" style={{ fontSize: '14px' }}>JS</span>
               <div className="logo-blocks" style={{ gap: '2px' }}>
-                {['B', 'L', 'O', 'C', 'K'].map((letter, i) => (
+                {['B', 'L', 'O', 'C', 'K'].map((letter) => (
                   <div
-                    key={i}
+                    key={`logo-${letter}`}
                     className="logo-block"
                     style={{
                       width: '14px',
@@ -528,13 +542,16 @@ function App() {
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
+                      const randomIndex = Math.floor(Math.random() * 5);
                       openModal({
-                        title: 'Sobre',
+                        title: 'About',
                         initialValue: '',
                         type: 'about',
-                        payload: { fallenIndex: i },
-                        confirmLabel: 'Fechar',
-                        onSubmit: () => { }
+                        payload: { fallenIndex: randomIndex },
+                        confirmLabel: 'Close',
+                        onSubmit: () => {
+                          // Modal closed
+                        }
                       });
                     }}
                   >
@@ -546,7 +563,7 @@ function App() {
 
             {activeSidebarTab === 'settings' && (
               <div style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.5, color: isDark ? '#fff' : '#000', marginLeft: '12px' }}>
-                Sistema / Configurações
+                System / Settings
               </div>
             )}
 
@@ -573,15 +590,19 @@ function App() {
               <FileControls
                 isDark={isDark}
                 isDirty={isDirty}
-                onSave={saveFile}
-                onClose={() => setSelectedFile(null)}
+                onSave={handleSaveFile}
+                onClose={() => {
+                  void setSelectedFile(null);
+                }}
               />
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', WebkitAppRegion: 'no-drag' } as any}>
+          <div style={{ display: 'flex', gap: '8px', WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
             <button
-              onClick={forceLayout}
+              onClick={() => {
+                forceLayout();
+              }}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -603,10 +624,14 @@ function App() {
             </button>
 
             <button
-              onClick={async () => {
-                if ((window as any).electronAPI) {
-                  const path = await (window as any).electronAPI.selectFolder();
-                  if (path) setOpenedFolder(path);
+              onClick={() => {
+                const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+                if (electronAPI) {
+                  electronAPI.selectFolder()
+                    .then((path) => {
+                      if (path) setOpenedFolder(path);
+                    })
+                    .catch(console.error);
                 }
               }}
               style={{
@@ -630,7 +655,10 @@ function App() {
             {/* Window Controls */}
             <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
               <button
-                onClick={() => (window as any).electronAPI?.windowMinimize()}
+                onClick={() => {
+                  const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+                  electronAPI?.windowMinimize().catch(console.error);
+                }}
                 title={t('app.window_controls.minimize')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
@@ -639,7 +667,10 @@ function App() {
                 <Minus size={16} />
               </button>
               <button
-                onClick={() => (window as any).electronAPI?.windowMaximize()}
+                onClick={() => {
+                  const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+                  electronAPI?.windowMaximize().catch(console.error);
+                }}
                 title={t('app.window_controls.maximize')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
@@ -648,7 +679,10 @@ function App() {
                 <Square size={14} />
               </button>
               <button
-                onClick={() => (window as any).electronAPI?.windowClose()}
+                onClick={() => {
+                  const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+                  electronAPI?.windowClose().catch(console.error);
+                }}
                 title={t('app.window_controls.close')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
@@ -692,7 +726,9 @@ function App() {
                         isDark={isDark}
                         logs={git.log}
                         isOpen={true}
-                        onToggle={() => { }}
+                        onToggle={() => {
+                          // Toggle handled by parent
+                        }}
                       />
                     )}
                   </div>

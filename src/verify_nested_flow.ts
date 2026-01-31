@@ -2,14 +2,14 @@
 import { generateCodeFromFlow } from '../src/logic/CodeGenerator';
 import type { Node, Edge } from '@xyflow/react';
 
-console.log("Starting Verification of NESTED Control Flow...");
+console.warn("Starting Verification of NESTED Control Flow...");
 
 let allPassed = true;
 
 const assertCode = (testName: string, generated: string, expected: string) => {
     const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
     if (normalize(generated) === normalize(expected)) {
-        console.log(`\n✅ ${testName} PASSED`);
+        console.warn(`\n✅ ${testName} PASSED`);
     } else {
         console.error(`\n❌ ${testName} FAILED`);
         console.error("EXPECTED:\n" + expected);
@@ -56,19 +56,6 @@ while (true) {
 // if (true) { for(let i=0; i<10; i++) { break; } }
 // ==========================================
 {
-    const inputCode = `
-if (true) {}
-for (let i = 0; i < 10; i++) {}
-break;
-`;
-
-    // Note: 'break' is usually a statement. For simplicity in this AST generator context, 
-    // we often treat specific keywords as statements if they exist in source.
-    // However, our parser treats expressions. `break` is a Statement.
-    // Let's use console.log again or just an empty block if possible, or a break statement if we parsed it.
-    // Our CodeParser might not parse standalone 'break' into a specific node type unless handled.
-    // Let's use a function call "doSomething()" to be safe.
-
     // Changing input to use function call
     const inputCodeSafe = `
 if (true) {}
@@ -98,4 +85,7 @@ if (true) {
     assertCode("FOR inside IF", generated, expected);
 }
 
-if (!allPassed) process.exit(1);
+if (!allPassed) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    process.exit(1);
+}

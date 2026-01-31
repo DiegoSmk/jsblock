@@ -22,7 +22,7 @@ export const FileControls: React.FC<FileControlsProps> = ({ isDark, isDirty, onS
         }}>
             <button
                 onClick={onSave}
-                title={isDirty ? "Salvar alterações (Ctrl+S)" : "Nenhuma alteração pendente (Ctrl+S)"}
+                title={isDirty ? "Save changes (Ctrl+S)" : "No pending changes (Ctrl+S)"}
                 style={{
                     background: 'transparent',
                     border: 'none',
@@ -42,7 +42,7 @@ export const FileControls: React.FC<FileControlsProps> = ({ isDark, isDirty, onS
 
             <button
                 onClick={onClose}
-                title="Fechar arquivo"
+                title="Close file"
                 style={{
                     background: 'transparent',
                     border: 'none',

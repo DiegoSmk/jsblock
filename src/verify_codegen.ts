@@ -2,7 +2,7 @@
 import { generateCodeFromFlow } from '../src/logic/CodeGenerator';
 import type { Node, Edge } from '@xyflow/react';
 
-console.log("Starting Verification of For Loop Code Generation...");
+console.warn("Starting Verification of For Loop Code Generation...");
 
 // 1. Setup Input Code
 // We simulate the state where the user has a For Loop and a Call, but they are flat in the file.
@@ -45,10 +45,10 @@ const edges: Edge[] = [
 // 4. Run Generator
 const generatedCode = generateCodeFromFlow(inputCode, nodes, edges);
 
-console.log("\n--- Input Code ---");
-console.log(inputCode.trim());
-console.log("\n--- Generated Code ---");
-console.log(generatedCode.trim());
+console.warn("\n--- Input Code ---");
+console.warn(inputCode.trim());
+console.warn("\n--- Generated Code ---");
+console.warn(generatedCode.trim());
 
 // 5. Assertions
 const expectedCode = `
@@ -61,7 +61,7 @@ for (let i = 0; i < 10; i++) {
 const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
 
 if (normalize(generatedCode) === normalize(expectedCode)) {
-    console.log("\n✅ VERIFICATION PASSED: Code generated correctly.");
+    console.warn("\n✅ VERIFICATION PASSED: Code generated correctly.");
 } else {
     console.error("\n❌ VERIFICATION FAILED: Output does not match expected.");
     console.error("Expected equivalent of:", expectedCode);

@@ -14,74 +14,8 @@ error TS18003: No inputs were found in config file '/home/diego/Documentos/proje
 error TS18003: No inputs were found in config file '/home/diego/Documentos/projeto/js+/js-blueprints-electron/tsconfig.node.json'. Specified 'include' paths were '["vite.config.ts"]' and 'exclude' paths were '[]'
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/App.tsx
-   90:9    error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  105:67   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  109:7    error  Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  109:16   error  Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
-  123:7    error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  143:39   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  144:7    error  Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
-  145:9    error  Unsafe member access .data on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-  146:40   error  Unsafe member access .data on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-  146:59   error  Unsafe member access .data on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-  150:41   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  151:7    error  Unsafe member access .source on an `any` value                                                                                                                      @typescript-eslint/no-unsafe-member-access
-  152:25   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  152:35   error  Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
-  152:44   error  Unsafe member access .target on an `any` value                                                                                                                      @typescript-eslint/no-unsafe-member-access
-  156:24   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  160:56   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  160:64   error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
-  160:66   error  Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
-  170:9    error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  181:18   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  181:37   error  Unsafe member access .source on an `any` value                                                                                                                      @typescript-eslint/no-unsafe-member-access
-  181:59   error  Unsafe member access .target on an `any` value                                                                                                                      @typescript-eslint/no-unsafe-member-access
-  322:9    error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  332:22   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  332:27   error  Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  333:9    error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  333:20   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  333:25   error  Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  343:53   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  343:66   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  344:5    error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  344:12   error  Unsafe member access .addCommand on an `any` value                                                                                                                  @typescript-eslint/no-unsafe-member-access
-  344:30   error  Unsafe member access .KeyMod on an `any` value                                                                                                                      @typescript-eslint/no-unsafe-member-access
-  344:54   error  Unsafe member access .KeyCode on an `any` value                                                                                                                     @typescript-eslint/no-unsafe-member-access
-  345:7    error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  374:24   error  Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  385:14   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  386:23   error  Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  386:108  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  510:35   error  Unexpected empty method 'onSubmit'                                                                                                                                  @typescript-eslint/no-empty-function
-  518:26   error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
-  537:41   error  Unexpected empty method 'onSubmit'                                                                                                                                  @typescript-eslint/no-empty-function
-  576:24   error  Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  577:25   error  Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  582:23   error  Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  582:86   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  606:23   error  Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  607:32   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  607:37   error  Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  608:25   error  Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  608:38   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  608:49   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  608:54   error  Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  609:45   error  Unsafe argument of type `any` assigned to a parameter of type `string | null`                                                                                       @typescript-eslint/no-unsafe-argument
-  633:32   error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
-  633:32   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  633:43   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  633:48   error  Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  642:32   error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
-  642:32   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  642:43   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  642:48   error  Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  651:32   error  Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
-  651:32   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  651:43   error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  651:48   error  Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  695:41   error  Unexpected empty arrow function                                                                                                                                     @typescript-eslint/no-empty-function
+  592:25  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  600:17  error  Unsafe call of a type that could not be resolved                                   @typescript-eslint/no-unsafe-call
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/ConfirmationModal.tsx
   117:35  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
@@ -254,26 +188,8 @@ error TS18003: No inputs were found in config file '/home/diego/Documentos/proje
   157:46  error  Unsafe member access .join on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/GitPanel.tsx
-   43:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/GitPanel.tsx:43:13
-  41 |     useEffect(() => {
-  42 |         if (openedFolder) {
-> 43 |             setIsLoading(true);
-     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  44 |             Promise.all([refreshGit(), fetchGitConfig()]).finally(() => {
-  45 |                 setIsLoading(false);
-  46 |             });  react-hooks/set-state-in-effect
-   44:13  error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-floating-promises
-   48:8   warning  React Hook useEffect has missing dependencies: 'fetchGitConfig' and 'refreshGit'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
-  122:27  error    Promise-returning function provided to attribute where a void return was expected                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-misused-promises
-  123:40  error    Promise-returning function provided to attribute where a void return was expected                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-misused-promises
+  127:27  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
+  128:40  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/IfNode.tsx
    5:54  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
@@ -448,128 +364,6 @@ Calling setState synchronously within an effect body causes cascading renders th
   145:46   error  Promise-returning function provided to attribute where a void return was expected                                      @typescript-eslint/no-misused-promises
   274:62   error  Unsafe argument of type `any` assigned to a parameter of type `SetStateAction<"terminal" | "appearance" | "general">`  @typescript-eslint/no-unsafe-argument
   274:72   error  Unexpected any. Specify a different type                                                                               @typescript-eslint/no-explicit-any
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx
-  73:14  error  Error: Cannot create components during render
-
-Components created during render will reset their state each time they are created. Declare components outside of render.
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:73:14
-  71 |             position: 'relative' // For absolute positioning inside
-  72 |         }}>
-> 73 |             <RibbonButton
-     |              ^^^^^^^^^^^^ This component is created during render
-  74 |                 icon={Box}
-  75 |                 active={activeSidebarTab === 'explorer' || activeSidebarTab === 'library'}
-  76 |                 onClick={() => setSidebarTab('explorer')}
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:18:26
-  16 |     const isDark = theme === 'dark';
-  17 |
-> 18 |     const RibbonButton = ({ icon: Icon, active, onClick, title, bottom, disabled }: { icon: LucideIcon, active?: boolean, onClick: () => void, title: string, bottom?: boolean, disabled?: boolean }) => (
-     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 19 |         <button
-     | ^^^^^^^^^^^^^^^
-> 20 |             onClick={disabled ? undefined : onClick}
-     …
-     | ^^^^^^^^^^^^^^^
-> 57 |         </button>
-     | ^^^^^^^^^^^^^^^
-> 58 |     );
-     | ^^^^^^ The component is created during render here
-  59 |
-  60 |     return (
-  61 |         <div style={{  react-hooks/static-components
-  79:14  error  Error: Cannot create components during render
-
-Components created during render will reset their state each time they are created. Declare components outside of render.
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:79:14
-  77 |                 title={t('app.tooltips.blueprints')}
-  78 |             />
-> 79 |             <RibbonButton
-     |              ^^^^^^^^^^^^ This component is created during render
-  80 |                 icon={GitBranch}
-  81 |                 active={activeSidebarTab === 'git'}
-  82 |                 onClick={() => setSidebarTab('git')}
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:18:26
-  16 |     const isDark = theme === 'dark';
-  17 |
-> 18 |     const RibbonButton = ({ icon: Icon, active, onClick, title, bottom, disabled }: { icon: LucideIcon, active?: boolean, onClick: () => void, title: string, bottom?: boolean, disabled?: boolean }) => (
-     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 19 |         <button
-     | ^^^^^^^^^^^^^^^
-> 20 |             onClick={disabled ? undefined : onClick}
-     …
-     | ^^^^^^^^^^^^^^^
-> 57 |         </button>
-     | ^^^^^^^^^^^^^^^
-> 58 |     );
-     | ^^^^^^ The component is created during render here
-  59 |
-  60 |     return (
-  61 |         <div style={{                                                    react-hooks/static-components
-  89:14  error  Error: Cannot create components during render
-
-Components created during render will reset their state each time they are created. Declare components outside of render.
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:89:14
-  87 |             <div style={{ flex: 1 }} />
-  88 |
-> 89 |             <RibbonButton
-     |              ^^^^^^^^^^^^ This component is created during render
-  90 |                 icon={isDark ? Sun : Moon}
-  91 |                 onClick={toggleTheme}
-  92 |                 title={isDark ? t('app.tooltips.theme_light') : t('app.tooltips.theme_dark')}
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:18:26
-  16 |     const isDark = theme === 'dark';
-  17 |
-> 18 |     const RibbonButton = ({ icon: Icon, active, onClick, title, bottom, disabled }: { icon: LucideIcon, active?: boolean, onClick: () => void, title: string, bottom?: boolean, disabled?: boolean }) => (
-     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 19 |         <button
-     | ^^^^^^^^^^^^^^^
-> 20 |             onClick={disabled ? undefined : onClick}
-     …
-     | ^^^^^^^^^^^^^^^
-> 57 |         </button>
-     | ^^^^^^^^^^^^^^^
-> 58 |     );
-     | ^^^^^^ The component is created during render here
-  59 |
-  60 |     return (
-  61 |         <div style={{                                           react-hooks/static-components
-  94:14  error  Error: Cannot create components during render
-
-Components created during render will reset their state each time they are created. Declare components outside of render.
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:94:14
-  92 |                 title={isDark ? t('app.tooltips.theme_light') : t('app.tooltips.theme_dark')}
-  93 |             />
-> 94 |             <RibbonButton
-     |              ^^^^^^^^^^^^ This component is created during render
-  95 |                 icon={Settings}
-  96 |                 active={activeSidebarTab === 'settings'}
-  97 |                 onClick={() => setSidebarTab('settings')}
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SideRibbon.tsx:18:26
-  16 |     const isDark = theme === 'dark';
-  17 |
-> 18 |     const RibbonButton = ({ icon: Icon, active, onClick, title, bottom, disabled }: { icon: LucideIcon, active?: boolean, onClick: () => void, title: string, bottom?: boolean, disabled?: boolean }) => (
-     |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 19 |         <button
-     | ^^^^^^^^^^^^^^^
-> 20 |             onClick={disabled ? undefined : onClick}
-     …
-     | ^^^^^^^^^^^^^^^
-> 57 |         </button>
-     | ^^^^^^^^^^^^^^^
-> 58 |     );
-     | ^^^^^^ The component is created during render here
-  59 |
-  60 |     return (
-  61 |         <div style={{  react-hooks/static-components
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/SwitchNode.tsx
     7:62  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
@@ -798,20 +592,19 @@ Calling setState synchronously within an effect body causes cascading renders th
   30:8   warning  React Hook useEffect has a missing dependency: 'isExpanded'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitGraphView.tsx
-   68:38  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
-   80:38  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
-   91:38  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
-  103:38  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
-  112:38  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
-  146:68  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  178:60  error  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                              @typescript-eslint/no-unsafe-argument
-  178:70  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  178:75  error  Unsafe member access .refs on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-  178:80  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  184:50  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
-  201:53  error  Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  212:77  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  264:74  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
+   63:34  error  Do not use Array index in keys                                                                             react/no-array-index-key
+   75:34  error  Do not use Array index in keys                                                                             react/no-array-index-key
+   86:34  error  Do not use Array index in keys                                                                             react/no-array-index-key
+   98:34  error  Do not use Array index in keys                                                                             react/no-array-index-key
+  107:34  error  Do not use Array index in keys                                                                             react/no-array-index-key
+  178:60  error  Unsafe argument of type `any` assigned to a parameter of type `string`                                     @typescript-eslint/no-unsafe-argument
+  178:70  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  178:75  error  Unsafe member access .refs on an `any` value                                                               @typescript-eslint/no-unsafe-member-access
+  178:80  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  184:50  error  Do not use Array index in keys                                                                             react/no-array-index-key
+  201:53  error  Promise-returning function provided to attribute where a void return was expected                          @typescript-eslint/no-misused-promises
+  212:77  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  264:74  error  Do not use Array index in keys                                                                             react/no-array-index-key
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitIgnoreModal.tsx
   27:13  error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
@@ -1000,71 +793,11 @@ React Compiler has skipped optimizing this component because the existing manual
   486:69   error  Unsafe member access .globalAuthor on an `any` value                                                       @typescript-eslint/no-unsafe-member-access
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitStatusGroups.tsx
-   27:36  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
-  108:36  error  Error: Cannot create components during render
-
-Components created during render will reset their state each time they are created. Declare components outside of render.
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitStatusGroups.tsx:108:36
-  106 |                     isOpen={true}
-  107 |                     isDark={isDark}
-> 108 |                     rightElement={<TreeToggle count={staged.length} />}
-      |                                    ^^^^^^^^^^ This component is created during render
-  109 |                 />
-  110 |                 {staged.length > 0 && (
-  111 |                     <ActionToolbar isDark={isDark}>
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitStatusGroups.tsx:56:24
-  54 |     };
-  55 |
-> 56 |     const TreeToggle = ({ count }: { count: number }) => (
-     |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 57 |         <button
-     | ^^^^^^^^^^^^^^^
-> 58 |             onClick={(e) => {
-     …
-     | ^^^^^^^^^^^^^^^
-> 91 |         </button>
-     | ^^^^^^^^^^^^^^^
-> 92 |     );
-     | ^^^^^^ The component is created during render here
-  93 |
-  94 |     return (
-  95 |         <div style={{ display: 'flex', flexDirection: 'column' }}>      react-hooks/static-components
-  145:43  error  Do not use Array index in keys                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react/no-array-index-key
-  183:36  error  Error: Cannot create components during render
-
-Components created during render will reset their state each time they are created. Declare components outside of render.
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitStatusGroups.tsx:183:36
-  181 |                     isOpen={true}
-  182 |                     isDark={isDark}
-> 183 |                     rightElement={<TreeToggle count={unstaged.length} />}
-      |                                    ^^^^^^^^^^ This component is created during render
-  184 |                 />
-  185 |                 {unstaged.length > 0 && (
-  186 |                     <ActionToolbar isDark={isDark}>
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitStatusGroups.tsx:56:24
-  54 |     };
-  55 |
-> 56 |     const TreeToggle = ({ count }: { count: number }) => (
-     |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> 57 |         <button
-     | ^^^^^^^^^^^^^^^
-> 58 |             onClick={(e) => {
-     …
-     | ^^^^^^^^^^^^^^^
-> 91 |         </button>
-     | ^^^^^^^^^^^^^^^
-> 92 |     );
-     | ^^^^^^ The component is created during render here
-  93 |
-  94 |     return (
-  95 |         <div style={{ display: 'flex', flexDirection: 'column' }}>  react-hooks/static-components
-  265:43  error  Do not use Array index in keys                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react/no-array-index-key
-  296:61  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
-  300:61  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-floating-promises
+   27:36  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+  161:43  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
+  289:43  error  Do not use Array index in keys                                                                                                                                      react/no-array-index-key
+  320:61  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  324:61  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/git/GitStatusView.tsx
    77:19   error  Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
@@ -2309,20 +2042,14 @@ Calling setState synchronously within an effect body causes cascading renders th
   1843:35   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
   1846:18   error    'e' is defined but never used                                                                                                                                       @typescript-eslint/no-unused-vars
 
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/verify_codegen.ts
-   5:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
-  48:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
-  49:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
-  50:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
-  51:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
-  64:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/types/electron.d.ts
+  0:0  error  Parsing error: Unable to parse the specified 'tsconfig' file. Ensure it's correct and has valid syntax.
+
+error TS18003: No inputs were found in config file '/home/diego/Documentos/projeto/js+/js-blueprints-electron/tsconfig.node.json'. Specified 'include' paths were '["vite.config.ts"]' and 'exclude' paths were '[]'
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/verify_nested_flow.ts
-    5:1   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
-   12:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
-   59:11  error    'inputCode' is assigned a value but never used                                     @typescript-eslint/no-unused-vars
-  101:17  error    Unsafe call of a type that could not be resolved                                   @typescript-eslint/no-unsafe-call
-  101:25  error    Unsafe member access .exit on a type that cannot be resolved                       @typescript-eslint/no-unsafe-member-access
+  89:5   error  Unsafe call of a type that could not be resolved              @typescript-eslint/no-unsafe-call
+  89:13  error  Unsafe member access .exit on a type that cannot be resolved  @typescript-eslint/no-unsafe-member-access
 
-✖ 1901 problems (1883 errors, 18 warnings)
+✖ 1817 problems (1808 errors, 9 warnings)
 
