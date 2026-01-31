@@ -15,14 +15,18 @@ import {
 export interface AppNodeData {
     label?: string;
     expression?: string;
-    value?: any;
+    value?: unknown;
     scopeId?: string;
     isDecl?: boolean;
     type?: string;
     name?: string;
-    args?: any[];
-    nestedArgsCall?: Record<string, any>;
-    [key: string]: any;
+    args?: unknown[];
+    nestedArgsCall?: Record<string, { expression: string }>;
+    nestedCall?: { name: string, args: string[] };
+    scopes?: Record<string, { id: string; label: string }>;
+    fallenIndex?: number;
+    text?: string;
+    [key: string]: unknown;
 }
 
 export type AppNode = Node<AppNodeData>;
@@ -115,7 +119,7 @@ interface AppState {
     nodes: AppNode[];
     edges: Edge[];
     theme: 'light' | 'dark';
-    runtimeValues: Record<string, any>;
+    runtimeValues: Record<string, unknown>;
 
     navigationStack: { id: string, label: string }[];
     activeScopeId: string; // 'root' by default
@@ -135,14 +139,14 @@ interface AppState {
     onConnect: (connection: Connection) => void;
     forceLayout: () => void;
     toggleTheme: () => void;
-    updateNodeData: (nodeId: string, newData: any) => void;
+    updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => void;
     addFunctionCall: (funcName: string, args?: string[]) => void;
     addLogicNode: () => void;
     addIfNode: () => void;
     addSwitchNode: () => void;
     addWhileNode: () => void;
     addForNode: () => void;
-    promoteToVariable: (literalNodeId: string, literalValue: any, type: string) => void;
+    promoteToVariable: (literalNodeId: string, literalValue: unknown, type: string) => void;
     promoteCallToVariable: (callNodeId: string, funcName: string) => void;
 
     // Modal State
@@ -153,7 +157,7 @@ interface AppState {
         type: string;
         placeholder?: string;
         confirmLabel?: string;
-        payload?: any;
+        payload?: unknown;
         onSubmit: (name: string) => void;
     };
     confirmationModal: {
@@ -385,7 +389,7 @@ export const useStore = create<AppState>((set, get) => ({
                 // Merge with defaults but keep ALL sections from parsed to avoid losing dynamic ones
                 const sections = [...defaultView.sections];
 
-                parsed.sections.forEach((s: any) => {
+                parsed.sections.forEach((s: GitPanelSection) => {
                     const idx = sections.findIndex(def => def.id === s.id);
                     if (idx >= 0) {
                         sections[idx] = { ...sections[idx], ...s };
@@ -442,7 +446,7 @@ export const useStore = create<AppState>((set, get) => ({
     updateSettings: (updates: Partial<Settings>) => {
         const newSettings = { ...get().settings, ...updates };
         Object.keys(updates).forEach(key => {
-            localStorage.setItem(`settings_${key}`, String((updates as any)[key]));
+            localStorage.setItem(`settings_${key}`, String((updates as Record<string, unknown>)[key]));
         });
         set({ settings: newSettings });
     },
@@ -459,36 +463,36 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     removeQuickCommand: (id: string) => {
-        const quickCommands = get().quickCommands.filter((c: any) => c.id !== id);
+        const quickCommands = get().quickCommands.filter((c: QuickCommand) => c.id !== id);
         localStorage.setItem('quickCommands', JSON.stringify(quickCommands));
         set({ quickCommands });
     },
 
     setGitView: (view: 'status' | 'terminal' | 'graph') => {
-        set((state: any) => ({
+        set((state: AppState) => ({
             git: { ...state.git, activeView: view }
         }));
     },
     setGitSidebarView: (view: 'history' | 'graph' | 'info') => {
-        set((state: any) => ({
+        set((state: AppState) => ({
             git: { ...state.git, sidebarView: view }
         }));
     },
 
     openCommitDetail: async (commit: GitLogEntry) => {
         const { openedFolder, getCommitFiles } = get();
-        if (!openedFolder || !(window as any).electronAPI) return;
+        if (!openedFolder || !window.electronAPI) return;
 
         try {
             // Fetch full message and files
-            const res = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--pretty=format:%B', '-s', commit.hash]);
+            const res = await window.electronAPI.executeGitCommand(`show --pretty=format:%B -s ${commit.hash}`, openedFolder);
             const fullMessage = res.stdout.trim();
             const files = await getCommitFiles(commit.hash);
 
             // Fetch shortstat
             let stats = { insertions: 0, deletions: 0, filesChanged: 0 };
             try {
-                const statRes = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--shortstat', '--format=', commit.hash]);
+                const statRes = await window.electronAPI.executeGitCommand(`show --shortstat --format= ${commit.hash}`, openedFolder);
                 const statLine = statRes.stdout.trim();
                 // Format example: " 2 files changed, 10 insertions(+), 5 deletions(-)"
                 if (statLine) {
@@ -548,8 +552,8 @@ export const useStore = create<AppState>((set, get) => ({
     addRecent: async (path: string) => {
         const { recentEnvironments } = get();
         // Check if path exists using the new API
-        if ((window as any).electronAPI) {
-            const exists = await (window as any).electronAPI.checkPathExists(path);
+        if (window.electronAPI) {
+            const exists = await window.electronAPI.checkPathExists(path);
             if (!exists) return;
         }
 
@@ -590,13 +594,13 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     validateRecents: async () => {
-        if (!(window as any).electronAPI) return;
+        if (!window.electronAPI) return;
 
         const { recentEnvironments } = get();
         const validRecents = [];
 
         for (const recent of recentEnvironments) {
-            const exists = await (window as any).electronAPI.checkPathExists(recent.path);
+            const exists = await window.electronAPI.checkPathExists(recent.path);
             if (exists) {
                 validRecents.push(recent);
             }
@@ -642,22 +646,22 @@ export const useStore = create<AppState>((set, get) => ({
             }
         }
 
-        let runtimeValues: Record<string, any> = {};
+        let runtimeValues: Record<string, unknown> = {};
 
         // Advanced Sandbox Evaluation
         try {
             // 1. Identify items to capture
             const varNames = nodes
                 .filter(n => n.id.startsWith('var-'))
-                .map(n => ({ id: (n.data as any).label, expr: (n.data as any).label }));
+                .map(n => ({ id: n.data.label as string, expr: n.data.label as string }));
 
             const callExpressions = nodes
-                .filter(n => n.type === 'functionCallNode' && !(n.data as any).isDecl && (n.data as any).expression)
-                .map(n => ({ id: n.id, expr: (n.data as any).expression }));
+                .filter(n => n.type === 'functionCallNode' && !n.data.isDecl && n.data.expression)
+                .map(n => ({ id: n.id, expr: n.data.expression as string }));
 
             const nestedExpressions: { id: string, expr: string }[] = [];
             nodes.forEach(n => {
-                const nac = (n.data as any).nestedArgsCall;
+                const nac = n.data.nestedArgsCall;
                 if (nac) {
                     Object.keys(nac).forEach(key => {
                         const call = nac[key];
@@ -697,7 +701,7 @@ export const useStore = create<AppState>((set, get) => ({
                         }
                     })()
                 `;
-                runtimeValues = eval(captureCode);
+                runtimeValues = eval(captureCode) as Record<string, unknown>;
             }
         } catch (err) {
             console.warn("Runtime evaluation failed:", err);

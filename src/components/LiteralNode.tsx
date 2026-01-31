@@ -3,10 +3,12 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Sparkles } from 'lucide-react';
 
-export const LiteralNode = ({ id, data }: { id: string, data: { label: string, value: string, type: 'number' | 'string' | 'boolean' } }) => {
+import type { AppNodeData } from '../store/useStore';
+
+export const LiteralNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
-    const updateNodeData = useStore((state) => (state as any).updateNodeData);
-    const promoteToVariable = useStore((state) => (state as any).promoteToVariable);
+    const updateNodeData = useStore((state) => state.updateNodeData);
+    const promoteToVariable = useStore((state) => state.promoteToVariable);
     const isDark = theme === 'dark';
 
     const isNumber = data.type === 'number';
@@ -99,7 +101,7 @@ export const LiteralNode = ({ id, data }: { id: string, data: { label: string, v
         >
             {/* Magic Wand Icon (Top-left corner) */}
             <button
-                onClick={() => promoteToVariable(id, data.value, data.type)}
+                onClick={() => promoteToVariable(id, data.value, data.type || 'string')}
                 style={{
                     position: 'absolute',
                     top: '4px',
@@ -134,7 +136,7 @@ export const LiteralNode = ({ id, data }: { id: string, data: { label: string, v
 
             {/* Editable Value */}
             <input
-                value={data.value}
+                value={data.value as string}
                 onChange={(e) => updateNodeData(id, { value: e.target.value })}
                 onKeyDown={(e) => e.stopPropagation()}
                 style={{
@@ -171,6 +173,6 @@ export const LiteralNode = ({ id, data }: { id: string, data: { label: string, v
                     transform: 'translateY(-50%)',
                 }}
             />
-        </div>
+        </div >
     );
 };

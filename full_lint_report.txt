@@ -13,102 +13,6 @@ error TS18003: No inputs were found in config file '/home/diego/Documentos/proje
 
 error TS18003: No inputs were found in config file '/home/diego/Documentos/projeto/js+/js-blueprints-electron/tsconfig.node.json'. Specified 'include' paths were '["vite.config.ts"]' and 'exclude' paths were '[]'
 
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/App.tsx
-  592:25  error  Promise-returning function provided to attribute where a void return was expected  @typescript-eslint/no-misused-promises
-  600:17  error  Unsafe call of a type that could not be resolved                                   @typescript-eslint/no-unsafe-call
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/ConfirmationModal.tsx
-  117:35  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/FileExplorer.tsx
-   41:25   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-   41:30   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-   42:15   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-   42:30   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-   42:41   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-   42:46   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-   44:9    error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
-   44:16   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-   44:16   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-   45:14   error    Unsafe member access .filter on an `any` value                                                                                                                      @typescript-eslint/no-unsafe-member-access
-   45:28   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-   45:54   error    Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                              @typescript-eslint/no-unsafe-argument
-   45:59   error    Unsafe member access .name on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-   46:14   error    Unsafe member access .sort on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-   46:23   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-   46:31   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-   47:23   error    Unsafe member access .isDirectory on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-   47:41   error    Unsafe member access .isDirectory on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-   47:54   error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
-   47:61   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-   47:63   error    Unsafe member access .name on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-   47:84   error    Unsafe member access .name on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
-   48:26   error    Unsafe member access .isDirectory on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-   59:13   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-   61:8    warning  React Hook useEffect has a missing dependency: 'setOpenedFolder'. Either include it or remove the dependency array                                                  react-hooks/exhaustive-deps
-   94:9    error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  110:23   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  110:34   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  110:39   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  112:44   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  118:23   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  118:34   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  118:39   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  119:17   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  190:23   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  190:34   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  190:39   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  195:19   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  195:30   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  195:35   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  209:25   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  209:30   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  210:15   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  210:28   error    Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
-  210:39   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  210:44   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
-  212:29   error    Unsafe argument of type `any` assigned to a parameter of type `string | null`                                                                                       @typescript-eslint/no-unsafe-argument
-  232:24   error    Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  236:29   error    Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  327:73   error    Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
-  329:22   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  330:20   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  335:17   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  335:30   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  346:17   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  346:53   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  350:17   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
-  350:53   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  395:76   error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  420:33   error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
-  440:24   error    Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  460:37   error    Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  491:42   error    Promise-returning function provided to attribute where a void return was expected                                                                                   @typescript-eslint/no-misused-promises
-  506:105  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  550:104  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  556:114  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  562:114  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  568:114  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-  572:35   error    Avoid ALL CAPS in UI strings. Use Sentence case as per design docs (a.md)                                                                                           no-restricted-syntax
-  574:117  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator                                                           @typescript-eslint/prefer-nullish-coalescing
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/FolderContextMenu.tsx
-  10:8   error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-  13:47  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
-  30:6   error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-  57:28  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-  60:28  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call
-  60:54  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
-  64:28  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-  67:28  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call
-  67:54  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
-  71:28  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-  74:28  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call
-  74:58  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
-  79:28  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-  82:28  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call
-  82:54  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
-
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/ForNode.tsx
     5:55  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
    11:15  error  Unsafe assignment of an `any` value                                     @typescript-eslint/no-unsafe-assignment
@@ -124,40 +28,11 @@ error TS18003: No inputs were found in config file '/home/diego/Documentos/proje
   105:55  error  Unsafe member access .scopes on an `any` value                          @typescript-eslint/no-unsafe-member-access
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/FunctionCallNode.tsx
-    9:11  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-    9:49  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
-    9:59  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-    9:64  error  Unsafe member access .addFunctionCall on an `any` value                                                    @typescript-eslint/no-unsafe-member-access
-   13:15  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-   13:32  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-   13:37  error  Unsafe member access .scopes on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
-   15:26  error  Unsafe argument of type `any` assigned to a parameter of type `string`                                     @typescript-eslint/no-unsafe-argument
-   15:32  error  Unsafe member access .id on an `any` value                                                                 @typescript-eslint/no-unsafe-member-access
-   15:36  error  Unsafe argument of type `any` assigned to a parameter of type `string`                                     @typescript-eslint/no-unsafe-argument
-   15:42  error  Unsafe member access .label on an `any` value                                                              @typescript-eslint/no-unsafe-member-access
-   55:50  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
-   67:23  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-   67:53  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-   67:58  error  Unsafe member access .label on an `any` value                                                              @typescript-eslint/no-unsafe-member-access
-   68:23  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-   68:47  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-   68:52  error  Unsafe member access [varName] on an `any` value                                                           @typescript-eslint/no-unsafe-member-access
-   68:52  error  Computed name [varName] resolves to an `any` value                                                         @typescript-eslint/no-unsafe-member-access
-   69:17  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
-   73:23  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-   73:47  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-   73:52  error  Unsafe member access [sourceNode.id] on an `any` value                                                     @typescript-eslint/no-unsafe-member-access
-   86:15  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-   86:39  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-   86:44  error  Unsafe member access [id] on an `any` value                                                                @typescript-eslint/no-unsafe-member-access
-   94:32  error  Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
-   94:37  error  Unsafe member access .scopes on an `any` value                                                             @typescript-eslint/no-unsafe-member-access
-  136:65  error  Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
-  160:51  error  Do not use Array index in keys                                                                             react/no-array-index-key
-  166:44  error  Unsafe return of a value of type `any`                                                                     @typescript-eslint/no-unsafe-return
-  166:44  error  Unsafe call of an `any` typed value                                                                        @typescript-eslint/no-unsafe-call
-  193:35  error  Unsafe assignment of an `any` value                                                                        @typescript-eslint/no-unsafe-assignment
-  195:43  error  Do not use Array index in keys                                                                             react/no-array-index-key
+   69:23  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+   74:23  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+   87:15  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment
+  161:51  error  Do not use Array index in keys       react/no-array-index-key
+  200:43  error  Do not use Array index in keys       react/no-array-index-key
 
 /home/diego/Documentos/projeto/js+/js-blueprints-electron/src/components/FunctionLibrary.tsx
     3:32  error  'Box' is defined but never used                                                                                                                                     @typescript-eslint/no-unused-vars
@@ -2042,14 +1917,8 @@ Calling setState synchronously within an effect body causes cascading renders th
   1843:35   error    Unsafe member access .electronAPI on an `any` value                                                                                                                 @typescript-eslint/no-unsafe-member-access
   1846:18   error    'e' is defined but never used                                                                                                                                       @typescript-eslint/no-unused-vars
 
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/types/electron.d.ts
-  0:0  error  Parsing error: Unable to parse the specified 'tsconfig' file. Ensure it's correct and has valid syntax.
+/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/types/store.ts
+  21:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
 
-error TS18003: No inputs were found in config file '/home/diego/Documentos/projeto/js+/js-blueprints-electron/tsconfig.node.json'. Specified 'include' paths were '["vite.config.ts"]' and 'exclude' paths were '[]'
-
-/home/diego/Documentos/projeto/js+/js-blueprints-electron/src/verify_nested_flow.ts
-  89:5   error  Unsafe call of a type that could not be resolved              @typescript-eslint/no-unsafe-call
-  89:13  error  Unsafe member access .exit on a type that cannot be resolved  @typescript-eslint/no-unsafe-member-access
-
-✖ 1817 problems (1808 errors, 9 warnings)
+✖ 1698 problems (1690 errors, 8 warnings)
 

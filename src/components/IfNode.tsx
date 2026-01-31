@@ -2,7 +2,9 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { ExternalLink, Split } from 'lucide-react';
 
-export const IfNode = ({ data }: { id: string, data: any }) => {
+import { AppNodeData } from '../store/useStore';
+
+export const IfNode = ({ data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const navigateInto = useStore((state) => state.navigateInto);
     const isDark = theme === 'dark';
@@ -46,7 +48,7 @@ export const IfNode = ({ data }: { id: string, data: any }) => {
                             background: '#f472b6' // Input
                         }}
                     />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#f48fb1' : '#ad1457',  letterSpacing: '0.05em' }}>Condition</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#f48fb1' : '#ad1457', letterSpacing: '0.05em' }}>Condition</span>
                 </div>
 
                 {/* Flow Outputs */}

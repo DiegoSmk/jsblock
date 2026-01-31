@@ -1,16 +1,17 @@
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Hash, Plus, ExternalLink, Activity } from 'lucide-react';
+import type { FunctionCallData, StoreState, StoreEdge, StoreNode } from '../types/store';
 
-export const FunctionCallNode = ({ id, data }: { id: string, data: { label: string, args: string[], isDecl?: boolean, isStandalone?: boolean, hasReturn?: boolean, usageCount?: number, connectedValues?: Record<string, string>, expression?: string } }) => {
+export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallData }) => {
     const theme = useStore((state) => state.theme);
     const runtimeValues = useStore((state) => state.runtimeValues);
-    const edges = useStore((state) => state.edges);
-    const addFunctionCall = useStore((state) => (state as any).addFunctionCall);
+    const edges = useStore((state) => state.edges) as StoreEdge[];
+    const addFunctionCall = useStore((state: StoreState) => state.addFunctionCall);
     const navigateInto = useStore((state) => state.navigateInto);
 
     const handleEnterScope = () => {
-        const scope = (data as any).scopes?.body;
+        const scope = data.scopes?.body;
         if (scope) {
             navigateInto(scope.id, scope.label);
         }
@@ -34,7 +35,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
         'setInterval': '#795548',
     };
 
-    const getBuiltinColor = (label: string) => {
+    const getBuiltinColor = (label: string): string | null => {
         if (BUILTIN_COLORS[label]) return BUILTIN_COLORS[label];
         if (label.startsWith('Math.')) return '#8bc34a';
         if (label.startsWith('JSON.')) return '#00bcd4';
@@ -44,33 +45,33 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
     const builtinColor = getBuiltinColor(data.label);
     const isBuiltin = !!builtinColor;
 
-    const getHeaderLabel = () => {
+    const getHeaderLabel = (): string => {
         if (isDecl) return 'Definition';
         if (isBuiltin) return data.label;
         return 'Function Call';
     };
 
-    const args = data.args || [];
+    const args = data.args ?? [];
     const isStandalone = data.isStandalone;
-    const connectedValues = data.connectedValues || {};
+    const connectedValues = data.connectedValues ?? {};
 
-    const getArgValue = (argIndex: number) => {
+    const getArgValue = (argIndex: number): string | null => {
         const targetHandle = `arg-${argIndex}`;
-        const edge = edges.find(e => e.target === id && e.targetHandle === targetHandle);
+        const edge = edges.find((e: StoreEdge) => e.target === id && e.targetHandle === targetHandle);
 
         if (edge) {
-            const nodes = useStore.getState().nodes;
-            const sourceNode = nodes.find(n => n.id === edge.source);
+            const nodes = useStore.getState().nodes as StoreNode[];
+            const sourceNode = nodes.find((n: StoreNode) => n.id === edge.source);
             if (!sourceNode) return null;
 
             if (sourceNode.type === 'variableNode') {
-                const varName = (sourceNode.data as any).label;
-                const val = (runtimeValues as any)[varName];
+                const varName = String(sourceNode.data.label);
+                const val = runtimeValues[varName] as string | number | boolean | undefined;
                 return val !== undefined ? String(val) : varName;
             }
 
             if (sourceNode.type === 'functionCallNode') {
-                const val = (runtimeValues as any)[sourceNode.id];
+                const val = runtimeValues[sourceNode.id] as string | number | boolean | undefined;
                 return val !== undefined ? String(val) : '...';
             }
         }
@@ -82,16 +83,16 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
         return null;
     };
 
-    const getReturnValue = () => {
-        const val = (runtimeValues as any)[id];
+    const getReturnValue = (): string | null => {
+        const val = runtimeValues[id] as string | number | boolean | undefined;
         return val !== undefined ? String(val) : null;
     };
 
     const returnValue = getReturnValue();
     const hasError = !isDecl && !isConsoleLog && args.length > 0 && args.some((_, i) => getArgValue(i) === null);
 
-    const identityColor = isDecl ? '#4caf50' : (isBuiltin ? (builtinColor || '#f472b6') : '#f472b6');
-    const hasBody = !!(data as any).scopes?.body;
+    const identityColor = isDecl ? '#4caf50' : (isBuiltin ? (builtinColor ?? '#f472b6') : '#f472b6');
+    const hasBody = !!data.scopes?.body;
 
     return (
         <div className="premium-node" style={{
@@ -133,7 +134,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
                             fontSize: '0.65rem',
                             fontWeight: 800
                         }}>
-                            <Hash size={10} /> {data.usageCount || 0}
+                            <Hash size={10} /> {data.usageCount ?? 0}
                         </div>
                     )}
                     <span style={{ color: identityColor, fontWeight: 800, fontSize: '1rem', fontFamily: 'monospace' }}>
@@ -156,14 +157,18 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
                             <div style={{ padding: '12px', background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)', borderRadius: '10px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
                                 <div style={{ fontSize: '0.65rem', color: isDark ? '#81c784' : '#4caf50', marginBottom: '8px', fontWeight: 800,  letterSpacing: '0.05em' }}>Arguments</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {args.map((arg, i) => (
-                                        <div key={i} style={{ background: 'rgba(76,175,80,0.1)', color: '#81c784', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'monospace' }}>{arg}</div>
+                                    {args.map((arg) => (
+                                        <div key={`arg-${arg}`} style={{ background: 'rgba(76,175,80,0.1)', color: '#81c784', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'monospace' }}>{arg}</div>
                                     ))}
                                 </div>
                             </div>
                         )}
                         <button
-                            onClick={() => addFunctionCall(data.label.replace('Definition: ', ''), data.args)}
+                            onClick={() => {
+                                if (addFunctionCall) {
+                                    addFunctionCall({ label: data.label.replace('Definition: ', ''), args: data.args });
+                                }
+                            }}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -191,8 +196,9 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {args.map((arg, i) => {
                             const value = getArgValue(i);
+                            const argKey = `${arg}-pos-${i}`;
                             return (
-                                <div key={i} style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div key={argKey} style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <Handle type="target" position={Position.Left} id={`arg-${i}`} className="handle-data" style={{ left: '-12px', background: '#f472b6' }} />
                                         <span style={{ fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>{arg}</span>

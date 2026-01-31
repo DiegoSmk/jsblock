@@ -2,7 +2,9 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Repeat, ExternalLink } from 'lucide-react';
 
-export const ForNode = ({ data }: { id: string, data: any }) => {
+import { AppNodeData } from '../store/useStore';
+
+export const ForNode = ({ data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const navigateInto = useStore((state) => state.navigateInto);
     const isDark = theme === 'dark';
@@ -46,7 +48,7 @@ export const ForNode = ({ data }: { id: string, data: any }) => {
                             left: '-18px',
                         }}
                     />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.9,  letterSpacing: '0.05em' }}>Init</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.9, letterSpacing: '0.05em' }}>Init</span>
                 </div>
 
                 {/* Condition Input */}
@@ -60,7 +62,7 @@ export const ForNode = ({ data }: { id: string, data: any }) => {
                             left: '-18px',
                         }}
                     />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.9,  letterSpacing: '0.05em' }}>Test</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.9, letterSpacing: '0.05em' }}>Test</span>
                 </div>
 
                 {/* Update Input */}
@@ -74,7 +76,7 @@ export const ForNode = ({ data }: { id: string, data: any }) => {
                             left: '-18px',
                         }}
                     />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.9,  letterSpacing: '0.05em' }}>Update</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.9, letterSpacing: '0.05em' }}>Update</span>
                 </div>
 
                 <div style={{ height: '1px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', margin: '5px 0' }} />
@@ -122,7 +124,7 @@ export const ForNode = ({ data }: { id: string, data: any }) => {
 
                     {/* Exit Path */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        <span style={{ marginRight: '10px', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8',  letterSpacing: '0.05em' }}>Exit</span>
+                        <span style={{ marginRight: '10px', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em' }}>Exit</span>
                         <Handle
                             type="source"
                             position={Position.Right}
