@@ -201,9 +201,11 @@ type AppState = {
             repoSize: string;
             projectSize: string;
         };
+        isInitialized: boolean;
     };
     gitProfiles: GitProfile[];
     commitTemplates: CommitTemplate[];
+
     commitDetail: {
         isOpen: boolean;
         commit: GitLogEntry | null;
@@ -263,7 +265,24 @@ type AppState = {
     // Settings
     settings: Settings;
     updateSettings: (updates: Partial<Settings>) => void;
+
+    // Git Panel Configuration
+    gitPanelConfig: GitPanelConfig;
+    updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => void;
+    resetGitPanelConfig: () => void;
 };
+
+export interface GitPanelSection {
+    id: string;
+    label: string;
+    visible: boolean;
+    expanded?: boolean;
+}
+
+export interface GitPanelConfig {
+    sections: GitPanelSection[];
+}
+
 
 export interface QuickCommand {
     id: string;
@@ -271,6 +290,8 @@ export interface QuickCommand {
     command: string;
     autoExecute: boolean;
 }
+
+
 
 const initialCode = '';
 
@@ -309,8 +330,56 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             fileCount: 0,
             repoSize: '',
             projectSize: ''
-        }
+        },
+        isInitialized: false
     },
+
+    gitPanelConfig: (() => {
+        const saved = localStorage.getItem('gitPanelConfig');
+        const defaultView: GitPanelConfig = {
+            sections: [
+                { id: 'overview', label: 'Visão Geral', visible: true, expanded: true },
+                { id: 'stats', label: 'Estatísticas', visible: true, expanded: true },
+                { id: 'weekly', label: 'Atividade Semanal', visible: true, expanded: true },
+                { id: 'hourly', label: 'Horários de Pico', visible: true, expanded: true },
+                { id: 'contributors', label: 'Colaboradores', visible: true, expanded: true }
+            ]
+        };
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Merge with defaults to ensure new sections are added
+                const sections = defaultView.sections.map(def => {
+                    const existing = parsed.sections.find((s: any) => s.id === def.id);
+                    return existing ? { ...def, ...existing } : def;
+                });
+                return { sections };
+            } catch (e) {
+                return defaultView;
+            }
+        }
+        return defaultView;
+    })(),
+    updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => {
+        const current = get().gitPanelConfig;
+        const newValue = { ...current, ...updates };
+        localStorage.setItem('gitPanelConfig', JSON.stringify(newValue));
+        set({ gitPanelConfig: newValue });
+    },
+    resetGitPanelConfig: () => {
+        const defaultView: GitPanelConfig = {
+            sections: [
+                { id: 'overview', label: 'Visão Geral', visible: true, expanded: true },
+                { id: 'stats', label: 'Estatísticas', visible: true, expanded: true },
+                { id: 'weekly', label: 'Atividade Semanal', visible: true, expanded: true },
+                { id: 'hourly', label: 'Horários de Pico', visible: true, expanded: true },
+                { id: 'contributors', label: 'Colaboradores', visible: true, expanded: true }
+            ]
+        };
+        localStorage.setItem('gitPanelConfig', JSON.stringify(defaultView));
+        set({ gitPanelConfig: defaultView });
+    },
+
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
     commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') || '[]'),
     commitDetail: {
@@ -1169,7 +1238,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                         fileCount,
                         repoSize,
                         projectSize
-                    }
+                    },
+                    isInitialized: true
                 }
             }));
 
@@ -1177,7 +1247,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         } catch (err) {
             console.error('Git refresh failed:', err);
             set((state: any) => ({
-                git: { ...state.git, isRepo: false }
+                git: { ...state.git, isRepo: false, isInitialized: true }
             }));
         }
     },
