@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Radio } from '../ui/Radio';
+import { Tooltip } from '../Tooltip';
 import { COMMIT_TYPES } from '../../logic/ConventionalCommits';
 
 interface CommitSectionProps {
@@ -16,6 +18,7 @@ interface CommitSectionProps {
 export const CommitSection: React.FC<CommitSectionProps> = ({
     isDark, commitMessage, setCommitMessage, onCommit, stagedCount, isAmend, setIsAmend
 }) => {
+    const { t } = useTranslation();
     const activeColor = isDark ? '#5da5db' : '#217dbb';
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -58,53 +61,53 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                 paddingBottom: '4px'
             }}>
                 {COMMIT_TYPES.map(type => (
-                    <button
-                        key={type.value}
-                        onClick={() => handleTypeClick(type.value)}
-                        title={type.description}
-                        style={{
-                            padding: '4px 8px',
-                            borderRadius: '5px',
-                            border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-                            background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
-                            color: isDark ? '#999' : '#666',
-                            cursor: 'pointer',
-                            fontSize: '0.7rem',
-                            fontWeight: 600,
-                            transition: 'all 0.15s ease',
-                            outline: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '5px',
-                            letterSpacing: '0.02em',
-                            flex: '1 0 calc(33.33% - 12px)', // Tries to put at least 3 per row if possible, but grows
-                            minWidth: '65px',
-                            maxWidth: '120px' // Prevents single buttons from becoming too stretched
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
-                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
-                            e.currentTarget.style.color = isDark ? '#fff' : '#000';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)';
-                            e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
-                            e.currentTarget.style.color = isDark ? '#999' : '#666';
-                        }}
-                    >
-                        <span style={{
-                            width: '5px',
-                            height: '5px',
-                            borderRadius: '50%',
-                            background: type.color,
-                            display: 'inline-block',
-                            opacity: 0.6,
-                            filter: 'saturate(0.5) contrast(0.9)',
-                            boxShadow: `0 0 4px ${type.color}33`
-                        }}></span>
-                        {type.label}
-                    </button>
+                    <Tooltip key={type.value} content={type.description} side="top">
+                        <button
+                            onClick={() => handleTypeClick(type.value)}
+                            style={{
+                                padding: '4px 8px',
+                                borderRadius: '5px',
+                                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
+                                background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                                color: isDark ? '#999' : '#666',
+                                cursor: 'pointer',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                transition: 'all 0.15s ease',
+                                outline: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px',
+                                letterSpacing: '0.02em',
+                                flex: '1 0 calc(33.33% - 12px)', // Tries to put at least 3 per row if possible, but grows
+                                minWidth: '65px',
+                                maxWidth: '120px' // Prevents single buttons from becoming too stretched
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+                                e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)';
+                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+                                e.currentTarget.style.color = isDark ? '#999' : '#666';
+                            }}
+                        >
+                            <span style={{
+                                width: '5px',
+                                height: '5px',
+                                borderRadius: '50%',
+                                background: type.color,
+                                display: 'inline-block',
+                                opacity: 0.6,
+                                filter: 'saturate(0.5) contrast(0.9)',
+                                boxShadow: `0 0 4px ${type.color}33`
+                            }} />
+                            {type.label}
+                        </button>
+                    </Tooltip>
                 ))}
             </div>
 
@@ -112,7 +115,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                 {!isExpanded ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <textarea
-                            placeholder="Mensagem de commit..."
+                            placeholder={t('git.status.commit_placeholder')}
                             value={commitMessage}
                             onChange={(e) => setCommitMessage(e.target.value)}
                             style={{
@@ -144,14 +147,14 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                                 gap: '4px'
                             }}
                         >
-                            + Adicionar Descrição
+                            + {t('git.modals.template.add_description')}
                         </button>
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <input
                             type="text"
-                            placeholder="Título do Commit (Resumo)"
+                            placeholder={t('git.modals.template.subject_placeholder')}
                             value={commitMessage.split('\n\n')[0]} // First part is title
                             onChange={(e) => {
                                 const parts = commitMessage.split('\n\n');
@@ -172,7 +175,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                             }}
                         />
                         <textarea
-                            placeholder="Corpo da mensagem (Detalhes)..."
+                            placeholder={t('git.modals.template.body_placeholder')}
                             value={commitMessage.split('\n\n').slice(1).join('\n\n')} // Rest is body
                             onChange={(e) => {
                                 const title = commitMessage.split('\n\n')[0] || '';
@@ -204,36 +207,38 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                                 padding: '0 4px'
                             }}
                         >
-                            - Recolher (Modo Simples)
+                            - {t('git.modals.template.collapse_description')}
                         </button>
                     </div>
                 )}
             </div>
 
             <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-                    onClick={() => setIsAmend(!isAmend)}
-                >
-                    <Radio
-                        checked={isAmend}
-                        onChange={() => setIsAmend(!isAmend)}
-                        activeColor={activeColor}
-                        isDark={isDark}
-                        size={16}
-                    />
-                    <label
-                        style={{
-                            fontSize: '0.75rem',
-                            color: isDark ? '#aaa' : '#666',
-                            cursor: 'pointer',
-                            userSelect: 'none',
-                            fontWeight: 500
-                        }}
+                <Tooltip content={t('git.status.amend_tooltip')} side="top">
+                    <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                        onClick={() => setIsAmend(!isAmend)}
                     >
-                        Amend Last Commit
-                    </label>
-                </div>
+                        <Radio
+                            checked={isAmend}
+                            onChange={() => setIsAmend(!isAmend)}
+                            activeColor={activeColor}
+                            isDark={isDark}
+                            size={16}
+                        />
+                        <label
+                            style={{
+                                fontSize: '0.75rem',
+                                color: isDark ? '#aaa' : '#666',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                fontWeight: 500
+                            }}
+                        >
+                            {t('git.status.amend_label')}
+                        </label>
+                    </div>
+                </Tooltip>
                 <button
                     onClick={onCommit}
                     disabled={!commitMessage || stagedCount === 0}
@@ -255,7 +260,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                         fontWeight: 700
                     }}
                 >
-                    Commit
+                    {t('git.status.commit_button')}
                 </button>
             </div>
 

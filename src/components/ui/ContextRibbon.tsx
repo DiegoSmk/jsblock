@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../../store/useStore';
+import { DESIGN_TOKENS } from '../../constants/design';
 
 interface ContextRibbonItem {
     id: string;
@@ -27,9 +28,9 @@ export const ContextRibbon: React.FC<ContextRibbonProps> = ({
 
     return (
         <div style={{
-            width: '40px',
+            width: DESIGN_TOKENS.RIBBON_WIDTH,
             height: '100%',
-            backgroundColor: isDark ? '#1f1f1f' : '#f0f0f0', // Slightly distinct from SideRibbon active color
+            backgroundColor: isDark ? DESIGN_TOKENS.COLORS.BG.CONTEXT_RIBBON.DARK : DESIGN_TOKENS.COLORS.BG.CONTEXT_RIBBON.LIGHT, // Using token
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',

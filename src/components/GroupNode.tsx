@@ -23,7 +23,7 @@ export const GroupNode = ({ data }: { data: { label: string } }) => {
                 left: '20px',
                 fontSize: '0.8rem',
                 fontWeight: 900,
-                textTransform: 'uppercase',
+                
                 color: isDark ? '#666' : '#999',
                 letterSpacing: '0.1em'
             }}>

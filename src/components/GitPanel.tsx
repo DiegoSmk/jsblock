@@ -20,6 +20,25 @@ import { GitGraphView } from './git/GitGraphView';
 
 import { Briefcase, User, Sparkles, Smile } from 'lucide-react'; // Needed for Init View helpers
 
+// Helper functions for InitView
+const getTagIcon = (tag: string) => {
+    switch (tag) {
+        case 'work': return <Briefcase size={14} />;
+        case 'personal': return <User size={14} />;
+        case 'ai': return <Sparkles size={14} />;
+        default: return <Smile size={14} />;
+    }
+};
+
+const getTagColor = (tag: string, dark: boolean) => {
+    switch (tag) {
+        case 'work': return dark ? '#60a5fa' : '#0070f3';
+        case 'personal': return dark ? '#10b981' : '#059669';
+        case 'ai': return dark ? '#c084fc' : '#9333ea';
+        default: return dark ? '#fbbf24' : '#f59e0b';
+    }
+};
+
 export const GitPanel: React.FC = () => {
     const {
         theme, git, refreshGit, fetchGitConfig,
@@ -39,13 +58,18 @@ export const GitPanel: React.FC = () => {
     const [newProfile, setNewProfile] = useState({ name: '', email: '', tag: 'personal' as 'work' | 'personal' | 'ai' | 'custom', customTagName: '' });
 
     useEffect(() => {
-        if (openedFolder) {
-            setIsLoading(true);
-            Promise.all([refreshGit(), fetchGitConfig()]).finally(() => {
-                setIsLoading(false);
-            });
-        }
-    }, [openedFolder]);
+        const loadGitData = async () => {
+            if (openedFolder) {
+                setIsLoading(true);
+                try {
+                    await Promise.all([refreshGit(), fetchGitConfig()]);
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        };
+        void loadGitData();
+    }, [openedFolder, refreshGit, fetchGitConfig]);
 
     const startInit = async () => {
         setIsLoading(true);
@@ -66,25 +90,6 @@ export const GitPanel: React.FC = () => {
         if (!newProfile.name || !newProfile.email) return;
         addGitProfile(newProfile);
         setNewProfile({ name: '', email: '', tag: 'personal', customTagName: '' });
-    };
-
-    // Helper functions for InitView
-    const getTagIcon = (tag: string) => {
-        switch (tag) {
-            case 'work': return <Briefcase size={14} />;
-            case 'personal': return <User size={14} />;
-            case 'ai': return <Sparkles size={14} />;
-            default: return <Smile size={14} />;
-        }
-    };
-
-    const getTagColor = (tag: string, dark = isDark) => {
-        switch (tag) {
-            case 'work': return dark ? '#60a5fa' : '#0070f3';
-            case 'personal': return dark ? '#10b981' : '#059669';
-            case 'ai': return dark ? '#c084fc' : '#9333ea';
-            default: return dark ? '#fbbf24' : '#f59e0b';
-        }
     };
 
     if (!openedFolder) {
@@ -124,7 +129,7 @@ export const GitPanel: React.FC = () => {
                 handleAddProfile={handleAddProfile}
                 removeGitProfile={removeGitProfile}
                 getTagIcon={getTagIcon}
-                getTagColor={getTagColor}
+                getTagColor={(tag) => getTagColor(tag, isDark)}
                 newProfile={newProfile}
                 setNewProfile={setNewProfile}
             />

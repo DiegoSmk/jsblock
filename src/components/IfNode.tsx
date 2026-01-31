@@ -46,7 +46,7 @@ export const IfNode = ({ data }: { id: string, data: any }) => {
                             background: '#f472b6' // Input
                         }}
                     />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#f48fb1' : '#ad1457', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Condition</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#f48fb1' : '#ad1457',  letterSpacing: '0.05em' }}>Condition</span>
                 </div>
 
                 {/* Flow Outputs */}

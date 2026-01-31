@@ -1,5 +1,5 @@
 
-process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 import { app, BrowserWindow, protocol, ipcMain, dialog } from 'electron';
 import path from 'path';
@@ -168,7 +168,7 @@ ipcMain.handle('write-file', async (_event, filePath: string, content: string) =
     }
 });
 
-ipcMain.handle('create-file', async (_event, filePath: string, content: string = '') => {
+ipcMain.handle('create-file', async (_event, filePath: string, content = '') => {
     try {
         if (fs.existsSync(filePath)) {
             throw new Error('Arquivo já existe');
@@ -266,7 +266,7 @@ ipcMain.on('window-close', () => {
 
 // --- Terminal (PTY) Management ---
 let ptyProcess: pty.IPty | null = null;
-let currentTerminalId: number = 0;
+let currentTerminalId = 0;
 
 ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
     const terminalId = ++currentTerminalId;

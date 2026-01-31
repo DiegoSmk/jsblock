@@ -10,7 +10,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
     const navigateInto = useStore((state) => state.navigateInto);
 
     const handleEnterScope = () => {
-        const scope = (data as any).scopes?.['body'];
+        const scope = (data as any).scopes?.body;
         if (scope) {
             navigateInto(scope.id, scope.label);
         }
@@ -91,7 +91,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
     const hasError = !isDecl && !isConsoleLog && args.length > 0 && args.some((_, i) => getArgValue(i) === null);
 
     const identityColor = isDecl ? '#4caf50' : (isBuiltin ? (builtinColor || '#f472b6') : '#f472b6');
-    const hasBody = !!(data as any).scopes?.['body'];
+    const hasBody = !!(data as any).scopes?.body;
 
     return (
         <div className="premium-node" style={{
@@ -154,7 +154,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {args.length > 0 && (
                             <div style={{ padding: '12px', background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)', borderRadius: '10px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
-                                <div style={{ fontSize: '0.65rem', color: isDark ? '#81c784' : '#4caf50', marginBottom: '8px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Arguments</div>
+                                <div style={{ fontSize: '0.65rem', color: isDark ? '#81c784' : '#4caf50', marginBottom: '8px', fontWeight: 800,  letterSpacing: '0.05em' }}>Arguments</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                     {args.map((arg, i) => (
                                         <div key={i} style={{ background: 'rgba(76,175,80,0.1)', color: '#81c784', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'monospace' }}>{arg}</div>
@@ -242,7 +242,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: { label: stri
                             justifyContent: 'center',
                             gap: '8px',
                             cursor: 'pointer',
-                            textTransform: 'uppercase',
+                            
                             letterSpacing: '0.05em',
                             transition: 'all 0.2s'
                         }}

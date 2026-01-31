@@ -1,6 +1,7 @@
 {
   "name": "js-blueprints-electron",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "dist/electron/main.js",
   "scripts": {
@@ -8,13 +9,15 @@
     "build": "tsc && vite build && tsc -p tsconfig.electron.json",
     "start": "electron .",
     "electron:dev": "concurrently -k \"cross-env VITE_CJS_IGNORE_WARNING=true BROWSER=none npm run dev\" \"wait-on tcp:5173 && tsc -p tsconfig.electron.json && electron .\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@babel/parser": "^7.28.6",
+    "@babel/types": "^7.28.6",
     "@monaco-editor/react": "^4.7.0",
     "@xyflow/react": "^12.10.0",
     "allotment": "^1.20.5",
@@ -33,6 +36,7 @@
     "zustand": "^5.0.10"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/babel__parser": "^7.0.0",
     "@types/dagre": "^0.7.53",
     "@types/node": "^25.0.10",
@@ -44,7 +48,13 @@
     "electron": "^31.0.2",
     "electron-builder": "^24.13.3",
     "electron-is-dev": "^3.0.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
     "typescript": "^5.2.2",
+    "typescript-eslint": "^8.46.4",
     "vite": "^5.3.1",
     "vite-plugin-monaco-editor": "^1.1.0",
     "wait-on": "^7.2.0"

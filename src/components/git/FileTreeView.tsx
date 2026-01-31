@@ -87,11 +87,11 @@ export const FileTreeView: React.FC<FileTreeViewProps> = ({ files, onStage, onUn
             minWidth: '12px',
             textAlign: 'center'
         }}>
-            {status === 'untracked' ? 'U' : status.charAt(0).toUpperCase()}
+            {status === 'untracked' ? 'U' : status.charAt(0)}
         </span>
     );
 
-    const renderNode = (node: TreeNode, depth: number = 0): React.ReactNode => {
+    const renderNode = (node: TreeNode, depth = 0): React.ReactNode => {
         const isFolder = !node.file;
         const isCollapsed = collapsedFolders.has(node.path);
         const isHovered = hoveredPath === node.path;

@@ -2,18 +2,19 @@ import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
 import { LogicHandler } from './LogicHandler';
 import { CallHandler } from './CallHandler';
+import type { Node as BabelNode, ExpressionStatement, AssignmentExpression, Identifier, NumericLiteral, StringLiteral, BooleanLiteral } from '@babel/types';
 
 export const AssignmentHandler: ParserHandler = {
-    canHandle: (stmt: any) => {
-        const expr = stmt.type === 'ExpressionStatement' ? stmt.expression : stmt;
+    canHandle: (node: BabelNode) => {
+        const expr = node.type === 'ExpressionStatement' ? node.expression : node;
         return expr.type === 'AssignmentExpression';
     },
-    handle: (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
-        const expr = stmt.type === 'ExpressionStatement' ? stmt.expression : stmt;
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+        const expr = (node.type === 'ExpressionStatement' ? (node).expression : node) as AssignmentExpression;
         const nodeId = idSuffix ? `assignment-${idSuffix}` : generateId('assignment');
 
         // Left side: variable being assigned to
-        const varName = expr.left.type === 'Identifier' ? expr.left.name : 'unknown';
+        const varName = expr.left.type === 'Identifier' ? (expr.left).name : 'unknown';
 
         ctx.nodes.push({
             id: nodeId,
@@ -26,7 +27,7 @@ export const AssignmentHandler: ParserHandler = {
                 isStandalone: true,
                 scopeId: ctx.currentScopeId
             }
-        } as any);
+        });
 
         if (parentId && handleName) {
             ctx.edges.push(createEdge(parentId, nodeId, handleName, 'flow-in'));
@@ -35,13 +36,14 @@ export const AssignmentHandler: ParserHandler = {
         // Link right side (value)
         const right = expr.right;
         if (right.type === 'Identifier') {
-            const sourceId = ctx.variableNodes[right.name];
+            const sourceId = ctx.variableNodes[(right).name];
             if (sourceId) {
                 ctx.edges.push(createEdge(sourceId, nodeId, 'output', 'arg-0'));
             }
         } else if (right.type === 'NumericLiteral' || right.type === 'StringLiteral' || right.type === 'BooleanLiteral') {
             const litId = generateId('literal');
-            const value = String(right.value);
+            const litArg = right;
+            const value = String((litArg as any).value);
             const type = right.type === 'NumericLiteral' ? 'number' : (right.type === 'BooleanLiteral' ? 'boolean' : 'string');
 
             ctx.nodes.push({
@@ -50,7 +52,7 @@ export const AssignmentHandler: ParserHandler = {
                 position: { x: 0, y: 0 },
                 parentId: ctx.currentParentId,
                 data: { label: type, value, type, scopeId: ctx.currentScopeId }
-            } as any);
+            });
 
             ctx.edges.push(createEdge(litId, nodeId, 'output', 'arg-0'));
         } else if (LogicHandler.canHandle(right)) {
@@ -62,3 +64,4 @@ export const AssignmentHandler: ParserHandler = {
         return nodeId;
     }
 };
+

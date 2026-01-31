@@ -11,6 +11,22 @@ import {
     applyNodeChanges,
     applyEdgeChanges,
 } from '@xyflow/react';
+
+export interface AppNodeData {
+    label?: string;
+    expression?: string;
+    value?: any;
+    scopeId?: string;
+    isDecl?: boolean;
+    type?: string;
+    name?: string;
+    args?: any[];
+    nestedArgsCall?: Record<string, any>;
+    [key: string]: any;
+}
+
+export type AppNode = Node<AppNodeData>;
+
 // import { v4 as uuidv4 } from 'uuid'; // Removed to avoid dependency check
 const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 import { parseCodeToFlow } from '../logic/CodeParser';
@@ -18,85 +34,85 @@ import { generateCodeFromFlow } from '../logic/CodeGenerator';
 import { getLayoutedElements } from '../logic/layout';
 import i18n from '../i18n/config';
 
-type RecentEnvironment = {
+interface RecentEnvironment {
     path: string;
     lastOpened: number; // timestamp
     label?: 'personal' | 'work' | 'fun' | 'other';
     isFavorite?: boolean;
-};
+}
 
-type GitFileStatus = {
+interface GitFileStatus {
     path: string;
     status: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked' | 'staged';
     index: string;
     workingTree: string;
-};
+}
 
-type GitLogEntry = {
+interface GitLogEntry {
     hash: string;
     author: string;
     date: string;
     message: string;
     graph?: string;
-};
+}
 
-type GitCommitFile = {
+interface GitCommitFile {
     path: string;
     status: string;
-};
+}
 
-type GitAuthor = {
+interface GitAuthor {
     name: string;
     email: string;
-};
+}
 
-type GitStashEntry = {
+interface GitStashEntry {
     index: number;
     branch: string;
     message: string;
     description: string;
-};
+}
 
-type GitProfile = {
+interface GitProfile {
     id: string;
     name: string;
     email: string;
     tag: 'work' | 'personal' | 'ai' | 'custom';
     customTagName?: string;
-};
+}
 
-type GitTag = {
+interface GitTag {
     name: string;
     hash: string;
     message?: string;
     date?: string;
-};
+}
 
-type CommitTemplate = {
+interface CommitTemplate {
     id: string;
     name: string;
     content: string;
-};
+}
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
-export type Toast = {
+export interface Toast {
     id: string;
     type: ToastType;
     message: string;
     duration?: number;
-};
+}
 
-export type Settings = {
+export interface Settings {
     terminalCopyOnSelect: boolean;
     terminalRightClickPaste: boolean;
     autoLayoutNodes: boolean;
     fontSize: number;
-};
+}
 
-type AppState = {
+interface AppState {
     code: string;
-    nodes: Node[];
+    nodes: AppNode[];
     edges: Edge[];
     theme: 'light' | 'dark';
     runtimeValues: Record<string, any>;
@@ -114,7 +130,7 @@ type AppState = {
     setDirty: (dirty: boolean) => void;
 
     setCode: (code: string, shouldSetDirty?: boolean) => void;
-    onNodesChange: (changes: NodeChange[]) => void;
+    onNodesChange: (changes: NodeChange<AppNode>[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     onConnect: (connection: Connection) => void;
     forceLayout: () => void;
@@ -180,7 +196,7 @@ type AppState = {
     // File System Actions
     setOpenedFolder: (path: string | null) => void;
     setSelectedFile: (path: string | null) => Promise<void>;
-    loadContentForFile: (path: string) => Promise<void>;
+    loadContentForFile: (path: string | null) => Promise<void>;
     saveFile: () => Promise<void>;
 
     // Recent Environments
@@ -286,7 +302,7 @@ type AppState = {
     gitPanelConfig: GitPanelConfig;
     updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => void;
     resetGitPanelConfig: () => void;
-};
+}
 
 export interface GitPanelSection {
     id: string;
@@ -313,7 +329,7 @@ const initialCode = '';
 
 let saveTimeout: any = null;
 
-export const useStore = create<AppState>((set: any, get: any) => ({
+export const useStore = create<AppState>((set, get) => ({
     code: initialCode,
     nodes: [],
     edges: [],
@@ -359,16 +375,23 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 { id: 'stats', label: 'Estatísticas', visible: true, expanded: true },
                 { id: 'weekly', label: 'Atividade Semanal', visible: true, expanded: true },
                 { id: 'hourly', label: 'Horários de Pico', visible: true, expanded: true },
-                { id: 'contributors', label: 'Colaboradores', visible: true, expanded: true }
+                { id: 'contributors', label: 'Colaboradores', visible: true, expanded: true },
+                { id: 'tags', label: 'Tags & Versões', visible: true, expanded: true }
             ]
         };
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                // Merge with defaults to ensure new sections are added
-                const sections = defaultView.sections.map(def => {
-                    const existing = parsed.sections.find((s: any) => s.id === def.id);
-                    return existing ? { ...def, ...existing } : def;
+                // Merge with defaults but keep ALL sections from parsed to avoid losing dynamic ones
+                const sections = [...defaultView.sections];
+
+                parsed.sections.forEach((s: any) => {
+                    const idx = sections.findIndex(def => def.id === s.id);
+                    if (idx >= 0) {
+                        sections[idx] = { ...sections[idx], ...s };
+                    } else {
+                        sections.push(s);
+                    }
                 });
                 return { sections };
             } catch (e) {
@@ -390,7 +413,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 { id: 'stats', label: 'Estatísticas', visible: true, expanded: true },
                 { id: 'weekly', label: 'Atividade Semanal', visible: true, expanded: true },
                 { id: 'hourly', label: 'Horários de Pico', visible: true, expanded: true },
-                { id: 'contributors', label: 'Colaboradores', visible: true, expanded: true }
+                { id: 'contributors', label: 'Colaboradores', visible: true, expanded: true },
+                { id: 'tags', label: 'Tags & Versões', visible: true, expanded: true }
             ]
         };
         localStorage.setItem('gitPanelConfig', JSON.stringify(defaultView));
@@ -532,7 +556,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const now = Date.now();
         const existingIndex = recentEnvironments.findIndex((r: RecentEnvironment) => r.path === path);
 
-        let newRecents = [...recentEnvironments];
+        const newRecents = [...recentEnvironments];
         if (existingIndex >= 0) {
             newRecents[existingIndex] = { ...newRecents[existingIndex], lastOpened: now };
         } else {
@@ -886,7 +910,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 const callNode = nodes.find((n: Node) => n.id === callNodeId);
                 if (!callNode) return;
 
-                const originalExpr = (callNode.data as any).expression;
+                const originalExpr = (callNode.data).expression;
                 if (!originalExpr) return;
 
                 // 2. We need to find the exact line in the code to replace
@@ -999,12 +1023,16 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         }
 
-        set({ selectedFile: path, isDirty: false });
-        await get().loadContentForFile(path);
+        if (path) {
+            set({ selectedFile: path, isDirty: false });
+            await get().loadContentForFile(path);
+        } else {
+            set({ selectedFile: null, isDirty: false, code: '', nodes: [], edges: [] });
+        }
     },
 
-    loadContentForFile: async (path: string) => {
-        if (path && (window as any).electronAPI) {
+    loadContentForFile: async (path: string | null) => {
+        if (path && window.electronAPI) {
             try {
                 const content = await (window as any).electronAPI.readFile(path);
                 const isBlock = path.endsWith('.block');
@@ -1397,7 +1425,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
 
-    gitCommit: async (message: string, isAmend: boolean = false) => {
+    gitCommit: async (message: string, isAmend = false) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         const args = ['commit', '-m', message];
@@ -1432,7 +1460,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
 
-    gitPopStash: async (index: number = 0) => {
+    gitPopStash: async (index = 0) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
@@ -1478,7 +1506,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 .filter((l: string) => l.trim())
                 .map((line: string, index: number) => {
                     // stash@{0}: On main: Rascunho: 17:50:08 em main
-                    const match = line.match(/stash@{(\d+)}: (On [^:]+): (.*)/);
+                    const match = /stash@{(\d+)}: (On [^:]+): (.*)/.exec(line);
                     if (match) {
                         return {
                             index: parseInt(match[1]),
@@ -1619,7 +1647,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
 
-    gitInit: async (author?: GitAuthor, isGlobal: boolean = false) => {
+    gitInit: async (author?: GitAuthor, isGlobal = false) => {
         const { openedFolder, refreshGit, setGitConfig } = get();
         if (!openedFolder) return;
 

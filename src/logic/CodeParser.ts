@@ -1,8 +1,11 @@
 import { parse } from '@babel/parser';
-import type { Node, Edge } from '@xyflow/react';
+import type { Edge } from '@xyflow/react';
 import { initializeContext, parseStatement } from './parser/Dispatcher';
+import type { Statement } from '@babel/types';
+import type { AppNode } from '../store/useStore';
 
-export const parseCodeToFlow = (code: string): { nodes: Node[], edges: Edge[] } => {
+
+export const parseCodeToFlow = (code: string): { nodes: AppNode[], edges: Edge[] } => {
     let ast;
     try {
         ast = parse(code, { sourceType: 'module', plugins: ['typescript'] });
@@ -17,7 +20,7 @@ export const parseCodeToFlow = (code: string): { nodes: Node[], edges: Edge[] } 
     // One-pass recursive parsing via Dispatcher
     let prevId: string | undefined = undefined;
 
-    ast.program.body.forEach((stmt: any, index: number) => {
+    ast.program.body.forEach((stmt: Statement, index: number) => {
         const nodeId = parseStatement(stmt, ctx, prevId, 'flow-next', index);
         if (nodeId) {
             prevId = nodeId;
@@ -26,3 +29,4 @@ export const parseCodeToFlow = (code: string): { nodes: Node[], edges: Edge[] } 
 
     return { nodes: ctx.nodes, edges: ctx.edges };
 };
+

@@ -3,12 +3,14 @@ import { createEdge, generateId } from '../utils';
 import { LogicHandler } from './LogicHandler';
 import { VariableHandler } from './VariableHandler';
 import { AssignmentHandler } from './AssignmentHandler';
+import type { Node as BabelNode, WhileStatement, ForStatement, Identifier, UpdateExpression, VariableDeclaration } from '@babel/types';
 
 export const LoopHandler: ParserHandler = {
-    canHandle: (stmt: any) => stmt.type === 'WhileStatement' || stmt.type === 'ForStatement',
-    handle: (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
-        const isFor = stmt.type === 'ForStatement';
-        const prefix = stmt.type === 'WhileStatement' ? 'while' : 'for';
+    canHandle: (node: BabelNode) => node.type === 'WhileStatement' || node.type === 'ForStatement',
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+        const isFor = node.type === 'ForStatement';
+        const stmt = node as WhileStatement | ForStatement;
+        const prefix = node.type === 'WhileStatement' ? 'while' : 'for';
         const nodeId = idSuffix ? `${prefix}-${idSuffix}` : generateId(prefix);
 
         // 1. Create the Main Loop Node
@@ -21,7 +23,7 @@ export const LoopHandler: ParserHandler = {
                 label: isFor ? 'For' : 'While',
                 scopeId: ctx.currentScopeId
             }
-        } as any);
+        });
 
         // 2. Connect to incoming flow
         if (parentId && handleName) {
@@ -30,40 +32,43 @@ export const LoopHandler: ParserHandler = {
 
         // 3. Process FOR specific parts (Init and Update) safely
         if (isFor) {
+            const forStmt = stmt as ForStatement;
             // 1. Process Init (e.g., let i = 0)
-            if (stmt.init) {
-                if (VariableHandler.canHandle(stmt.init)) {
-                    VariableHandler.handle(stmt.init, ctx);
-                    const firstDecl = stmt.init.declarations?.[0];
+            if (forStmt.init) {
+                if (VariableHandler.canHandle(forStmt.init)) {
+                    VariableHandler.handle(forStmt.init, ctx);
+                    const initDecl = forStmt.init as VariableDeclaration;
+                    const firstDecl = initDecl.declarations?.[0];
                     if (firstDecl?.id?.type === 'Identifier') {
-                        const varName = firstDecl.id.name;
+                        const varName = (firstDecl.id).name;
                         const varId = ctx.variableNodes[varName];
                         if (varId) {
                             ctx.edges.push(createEdge(varId, nodeId, 'output', 'init'));
                         }
                     }
-                } else if (AssignmentHandler.canHandle(stmt.init)) {
-                    const assignId = AssignmentHandler.handle(stmt.init, ctx);
+                } else if (AssignmentHandler.canHandle(forStmt.init)) {
+                    const assignId = AssignmentHandler.handle(forStmt.init, ctx);
                     if (assignId) ctx.edges.push(createEdge(assignId, nodeId, 'result', 'init'));
                 }
             }
 
             // Process Update (e.g., i++)
-            if (stmt.update && stmt.update.type === 'UpdateExpression') {
+            if (forStmt.update?.type === 'UpdateExpression') {
+                const updExpr = forStmt.update;
                 const updId = generateId('update');
-                const argName = (stmt.update.argument as any)?.name || 'i';
+                const argName = (updExpr.argument as Identifier)?.name || 'i';
                 ctx.nodes.push({
                     id: updId,
                     type: 'functionCallNode',
                     position: { x: 0, y: 0 },
                     parentId: ctx.currentParentId,
                     data: {
-                        label: `${argName}${stmt.update.operator}`,
+                        label: `${argName}${updExpr.operator}`,
                         args: [],
                         isStandalone: true,
                         scopeId: ctx.currentScopeId
                     }
-                } as any);
+                });
                 ctx.edges.push(createEdge(updId, nodeId, 'return', 'update'));
             }
         }
@@ -75,7 +80,7 @@ export const LoopHandler: ParserHandler = {
             if (LogicHandler.canHandle(test)) {
                 LogicHandler.handle(test, ctx, nodeId, targetHandle);
             } else if (test.type === 'Identifier') {
-                const sourceId = ctx.variableNodes[test.name];
+                const sourceId = ctx.variableNodes[(test).name];
                 if (sourceId) {
                     ctx.edges.push(createEdge(sourceId, nodeId, 'output', targetHandle));
                 }
@@ -90,3 +95,4 @@ export const LoopHandler: ParserHandler = {
         return nodeId;
     }
 };
+

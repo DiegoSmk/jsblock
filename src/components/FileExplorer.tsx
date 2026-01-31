@@ -6,6 +6,7 @@ import { RecentEnvironments } from './RecentEnvironments';
 import { FolderContextMenu } from './FolderContextMenu';
 import 'allotment/dist/style.css';
 import { useStore } from '../store/useStore';
+import { DESIGN_TOKENS } from '../constants/design';
 
 interface FileEntry {
     name: string;
@@ -125,7 +126,7 @@ export const FileExplorer: React.FC = () => {
                 setFiles(updated);
             }
         } catch (err) {
-            alert('Erro: ' + err);
+            alert(t('app.errors.generic', { error: err }));
         } finally {
             setIsCreating(null);
             setNewName('');
@@ -199,7 +200,7 @@ export const FileExplorer: React.FC = () => {
                 setFiles(updated);
             }
         } catch (err) {
-            alert('Erro ao mover: ' + err);
+            alert(t('app.errors.move', { error: err }));
         }
         setDraggedItem(null);
     };
@@ -217,7 +218,7 @@ export const FileExplorer: React.FC = () => {
 
         if (type === 'delete') {
             // Implementation for delete would go here
-            alert('Funcionalidade de exclusão em breve');
+            alert(t('app.errors.delete_soon'));
         } else {
             setIsCreating({ type, ext, parentPath: contextMenu.path });
         }
@@ -386,12 +387,12 @@ export const FileExplorer: React.FC = () => {
                     <span style={{
                         fontSize: '0.75rem',
                         fontWeight: 700,
-                        textTransform: 'uppercase',
+
                         letterSpacing: '0.05em',
                         opacity: 0.6,
                         whiteSpace: 'nowrap'
                     }}>
-                        {openedFolder ? (openedFolder.split(/[\\/]/).pop() || 'Explorador') : 'Explorador'}
+                        {openedFolder ? (openedFolder.split(/[\\/]/).pop() || t('app.file_explorer')) : t('app.file_explorer')}
                     </span>
                     {selectedFile && (
                         <>
@@ -500,7 +501,9 @@ export const FileExplorer: React.FC = () => {
                                     ref={inputRef}
                                     value={newName}
                                     onChange={(e) => setNewName(e.target.value)}
-                                    placeholder={isCreating.type === 'folder' ? "Nome da pasta..." : `Nome do arquivo${isCreating.ext || ''}...`}
+                                    placeholder={isCreating.type === 'folder'
+                                        ? t('file_explorer.new_folder_placeholder')
+                                        : t('file_explorer.new_file_placeholder', { ext: isCreating.ext || '' })}
                                     style={{
                                         flex: 1,
                                         minWidth: 0,
@@ -535,7 +538,7 @@ export const FileExplorer: React.FC = () => {
                         </div>
                     )}
                     <div style={{
-                        height: '40px',
+                        height: DESIGN_TOKENS.RIBBON_WIDTH,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-around',
@@ -545,31 +548,31 @@ export const FileExplorer: React.FC = () => {
                         <ActionButton
                             icon={FolderPlus}
                             onClick={() => setIsCreating({ type: 'folder', parentPath: selectedDirPath || openedFolder || '' })}
-                            title="Nova Pasta"
+                            title={t('file_explorer.actions.new_folder')}
                         />
                         <ActionButton
                             icon={FileCode}
                             color="#f7df1e"
                             onClick={() => setIsCreating({ type: 'file', ext: '.js', parentPath: selectedDirPath || openedFolder || '' })}
-                            title="Novo JS"
+                            title={t('file_explorer.actions.new_js')}
                         />
                         <ActionButton
                             icon={FileCode}
                             color="#3178c6"
                             onClick={() => setIsCreating({ type: 'file', ext: '.ts', parentPath: selectedDirPath || openedFolder || '' })}
-                            title="Novo TS"
+                            title={t('file_explorer.actions.new_ts')}
                         />
                         <ActionButton
                             icon={FileText}
                             color="#0ea5e9"
                             onClick={() => setIsCreating({ type: 'file', ext: '.md', parentPath: selectedDirPath || openedFolder || '' })}
-                            title="Nova Nota MD"
+                            title={t('file_explorer.actions.new_md')}
                         />
                         <ActionButton
                             label="BLK"
                             color="#a855f7"
                             onClick={() => setIsCreating({ type: 'file', ext: '.block', parentPath: selectedDirPath || openedFolder || '' })}
-                            title="Novo Bloco (.block)"
+                            title={t('file_explorer.actions.new_block')}
                         />
                     </div>
                 </div>

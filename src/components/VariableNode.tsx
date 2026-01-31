@@ -79,7 +79,7 @@ export const VariableNode = ({ data, id }: { id: string, data: { label: string, 
                                             className="handle-data"
                                             style={{ left: '-12px', background: '#f472b6' }}
                                         />
-                                        <span style={{ fontSize: '0.8rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{arg}</span>
+                                        <span style={{ fontSize: '0.8rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700,  letterSpacing: '0.05em' }}>{arg}</span>
                                     </div>
                                 ))}
                             </div>

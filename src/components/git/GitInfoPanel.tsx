@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
+import { useTranslation } from 'react-i18next';
 import { ScrollArea } from '../ui/ScrollArea';
 import { PanelSection } from './PanelSection';
 import { EmptyState } from './EmptyState';
@@ -51,6 +52,7 @@ const StatBox: React.FC<{
 };
 
 const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) => {
+    const { t, i18n } = useTranslation();
     const data = useMemo(() => {
         const heatmap: Record<string, number> = {};
         logs.forEach(commit => {
@@ -71,7 +73,7 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
             startDate.setDate(startDate.getDate() - 1);
         }
 
-        let currentDate = new Date(startDate);
+        const currentDate = new Date(startDate);
         while (currentDate <= today) {
             const week = [];
             for (let i = 0; i < 7; i++) {
@@ -88,7 +90,7 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
             const prevWeek = weeks[i - 1];
             const prevDate = prevWeek ? prevWeek[0].dayObj : null;
             if (!prevDate || date.getMonth() !== prevDate.getMonth()) {
-                return { label: date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''), index: i };
+                return { label: date.toLocaleDateString(i18n.language, { month: 'short' }).replace('.', ''), index: i };
             }
             return null;
         }).filter(m => m !== null);
@@ -112,9 +114,9 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: `${cellGap}px`, marginTop: '20px', color: isDark ? '#666' : '#999', fontSize: '0.6rem', paddingTop: `${cellSize + cellGap}px`, flexShrink: 0 }}>
-                        <span style={{ height: `${cellSize}px`, lineHeight: `${cellSize}px` }}>Seg</span>
-                        <span style={{ height: `${cellSize}px`, lineHeight: `${cellSize}px`, marginTop: `${cellSize + cellGap}px` }}>Qua</span>
-                        <span style={{ height: `${cellSize}px`, lineHeight: `${cellSize}px`, marginTop: `${cellSize + cellGap}px` }}>Sex</span>
+                        <span style={{ height: `${cellSize}px`, lineHeight: `${cellSize}px` }}>{t('git.common.days.mon')}</span>
+                        <span style={{ height: `${cellSize}px`, lineHeight: `${cellSize}px`, marginTop: `${cellSize + cellGap}px` }}>{t('git.common.days.wed')}</span>
+                        <span style={{ height: `${cellSize}px`, lineHeight: `${cellSize}px`, marginTop: `${cellSize + cellGap}px` }}>{t('git.common.days.fri')}</span>
                     </div>
 
                     <div style={{ flex: '0 1 auto', overflowX: 'auto', overflowY: 'hidden' }} className="no-scrollbar">
@@ -127,7 +129,7 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
                                             {month && <div style={{ position: 'absolute', left: 0, bottom: '2px', whiteSpace: 'nowrap' }}>{month.label}</div>}
                                         </div>
                                         {week.map((day: any) => (
-                                            <Tooltip key={day.date} content={<div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, marginBottom: '2px' }}>{day.count} contribuições</div><div style={{ opacity: 0.8, fontSize: '0.7rem' }}>{new Date(day.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>} side="top" delay={0}>
+                                            <Tooltip key={day.date} content={<div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, marginBottom: '2px' }}>{day.count} {t('git.info.heatmap.contributions')}</div><div style={{ opacity: 0.8, fontSize: '0.7rem' }}>{new Date(day.date + 'T12:00:00').toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>} side="top" delay={0}>
                                                 <div
                                                     style={{ width: `${cellSize}px`, height: `${cellSize}px`, borderRadius: '2px', backgroundColor: getGithubColor(day.count), cursor: day.count > 0 ? 'pointer' : 'default', transition: 'transform 0.1s' }}
                                                     onMouseEnter={(e) => { if (day.count > 0) e.currentTarget.style.transform = 'scale(1.2)'; }}
@@ -142,13 +144,13 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '4px', color: isDark ? '#666' : '#999', fontSize: '0.6rem' }}>
-                    <span style={{ opacity: 0.8 }}>Menos</span>
+                    <span style={{ opacity: 0.8 }}>{t('git.info.heatmap.less')}</span>
                     <div style={{ display: 'flex', gap: '3px' }}>
                         {[0, 2, 5, 8, 15].map(c => (
                             <div key={c} style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: getGithubColor(c), border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }} />
                         ))}
                     </div>
-                    <span style={{ opacity: 0.8 }}>Mais</span>
+                    <span style={{ opacity: 0.8 }}>{t('git.info.heatmap.more')}</span>
                 </div>
             </div>
             <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
@@ -158,6 +160,7 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
 
 export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] }) => {
     const { git, gitPanelConfig, gitDeleteTag } = useStore();
+    const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(600);
     const [showSettings, setShowSettings] = useState(false);
@@ -178,7 +181,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
     const authorsData = useMemo(() => {
         const authors: Record<string, { count: number; email: string }> = {};
         logs.forEach(commit => {
-            const name = commit.author || 'Desconhecido';
+            const name = commit.author || t('git.common.unknown_author');
             if (!authors[name]) authors[name] = { count: 0, email: '' };
             authors[name].count++;
         });
@@ -205,14 +208,23 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
         return { stats, max };
     }, [logs]);
 
+    const sectionDefs = useMemo(() => [
+        { id: 'overview', title: t('git.info.sections.overview'), icon: TrendingUp, tooltip: t('git.info.tooltips.overview') },
+        { id: 'stats', title: t('git.info.sections.stats'), icon: BarChart3, tooltip: t('git.info.tooltips.stats') },
+        { id: 'weekly', title: t('git.info.sections.weekly'), icon: Calendar, tooltip: t('git.info.tooltips.weekly') },
+        { id: 'hourly', title: t('git.info.sections.hourly'), icon: Clock, tooltip: t('git.info.tooltips.hourly') },
+        { id: 'contributors', title: t('git.info.sections.contributors'), icon: Users, tooltip: t('git.info.tooltips.contributors') },
+        { id: 'tags', title: t('git.info.sections.tags'), icon: Tag, tooltip: t('git.info.tooltips.tags') }
+    ], [t]);
+
     const isVisible = (id: string) => {
-        if (!gitPanelConfig || !gitPanelConfig.sections) return true;
+        if (!gitPanelConfig?.sections) return true;
         const section = gitPanelConfig.sections.find(s => s.id === id);
         return section ? section.visible : true;
     };
 
     const isExpanded = (id: string) => {
-        if (!gitPanelConfig || !gitPanelConfig.sections) return true;
+        if (!gitPanelConfig?.sections) return true;
         const section = gitPanelConfig.sections.find(s => s.id === id);
         return section ? section.expanded !== false : true;
     };
@@ -230,7 +242,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
         } else {
             // If it doesn't exist in config, it means it's currently using default (Open/True).
             // So we want to add it as Closed/False.
-            sections = [...sections, { id, visible: true, expanded: false }];
+            const label = sectionDefs.find(s => s.id === id)?.title || id;
+            sections = [...sections, { id, visible: true, expanded: false, label }];
         }
 
         useStore.getState().updateGitPanelConfig({ sections });
@@ -241,24 +254,32 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
             case 'overview': return <Heatmap isDark={isDark} logs={logs} />;
             case 'stats': return (
                 <div style={{ padding: isSmall ? '12px' : '16px', display: 'grid', gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gap: isSmall ? '8px' : '10px' }}>
-                    <StatBox title="Branches" value={git.branches?.length || 0} isDark={isDark} isCompact={isSmall} tooltip="Total de ramificações no projeto" />
-                    <StatBox title="Commits" value={logs.length} isDark={isDark} isCompact={isSmall} tooltip="Histórico total de versões" />
-                    <StatBox title="Stashes" value={git.stashes?.length || 0} isDark={isDark} isCompact={isSmall} tooltip="Alterações guardadas temporariamente" />
-                    <StatBox title="Arquivos" value={git.stats?.fileCount || 0} isDark={isDark} isCompact={isSmall} tooltip="Arquivos rastreados pelo Git" />
-                    <StatBox title="Tamanho .git" value={git.stats?.repoSize || '-'} isDark={isDark} isCompact={isSmall} tooltip="Tamanho dos metadados e histórico" />
-                    <StatBox title="Projeto" value={git.stats?.projectSize || '-'} isDark={isDark} isCompact={isSmall} tooltip="Tamanho total da pasta de trabalho" />
+                    <StatBox title={t('git.info.stats.branches')} value={git.branches?.length || 0} isDark={isDark} isCompact={isSmall} tooltip={t('git.info.stats.tooltips.branches')} />
+                    <StatBox title={t('git.info.stats.commits')} value={logs.length} isDark={isDark} isCompact={isSmall} tooltip={t('git.info.stats.tooltips.commits')} />
+                    <StatBox title={t('git.info.stats.stashes')} value={git.stashes?.length || 0} isDark={isDark} isCompact={isSmall} tooltip={t('git.info.stats.tooltips.stashes')} />
+                    <StatBox title={t('git.info.stats.files')} value={git.stats?.fileCount || 0} isDark={isDark} isCompact={isSmall} tooltip={t('git.info.stats.tooltips.files')} />
+                    <StatBox title={t('git.info.stats.git_size')} value={git.stats?.repoSize || '-'} isDark={isDark} isCompact={isSmall} tooltip={t('git.info.stats.tooltips.git_size')} />
+                    <StatBox title={t('git.info.stats.project_size')} value={git.stats?.projectSize || '-'} isDark={isDark} isCompact={isSmall} tooltip={t('git.info.stats.tooltips.project_size')} />
                 </div>
             );
             case 'weekly': return (
                 <div style={{ padding: '16px', display: 'flex', alignItems: 'flex-end', height: '60px', gap: '4px', justifyContent: 'space-between' }}>
-                    {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, i) => {
+                    {[
+                        t('git.common.days.sun'),
+                        t('git.common.days.mon'),
+                        t('git.common.days.tue'),
+                        t('git.common.days.wed'),
+                        t('git.common.days.thu'),
+                        t('git.common.days.fri'),
+                        t('git.common.days.sat')
+                    ].map((day, i) => {
                         const count = weeklyStats.stats[i] || 0;
                         const height = (count / weeklyStats.max) * 100;
                         return (
                             <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
                                 <div style={{ width: '100%', height: '40px', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderRadius: '4px', overflow: 'hidden', display: 'flex', alignItems: 'flex-end' }}>
                                     <div
-                                        title={`${count} commits em ${day}`}
+                                        title={`${count} commits`}
                                         style={{
                                             width: '100%',
                                             height: `${height}%`,
@@ -332,7 +353,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                     {authorsData.slice(0, 10).map((author, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: isDark ? '#333' : '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.7rem', color: isDark ? '#aaa' : '#555', flexShrink: 0 }}>{author.name[0].toUpperCase()}</div>
+                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: isDark ? '#333' : '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.7rem', color: isDark ? '#aaa' : '#555', flexShrink: 0 }}>{author.name[0]}</div>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isDark ? '#ddd' : '#333' }}>{author.name}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -347,7 +368,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                 <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {!git.tags || git.tags.length === 0 ? (
                         <div style={{ padding: '20px', textAlign: 'center', color: isDark ? '#666' : '#999', fontSize: '0.75rem', fontStyle: 'italic' }}>
-                            Nenhuma tag encontrada neste repositório.
+                            {t('git.info.tags.empty')}
                         </div>
                     ) : (
                         git.tags.map((tag) => (
@@ -377,7 +398,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                                 </div>
                                 <button
                                     onClick={() => {
-                                        if (confirm(`Tem certeza que deseja deletar a tag ${tag.name}?`)) {
+                                        if (confirm(t('git.info.tags.delete_confirm', { tag: tag.name }))) {
                                             gitDeleteTag(tag.name);
                                         }
                                     }}
@@ -394,7 +415,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                                     }}
                                     onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                                     onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}
-                                    title="Deletar Tag"
+                                    title={t('git.info.tags.delete_tooltip')}
                                 >
                                     <Trash2 size={14} />
                                 </button>
@@ -415,15 +436,6 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
         return <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: isDark ? '#1a1a1a' : '#fff' }}><EmptyState isDark={isDark} type={git.isRepo ? "no-commits" : "no-repo"} /></div>;
     }
 
-    const sections = [
-        { id: 'overview', title: 'Visão Geral', icon: TrendingUp, tooltip: 'Mapa de Calor de contribuições' },
-        { id: 'stats', title: 'Estatísticas', icon: BarChart3, tooltip: 'Métricas reais do repositório' },
-        { id: 'weekly', title: 'Atividade Semanal', icon: Calendar, tooltip: 'Distribuição por dia da semana' },
-        { id: 'hourly', title: 'Horários de Pico', icon: Clock, tooltip: 'Análise de produtividade 24h' },
-        { id: 'contributors', title: 'Ranking de Contribuidores', icon: Users, tooltip: 'Liderança de commits por autor' },
-        { id: 'tags', title: 'Tags & Versões', icon: Tag, tooltip: 'Gerenciamento de Tags do Repositório' }
-    ];
-
     return (
         <div
             ref={containerRef}
@@ -439,12 +451,12 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
             }}
         >
             <div style={{ padding: '8px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', backdropFilter: 'blur(10px)', zIndex: 20 }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: isDark ? '#555' : '#999' }}>Informações Analíticas</span>
-                <button onClick={() => setShowSettings(!showSettings)} style={{ background: showSettings ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: showSettings ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#666' : '#999'), display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', outline: 'none' }} title="Configurar visualização das seções"><Settings2 size={16} /></button>
+                <span style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', color: isDark ? '#555' : '#999' }}>{t('git.info.title')}</span>
+                <button onClick={() => setShowSettings(!showSettings)} style={{ background: showSettings ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: showSettings ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#666' : '#999'), display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', outline: 'none' }} title={t('git.info.settings_tooltip')}><Settings2 size={16} /></button>
             </div>
             <ScrollArea visibility="hover">
                 <div style={{ paddingBottom: '20px' }}>
-                    {sections.map((section, index) => (
+                    {sectionDefs.map((section, index) => (
                         isVisible(section.id) && (
                             <PanelSection
                                 key={section.id}
@@ -463,8 +475,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                         )
                     ))}
                 </div>
-            </ScrollArea>
+            </ScrollArea >
             {showSettings && <GitPanelConfig isDark={isDark} onClose={() => setShowSettings(false)} />}
-        </div>
+        </div >
     );
 };

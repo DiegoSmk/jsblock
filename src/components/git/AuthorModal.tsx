@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Settings, Plus, Trash2, ArrowLeft, User, Check, Edit3, ShieldAlert } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Radio } from '../ui/Radio';
@@ -46,6 +47,8 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
     handleAddProfile, removeGitProfile,
     newProfile, setNewProfile
 }) => {
+    const { t } = useTranslation();
+
     const headerIcon = showProfileManager ? (
         <button
             onClick={() => setShowProfileManager(false)}
@@ -70,7 +73,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
     const modalFooter = (!showProfileManager && (!authorConfigBuffer.isGlobal || isEditingAuthor || !globalAuthor)) ? (
         <>
             <button onClick={onClose} style={{ padding: '10px 16px', background: 'transparent', color: isDark ? '#888' : '#666', border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
-                Cancelar
+                {t('git.common.cancel')}
             </button>
             <button
                 onClick={onSave}
@@ -83,7 +86,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                     transition: 'all 0.2s'
                 }}
             >
-                Salvar Alterações
+                {t('git.modals.author.save')}
             </button>
         </>
     ) : undefined;
@@ -92,7 +95,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={showProfileManager ? 'Gerenciar Perfis' : 'Configurar Autor'}
+            title={showProfileManager ? t('git.modals.author.manage_profiles') : t('git.modals.author.title')}
             isDark={isDark}
             headerIcon={headerIcon}
             footer={modalFooter}
@@ -103,17 +106,17 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <div style={{ background: isDark ? '#222' : '#f9fafb', padding: '16px', borderRadius: '12px', border: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
                         <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#666' : '#999', marginBottom: '12px', textTransform: 'uppercase' }}>
-                            Novo Perfil
+                            {t('git.modals.author.new_profile')}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <input
-                                placeholder="Nome Completo"
+                                placeholder={t('git.modals.author.name_placeholder')}
                                 value={newProfile.name}
                                 onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
                                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${isDark ? '#444' : '#d1d5db'}`, background: isDark ? '#000' : '#fff', color: isDark ? '#fff' : '#000', fontSize: '0.9rem', boxSizing: 'border-box' }}
                             />
                             <input
-                                placeholder="Email"
+                                placeholder={t('git.modals.author.email_placeholder')}
                                 value={newProfile.email}
                                 onChange={(e) => setNewProfile({ ...newProfile, email: e.target.value })}
                                 style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${isDark ? '#444' : '#d1d5db'}`, background: isDark ? '#000' : '#fff', color: isDark ? '#fff' : '#000', fontSize: '0.9rem', boxSizing: 'border-box' }}
@@ -139,7 +142,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                             gap: '4px',
                                             fontSize: '0.7rem'
                                         }}
-                                        title={tag === 'custom' ? 'Personalizado' : tag}
+                                        title={tag === 'custom' ? t('git.modals.author.custom_tag') : tag}
                                     >
                                         {getTagIcon(tag)}
                                     </button>
@@ -148,7 +151,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
 
                             {newProfile.tag === 'custom' && (
                                 <input
-                                    placeholder="Nome da Flag (Ex: Freelance)"
+                                    placeholder={t('git.modals.author.custom_tag_placeholder')}
                                     value={newProfile.customTagName}
                                     onChange={(e) => setNewProfile({ ...newProfile, customTagName: e.target.value })}
                                     style={{
@@ -186,14 +189,14 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                     transition: 'opacity 0.2s'
                                 }}
                             >
-                                <Plus size={18} /> Criar Perfil
+                                <Plus size={18} /> {t('git.modals.author.create_profile')}
                             </button>
                         </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
-                            Perfis Existentes
+                            {t('git.modals.author.existing_profiles')}
                         </div>
                         {gitProfiles.map((p: Profile) => (
                             <div key={p.id} style={{
@@ -243,7 +246,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                         ))}
                         {gitProfiles.length === 0 && (
                             <div style={{ textAlign: 'center', padding: '20px', color: isDark ? '#444' : '#ccc', fontSize: '0.85rem' }}>
-                                Nenhum perfil cadastrado.
+                                {t('git.modals.author.no_profiles')}
                             </div>
                         )}
                     </div>
@@ -254,7 +257,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                     {/* Scope Selection */}
                     <div>
                         <div style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 700, textTransform: 'uppercase' }}>
-                            Escopo de Configuração
+                            {t('git.modals.author.scope_label')}
                         </div>
                         <div style={{ display: 'flex', gap: '10px' }}>
                             <label
@@ -273,8 +276,8 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                     isDark={isDark}
                                 />
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Local</span>
-                                    <span style={{ fontSize: '0.7rem', color: isDark ? '#555' : '#999' }}>Apenas este projeto</span>
+                                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{t('git.modals.author.scope_local')}</span>
+                                    <span style={{ fontSize: '0.7rem', color: isDark ? '#555' : '#999' }}>{t('git.modals.author.scope_local_desc')}</span>
                                 </div>
                             </label>
                             <label
@@ -293,8 +296,8 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                     isDark={isDark}
                                 />
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Global</span>
-                                    <span style={{ fontSize: '0.7rem', color: isDark ? '#555' : '#999' }}>Todos os projetos</span>
+                                    <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{t('git.modals.author.scope_global')}</span>
+                                    <span style={{ fontSize: '0.7rem', color: isDark ? '#555' : '#999' }}>{t('git.modals.author.scope_global_desc')}</span>
                                 </div>
                             </label>
                         </div>
@@ -331,7 +334,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                     gap: '4px',
                                     border: '1px solid rgba(74, 222, 128, 0.2)'
                                 }}>
-                                    <Check size={10} /> Ativo
+                                    <Check size={10} /> {t('git.modals.author.active_badge')}
                                 </div>
                             </div>
                             <button
@@ -356,7 +359,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                 }}
                             >
                                 <Edit3 size={14} />
-                                Alterar Configuração Global
+                                {t('git.modals.author.edit_global')}
                             </button>
                         </div>
                     ) : (
@@ -365,7 +368,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                             {!authorConfigBuffer.isGlobal && gitProfiles.length > 0 && (
                                 <div>
                                     <div style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 700, textTransform: 'uppercase' }}>
-                                        Perfis Rápidos
+                                        {t('git.modals.author.quick_profiles')}
                                     </div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                         {gitProfiles.map((profile: Profile) => {
@@ -408,12 +411,12 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                     }}>
                                         <ShieldAlert size={16} color="#fbbf24" style={{ marginTop: '2px', flexShrink: 0 }} />
                                         <div style={{ fontSize: '0.75rem', color: '#fbbf24', lineHeight: 1.5 }}>
-                                            Configuração global não encontrada. Configure seu autor global para todos os projetos.
+                                            {t('git.modals.author.global_missing')}
                                         </div>
                                     </div>
                                 )}
                                 <div>
-                                    <label style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 600 }}>NOME</label>
+                                    <label style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 600 }}>{t('git.modals.author.name_label')}</label>
                                     <input
                                         type="text" value={authorConfigBuffer.name}
                                         onChange={(e) => setAuthorConfigBuffer({ ...authorConfigBuffer, name: e.target.value })}
@@ -421,7 +424,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 600 }}>EMAIL</label>
+                                    <label style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 600 }}>{t('git.modals.author.email_label')}</label>
                                     <input
                                         type="email" value={authorConfigBuffer.email}
                                         onChange={(e) => setAuthorConfigBuffer({ ...authorConfigBuffer, email: e.target.value })}
@@ -459,7 +462,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                                 e.currentTarget.style.borderColor = isDark ? '#333' : '#e5e7eb';
                             }}
                         >
-                            <Settings size={16} /> Gerenciar Perfis
+                            <Settings size={16} /> {t('git.modals.author.manage_profiles')}
                         </button>
                     )}
                 </div>

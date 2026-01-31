@@ -1,8 +1,72 @@
 import React from 'react';
 import { Settings, Sun, Moon, GitBranch, Box } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { useTranslation } from 'react-i18next';
+import { DESIGN_TOKENS } from '../constants/design';
+import type { LucideIcon } from 'lucide-react';
+
+interface RibbonButtonProps {
+    icon: LucideIcon;
+    active?: boolean;
+    onClick: () => void;
+    title: string;
+    bottom?: boolean;
+    disabled?: boolean;
+    isDark: boolean;
+}
+
+const RibbonButton: React.FC<RibbonButtonProps> = ({
+    icon: Icon,
+    active,
+    onClick,
+    title,
+    bottom,
+    disabled,
+    isDark
+}) => (
+    <button
+        onClick={disabled ? undefined : onClick}
+        title={title}
+        disabled={disabled}
+        style={{
+            width: DESIGN_TOKENS.RIBBON_WIDTH,
+            height: DESIGN_TOKENS.RIBBON_WIDTH,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            color: disabled ? (isDark ? '#333' : '#ccc') : active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
+            cursor: disabled ? 'default' : 'pointer',
+            transition: 'all 0.2s',
+            position: 'relative',
+            marginTop: bottom ? 'auto' : 0,
+            opacity: disabled ? 0.5 : 1
+        }}
+        onMouseEnter={(e) => {
+            if (!disabled) e.currentTarget.style.color = isDark ? '#fff' : '#000';
+        }}
+        onMouseLeave={(e) => {
+            if (!disabled) e.currentTarget.style.color = active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666');
+        }}
+    >
+        <Icon size={DESIGN_TOKENS.RIBBON_ICON_SIZE} strokeWidth={active ? 2.5 : 2} />
+        {active && (
+            <div style={{
+                position: 'absolute',
+                left: 0,
+                top: '10px',
+                bottom: '10px',
+                width: '2px',
+                background: isDark ? '#4fc3f7' : '#0070f3',
+                borderRadius: '0 4px 4px 0'
+            }} />
+        )}
+    </button>
+);
 
 export const SideRibbon: React.FC = () => {
+    const { t } = useTranslation();
     const {
         theme, toggleTheme,
         activeSidebarTab, setSidebarTab,
@@ -11,51 +75,9 @@ export const SideRibbon: React.FC = () => {
 
     const isDark = theme === 'dark';
 
-    const RibbonButton = ({ icon: Icon, active, onClick, title, bottom, disabled }: { icon: any, active?: boolean, onClick: () => void, title: string, bottom?: boolean, disabled?: boolean }) => (
-        <button
-            onClick={disabled ? undefined : onClick}
-            title={title}
-            disabled={disabled}
-            style={{
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'transparent',
-                border: 'none',
-                color: disabled ? (isDark ? '#333' : '#ccc') : active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
-                cursor: disabled ? 'default' : 'pointer',
-                transition: 'all 0.2s',
-                position: 'relative',
-                marginTop: bottom ? 'auto' : 0,
-                opacity: disabled ? 0.5 : 1
-            }}
-            onMouseEnter={(e) => {
-                if (!disabled) e.currentTarget.style.color = isDark ? '#fff' : '#000';
-            }}
-            onMouseLeave={(e) => {
-                if (!disabled) e.currentTarget.style.color = active ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666');
-            }}
-        >
-            <Icon size={20} strokeWidth={active ? 2.5 : 2} />
-            {active && (
-                <div style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '10px',
-                    bottom: '10px',
-                    width: '2px',
-                    background: isDark ? '#4fc3f7' : '#0070f3',
-                    borderRadius: '0 4px 4px 0'
-                }} />
-            )}
-        </button>
-    );
-
     return (
         <div style={{
-            width: '40px',
+            width: DESIGN_TOKENS.RIBBON_WIDTH,
             height: '100%',
             backgroundColor: isDark ? '#1a1a1a' : '#e3e5e8',
             display: 'flex',
@@ -70,14 +92,16 @@ export const SideRibbon: React.FC = () => {
                 icon={Box}
                 active={activeSidebarTab === 'explorer' || activeSidebarTab === 'library'}
                 onClick={() => setSidebarTab('explorer')}
-                title="Ambiente de Blueprints"
+                title={t('app.tooltips.blueprints')}
+                isDark={isDark}
             />
             <RibbonButton
                 icon={GitBranch}
                 active={activeSidebarTab === 'git'}
                 onClick={() => setSidebarTab('git')}
-                title="Git (Controle de Versão)"
+                title={t('app.tooltips.git')}
                 disabled={!openedFolder}
+                isDark={isDark}
             />
 
             <div style={{ flex: 1 }} />
@@ -85,13 +109,15 @@ export const SideRibbon: React.FC = () => {
             <RibbonButton
                 icon={isDark ? Sun : Moon}
                 onClick={toggleTheme}
-                title={isDark ? "Modo Claro" : "Modo Escuro"}
+                title={isDark ? t('app.tooltips.theme_light') : t('app.tooltips.theme_dark')}
+                isDark={isDark}
             />
             <RibbonButton
                 icon={Settings}
                 active={activeSidebarTab === 'settings'}
                 onClick={() => setSidebarTab('settings')}
-                title="Configurações"
+                title={t('app.tooltips.settings')}
+                isDark={isDark}
             />
         </div>
     );

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
@@ -25,6 +26,7 @@ export const GitTerminalView: React.FC = () => {
         removeQuickCommand,
         settings
     } = useStore();
+    const { t } = useTranslation();
 
     const isDark = theme === 'dark';
     const terminalRef = useRef<HTMLDivElement>(null);
@@ -152,7 +154,7 @@ export const GitTerminalView: React.FC = () => {
 
                 // Progress Tracking Logic
                 // 1. Search for percentage patterns (e.g. 45%, 10/100, etc)
-                const percentMatch = data.match(/(\d+)%/);
+                const percentMatch = /(\d+)%/.exec(data);
                 if (percentMatch) {
                     const percent = parseInt(percentMatch[1]);
 
@@ -160,9 +162,9 @@ export const GitTerminalView: React.FC = () => {
                     if (percent > 0 || (percent === 0 && data.includes('progress'))) {
                         setTerminalProgress({
                             percent,
-                            label: data.includes('npm') ? 'NPM Install/Build...' :
-                                data.includes('git') ? 'Git Operation...' :
-                                    'Processando Tarefa...',
+                            label: data.includes('npm') ? t('git.terminal.progress.npm') :
+                                data.includes('git') ? t('git.terminal.progress.git') :
+                                    t('git.terminal.progress.default'),
                             visible: true
                         });
 
@@ -185,8 +187,8 @@ export const GitTerminalView: React.FC = () => {
                 // Git Correction Logic
                 // Detects patterns like: 'git: 'chekout' is not a git command. Did you mean checkout?'
                 if (data.includes('not a git command') || data.includes('The most similar command')) {
-                    const suggestionMatch = data.match(/The most similar command(?:s)? is\s+([a-z-]+)/) ||
-                        data.match(/Did you mean this\?\s+([a-z-]+)/);
+                    const suggestionMatch = (/The most similar command(?:s)? is\s+([a-z-]+)/.exec(data)) ||
+                        (/Did you mean this\?\s+([a-z-]+)/.exec(data));
                     if (suggestionMatch && suggestionMatch[1]) {
                         setGitSuggestion(suggestionMatch[1]);
                         if (suggestionTimeoutRef.current) clearTimeout(suggestionTimeoutRef.current);
@@ -202,7 +204,7 @@ export const GitTerminalView: React.FC = () => {
                 // Undo Commit Logic
                 // Detects: [main 3a4f2b1] commit message
                 if (data.includes('] ') && (data.includes('create mode') || data.includes('files changed'))) {
-                    const commitMatch = data.match(/\[[a-zA-Z0-9\-_./]+\s+([a-f0-9]+)\]/);
+                    const commitMatch = /\[[a-zA-Z0-9\-_./]+\s+([a-f0-9]+)\]/.exec(data);
                     if (commitMatch && commitMatch[1]) {
                         setLastCommitHash(commitMatch[1]);
                         if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current);
@@ -212,7 +214,7 @@ export const GitTerminalView: React.FC = () => {
 
                 // Yes/No Prompt Logic
                 // Detects various forms of (y/n) prompts, including Portuguese [S/n] and phrases
-                if (data.match(/(?:\(y\/n\)|\(Y\/n\)|\(y\/N\)|\? \[y\/N\]|\[S\/n\]|\[s\/N\]|Are you sure.*y\/n|want to continue\?|quer continuar\?)/i)) {
+                if (/(?:\(y\/n\)|\(Y\/n\)|\(y\/N\)|\? \[y\/N\]|\[S\/n\]|\[s\/N\]|Are you sure.*y\/n|want to continue\?|quer continuar\?)/i.exec(data)) {
                     setYesNoPrompt(true);
                     if (promptTimeoutRef.current) clearTimeout(promptTimeoutRef.current);
                     // Hide after 30s if no interaction, though prompt usually waits indefinitely
@@ -279,7 +281,7 @@ export const GitTerminalView: React.FC = () => {
         }
     };
 
-    const handleRunQuickCommand = (cmd: string, autoExecute: boolean = true) => {
+    const handleRunQuickCommand = (cmd: string, autoExecute = true) => {
         if ((window as any).electronAPI) {
             // Send command + enter if autoExecute (default), otherwise just send command
             (window as any).electronAPI.terminalSendInput(cmd + (autoExecute !== false ? '\r' : ''));
@@ -327,7 +329,7 @@ export const GitTerminalView: React.FC = () => {
                     fontWeight: 600
                 }}
             >
-                Cancelar
+                {t('git.terminal.modal.cancel')}
             </button>
             <button
                 onClick={handleAddQuickCommand}
@@ -344,7 +346,7 @@ export const GitTerminalView: React.FC = () => {
                     transition: 'all 0.2s'
                 }}
             >
-                Criar Atalho
+                {t('git.terminal.modal.create')}
             </button>
         </>
     );
@@ -366,7 +368,7 @@ export const GitTerminalView: React.FC = () => {
             <Modal
                 isOpen={showAddCommand}
                 onClose={() => setShowAddCommand(false)}
-                title="Configurar Atalho de Execução"
+                title={t('git.terminal.modal.title')}
                 isDark={isDark}
                 headerIcon={<Zap size={16} color={isDark ? '#4fc3f7' : '#0070f3'} />}
                 footer={addCommandModalFooter}
@@ -374,10 +376,10 @@ export const GitTerminalView: React.FC = () => {
             >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div>
-                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>Nome do Atalho</label>
+                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>{t('git.terminal.modal.name_label')}</label>
                         <input
                             autoFocus
-                            placeholder="Ex: Start Dev"
+                            placeholder={t('git.terminal.modal.name_placeholder')}
                             value={newCmdLabel}
                             onChange={(e) => setNewCmdLabel(e.target.value)}
                             style={{
@@ -394,9 +396,9 @@ export const GitTerminalView: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>Instrução SQL/Bash</label>
+                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>{t('git.terminal.modal.cmd_label')}</label>
                         <input
-                            placeholder="Ex: npm run dev"
+                            placeholder={t('git.terminal.modal.cmd_placeholder')}
                             value={newCmdValue}
                             onChange={(e) => setNewCmdValue(e.target.value)}
                             style={{
@@ -415,7 +417,7 @@ export const GitTerminalView: React.FC = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>Modo de Interação</label>
+                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>{t('git.terminal.modal.interaction_label')}</label>
 
                         <div
                             onClick={() => setNewCmdAutoExecute(true)}
@@ -438,8 +440,8 @@ export const GitTerminalView: React.FC = () => {
                                 isDark={isDark}
                             />
                             <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>Execução Automática</div>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>O comando é enviado e processado imediatamente ao clicar no atalho.</div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>{t('git.terminal.modal.auto_exec.title')}</div>
+                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>{t('git.terminal.modal.auto_exec.desc')}</div>
                             </div>
                         </div>
 
@@ -464,8 +466,8 @@ export const GitTerminalView: React.FC = () => {
                                 isDark={isDark}
                             />
                             <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>Apenas Preencher</div>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>Insere o código no prompt, permitindo revisão antes da execução manual.</div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>{t('git.terminal.modal.fill_only.title')}</div>
+                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>{t('git.terminal.modal.fill_only.desc')}</div>
                             </div>
                         </div>
                     </div>
@@ -473,23 +475,28 @@ export const GitTerminalView: React.FC = () => {
             </Modal>
 
             {/* Terminal Header */}
-            <div style={{
-                height: '40px',
-                padding: '0 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
-                background: isDark ? '#1f1f1f' : '#f8f9fa'
-            }}>
+            <div
+                className="animate-entrance"
+                style={{
+                    height: '40px',
+                    padding: '0 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
+                    background: isDark ? '#1f1f1f' : '#f8f9fa',
+                    animationDelay: '0.05s',
+                    opacity: 0
+                }}
+            >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <TerminalIcon size={14} color={isDark ? '#4fc3f7' : '#0070f3'} />
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.5px', color: isDark ? '#ccc' : '#444' }}>
-                        TERMINAL INTEGRADO
+                        {t('git.terminal.title')}
                     </span>
                     <div style={{ height: '12px', width: '1px', background: isDark ? '#333' : '#ddd', margin: '0 4px' }} />
-                    <Tooltip content="Atalhos personalizados para execução rápida de comandos" side="bottom">
-                        <span style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999', fontWeight: 600, textTransform: 'uppercase', cursor: 'help' }}>Macros</span>
+                    <Tooltip content={t('git.terminal.macros_tooltip')} side="bottom">
+                        <span style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999', fontWeight: 600,  cursor: 'help' }}>Macros</span>
                     </Tooltip>
 
                     <div style={{
@@ -503,14 +510,14 @@ export const GitTerminalView: React.FC = () => {
                         {settings.terminalCopyOnSelect && (
                             <Tooltip content="Texto selecionado é copiado automaticamente" side="bottom">
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
-                                    <Check size={10} color="#4ade80" /> Auto-Copy
+                                    <Check size={10} color="#4ade80" /> {t('git.terminal.auto_copy')}
                                 </span>
                             </Tooltip>
                         )}
                         {settings.terminalRightClickPaste && (
                             <Tooltip content="Botão direito cola conteúdo da área de transferência" side="bottom">
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
-                                    <Check size={10} color="#4ade80" /> Click-Paste
+                                    <Check size={10} color="#4ade80" /> {t('git.terminal.click_paste')}
                                 </span>
                             </Tooltip>
                         )}
@@ -520,7 +527,7 @@ export const GitTerminalView: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button
                         onClick={handleOpenExternal}
-                        title="Abrir no Terminal do Sistema"
+                        title={t('git.terminal.external_tooltip')}
                         style={{
                             background: 'transparent',
                             border: 'none',
@@ -537,21 +544,26 @@ export const GitTerminalView: React.FC = () => {
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <ExternalLink size={14} />
-                        <span>Externo</span>
+                        <span>{t('git.terminal.external')}</span>
                     </button>
                 </div>
             </div>
 
             {/* Macros Bar */}
-            <div style={{
-                padding: '8px 16px',
-                borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
-                background: isDark ? '#1a1a1a' : '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                minHeight: '40px'
-            }}>
+            <div
+                className="animate-entrance"
+                style={{
+                    padding: '8px 16px',
+                    borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
+                    background: isDark ? '#1a1a1a' : '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    minHeight: '40px',
+                    animationDelay: '0.1s',
+                    opacity: 0
+                }}
+            >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isDark ? '#555' : '#aaa' }}>
                     <Zap size={14} />
                 </div>
@@ -654,12 +666,17 @@ export const GitTerminalView: React.FC = () => {
             </div>
 
             {/* Terminal Viewport */}
-            <div style={{
-                flex: 1,
-                position: 'relative',
-                background: isDark ? '#1a1a1a' : '#fff',
-                padding: '4px'
-            }} className="terminal-viewport-container">
+            <div
+                className="terminal-viewport-container animate-entrance"
+                style={{
+                    flex: 1,
+                    position: 'relative',
+                    background: isDark ? '#1a1a1a' : '#fff',
+                    padding: '4px',
+                    animationDelay: '0.15s',
+                    opacity: 0
+                }}
+            >
                 <style>{`
                     .xterm-viewport::-webkit-scrollbar {
                         width: 8px;
@@ -723,9 +740,9 @@ export const GitTerminalView: React.FC = () => {
                             <Zap size={18} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Sugestão do Git</div>
+                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600,  marginBottom: '2px' }}>{t('git.terminal.suggestion.title')}</div>
                             <div style={{ fontSize: '0.85rem', color: isDark ? '#eee' : '#333' }}>
-                                Quis dizer <span style={{ fontWeight: 800, color: isDark ? '#4fc3f7' : '#0070f3' }}>git {gitSuggestion}</span>?
+                                {t('git.terminal.suggestion.message')} <span style={{ fontWeight: 800, color: isDark ? '#4fc3f7' : '#0070f3' }}>git {gitSuggestion}</span>?
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', marginLeft: '8px' }}>
@@ -741,10 +758,10 @@ export const GitTerminalView: React.FC = () => {
                                     cursor: 'pointer'
                                 }}
                             >
-                                Ignorar
+                                {t('git.terminal.suggestion.ignore')}
                             </button>
                             <button
-                                onClick={() => handleApplySuggestion(gitSuggestion!)}
+                                onClick={() => handleApplySuggestion(gitSuggestion)}
                                 style={{
                                     background: isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)',
                                     border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)'}`,
@@ -759,7 +776,7 @@ export const GitTerminalView: React.FC = () => {
                                 onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(79, 195, 247, 0.25)' : 'rgba(0, 112, 243, 0.15)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'}
                             >
-                                Corrigir Agora
+                                {t('git.terminal.suggestion.fix')}
                             </button>
                         </div>
                     </div>
@@ -801,9 +818,9 @@ export const GitTerminalView: React.FC = () => {
                             <Check size={18} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Git Commit</div>
+                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600,  marginBottom: '2px' }}>{t('git.terminal.success.title')}</div>
                             <div style={{ fontSize: '0.85rem', color: isDark ? '#eee' : '#333' }}>
-                                Commit <span style={{ fontWeight: 800, color: isDark ? '#4ade80' : '#16a34a', fontFamily: 'monospace' }}>{lastCommitHash}</span> realizado!
+                                Commit <span style={{ fontWeight: 800, color: isDark ? '#4ade80' : '#16a34a', fontFamily: 'monospace' }}>{lastCommitHash}</span> {t('git.terminal.success.message')}
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', marginLeft: '8px' }}>
@@ -823,7 +840,7 @@ export const GitTerminalView: React.FC = () => {
                                 onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(248, 113, 113, 0.25)' : 'rgba(220, 38, 38, 0.15)'}
                                 onMouseLeave={(e) => e.currentTarget.style.background = isDark ? 'rgba(248, 113, 113, 0.15)' : 'rgba(220, 38, 38, 0.1)'}
                             >
-                                Desfazer (Undo)
+                                {t('git.terminal.success.undo')}
                             </button>
                         </div>
                     </div>
@@ -879,10 +896,10 @@ export const GitTerminalView: React.FC = () => {
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#fff' : '#111', marginBottom: '2px' }}>
-                                    Confirmação Necessária
+                                    {t('git.terminal.prompt.title')}
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: isDark ? '#888' : '#666' }}>
-                                    O terminal está aguardando sua resposta.
+                                    {t('git.terminal.prompt.message')}
                                 </div>
                             </div>
                         </div>
@@ -911,7 +928,7 @@ export const GitTerminalView: React.FC = () => {
                                     e.currentTarget.style.borderColor = isDark ? '#333' : '#ddd';
                                 }}
                             >
-                                Não
+                                {t('git.terminal.prompt.no')}
                             </button>
                             <button
                                 onClick={() => handleYesNo('y')}
@@ -934,7 +951,7 @@ export const GitTerminalView: React.FC = () => {
                                     e.currentTarget.style.background = (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)');
                                 }}
                             >
-                                Sim
+                                {t('git.terminal.prompt.yes')}
                             </button>
                         </div>
                     </div>

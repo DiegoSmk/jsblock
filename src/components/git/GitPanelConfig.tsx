@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Eye, EyeOff, RotateCcw, Layout, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { useTranslation } from 'react-i18next';
 
 interface GitPanelConfigProps {
     isDark: boolean;
@@ -8,6 +9,7 @@ interface GitPanelConfigProps {
 }
 
 export const GitPanelConfig: React.FC<GitPanelConfigProps> = ({ isDark, onClose }) => {
+    const { t } = useTranslation();
     const { gitPanelConfig, updateGitPanelConfig, resetGitPanelConfig } = useStore();
     const [isResetting, setIsResetting] = useState(false);
 
@@ -71,8 +73,8 @@ export const GitPanelConfig: React.FC<GitPanelConfigProps> = ({ isDark, onClose 
                         <Layout size={18} />
                     </div>
                     <div>
-                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: isDark ? '#fff' : '#1a1a1a' }}>Personalizar Painel</div>
-                        <div style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999' }}>Escolha quais métricas deseja ver</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: isDark ? '#fff' : '#1a1a1a' }}>{t('git.info.panel_config.title')}</div>
+                        <div style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999' }}>{t('git.info.panel_config.subtitle')}</div>
                     </div>
                 </div>
                 <button
@@ -157,7 +159,7 @@ export const GitPanelConfig: React.FC<GitPanelConfigProps> = ({ isDark, onClose 
                                 }}
                             >
                                 {section.visible ? <Eye size={16} /> : <EyeOff size={16} />}
-                                {section.visible ? 'Visível' : 'Oculto'}
+                                {section.visible ? t('git.info.panel_config.visible') : t('git.info.panel_config.hidden')}
                             </button>
                         </div>
                     ))}
@@ -203,7 +205,7 @@ export const GitPanelConfig: React.FC<GitPanelConfigProps> = ({ isDark, onClose 
                     }}
                 >
                     {isResetting ? <CheckCircle2 size={16} color="#4ade80" /> : <RotateCcw size={16} />}
-                    {isResetting ? 'Restaurado!' : 'Restaurar Padrões'}
+                    {isResetting ? t('git.info.panel_config.restored') : t('git.info.panel_config.reset')}
                 </button>
             </div>
         </div>

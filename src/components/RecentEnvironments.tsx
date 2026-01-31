@@ -99,7 +99,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                             fontSize: '0.65rem',
                             fontWeight: 700,
                             color: isDark ? '#555' : '#aaa',
-                            textTransform: 'uppercase',
+                            
                             letterSpacing: '0.05em',
                             padding: '4px 8px',
                             display: 'flex',
@@ -130,7 +130,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                             fontSize: '0.65rem',
                             fontWeight: 700,
                             color: isDark ? '#555' : '#aaa',
-                            textTransform: 'uppercase',
+                            
                             letterSpacing: '0.05em',
                             padding: '4px 8px',
                             display: 'flex',
@@ -550,7 +550,7 @@ const LabelSelector = ({ currentLabel, onSelect, isDark, compact, t }: any) => {
                                 borderRadius: '4px'
                             }}
                         >
-                            <span style={{ width: '12px', height: '12px', borderRadius: '50%', border: '1px dashed currentColor' }}></span>
+                            <span style={{ width: '12px', height: '12px', borderRadius: '50%', border: '1px dashed currentColor' }} />
                             {t('recent.none')}
                         </button>
                         {labels.map(label => (

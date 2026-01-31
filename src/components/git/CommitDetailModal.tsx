@@ -1,9 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Modal } from '../ui/Modal';
 import { FileText, User, Calendar, Hash, History, GitCommit, Copy, Check, GitBranch, Plus, Minus, Tag } from 'lucide-react';
 
 export const CommitDetailModal: React.FC = () => {
+    const { t } = useTranslation();
     const { commitDetail, closeCommitDetail, theme, checkoutCommit, openModal, createBranch, gitCreateTag } = useStore();
     const isDark = theme === 'dark';
     const [copiedHash, setCopiedHash] = React.useState(false);
@@ -22,10 +24,10 @@ export const CommitDetailModal: React.FC = () => {
     const handleCreateBranch = () => {
         if (commit) {
             openModal({
-                title: 'Criar Branch a partir deste Commit',
+                title: t('git.detail.branch_modal_title'),
                 type: 'input',
-                placeholder: 'Nome da nova branch',
-                confirmLabel: 'Criar',
+                placeholder: t('git.detail.branch_placeholder'),
+                confirmLabel: t('app.confirm_save.save'),
                 initialValue: '',
                 onSubmit: (name) => {
                     if (name) createBranch(name, commit.hash);
@@ -37,10 +39,10 @@ export const CommitDetailModal: React.FC = () => {
     const handleCreateTag = () => {
         if (commit) {
             openModal({
-                title: 'Criar Tag neste Commit',
+                title: t('git.detail.tag_modal_title'),
                 type: 'input',
-                placeholder: 'Nome da Tag (ex: v1.0.0)',
-                confirmLabel: 'Criar Tag',
+                placeholder: t('git.detail.tag_placeholder'),
+                confirmLabel: t('git.detail.new_tag'),
                 initialValue: '',
                 onSubmit: (name) => {
                     if (name) gitCreateTag(name, commit.hash);
@@ -204,7 +206,7 @@ export const CommitDetailModal: React.FC = () => {
                             <User size={16} style={{ color: isDark ? '#f472b6' : '#db2777' }} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.5, marginBottom: '1px', color: isDark ? '#999' : '#666' }}>Autor</div>
+                            <div style={{ fontSize: '0.65rem', opacity: 0.5, marginBottom: '1px', color: isDark ? '#999' : '#666' }}>{t('git.detail.author')}</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#eee' : '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {commit.author.split('<')[0].trim()}
                             </div>
@@ -233,7 +235,7 @@ export const CommitDetailModal: React.FC = () => {
                             <Calendar size={16} style={{ color: isDark ? '#2dd4bf' : '#0d9488' }} />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', opacity: 0.5, marginBottom: '1px', color: isDark ? '#999' : '#666' }}>Data</div>
+                            <div style={{ fontSize: '0.65rem', opacity: 0.5, marginBottom: '1px', color: isDark ? '#999' : '#666' }}>{t('git.detail.date')}</div>
                             <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#eee' : '#222' }}>
                                 {new Date(commit.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </div>
@@ -250,11 +252,11 @@ export const CommitDetailModal: React.FC = () => {
                         fontSize: '0.8rem',
                         fontWeight: 700,
                         color: isDark ? '#888' : '#666',
-                        textTransform: 'uppercase',
+
                         letterSpacing: '0.5px'
                     }}>
                         <FileText size={14} />
-                        <span>Arquivos Alterados</span>
+                        <span>{t('git.detail.files_changed')}</span>
                         <span style={{
                             background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
                             color: isDark ? '#aaa' : '#555',
@@ -351,7 +353,7 @@ export const CommitDetailModal: React.FC = () => {
                             transition: 'all 0.2s'
                         }}
                     >
-                        Fechar
+                        {t('app.confirm_save.cancel')}
                     </button>
 
                     <button
@@ -372,7 +374,7 @@ export const CommitDetailModal: React.FC = () => {
                         }}
                     >
                         <GitBranch size={15} />
-                        Nova Branch
+                        {t('git.detail.new_branch')}
                     </button>
 
                     <button
@@ -393,7 +395,7 @@ export const CommitDetailModal: React.FC = () => {
                         }}
                     >
                         <Tag size={15} />
-                        Nova Tag
+                        {t('git.detail.new_tag')}
                     </button>
 
                     <button
@@ -414,7 +416,7 @@ export const CommitDetailModal: React.FC = () => {
                         }}
                     >
                         <History size={15} />
-                        Checkout
+                        {t('git.detail.checkout')}
                     </button>
                 </div>
             </div>

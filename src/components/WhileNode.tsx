@@ -46,7 +46,7 @@ export const WhileNode = ({ data }: { data: any }) => {
                             top: '50%',
                         }}
                     />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#f48fb1' : '#ad1457', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Condition</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#f48fb1' : '#ad1457',  letterSpacing: '0.05em' }}>Condition</span>
                 </div>
 
                 {/* Flow Outputs */}
@@ -91,7 +91,7 @@ export const WhileNode = ({ data }: { data: any }) => {
 
                     {/* Exit Path */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        <span style={{ marginRight: '10px', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Exit</span>
+                        <span style={{ marginRight: '10px', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8',  letterSpacing: '0.05em' }}>Exit</span>
                         <Handle
                             type="source"
                             position={Position.Right}

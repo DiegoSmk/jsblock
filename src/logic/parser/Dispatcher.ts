@@ -1,4 +1,3 @@
-
 import type { ParserContext } from './types';
 import { CallHandler } from './handlers/CallHandler';
 import { IfHandler } from './handlers/IfHandler';
@@ -11,8 +10,10 @@ import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { generateId } from './utils';
+import type { Node as BabelNode, BlockStatement, Statement } from '@babel/types';
+import type { AppNode } from '../../store/useStore';
 
-export const parseStatement = (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
+export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
     const idSuffix = index !== undefined ? `${index}` : undefined;
 
     if (VariableHandler.canHandle(stmt)) {
@@ -62,12 +63,12 @@ export const parseStatement = (stmt: any, ctx: ParserContext, parentId?: string,
 };
 
 export const processBlockInScope = (
-    bodyNode: any,
+    bodyNode: BabelNode | BabelNode[],
     ctx: ParserContext,
     entryNodeId: string,
     flowHandle: string,
     label: string,
-    preNodes: any[] = []
+    preNodes: AppNode[] = []
 ) => {
     if (!bodyNode) return;
 
@@ -75,12 +76,13 @@ export const processBlockInScope = (
 
     const entryNode = ctx.nodes.find(n => n.id === entryNodeId);
     if (entryNode) {
-        if (!entryNode.data.scopes) (entryNode.data as any).scopes = {};
-        (entryNode.data as any).scopes[flowHandle] = {
+        if (!entryNode.data.scopes) entryNode.data.scopes = {};
+        entryNode.data.scopes[flowHandle] = {
             id: newScopeId,
             label: `${entryNode.data.label} > ${label}`
         };
     }
+
 
     const oldScopeId = ctx.currentScopeId;
     const oldParentId = ctx.currentParentId;
@@ -93,11 +95,13 @@ export const processBlockInScope = (
         node.data = { ...node.data, scopeId: newScopeId };
         ctx.nodes.push(node);
         if (node.type === 'variableNode') {
-            ctx.variableNodes[node.data.label] = node.id;
+            const label = node.data.label || 'arg';
+            ctx.variableNodes[label] = node.id;
         }
     });
 
-    const statements = bodyNode.type === 'BlockStatement' ? bodyNode.body : [bodyNode];
+    const statements = !Array.isArray(bodyNode) && bodyNode.type === 'BlockStatement' ? (bodyNode).body : (Array.isArray(bodyNode) ? bodyNode : [bodyNode]);
+
 
     let prevId: string | undefined = undefined;
 
@@ -112,7 +116,7 @@ export const processBlockInScope = (
     ctx.currentParentId = oldParentId;
 };
 
-export const initializeContext = (astBody: any[], indexCounter: { value: number }): ParserContext => {
+export const initializeContext = (astBody: Statement[], indexCounter: { value: number }): ParserContext => {
     const nativeApiId = 'node-js-runtime';
     const ctx: ParserContext = {
         nodes: [{

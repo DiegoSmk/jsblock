@@ -57,13 +57,18 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
             }}
         >
             {/* Header */}
-            <div style={{
-                padding: '12px 20px',
-                borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-            }}>
+            <div
+                className="animate-entrance"
+                style={{
+                    padding: '12px 20px',
+                    borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    animationDelay: '0.05s',
+                    opacity: 0
+                }}
+            >
                 <GitBranch size={18} color={isDark ? '#4fc3f7' : '#0070f3'} />
                 <div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Controle de Versão</div>
@@ -85,15 +90,20 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                     gap: '20px'
                 }}>
                     {/* Info Card */}
-                    <div style={{
-                        background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                        borderRadius: '8px',
-                        padding: '14px 16px',
-                        border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                        display: 'flex',
-                        gap: '12px',
-                        alignItems: 'center'
-                    }}>
+                    <div
+                        className="animate-entrance"
+                        style={{
+                            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: '8px',
+                            padding: '14px 16px',
+                            border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'center',
+                            animationDelay: '0.1s',
+                            opacity: 0
+                        }}
+                    >
                         <AlertCircle size={20} color={isDark ? '#fbbf24' : '#f59e0b'} style={{ flexShrink: 0 }} />
                         <p style={{
                             fontSize: '0.85rem',
@@ -106,12 +116,17 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                     </div>
 
                     {/* Author Section */}
-                    <div style={{
-                        background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                        borderRadius: '8px',
-                        padding: '16px',
-                        border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`
-                    }}>
+                    <div
+                        className="animate-entrance"
+                        style={{
+                            background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                            borderRadius: '8px',
+                            padding: '16px',
+                            border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                            animationDelay: '0.15s',
+                            opacity: 0
+                        }}
+                    >
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -125,7 +140,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                 color: isDark ? '#888' : '#666',
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                textTransform: 'uppercase',
+                                
                                 letterSpacing: '0.5px'
                             }}>
                                 <User size={14} />
@@ -135,7 +150,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
 
                         {/* Config Level Selector */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
-                            <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', fontWeight: 600,  letterSpacing: '0.5px' }}>
                                 Onde salvar?
                             </div>
 
@@ -182,7 +197,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                     onChange={() => {
                                         setConfigLevel('global');
                                         if (hasGlobal) {
-                                            setAuthorBuffer(git.globalAuthor!);
+                                            setAuthorBuffer(git.globalAuthor);
                                         }
                                     }}
                                     style={{ marginTop: '2px', flexShrink: 0 }}
@@ -468,7 +483,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                         </div>
                                         <button
                                             onClick={() => {
-                                                setAuthorBuffer(git.globalAuthor!);
+                                                setAuthorBuffer(git.globalAuthor);
                                                 setIsEditingAuthor(true);
                                             }}
                                             style={{
@@ -586,34 +601,37 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                     </div>
 
                     {/* Init Button */}
-                    <button
-                        onClick={startInit}
-                        disabled={isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal)}
-                        style={{
-                            padding: '12px',
-                            background: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
-                                ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)')
-                                : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
-                            color: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
-                                ? (isDark ? '#555' : '#999')
-                                : (isDark ? '#4fc3f7' : '#0070f3'),
-                            border: `1px solid ${(isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
-                                ? (isDark ? '#333' : '#e5e7eb')
-                                : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
-                            borderRadius: '8px',
-                            cursor: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal)) ? 'not-allowed' : 'pointer',
-                            fontWeight: 600,
-                            fontSize: '0.9rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            transition: 'opacity 0.2s'
-                        }}
-                    >
-                        {isLoading ? <RefreshCw size={18} className="animate-spin" /> : <Plus size={18} />}
-                        Inicializar Repositório
-                    </button>
+                    <div className="animate-entrance" style={{ animationDelay: '0.2s', opacity: 0 }}>
+                        <button
+                            onClick={startInit}
+                            disabled={isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal)}
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                background: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
+                                    ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)')
+                                    : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
+                                color: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
+                                    ? (isDark ? '#555' : '#999')
+                                    : (isDark ? '#4fc3f7' : '#0070f3'),
+                                border: `1px solid ${(isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
+                                    ? (isDark ? '#333' : '#e5e7eb')
+                                    : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
+                                borderRadius: '8px',
+                                cursor: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal)) ? 'not-allowed' : 'pointer',
+                                fontWeight: 600,
+                                fontSize: '0.9rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                transition: 'opacity 0.2s'
+                            }}
+                        >
+                            {isLoading ? <RefreshCw size={18} className="animate-spin" /> : <Plus size={18} />}
+                            Inicializar Repositório
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

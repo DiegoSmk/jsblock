@@ -35,7 +35,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
                 height: '32px',
                 fontSize: '0.7rem',
                 fontWeight: 600,
-                textTransform: 'uppercase',
+                
                 letterSpacing: '0.03em'
             }}
         >

@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
 import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile, FileText, ChevronDown, EyeOff, Folder } from 'lucide-react';
+import { Tooltip } from '../Tooltip';
 import { GitStatusGroups } from './GitStatusGroups';
 import { CommitSection } from './CommitSection';
 import { AuthorModal } from './AuthorModal';
@@ -9,7 +11,7 @@ import { CommitTemplateModal } from './CommitTemplateModal';
 import { BranchSwitcher } from './BranchSwitcher';
 import { ProductivityToolbar } from './ProductivityToolbar';
 import { GitIgnoreModal } from './GitIgnoreModal';
-import './GitPanel.css'; // basic shared styles
+import './GitPanel.css';
 
 export const GitStatusView: React.FC = () => {
     const {
@@ -20,6 +22,7 @@ export const GitStatusView: React.FC = () => {
         resetToGlobal, commitTemplates, setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal
     } = useStore();
 
+    const { t } = useTranslation();
     const isDark = theme === 'dark';
     const [commitMsg, setCommitMsg] = useState('');
     const [isAmend, setIsAmend] = useState(false);
@@ -170,50 +173,58 @@ export const GitStatusView: React.FC = () => {
             }}
         >
             {/* Header */}
-            <div style={{
-                padding: '12px 20px',
-                borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-            }}>
+            <div
+                className="animate-entrance"
+                style={{
+                    padding: '12px 20px',
+                    borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    animationDelay: '0.05s',
+                    opacity: 0,
+                    position: 'relative',
+                    zIndex: 30
+                }}
+            >
                 <BranchSwitcher isDark={isDark} />
 
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {/* Git Ignore Dropdown */}
                     <div style={{ position: 'relative' }} ref={ignoreDropdownRef}>
-                        <button
-                            onClick={() => {
-                                if (!isIgnoreDropdownOpen) loadIgnorePatterns();
-                                setIsIgnoreDropdownOpen(!isIgnoreDropdownOpen);
-                            }}
-                            style={{
-                                background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                border: 'none',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 10px',
-                                fontSize: '0.75rem',
-                                color: isDark ? '#aaa' : '#666',
-                                transition: 'all 0.2s',
-                                outline: 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.color = isDark ? '#fff' : '#000';
-                                e.currentTarget.style.background = isDark ? '#3d3d3d' : '#e5e5e5';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.color = isDark ? '#aaa' : '#666';
-                                e.currentTarget.style.background = isDark ? '#2d2d2d' : '#f5f5f5';
-                            }}
-                            title="Gerenciar .gitignore"
-                        >
-                            <EyeOff size={14} />
-                            <ChevronDown size={12} style={{ transform: isIgnoreDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                        </button>
+                        <Tooltip content={t('git.status.ignore_tooltip')} side="bottom">
+                            <button
+                                onClick={() => {
+                                    if (!isIgnoreDropdownOpen) loadIgnorePatterns();
+                                    setIsIgnoreDropdownOpen(!isIgnoreDropdownOpen);
+                                }}
+                                style={{
+                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '6px 10px',
+                                    fontSize: '0.75rem',
+                                    color: isDark ? '#aaa' : '#666',
+                                    transition: 'all 0.2s',
+                                    outline: 'none'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                                    e.currentTarget.style.background = isDark ? '#3d3d3d' : '#e5e5e5';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = isDark ? '#aaa' : '#666';
+                                    e.currentTarget.style.background = isDark ? '#2d2d2d' : '#f5f5f5';
+                                }}
+                            >
+                                <EyeOff size={14} />
+                                <ChevronDown size={12} style={{ transform: isIgnoreDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                            </button>
+                        </Tooltip>
 
                         {isIgnoreDropdownOpen && (
                             <div style={{
@@ -232,8 +243,8 @@ export const GitStatusView: React.FC = () => {
                                 display: 'flex',
                                 flexDirection: 'column'
                             }}>
-                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
-                                    ARQUIVOS IGNORADOS
+                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999' }}>
+                                    {t('git.modals.ignore.title')}
                                 </div>
 
                                 <div style={{ height: '200px' }}>
@@ -298,7 +309,7 @@ export const GitStatusView: React.FC = () => {
                                         onMouseLeave={(e) => e.currentTarget.style.background = isDark ? '#333' : '#e5e7eb'}
                                     >
                                         <Settings size={12} />
-                                        Gerenciar .gitignore
+                                        {t('git.status.ignore_tooltip')}
                                     </button>
                                 </div>
                             </div>
@@ -307,33 +318,34 @@ export const GitStatusView: React.FC = () => {
 
                     {/* Templates Button & Dropdown */}
                     <div style={{ position: 'relative' }} ref={templateDropdownRef}>
-                        <button
-                            onClick={() => setIsTemplateDropdownOpen(!isTemplateDropdownOpen)}
-                            style={{
-                                background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                border: 'none',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 10px',
-                                fontSize: '0.75rem',
-                                color: isDark ? '#aaa' : '#666',
-                                transition: 'all 0.2s',
-                                outline: 'none'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.color = isDark ? '#fff' : '#000';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.color = isDark ? '#aaa' : '#666';
-                            }}
-                            title="Modelos de mensagem de commit"
-                        >
-                            <FileText size={14} />
-                            <ChevronDown size={12} style={{ transform: isTemplateDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                        </button>
+                        <Tooltip content={t('git.status.template_tooltip')} side="bottom">
+                            <button
+                                onClick={() => setIsTemplateDropdownOpen(!isTemplateDropdownOpen)}
+                                style={{
+                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '6px 10px',
+                                    fontSize: '0.75rem',
+                                    color: isDark ? '#aaa' : '#666',
+                                    transition: 'all 0.2s',
+                                    outline: 'none'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = isDark ? '#aaa' : '#666';
+                                }}
+                            >
+                                <FileText size={14} />
+                                <ChevronDown size={12} style={{ transform: isTemplateDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                            </button>
+                        </Tooltip>
 
                         {isTemplateDropdownOpen && (
                             <div style={{
@@ -350,8 +362,8 @@ export const GitStatusView: React.FC = () => {
                                 overflow: 'hidden',
                                 transformOrigin: 'top right'
                             }}>
-                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999', textTransform: 'uppercase' }}>
-                                    SEUS TEMPLATES
+                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999' }}>
+                                    {t('git.status.template_tooltip')}
                                 </div>
 
                                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -412,51 +424,54 @@ export const GitStatusView: React.FC = () => {
                                         onMouseLeave={(e) => e.currentTarget.style.background = isDark ? '#333' : '#e5e7eb'}
                                     >
                                         <Settings size={12} />
-                                        Gerenciar Templates
+                                        {t('git.status.template_tooltip')}
                                     </button>
                                 </div>
                             </div>
                         )}
                     </div>
-                    <button
-                        onClick={handleRefresh}
-                        disabled={isLoading}
-                        style={{
-                            background: isDark ? '#2d2d2d' : '#f5f5f5',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: isDark ? '#aaa' : '#666',
-                            padding: '8px',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            outline: 'none'
-                        }}
-                    >
-                        <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-                    </button>
-
-                    {/* Author Avatar Menu */}
-                    <div style={{ position: 'relative' }} ref={authorMenuRef}>
-                        <div
-                            onClick={() => setShowAuthorMenu(!showAuthorMenu)}
+                    <Tooltip content={t('git.status.refresh_tooltip')} side="bottom">
+                        <button
+                            onClick={handleRefresh}
+                            disabled={isLoading}
                             style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '8px',
                                 background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                border: `1px solid ${isDark ? '#444' : '#e5e7eb'}`,
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: isDark ? '#aaa' : '#666',
+                                padding: '8px',
+                                borderRadius: '8px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                cursor: 'pointer',
-                                color: isDark ? '#aaa' : '#666'
+                                outline: 'none'
                             }}
-                            title={git.projectAuthor?.name || git.globalAuthor?.name || 'Autor não configurado'}
                         >
-                            <User size={16} />
-                        </div>
+                            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+                    </Tooltip>
+
+                    {/* Author Avatar Menu */}
+                    <div style={{ position: 'relative' }} ref={authorMenuRef}>
+                        <Tooltip content={git.projectAuthor?.name || git.globalAuthor?.name || t('git.modals.author.title')} side="bottom">
+                            <div
+                                onClick={() => setShowAuthorMenu(!showAuthorMenu)}
+                                style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '8px',
+                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
+                                    border: `1px solid ${isDark ? '#444' : '#e5e7eb'}`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    color: isDark ? '#aaa' : '#666'
+                                }}
+                            >
+                                <User size={16} />
+                            </div>
+                        </Tooltip>
 
                         {showAuthorMenu && (
                             <div style={{
@@ -474,8 +489,8 @@ export const GitStatusView: React.FC = () => {
                             }}>
                                 {/* Current Author */}
                                 <div style={{ padding: '12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                        Autor Atual
+                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', marginBottom: '6px', letterSpacing: '0.5px' }}>
+                                        {t('git.graph.author')}
                                     </div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <div style={{
@@ -492,7 +507,7 @@ export const GitStatusView: React.FC = () => {
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {git.projectAuthor?.name || git.globalAuthor?.name || 'Não configurado'}
+                                                {git.projectAuthor?.name || git.globalAuthor?.name || t('git.modals.author.title')}
                                             </div>
                                             <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {git.projectAuthor?.email || git.globalAuthor?.email || ''}
@@ -519,7 +534,7 @@ export const GitStatusView: React.FC = () => {
 
                                 {/* Saved Profiles */}
                                 <div style={{ padding: '8px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', padding: '4px 8px', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', padding: '4px 8px', marginBottom: '4px', letterSpacing: '0.5px' }}>
                                         Trocar para
                                     </div>
 
@@ -636,7 +651,7 @@ export const GitStatusView: React.FC = () => {
                                         }}
                                     >
                                         <Settings size={14} />
-                                        Configurar Novo Autor
+                                        {t('git.modals.author.title')}
                                     </div>
                                 </div>
                             </div>
@@ -645,41 +660,47 @@ export const GitStatusView: React.FC = () => {
                 </div>
             </div>
 
-            <CommitSection
-                isDark={isDark}
-                commitMessage={commitMsg}
-                setCommitMessage={setCommitMsg}
-                onCommit={handleCommit}
-                stagedCount={staged.length}
-                isAmend={isAmend}
-                setIsAmend={setIsAmend}
-            />
-
-            <ProductivityToolbar
-                isDark={isDark}
-            />
-
-            <ScrollArea
-                style={{ flex: 1 }}
-                autoHide
-                thumbColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
-                thumbHoverColor={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
-            >
-                <GitStatusGroups
+            <div className="animate-entrance" style={{ animationDelay: '0.1s', opacity: 0 }}>
+                <CommitSection
                     isDark={isDark}
-                    staged={staged}
-                    unstaged={unstaged}
-                    gitUnstageAll={gitUnstageAll}
-                    gitStageAll={gitStageAll}
-                    gitDiscardAll={gitDiscardAll}
-                    gitUnstage={gitUnstage}
-                    gitStage={gitStage}
-                    gitDiscard={gitDiscard}
-                    gitClean={gitClean}
-                    gitIgnore={gitIgnore}
-                    setConfirmationModal={setConfirmationModal}
+                    commitMessage={commitMsg}
+                    setCommitMessage={setCommitMsg}
+                    onCommit={handleCommit}
+                    stagedCount={staged.length}
+                    isAmend={isAmend}
+                    setIsAmend={setIsAmend}
                 />
-            </ScrollArea>
+            </div>
+
+            <div className="animate-entrance" style={{ animationDelay: '0.15s', opacity: 0 }}>
+                <ProductivityToolbar
+                    isDark={isDark}
+                />
+            </div>
+
+            <div className="animate-entrance" style={{ flex: 1, display: 'flex', flexDirection: 'column', animationDelay: '0.2s', opacity: 0 }}>
+                <ScrollArea
+                    style={{ flex: 1 }}
+                    autoHide
+                    thumbColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
+                    thumbHoverColor={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
+                >
+                    <GitStatusGroups
+                        isDark={isDark}
+                        staged={staged}
+                        unstaged={unstaged}
+                        gitUnstageAll={gitUnstageAll}
+                        gitStageAll={gitStageAll}
+                        gitDiscardAll={gitDiscardAll}
+                        gitUnstage={gitUnstage}
+                        gitStage={gitStage}
+                        gitDiscard={gitDiscard}
+                        gitClean={gitClean}
+                        gitIgnore={gitIgnore}
+                        setConfirmationModal={setConfirmationModal}
+                    />
+                </ScrollArea>
+            </div>
 
             <AuthorModal
                 isDark={isDark}
@@ -717,6 +738,6 @@ export const GitStatusView: React.FC = () => {
                 onClose={() => setIsIgnoreModalOpen(false)}
                 isDark={isDark}
             />
-        </div>
+        </div >
     );
 };

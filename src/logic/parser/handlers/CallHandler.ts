@@ -1,19 +1,19 @@
-
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId, isNativeApi } from '../utils';
+import type { Node as BabelNode, CallExpression, ExpressionStatement, Identifier, MemberExpression, StringLiteral, NumericLiteral, TemplateLiteral, BooleanLiteral, Expression } from '@babel/types';
 
 export const CallHandler: ParserHandler = {
-    canHandle: (stmt: any) => {
-        const expr = stmt.type === 'ExpressionStatement' ? stmt.expression : stmt;
+    canHandle: (node: BabelNode) => {
+        const expr = node.type === 'ExpressionStatement' ? node.expression : node;
         return expr.type === 'CallExpression';
     },
-    handle: (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
-        const expr = stmt.type === 'ExpressionStatement' ? stmt.expression : stmt;
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+        const expr = (node.type === 'ExpressionStatement' ? node.expression : node) as CallExpression;
         const callee = expr.callee;
         let label = 'function';
 
         // standalone calls use call-exec while nested calls use call-
-        const prefix = stmt.type === 'ExpressionStatement' ? 'call-exec' : 'call';
+        const prefix = node.type === 'ExpressionStatement' ? 'call-exec' : 'call';
         const nodeId = idSuffix ? `${prefix}-${idSuffix}` : generateId(prefix);
 
         if (callee.type === 'MemberExpression') {
@@ -55,21 +55,22 @@ export const CallHandler: ParserHandler = {
             }
         }
 
-        const args = expr.arguments.map((arg: any) => {
-            if (arg.type === 'StringLiteral') return `'${arg.value}'`;
-            if (arg.type === 'NumericLiteral') return String(arg.value);
-            if (arg.type === 'Identifier') return arg.name;
+        const args = expr.arguments.map((arg) => {
+            if (arg.type === 'StringLiteral') return `'${(arg).value}'`;
+            if (arg.type === 'NumericLiteral') return String((arg).value);
+            if (arg.type === 'Identifier') return (arg).name;
             if (arg.type === 'TemplateLiteral') return '`...`';
             return '...';
         });
+
 
         // Try to propagate scope from definition to call node for easier navigation
         const scopes: Record<string, any> = {};
         const declId = ctx.variableNodes[`decl:${label}`];
         if (declId) {
             const declNode = ctx.nodes.find(n => n.id === declId);
-            if (declNode && (declNode.data as any).scopes?.['body']) {
-                scopes['body'] = (declNode.data as any).scopes['body'];
+            if (declNode && (declNode.data as any).scopes?.body) {
+                scopes.body = (declNode.data as any).scopes.body;
             }
         }
 
@@ -85,23 +86,25 @@ export const CallHandler: ParserHandler = {
                 isStandalone: !parentId,
                 scopeId: ctx.currentScopeId,
                 scopes,
-                expression: ctx.body ? '' : 'fallback'
+                expression: ''
             },
-        } as any);
+        });
+
 
         if (parentId && handleName) {
             ctx.edges.push(createEdge(parentId, nodeId, handleName, 'flow-in'));
         }
 
-        expr.arguments.forEach((arg: any, i: number) => {
+        expr.arguments.forEach((arg, i: number) => {
             if (arg.type === 'Identifier') {
-                const sourceId = ctx.variableNodes[arg.name];
+                const sourceId = ctx.variableNodes[(arg).name];
                 if (sourceId) {
                     ctx.edges.push(createEdge(sourceId, nodeId, 'output', `arg-${i}`));
                 }
             } else if (arg.type === 'NumericLiteral' || arg.type === 'StringLiteral' || arg.type === 'BooleanLiteral') {
                 const litId = generateId('literal');
-                const value = String(arg.value);
+                const litArg = arg;
+                const value = String((litArg as any).value);
                 const type = arg.type === 'NumericLiteral' ? 'number' : (arg.type === 'BooleanLiteral' ? 'boolean' : 'string');
 
                 ctx.nodes.push({
@@ -110,24 +113,22 @@ export const CallHandler: ParserHandler = {
                     position: { x: 0, y: 0 },
                     parentId: ctx.currentParentId,
                     data: { label: type, value, type, scopeId: ctx.currentScopeId }
-                } as any);
+                });
 
                 ctx.edges.push(createEdge(litId, nodeId, 'output', `arg-${i}`));
             } else if (arg.type === 'TemplateLiteral') {
                 // Connect expressions inside the template literal to the argument handle
-                arg.expressions.forEach((expr: any) => {
-                    if (expr.type === 'Identifier') {
-                        const sourceId = ctx.variableNodes[expr.name];
+                (arg).expressions.forEach((exprNode) => {
+                    if (exprNode.type === 'Identifier') {
+                        const sourceId = ctx.variableNodes[(exprNode).name];
                         if (sourceId) {
                             ctx.edges.push(createEdge(sourceId, nodeId, 'output', `arg-${i}`));
                         }
-                    } else if (expr.type === 'CallExpression') {
-                        // Nested calls in template literals?
-                        // For now, simpler support: if it's a simple identifier
                     }
                 });
             }
         });
+
 
         return nodeId;
     }

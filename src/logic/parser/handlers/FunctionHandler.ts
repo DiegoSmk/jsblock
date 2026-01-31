@@ -1,17 +1,19 @@
-
 import type { ParserContext, ParserHandler } from '../types';
 import { generateId } from '../utils';
+import type { Node as BabelNode, FunctionDeclaration, Identifier } from '@babel/types';
+import type { AppNode } from '../../../store/useStore';
 
 export const FunctionHandler: ParserHandler = {
-    canHandle: (stmt: any) => stmt.type === 'FunctionDeclaration',
-    handle: (stmt: any, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
+    canHandle: (node: BabelNode) => node.type === 'FunctionDeclaration',
+    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
+        const stmt = node as FunctionDeclaration;
         if (!stmt.id) return undefined;
 
-        const funcName = stmt.id?.name || 'anonymous';
+        const funcName = stmt.id.name;
         const nodeId = idSuffix ? `func-${funcName}-${idSuffix}` : `func-${funcName}`;
 
-        const params = stmt.params.map((p: any) =>
-            p.type === 'Identifier' ? p.name : 'arg'
+        const params = stmt.params.map((p) =>
+            p.type === 'Identifier' ? (p).name : 'arg'
         );
 
         ctx.nodes.push({
@@ -26,14 +28,14 @@ export const FunctionHandler: ParserHandler = {
                 usageCount: 0,
                 scopeId: ctx.currentScopeId
             }
-        } as any);
+        });
 
         ctx.variableNodes[`decl:${funcName}`] = nodeId;
 
         // Process function parameters as nodes available inside the body scope
-        const paramNodes = stmt.params.map((p: any) => {
+        const paramNodes: AppNode[] = stmt.params.map((p) => {
             if (p.type === 'Identifier') {
-                const varName = p.name;
+                const varName = (p).name;
                 const pNodeId = generateId('param-' + varName);
                 return {
                     id: pNodeId,
@@ -44,16 +46,17 @@ export const FunctionHandler: ParserHandler = {
                         value: '(parameter)',
                         isParameter: true // Visual hint
                     }
-                };
+                } as AppNode;
             }
             return null;
-        }).filter(Boolean);
+        }).filter((n): n is AppNode => n !== null);
 
         // Process function body into a separate scope for drill-down
         if (stmt.body) {
-            ctx.processBlock(stmt.body, nodeId, 'body', 'Body', paramNodes as any[]);
+            ctx.processBlock(stmt.body, nodeId, 'body', 'Body', paramNodes);
         }
 
         return undefined;
     }
 };
+

@@ -1,43 +1,49 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { isNativeApi } from '../utils';
 import { LogicHandler } from './LogicHandler';
+import type { Node as BabelNode, VariableDeclaration, Identifier, VariableDeclarator, Expression, CallExpression, MemberExpression } from '@babel/types';
 
-const getExpressionCode = (node: any): string => {
+const getExpressionCode = (node: BabelNode | null | undefined): string => {
     if (!node) return '';
     if (node.type === 'BinaryExpression' || node.type === 'LogicalExpression') {
-        return `${getExpressionCode(node.left)} ${node.operator} ${getExpressionCode(node.right)}`;
+        return `${getExpressionCode((node as any).left)} ${(node as any).operator} ${getExpressionCode((node as any).right)}`;
     }
-    if (node.type === 'Identifier') return node.name;
-    if (node.type === 'NumericLiteral' || node.type === 'StringLiteral' || node.type === 'BooleanLiteral') return String(node.value);
+    if (node.type === 'Identifier') return (node).name;
+    if (node.type === 'NumericLiteral' || node.type === 'StringLiteral' || node.type === 'BooleanLiteral') return String((node as any).value);
     if (node.type === 'CallExpression') {
-        const name = node.callee.type === 'Identifier' ? node.callee.name : 'function';
+        const callee = (node).callee;
+        const name = callee.type === 'Identifier' ? callee.name : 'function';
         return `${name}(...)`;
     }
     return '...';
 };
 
+
 export const VariableHandler: ParserHandler = {
-    canHandle: (stmt: any) => stmt.type === 'VariableDeclaration',
-    handle: (stmt: any, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
-        stmt.declarations.forEach((decl: any) => {
+    canHandle: (node: BabelNode) => node.type === 'VariableDeclaration',
+    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
+        const stmt = node as VariableDeclaration;
+        stmt.declarations.forEach((decl: VariableDeclarator) => {
             if (decl.id.type === 'Identifier') {
-                const varName = decl.id.name;
+                const varName = (decl.id).name;
                 const nodeId = idSuffix ? `var-${varName}-${idSuffix}` : `var-${varName}`;
 
                 let value = '';
                 let nestedCall: any = undefined;
 
                 if (decl.init) {
-                    if (decl.init.type === 'NumericLiteral' || decl.init.type === 'StringLiteral' || decl.init.type === 'BooleanLiteral') {
-                        value = String(decl.init.value);
-                        if (decl.init.type === 'StringLiteral') value = `'${value}'`;
-                    } else if (decl.init.type === 'CallExpression') {
+                    const init = decl.init;
+                    if (init.type === 'NumericLiteral' || init.type === 'StringLiteral' || init.type === 'BooleanLiteral') {
+                        value = String((init as any).value);
+                        if (init.type === 'StringLiteral') value = `'${value}'`;
+                    } else if (init.type === 'CallExpression') {
+                        const callInit = init;
                         value = '(computed)';
-                        const callee = decl.init.callee;
+                        const callee = callInit.callee;
                         let callName = 'function';
 
                         if (callee.type === 'Identifier') {
-                            callName = callee.name;
+                            callName = (callee).name;
                             const isNative = isNativeApi(callName);
                             if (isNative && ctx.nativeApiNodeId) {
                                 ctx.edges.push({
@@ -66,7 +72,10 @@ export const VariableHandler: ParserHandler = {
                                 }
                             }
                         } else if (callee.type === 'MemberExpression') {
-                            callName = `${callee.object.name}.${callee.property.name}`;
+                            const memCallee = callee;
+                            if (memCallee.object.type === 'Identifier' && memCallee.property.type === 'Identifier') {
+                                callName = `${memCallee.object.name}.${memCallee.property.name}`;
+                            }
                             const isNative = isNativeApi(callName);
                             if (isNative && ctx.nativeApiNodeId) {
                                 ctx.edges.push({
@@ -82,7 +91,7 @@ export const VariableHandler: ParserHandler = {
                             }
                         }
 
-                        const argNames = decl.init.arguments.map((arg: any) => {
+                        const argNames = callInit.arguments.map((arg: any) => {
                             if (arg.type === 'Identifier') return arg.name;
                             if (arg.type === 'NumericLiteral' || arg.type === 'StringLiteral') return String(arg.value);
                             return 'arg';
@@ -93,11 +102,11 @@ export const VariableHandler: ParserHandler = {
                             args: argNames
                         };
 
-                        decl.init.arguments.forEach((arg: any, i: number) => {
-                            if (arg.type === 'Identifier' && ctx.variableNodes[arg.name]) {
+                        callInit.arguments.forEach((arg, i: number) => {
+                            if (arg.type === 'Identifier' && ctx.variableNodes[(arg).name]) {
                                 ctx.edges.push({
-                                    id: `e-${ctx.variableNodes[arg.name]}-to-${nodeId}-nested-arg-${i}`,
-                                    source: ctx.variableNodes[arg.name],
+                                    id: `e-${ctx.variableNodes[(arg).name]}-to-${nodeId}-nested-arg-${i}`,
+                                    source: ctx.variableNodes[(arg).name],
                                     sourceHandle: 'output',
                                     target: nodeId,
                                     targetHandle: `nested-arg-${i}`,
@@ -106,8 +115,8 @@ export const VariableHandler: ParserHandler = {
                                 });
                             }
                         });
-                    } else if (decl.init.type === 'BinaryExpression' || decl.init.type === 'LogicalExpression') {
-                        value = getExpressionCode(decl.init);
+                    } else if (init.type === 'BinaryExpression' || init.type === 'LogicalExpression') {
+                        value = getExpressionCode(init);
                     }
                 }
 
@@ -123,7 +132,7 @@ export const VariableHandler: ParserHandler = {
                         nestedCall,
                         scopeId: ctx.currentScopeId
                     }
-                } as any);
+                });
 
                 ctx.variableNodes[varName] = nodeId;
 
@@ -136,3 +145,4 @@ export const VariableHandler: ParserHandler = {
         return undefined;
     }
 };
+

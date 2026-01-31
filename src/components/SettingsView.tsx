@@ -11,10 +11,13 @@ import {
     Settings as SettingsIcon,
     Layout,
     Sun,
-    Moon
+    Moon,
+    Globe
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const SettingsView: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const {
         theme,
         toggleTheme,
@@ -28,9 +31,9 @@ export const SettingsView: React.FC = () => {
     const isDark = theme === 'dark';
 
     const categories = [
-        { id: 'general', label: 'Geral', icon: SettingsIcon },
-        { id: 'terminal', label: 'Terminal', icon: Terminal },
-        { id: 'appearance', label: 'Aparência', icon: Monitor }
+        { id: 'general', label: t('app.settings.categories.general'), icon: SettingsIcon },
+        { id: 'terminal', label: t('app.settings.categories.terminal'), icon: Terminal },
+        { id: 'appearance', label: t('app.settings.categories.appearance'), icon: Monitor }
     ];
 
     const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => (
@@ -39,7 +42,7 @@ export const SettingsView: React.FC = () => {
                 fontSize: '0.75rem',
                 fontWeight: 800,
                 color: isDark ? '#555' : '#aaa',
-                textTransform: 'uppercase',
+                
                 letterSpacing: '1px',
                 marginBottom: '16px',
                 display: 'flex',
@@ -110,19 +113,19 @@ export const SettingsView: React.FC = () => {
             case 'general':
                 return (
                     <>
-                        <SettingGroup title="Arquivos">
+                        <SettingGroup title={t('app.settings.groups.files')}>
                             <SettingRow
-                                label="Salvamento Automático"
-                                description="Salva as alterações nos arquivos instantaneamente ao editar."
+                                label={t('app.settings.fields.auto_save.label')}
+                                description={t('app.settings.fields.auto_save.desc')}
                                 icon={Save}
                             >
                                 <Switch checked={autoSave} onChange={toggleAutoSave} />
                             </SettingRow>
                         </SettingGroup>
-                        <SettingGroup title="Canvas">
+                        <SettingGroup title={t('app.settings.groups.canvas')}>
                             <SettingRow
-                                label="Auto-Layout"
-                                description="Organiza os nós automaticamente ao gerar código do canvas."
+                                label={t('app.settings.fields.auto_layout.label')}
+                                description={t('app.settings.fields.auto_layout.desc')}
                                 icon={Layout}
                             >
                                 <Switch
@@ -131,15 +134,38 @@ export const SettingsView: React.FC = () => {
                                 />
                             </SettingRow>
                         </SettingGroup>
+                        <SettingGroup title={t('app.settings.groups.localization')}>
+                            <SettingRow
+                                label={t('app.settings.fields.language.label')}
+                                description={t('app.settings.fields.language.desc')}
+                                icon={Globe}
+                            >
+                                <select
+                                    value={i18n.language}
+                                    onChange={(e) => i18n.changeLanguage(e.target.value)}
+                                    style={{
+                                        padding: '6px 12px',
+                                        borderRadius: '6px',
+                                        background: isDark ? '#222' : '#f5f5f5',
+                                        color: isDark ? '#fff' : '#000',
+                                        border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                        fontSize: '0.85rem'
+                                    }}
+                                >
+                                    <option value="pt">Português (Brasil)</option>
+                                    <option value="en">English</option>
+                                </select>
+                            </SettingRow>
+                        </SettingGroup>
                     </>
                 );
             case 'terminal':
                 return (
                     <>
-                        <SettingGroup title="Comportamento">
+                        <SettingGroup title={t('app.settings.groups.behavior')}>
                             <SettingRow
-                                label="Cópia Automática"
-                                description="Copia o texto selecionado automaticamente para a área de transferência."
+                                label={t('app.settings.fields.terminal_copy.label')}
+                                description={t('app.settings.fields.terminal_copy.desc')}
                                 icon={MousePointer2}
                             >
                                 <Switch
@@ -148,8 +174,8 @@ export const SettingsView: React.FC = () => {
                                 />
                             </SettingRow>
                             <SettingRow
-                                label="Colar com Botão Direito"
-                                description="Cola o conteúdo da área de transferência ao clicar com o botão direito no terminal."
+                                label={t('app.settings.fields.terminal_paste.label')}
+                                description={t('app.settings.fields.terminal_paste.desc')}
                                 icon={MousePointer2}
                             >
                                 <Switch
@@ -169,7 +195,7 @@ export const SettingsView: React.FC = () => {
                         }}>
                             <CircleHelp size={18} color={isDark ? '#4fc3f7' : '#0070f3'} style={{ flexShrink: 0, marginTop: '2px' }} />
                             <div style={{ fontSize: '0.8rem', color: isDark ? '#aaa' : '#666', lineHeight: 1.5 }}>
-                                Estas opções estão ativadas por padrão para emular o comportamento de terminais profissionais (como Putty/XShell) e contornar o uso do Ctrl+C para controle de processos.
+                                {t('app.settings.terminal_info')}
                             </div>
                         </div>
                     </>
@@ -177,19 +203,19 @@ export const SettingsView: React.FC = () => {
             case 'appearance':
                 return (
                     <>
-                        <SettingGroup title="Interface">
+                        <SettingGroup title={t('app.settings.groups.interface')}>
                             <SettingRow
-                                label={isDark ? "Modo Escuro" : "Modo Claro"}
-                                description="Alterna entre os temas claro e escuro da aplicação."
+                                label={isDark ? t('app.settings.fields.theme.label') : t('app.settings.fields.theme.label_light')}
+                                description={t('app.settings.fields.theme.desc')}
                                 icon={isDark ? Moon : Sun}
                             >
                                 <Switch checked={isDark} onChange={toggleTheme} />
                             </SettingRow>
                         </SettingGroup>
-                        <SettingGroup title="Tipografia">
+                        <SettingGroup title={t('app.settings.groups.typography')}>
                             <SettingRow
-                                label="Tamanho da Variável"
-                                description="Define o tamanho base da fonte para os elementos da interface."
+                                label={t('app.settings.fields.font_size.label')}
+                                description={t('app.settings.fields.font_size.desc')}
                                 icon={Type}
                             >
                                 <select
@@ -237,7 +263,7 @@ export const SettingsView: React.FC = () => {
                     padding: '0 12px 20px 12px',
                     color: isDark ? '#fff' : '#111'
                 }}>
-                    Configurações
+                    {t('app.settings.title')}
                 </h2>
                 {categories.map(cat => {
                     const isActive = activeCategory === cat.id;

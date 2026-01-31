@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Archive, ArrowUpCircle, RotateCcw, Layers, Trash2, ChevronDown, Monitor, ChevronRight } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
@@ -10,6 +11,7 @@ interface ProductivityToolbarProps {
 }
 
 export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark, children }) => {
+    const { t } = useTranslation();
     const { git, gitStash, gitPopStash, gitUndoLastCommit, gitApplyStash, gitDropStash, setConfirmationModal } = useStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
@@ -46,10 +48,10 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
     const handleUndo = async () => {
         setConfirmationModal({
             isOpen: true,
-            title: 'Desfazer Último Commit',
-            message: 'Isso irá remover o último commit do histórico, mas manterá todas as alterações nos seus arquivos (Soft Reset). Deseja continuar?',
-            confirmLabel: 'Desfazer Commit',
-            cancelLabel: 'Cancelar',
+            title: t('git.status.undo_confirm_title'),
+            message: t('git.status.undo_confirm_desc'),
+            confirmLabel: t('git.status.undo_confirm_title'),
+            cancelLabel: t('git.common.cancel'),
             variant: 'danger',
             onConfirm: () => {
                 handleAction(gitUndoLastCommit);
@@ -83,7 +85,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
 
             {/* Stash Group */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} ref={dropdownRef}>
-                <Tooltip content={hasChanges ? "Guardar alterações atuais na gaveta (Stash)" : "Nada para guardar"} side="bottom">
+                <Tooltip content={hasChanges ? t('git.status.stash_tooltip') : t('git.status.stash_empty_tooltip')} side="bottom">
                     <button
                         onClick={handleStash}
                         disabled={isProcessing || !hasChanges}
@@ -119,7 +121,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                 </Tooltip>
 
                 <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                    <Tooltip content={hasStashes ? "Restaurar última gaveta (Pop)" : "Gaveta vazia"} side="bottom">
+                    <Tooltip content={hasStashes ? t('git.status.pop_tooltip') : t('git.status.pop_empty_tooltip')} side="bottom">
                         <button
                             onClick={() => handleAction(() => gitPopStash(0))}
                             disabled={isProcessing || !hasStashes}
@@ -155,7 +157,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                             </span>
                         </button>
                     </Tooltip>
-                    <Tooltip content={hasStashes ? `Ver todas as gavetas (${stashCount})` : "Gaveta vazia"} side="bottom">
+                    <Tooltip content={hasStashes ? t('git.status.view_stashes_tooltip') : t('git.status.pop_empty_tooltip')} side="bottom">
                         <button
                             onClick={() => setIsOpen(!isOpen)}
                             disabled={isProcessing || !hasStashes}
@@ -245,65 +247,68 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                                             </div>
 
                                             <div style={{ display: 'flex', gap: '6px' }}>
-                                                <button
-                                                    onClick={() => {
-                                                        handleAction(() => gitPopStash(stash.index));
-                                                        setIsOpen(false);
-                                                    }}
-                                                    title="Traz as alterações de volta e remove esta caixa da lista."
-                                                    style={{
-                                                        flex: 1, padding: '6px 4px', borderRadius: '4px', border: 'none',
-                                                        background: isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)',
-                                                        color: isDark ? '#4fc3f7' : '#0070f3',
-                                                        fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer',
-                                                        display: 'flex', flexDirection: 'column', alignItems: 'center'
-                                                    }}
-                                                >
-                                                    <span style={{ fontSize: '0.75rem' }}>Pop</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        handleAction(() => gitApplyStash(stash.index));
-                                                        setIsOpen(false);
-                                                    }}
-                                                    title="Aplica as alterações no código mas mantém a caixa salva na lista."
-                                                    style={{
-                                                        flex: 1, padding: '6px 4px', borderRadius: '4px', border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                                                        background: 'transparent',
-                                                        color: isDark ? '#aaa' : '#666',
-                                                        fontSize: '0.65rem', fontWeight: 600, cursor: 'pointer',
-                                                        display: 'flex', flexDirection: 'column', alignItems: 'center'
-                                                    }}
-                                                >
-                                                    <span style={{ fontSize: '0.75rem' }}>Apply</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setConfirmationModal({
-                                                            isOpen: true,
-                                                            title: 'Deletar Gaveta Definitivamente?',
-                                                            message: `Você está prestes a excluir permanentemente o rascunho "${stash.message}". Esta ação não pode ser desfeita.`,
-                                                            confirmLabel: 'Excluir Rascunho',
-                                                            cancelLabel: 'Manter',
-                                                            variant: 'danger',
-                                                            onConfirm: () => {
-                                                                handleAction(() => gitDropStash(stash.index));
-                                                                setConfirmationModal(null);
-                                                            },
-                                                            onCancel: () => setConfirmationModal(null)
-                                                        });
-                                                    }}
-                                                    title="Deletar permanentemente"
-                                                    style={{
-                                                        padding: '0 10px', borderRadius: '4px', border: 'none',
-                                                        background: isDark ? 'rgba(248, 113, 113, 0.1)' : 'rgba(220, 38, 38, 0.05)',
-                                                        color: '#f87171',
-                                                        fontSize: '0.7rem', cursor: 'pointer',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                    }}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
+                                                <Tooltip content={t('git.status.pop_confirm_desc')} side="top">
+                                                    <button
+                                                        onClick={() => {
+                                                            handleAction(() => gitPopStash(stash.index));
+                                                            setIsOpen(false);
+                                                        }}
+                                                        style={{
+                                                            flex: 1, padding: '6px 4px', borderRadius: '4px', border: 'none',
+                                                            background: isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)',
+                                                            color: isDark ? '#4fc3f7' : '#0070f3',
+                                                            fontSize: '0.65rem', fontWeight: 700, cursor: 'pointer',
+                                                            display: 'flex', flexDirection: 'column', alignItems: 'center'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '0.75rem' }}>Pop</span>
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content={t('git.status.apply_confirm_desc')} side="top">
+                                                    <button
+                                                        onClick={() => {
+                                                            handleAction(() => gitApplyStash(stash.index));
+                                                            setIsOpen(false);
+                                                        }}
+                                                        style={{
+                                                            flex: 1, padding: '6px 4px', borderRadius: '4px', border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                                            background: 'transparent',
+                                                            color: isDark ? '#aaa' : '#666',
+                                                            fontSize: '0.65rem', fontWeight: 600, cursor: 'pointer',
+                                                            display: 'flex', flexDirection: 'column', alignItems: 'center'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '0.75rem' }}>Apply</span>
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content={t('git.common.delete')} side="top">
+                                                    <button
+                                                        onClick={() => {
+                                                            setConfirmationModal({
+                                                                isOpen: true,
+                                                                title: t('git.status.drop_confirm_title'),
+                                                                message: t('git.status.drop_confirm_desc'),
+                                                                confirmLabel: t('git.common.delete'),
+                                                                cancelLabel: t('git.common.cancel'),
+                                                                variant: 'danger',
+                                                                onConfirm: () => {
+                                                                    handleAction(() => gitDropStash(stash.index));
+                                                                    setConfirmationModal(null);
+                                                                },
+                                                                onCancel: () => setConfirmationModal(null)
+                                                            });
+                                                        }}
+                                                        style={{
+                                                            padding: '0 10px', borderRadius: '4px', border: 'none',
+                                                            background: isDark ? 'rgba(248, 113, 113, 0.1)' : 'rgba(220, 38, 38, 0.05)',
+                                                            color: '#f87171',
+                                                            fontSize: '0.7rem', cursor: 'pointer',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                        }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     ))}
@@ -318,7 +323,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
             <div style={{ width: '1px', height: '16px', background: isDark ? '#333' : '#ddd', margin: '0 4px' }} />
 
             {/* History Group */}
-            <Tooltip content={hasHistory ? "Desfazer o último commit mantendo as alterações (Soft Reset)" : "Sem commits para desfazer"} side="bottom">
+            <Tooltip content={hasHistory ? t('git.status.undo_commit_tooltip') : t('git.status.undo_commit_empty_tooltip')} side="bottom">
                 <button
                     onClick={handleUndo}
                     disabled={isProcessing || !hasHistory}

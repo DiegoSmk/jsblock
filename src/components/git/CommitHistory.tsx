@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SectionHeader } from './SharedComponents';
 import { Search, RefreshCw, ChevronDown, ChevronRight, History, GitBranch, FileText, Plus, Minus, Tag } from 'lucide-react';
 import { ScrollArea } from '../ui/ScrollArea';
+import { Tooltip } from '../Tooltip';
 import { useStore } from '../../store/useStore';
 
 interface GitHistoryProps {
@@ -14,6 +16,7 @@ interface GitHistoryProps {
 export const CommitHistory: React.FC<GitHistoryProps> = ({
     isDark, logs, isOpen, onToggle
 }) => {
+    const { t } = useTranslation();
     const { git, getCommitFiles, openModal, checkoutCommit, createBranch, openedFolder, gitCreateTag } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedCommits, setExpandedCommits] = useState<Set<string>>(new Set());
@@ -105,30 +108,31 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
             }}
         >
             <SectionHeader
-                title="Lista de Commits"
+                title={t('git.status.history_list')}
                 count={logs.length}
                 isOpen={isOpen}
                 onToggle={onToggle}
                 isDark={isDark}
                 rightElement={
-                    <button
-                        onClick={(e) => { e.stopPropagation(); useStore.getState().refreshGit(); }}
-                        title="Atualizar Histórico"
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: '4px',
-                            cursor: 'pointer',
-                            color: isDark ? '#888' : '#777',
-                            display: 'flex',
-                            alignItems: 'center',
-                            borderRadius: '4px'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                        <RefreshCw size={14} />
-                    </button>
+                    <Tooltip content={t('git.status.history_refresh')} side="bottom">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); useStore.getState().refreshGit(); }}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: '4px',
+                                cursor: 'pointer',
+                                color: isDark ? '#888' : '#777',
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderRadius: '4px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                            <RefreshCw size={14} />
+                        </button>
+                    </Tooltip>
                 }
             />
 
@@ -139,7 +143,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                             <Search size={14} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: isDark ? '#555' : '#999' }} />
                             <input
                                 type="text"
-                                placeholder="Filtrar commits..."
+                                placeholder={t('git.status.history_filter_placeholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 style={{
@@ -163,7 +167,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                         <div style={{ padding: '0' }}>
                             {filteredCommits.length === 0 ? (
                                 <div style={{ padding: '20px', textAlign: 'center', color: isDark ? '#444' : '#ccc', fontSize: '0.75rem' }}>
-                                    Nenhum commit encontrado
+                                    {t('git.status.history_empty')}
                                 </div>
                             ) : (
                                 filteredCommits.map((commit, i) => {
@@ -256,10 +260,10 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                         <span style={{ fontFamily: 'monospace', opacity: 0.6 }}>{commit.hash.substring(0, 7)}</span>
                                                         {isExpanded && commitStats && commitStats[commit.hash] && (
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '2px' }}>
-                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0px', color: '#10b981' }} title={`${commitStats[commit.hash].insertions} inserções`}>
+                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0px', color: '#10b981' }}>
                                                                     <Plus size={8} strokeWidth={3} />{commitStats[commit.hash].insertions}
                                                                 </span>
-                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0px', color: '#ef4444' }} title={`${commitStats[commit.hash].deletions} deleções`}>
+                                                                <span style={{ display: 'flex', alignItems: 'center', gap: '0px', color: '#ef4444' }}>
                                                                     <Minus size={8} strokeWidth={3} />{commitStats[commit.hash].deletions}
                                                                 </span>
                                                             </div>
@@ -276,95 +280,101 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                 }}>
                                                     {/* Quick Actions */}
                                                     <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); checkoutCommit(commit.hash); }}
-                                                            style={{
-                                                                background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.05)',
-                                                                border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.1)'}`,
-                                                                color: isDark ? '#4fc3f7' : '#0070f3',
-                                                                padding: '4px 10px',
-                                                                borderRadius: '4px',
-                                                                fontSize: '0.7rem',
-                                                                fontWeight: 600,
-                                                                cursor: 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '4px'
-                                                            }}
-                                                        >
-                                                            <History size={12} /> Checkout
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openModal({
-                                                                    title: 'Criar Branch a partir deste Commit',
-                                                                    type: 'input',
-                                                                    placeholder: 'Nome da nova branch',
-                                                                    confirmLabel: 'Criar',
-                                                                    initialValue: '',
-                                                                    onSubmit: (name) => {
-                                                                        if (name) createBranch(name, commit.hash);
-                                                                    }
-                                                                });
-                                                            }}
-                                                            style={{
-                                                                background: 'none',
-                                                                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                                                                color: isDark ? '#999' : '#666',
-                                                                padding: '4px 10px',
-                                                                borderRadius: '4px',
-                                                                fontSize: '0.7rem',
-                                                                fontWeight: 600,
-                                                                cursor: 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '4px'
-                                                            }}
-                                                        >
-                                                            <GitBranch size={12} /> Branch
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openModal({
-                                                                    title: 'Criar Tag neste Commit',
-                                                                    type: 'input',
-                                                                    placeholder: 'Nome da Tag (ex: v1.0.0)',
-                                                                    confirmLabel: 'Criar Tag',
-                                                                    initialValue: '',
-                                                                    onSubmit: (name) => {
-                                                                        if (name) gitCreateTag(name, commit.hash);
-                                                                    }
-                                                                });
-                                                            }}
-                                                            style={{
-                                                                background: 'none',
-                                                                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                                                                color: isDark ? '#999' : '#666',
-                                                                padding: '4px 10px',
-                                                                borderRadius: '4px',
-                                                                fontSize: '0.7rem',
-                                                                fontWeight: 600,
-                                                                cursor: 'pointer',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '4px'
-                                                            }}
-                                                        >
-                                                            <Tag size={12} /> Tag
-                                                        </button>
+                                                        <Tooltip content={t('git.status.history_checkout_tooltip')} side="top">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); checkoutCommit(commit.hash); }}
+                                                                style={{
+                                                                    background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.05)',
+                                                                    border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.1)'}`,
+                                                                    color: isDark ? '#4fc3f7' : '#0070f3',
+                                                                    padding: '4px 10px',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '0.7rem',
+                                                                    fontWeight: 600,
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px'
+                                                                }}
+                                                            >
+                                                                <History size={12} /> Checkout
+                                                            </button>
+                                                        </Tooltip>
+                                                        <Tooltip content={t('git.status.history_branch_tooltip')} side="top">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    openModal({
+                                                                        title: 'Criar Branch a partir deste Commit',
+                                                                        type: 'input',
+                                                                        placeholder: 'Nome da nova branch',
+                                                                        confirmLabel: 'Criar',
+                                                                        initialValue: '',
+                                                                        onSubmit: (name) => {
+                                                                            if (name) createBranch(name, commit.hash);
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                style={{
+                                                                    background: 'none',
+                                                                    border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                                                    color: isDark ? '#999' : '#666',
+                                                                    padding: '4px 10px',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '0.7rem',
+                                                                    fontWeight: 600,
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px'
+                                                                }}
+                                                            >
+                                                                <GitBranch size={12} /> Branch
+                                                            </button>
+                                                        </Tooltip>
+                                                        <Tooltip content={t('git.status.history_tag_tooltip')} side="top">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    openModal({
+                                                                        title: 'Criar Tag neste Commit',
+                                                                        type: 'input',
+                                                                        placeholder: 'Nome da Tag (ex: v1.0.0)',
+                                                                        confirmLabel: 'Criar Tag',
+                                                                        initialValue: '',
+                                                                        onSubmit: (name) => {
+                                                                            if (name) gitCreateTag(name, commit.hash);
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                style={{
+                                                                    background: 'none',
+                                                                    border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                                                    color: isDark ? '#999' : '#666',
+                                                                    padding: '4px 10px',
+                                                                    borderRadius: '4px',
+                                                                    fontSize: '0.7rem',
+                                                                    fontWeight: 600,
+                                                                    cursor: 'pointer',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '4px'
+                                                                }}
+                                                            >
+                                                                <Tag size={12} /> Tag
+                                                            </button>
+                                                        </Tooltip>
                                                     </div>
 
                                                     {/* Files List */}
-                                                    <div style={{ color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                        <FileText size={10} /> Arquivos Alterados
+                                                    <div style={{ color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 600, fontSize: '0.65rem',  display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <FileText size={10} /> {t('git.status.history_files_changed')}
                                                     </div>
 
                                                     {isLoading ? (
-                                                        <div style={{ padding: '10px 0', color: isDark ? '#444' : '#ccc' }}>Carregando arquivos...</div>
+                                                        <div style={{ padding: '10px 0', color: isDark ? '#444' : '#ccc' }}>{t('git.status.history_loading_files')}</div>
                                                     ) : files.length === 0 ? (
-                                                        <div style={{ padding: '10px 0', color: isDark ? '#444' : '#ccc' }}>Nenhum arquivo listado</div>
+                                                        <div style={{ padding: '10px 0', color: isDark ? '#444' : '#ccc' }}>{t('git.status.history_no_files')}</div>
                                                     ) : (
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                                             {files.map((file, idx) => (

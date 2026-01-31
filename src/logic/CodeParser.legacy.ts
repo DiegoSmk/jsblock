@@ -229,7 +229,7 @@ export const parseCodeToFlow = (code: string) => {
                         const nodeId = `var-${varName}`;
                         variableNodes[varName] = nodeId;
 
-                        if (decl.init && decl.init.type === 'CallExpression') {
+                        if (decl.init?.type === 'CallExpression') {
                             // Extract call details for nested visualization
                             // We do NOT create a separate functionCallNode here
                             // Instead we populate the nestedCall data AND create edges for arguments directly to this node
@@ -443,7 +443,7 @@ export const parseCodeToFlow = (code: string) => {
                 // --- NEW BLOCK PROCESSING ---
                 // Helper to connect children inside blocks to this IF Node
                 const processBlock = (block: any, handle: string) => {
-                    if (block && block.type === 'BlockStatement') {
+                    if (block?.type === 'BlockStatement') {
                         block.body.forEach((childStmt: any) => {
                             // We are looking for statements that became nodes
                             // BUT 'index' based IDs are fragile here because 'body.indexOf' refers to root body.
@@ -633,7 +633,7 @@ export const parseCodeToFlow = (code: string) => {
                 // --- NEW BLOCK PROCESSING REUSE ---
                 // Helper to connect children inside blocks (Reused concept)
                 const processBlock = (block: any, handle: string) => {
-                    if (block && block.type === 'BlockStatement') {
+                    if (block?.type === 'BlockStatement') {
                         block.body.forEach((childStmt: any) => {
                             if (childStmt.type === 'ExpressionStatement' && childStmt.expression.type === 'CallExpression') {
                                 const nestedId = `call-nested-${Math.random().toString(36).substr(2, 6)}`;
@@ -669,7 +669,7 @@ export const parseCodeToFlow = (code: string) => {
 
                 // --- NEW BLOCK PROCESSING REUSE ---
                 const processBlock = (block: any, handle: string) => {
-                    if (block && block.type === 'BlockStatement') {
+                    if (block?.type === 'BlockStatement') {
                         block.body.forEach((childStmt: any) => {
                             if (childStmt.type === 'ExpressionStatement' && childStmt.expression.type === 'CallExpression') {
                                 const nestedId = `call-nested-${Math.random().toString(36).substr(2, 6)}`;
@@ -692,7 +692,7 @@ export const parseCodeToFlow = (code: string) => {
                 // -----------------------------
 
                 // 1. Init (Assignment)
-                if (statement.init && statement.init.type === 'VariableDeclaration') {
+                if (statement.init?.type === 'VariableDeclaration') {
                     // The init is usually a variable declaration (let i = 0)
                     // We need to visualize this connection?
                     // Actually, ForNode has an 'init' handle.
@@ -706,7 +706,7 @@ export const parseCodeToFlow = (code: string) => {
 
                     // Helper to extract var name from init
                     const decl = statement.init.declarations[0];
-                    if (decl && decl.id.type === 'Identifier') {
+                    if (decl?.id.type === 'Identifier') {
                         // We can create a variable node for 'i' if we want, or just link to it?
                         // Visualizer usually expects independent nodes.
                         // Let's rely on standard var processing? No, it's scoped.

@@ -52,6 +52,7 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { FileControls } from './components/FileControls';
 import { ToastContainer } from './components/ToastContainer';
 import { SettingsView } from './components/SettingsView';
+import { DESIGN_TOKENS } from './constants/design';
 
 const nodeTypes: NodeTypes = {
   variableNode: VariableNode,
@@ -371,7 +372,7 @@ function App() {
         <ModernModal />
         <CommitDetailModal />
         <header style={{
-          height: '40px',
+          height: DESIGN_TOKENS.RIBBON_WIDTH,
           padding: '0 16px',
           background: isDark ? '#1e1e1e' : '#f3f4f6',
           borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,
@@ -501,7 +502,7 @@ function App() {
               onClick={() => {
                 const randomIndex = Math.floor(Math.random() * 5); // Fallback random
                 openModal({
-                  title: 'SOBRE',
+                  title: 'Sobre',
                   initialValue: '',
                   type: 'about',
                   payload: { fallenIndex: randomIndex },
@@ -528,7 +529,7 @@ function App() {
                     onClick={(e) => {
                       e.stopPropagation();
                       openModal({
-                        title: 'SOBRE',
+                        title: 'Sobre',
                         initialValue: '',
                         type: 'about',
                         payload: { fallenIndex: i },
@@ -545,7 +546,7 @@ function App() {
 
             {activeSidebarTab === 'settings' && (
               <div style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.5, color: isDark ? '#fff' : '#000', marginLeft: '12px' }}>
-                SISTEMA / CONFIGURAÇÕES
+                Sistema / Configurações
               </div>
             )}
 

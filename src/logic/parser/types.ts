@@ -1,19 +1,22 @@
 
-import type { Node, Edge } from '@xyflow/react';
+import type { Edge } from '@xyflow/react';
+import type { Node as BabelNode } from '@babel/types';
+import type { AppNode } from '../../store/useStore';
+
 
 export interface ParserContext {
-    nodes: Node[];
+    nodes: AppNode[];
     edges: Edge[];
     variableNodes: Record<string, string>; // Map varName -> NodeID
-    body: any[]; // AST Body for indexing reference
+    body: BabelNode[]; // AST Body for indexing reference
     indexCounter: { value: number }; // Global unique counter
     currentParentId?: string; // Track containing block
     nativeApiNodeId?: string; // ID for the JS Runtime node
     currentScopeId: string; // Hierarchical scope level
-    processBlock: (bodyNode: any, entryNodeId: string, flowHandle: string, label: string, preNodes?: any[]) => void;
+    processBlock: (bodyNode: BabelNode | BabelNode[], entryNodeId: string, flowHandle: string, label: string, preNodes?: AppNode[]) => void;
 }
 
 export interface ParserHandler {
-    canHandle(statement: any): boolean;
-    handle(statement: any, context: ParserContext, parentId?: string, handleName?: string, idSuffix?: string): string | undefined;
+    canHandle(node: BabelNode): boolean;
+    handle(node: BabelNode, context: ParserContext, parentId?: string, handleName?: string, idSuffix?: string): string | undefined;
 }

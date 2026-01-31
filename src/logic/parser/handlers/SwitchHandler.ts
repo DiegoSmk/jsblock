@@ -1,16 +1,17 @@
-
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
+import type { Node as BabelNode, SwitchStatement, Identifier, SwitchCase } from '@babel/types';
 
 export const SwitchHandler: ParserHandler = {
-    canHandle: (stmt: any) => stmt.type === 'SwitchStatement',
-    handle: (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+    canHandle: (node: BabelNode) => node.type === 'SwitchStatement',
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+        const stmt = node as SwitchStatement;
         const nodeId = idSuffix ? `switch-${idSuffix}` : generateId('switch');
 
         // Map Cases for UI
-        const cases = stmt.cases.map((c: any) => {
+        const cases = stmt.cases.map((c: SwitchCase) => {
             if (c.test) {
-                if (c.test.type === 'NumericLiteral' || c.test.type === 'StringLiteral') return String(c.test.value);
+                if (c.test.type === 'NumericLiteral' || c.test.type === 'StringLiteral') return String((c.test as any).value);
                 return 'case';
             }
             return 'default';
@@ -26,7 +27,7 @@ export const SwitchHandler: ParserHandler = {
                 cases,
                 scopeId: ctx.currentScopeId
             }
-        } as any);
+        });
 
         if (parentId && handleName) {
             ctx.edges.push(createEdge(parentId, nodeId, handleName, 'flow-in'));
@@ -34,18 +35,18 @@ export const SwitchHandler: ParserHandler = {
 
         // Link Discriminant
         const disc = stmt.discriminant;
-        if (disc.type === 'Identifier' && ctx.variableNodes[disc.name]) {
-            ctx.edges.push(createEdge(ctx.variableNodes[disc.name], nodeId, 'output', 'discriminant'));
+        if (disc.type === 'Identifier' && ctx.variableNodes[(disc).name]) {
+            ctx.edges.push(createEdge(ctx.variableNodes[(disc).name], nodeId, 'output', 'discriminant'));
         }
 
         // Process Nested Cases with Scoping
-        stmt.cases.forEach((c: any, i: number) => {
+        stmt.cases.forEach((c: SwitchCase, i: number) => {
             const handleId = `case-${i}`;
             const caseLabel = c.test ? `Case ${cases[i]}` : 'Default';
 
             if (c.consequent && c.consequent.length > 0) {
                 // Wrap consequent array in a block structure for the processBlock utility
-                const dummyBlock = { type: 'BlockStatement', body: c.consequent };
+                const dummyBlock = { type: 'BlockStatement', body: c.consequent } as any;
                 ctx.processBlock(dummyBlock, nodeId, handleId, caseLabel);
             }
         });
@@ -53,3 +54,4 @@ export const SwitchHandler: ParserHandler = {
         return nodeId;
     }
 };
+

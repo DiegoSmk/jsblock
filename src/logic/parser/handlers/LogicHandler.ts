@@ -1,17 +1,16 @@
-
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
-
 import { CallHandler } from './CallHandler';
+import type { Node as BabelNode, ExpressionStatement, BinaryExpression, LogicalExpression, Identifier, NumericLiteral, StringLiteral, BooleanLiteral } from '@babel/types';
 
 export const LogicHandler: ParserHandler = {
-    canHandle: (stmt: any) => {
+    canHandle: (node: BabelNode) => {
         // Handle standalone expressions or nested ones
-        const expr = stmt.type === 'ExpressionStatement' ? stmt.expression : stmt;
+        const expr = node.type === 'ExpressionStatement' ? node.expression : node;
         return expr.type === 'BinaryExpression' || expr.type === 'LogicalExpression';
     },
-    handle: (stmt: any, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
-        const expr = stmt.type === 'ExpressionStatement' ? stmt.expression : stmt;
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+        const expr = (node.type === 'ExpressionStatement' ? (node).expression : node) as BinaryExpression | LogicalExpression;
         const nodeId = idSuffix ? `logic-${idSuffix}` : generateId('logic');
         const op = expr.operator;
 
@@ -24,7 +23,7 @@ export const LogicHandler: ParserHandler = {
                 op,
                 scopeId: ctx.currentScopeId
             }
-        } as any);
+        });
 
         if (parentId && handleName) {
             // Logic node provides the value (source) to the parent consumer (target)
@@ -33,13 +32,14 @@ export const LogicHandler: ParserHandler = {
 
         const processOperand = (operand: any, targetHandle: string) => {
             if (operand.type === 'Identifier') {
-                const sourceId = ctx.variableNodes[operand.name];
+                const sourceId = ctx.variableNodes[(operand as Identifier).name];
                 if (sourceId) {
                     ctx.edges.push(createEdge(sourceId, nodeId, 'output', targetHandle));
                 }
             } else if (operand.type === 'NumericLiteral' || operand.type === 'StringLiteral' || operand.type === 'BooleanLiteral') {
                 const litId = generateId('literal');
-                const value = String(operand.value);
+                const litArg = operand as NumericLiteral | StringLiteral | BooleanLiteral;
+                const value = String((litArg as any).value);
                 const type = operand.type === 'NumericLiteral' ? 'number' : (operand.type === 'BooleanLiteral' ? 'boolean' : 'string');
 
                 ctx.nodes.push({
@@ -48,7 +48,7 @@ export const LogicHandler: ParserHandler = {
                     position: { x: 0, y: 0 },
                     parentId: ctx.currentParentId,
                     data: { label: type, value, type, scopeId: ctx.currentScopeId }
-                } as any);
+                });
 
                 ctx.edges.push(createEdge(litId, nodeId, 'output', targetHandle));
             } else if (operand.type === 'BinaryExpression' || operand.type === 'LogicalExpression' || operand.type === 'CallExpression') {
@@ -66,3 +66,4 @@ export const LogicHandler: ParserHandler = {
         return nodeId; // Return ID for nested usage
     }
 };
+

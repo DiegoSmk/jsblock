@@ -162,7 +162,8 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, side = 'top
                         fontSize: '12px',
                         lineHeight: '1.4',
                         fontWeight: 500,
-                        whiteSpace: 'normal', // Allow wrapping if very long
+                        whiteSpace: 'normal',
+                        width: 'max-content',
                         maxWidth: '280px',
                         zIndex: 10000,
                         boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)',

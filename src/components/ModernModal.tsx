@@ -194,7 +194,7 @@ export const ModernModal = () => {
                                 color: isDark ? '#fff' : '#1a1a1a',
                                 letterSpacing: '-0.01em'
                             }}>
-                                JS BLOCK
+                                JS Block
                             </h3>
                             <p style={{
                                 margin: '0 0 12px 0',
@@ -232,7 +232,7 @@ export const ModernModal = () => {
                                 alignItems: 'center',
                                 fontSize: '0.75rem',
                                 color: isDark ? '#666' : '#999',
-                                textTransform: 'uppercase',
+
                                 letterSpacing: '0.5px',
                                 fontWeight: 600
                             }}>
@@ -265,7 +265,7 @@ export const ModernModal = () => {
                                 display: 'block',
                                 marginBottom: '8px',
                                 fontWeight: 700,
-                                textTransform: 'uppercase',
+
                                 letterSpacing: '0.5px'
                             }}>
                                 {modal.type === 'variable' ? 'Nome da Variável' : (modal.type.startsWith('prompt') ? 'Valor' : 'Entrada')}

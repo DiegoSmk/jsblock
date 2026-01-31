@@ -25,7 +25,7 @@ export const NativeApiNode = () => {
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Cpu size={18} />
-                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>JS Runtime API</span>
+                <span style={{  letterSpacing: '0.05em' }}>JS Runtime API</span>
             </div>
             <div style={{
                 fontSize: '0.7rem',

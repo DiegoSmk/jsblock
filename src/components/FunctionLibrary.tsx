@@ -31,7 +31,7 @@ export const FunctionLibrary = () => {
     };
 
     const handleEnter = (f: any) => {
-        const scope = (f.node.data as any).scopes?.['body'];
+        const scope = (f.node.data).scopes?.body;
         if (scope) {
             navigateInto(scope.id, scope.label);
         }
@@ -112,7 +112,7 @@ export const FunctionLibrary = () => {
                     fontSize: '0.7rem',
                     fontWeight: 800,
                     color: isDark ? '#555' : '#aaa',
-                    textTransform: 'uppercase',
+                    
                     letterSpacing: '0.1em',
                     marginBottom: '10px',
                     paddingLeft: '10px'
