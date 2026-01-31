@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useStore } from '../store/useStore';
 
 interface TooltipProps {
-    content: string;
+    content: React.ReactNode;
     children: React.ReactNode;
     side?: 'top' | 'bottom' | 'left' | 'right';
     delay?: number;

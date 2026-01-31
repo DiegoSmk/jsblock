@@ -196,6 +196,11 @@ type AppState = {
         sidebarView: 'history' | 'graph' | 'info';
         branches: string[];
         stashes: GitStashEntry[];
+        stats: {
+            fileCount: number;
+            repoSize: string;
+            projectSize: string;
+        };
     };
     gitProfiles: GitProfile[];
     commitTemplates: CommitTemplate[];
@@ -299,7 +304,12 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         activeView: 'status',
         sidebarView: 'info',
         branches: [],
-        stashes: []
+        stashes: [],
+        stats: {
+            fileCount: 0,
+            repoSize: '',
+            projectSize: ''
+        }
     },
     gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') || '[]'),
     commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') || '[]'),
@@ -1041,10 +1051,10 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
 
             // Get Log with Graph and Decorations
-            // We use -n 100 for the full graph view, and include %d for branch/tag info
+            const delimiter = '|||';
             const logRes = await (window as any).electronAPI.gitCommand(openedFolder, [
-                'log', '--graph', '--all', '-n', '100',
-                '--pretty=format:%h|%d|%s|%an|%aI'
+                'log', '--graph', '--all', '-n', '100', '--no-color',
+                `--pretty=format:%h${delimiter}%d${delimiter}%s${delimiter}%an${delimiter}%aI`
             ]);
             const rawLog = logRes.stdout;
 
@@ -1054,33 +1064,96 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             for (const line of lines) {
                 if (!line.trim()) continue;
 
-                // Regex to find: hash | (decorations) | message | author | date
-                // Hash is usually 7 chars, but can be more. It follows most graph chars.
-                const match = line.match(/([0-9a-f]{7,40})\|(.*)\|(.*)\|(.*)\|(.*)$/);
+                const parts = line.split(delimiter);
 
-                if (match) {
-                    const [_, hash, refs, message, author, date] = match;
-                    const graph = line.substring(0, line.indexOf(hash));
+                // A valid log entry with our format should have at least 5 parts
+                if (parts.length >= 5) {
+                    const part0 = parts[0];
+                    // The hash (%h) is the first element, at the end of part0
+                    const hashMatch = part0.match(/([0-9a-f]{7,40})$/);
+                    const hash = hashMatch ? hashMatch[1] : '';
+                    const graph = hash ? part0.substring(0, part0.length - hash.length) : part0;
 
-                    refinedEntries.push({
-                        hash,
-                        author: author || '?',
-                        date: date || new Date().toISOString(),
-                        message: message || 'Sem mensagem',
-                        graph,
-                        refs: refs.trim() // Decorations like (HEAD -> main, origin/main)
-                    } as any);
+                    const refs = parts[1];
+                    const message = parts[2];
+                    const author = parts[3];
+                    const date = parts[4]; // Should be ISO date string
+
+                    if (hash) {
+                        refinedEntries.push({
+                            hash,
+                            author: author || '?',
+                            date: date ? date.trim() : new Date().toISOString(),
+                            message: message || 'Sem mensagem',
+                            graph,
+                            refs: refs.trim()
+                        } as any);
+                    } else {
+                        refinedEntries.push({
+                            hash: '', author: '', date: '', message: '', graph: line, isGraphOnly: true
+                        } as any);
+                    }
                 } else {
-                    // It's a graph-only line
                     refinedEntries.push({
-                        hash: '',
-                        author: '',
-                        date: '',
-                        message: '',
-                        graph: line,
-                        isGraphOnly: true
+                        hash: '', author: '', date: '', message: '', graph: line, isGraphOnly: true
                     } as any);
                 }
+            }
+
+            // Fetch Repo Stats
+            let fileCount = 0;
+            let repoSize = '0 B';
+            let projectSize = '0 B';
+
+            try {
+                // File Count
+                const filesRes = await (window as any).electronAPI.gitCommand(openedFolder, ['ls-files']);
+                // Count non-empty lines
+                fileCount = filesRes.stdout.split('\n').filter((l: string) => l.trim()).length;
+
+                // Repo Size
+                const sizeRes = await (window as any).electronAPI.gitCommand(openedFolder, ['count-objects', '-vH']);
+                const sizeOutput = sizeRes.stdout;
+
+                // Prioritize size-pack (packed objects), then size (loose objects).
+                // git count-objects -vH output:
+                // size: 6.75 MiB
+                // size-pack: 0 bytes
+
+                const sizePackMatch = sizeOutput.match(/size-pack:\s*(.+)/);
+                const sizeMatch = sizeOutput.match(/^size:\s*(.+)/m);
+
+                const sizePack = sizePackMatch ? sizePackMatch[1].trim() : null;
+                const sizeLoose = sizeMatch ? sizeMatch[1].trim() : null;
+
+                if (sizePack && sizePack !== '0 bytes' && sizePack !== '0') {
+                    repoSize = sizePack;
+                } else if (sizeLoose) {
+                    repoSize = sizeLoose;
+                }
+
+
+                // Project Size (Tracked files)
+                try {
+                    const treeRes = await (window as any).electronAPI.gitCommand(openedFolder, ['ls-tree', '-r', '-l', 'HEAD']);
+                    const treeLines = treeRes.stdout.split('\n');
+                    let totalBytes = 0;
+                    for (const line of treeLines) {
+                        if (!line.trim()) continue;
+                        // Format: <mode> <type> <hash> <size>\t<path>
+                        const match = line.match(/\s+blob\s+[0-9a-f]+\s+(\d+)/);
+                        if (match) {
+                            totalBytes += parseInt(match[1], 10);
+                        }
+                    }
+
+                    if (totalBytes < 1024) projectSize = totalBytes + ' B';
+                    else if (totalBytes < 1024 * 1024) projectSize = (totalBytes / 1024).toFixed(1) + ' KB';
+                    else projectSize = (totalBytes / (1024 * 1024)).toFixed(1) + ' MB';
+                } catch (e) { }
+
+            } catch (e) {
+                console.warn('Failed to fetch repo stats', e);
             }
 
             set((state: any) => ({
@@ -1091,7 +1164,12 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                     changes,
                     log: refinedEntries,
                     rawLog,
-                    branches
+                    branches,
+                    stats: {
+                        fileCount,
+                        repoSize,
+                        projectSize
+                    }
                 }
             }));
 
