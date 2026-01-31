@@ -1,5 +1,5 @@
 import React from 'react';
-import { GitBranch, AlertCircle, User, Settings, Check, Edit3, ShieldAlert, Plus, RefreshCw, ChevronDown, Sparkles, Smile, X } from 'lucide-react';
+import { GitBranch, AlertCircle, User, Settings, Check, Edit3, ShieldAlert, Plus, RefreshCw, ChevronDown, X } from 'lucide-react';
 
 interface GitInitViewProps {
     isDark: boolean;
@@ -45,13 +45,17 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
     const hasGlobal = !!(git.globalAuthor?.name || git.globalAuthor?.email);
 
     return (
-        <div style={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            background: isDark ? '#1a1a1a' : '#fff',
-            color: isDark ? '#fff' : '#000'
-        }}>
+        <div
+            className="animate-entrance"
+            style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                background: isDark ? '#1a1a1a' : '#fff',
+                color: isDark ? '#fff' : '#000',
+                opacity: 0
+            }}
+        >
             {/* Header */}
             <div style={{
                 padding: '12px 20px',

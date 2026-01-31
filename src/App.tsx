@@ -683,7 +683,7 @@ function App() {
                         `}</style>
                       </div>
                     ) : git.sidebarView === 'info' ? (
-                      <div style={{ height: '100%', background: isDark ? '#1a1a1a' : '#fff', overflowY: 'auto' }}>
+                      <div style={{ height: '100%', background: isDark ? '#1a1a1a' : '#fff', overflow: 'hidden' }}>
                         <GitInfoPanel isDark={isDark} logs={git.log} />
                       </div>
                     ) : (

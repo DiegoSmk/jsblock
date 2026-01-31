@@ -106,26 +106,38 @@ export const GitTerminalView: React.FC = () => {
 
         const fitAddon = new FitAddon();
         term.loadAddon(fitAddon);
-        term.open(terminalRef.current);
+
+        try {
+            if (terminalRef.current) {
+                terminalRef.current.innerHTML = ''; // Ensure container is empty
+                term.open(terminalRef.current);
+            } else {
+                console.error('Terminal container not found');
+                return;
+            }
+        } catch (err) {
+            console.error('Failed to open terminal:', err);
+            return;
+        }
 
         const safeFit = () => {
-            if (terminalRef.current && terminalRef.current.offsetWidth > 0 && (term as any)._core?.viewport) {
+            if (terminalRef.current && terminalRef.current.offsetWidth > 0 && terminalRef.current.offsetHeight > 0) {
                 try {
                     fitAddon.fit();
                     if ((window as any).electronAPI) {
                         (window as any).electronAPI.terminalResize(term.cols, term.rows);
                     }
                 } catch (e) {
-                    console.warn('Fit failed:', e);
+                    // Ignore fit errors during transitions
                 }
             }
         };
 
-        // Initial fit and focus
-        setTimeout(() => {
+        // Initial fit and focus with a bit more delay to let animation settle
+        const initialFitTimer = setTimeout(() => {
             safeFit();
-            term.focus();
-        }, 150);
+            if (term.element) term.focus();
+        }, 300);
 
         xtermRef.current = term;
 
@@ -226,6 +238,7 @@ export const GitTerminalView: React.FC = () => {
             resizeObserver.observe(terminalRef.current);
 
             return () => {
+                clearTimeout(initialFitTimer);
                 terminalElement?.removeEventListener('contextmenu', handleContextMenu);
                 resizeObserver.disconnect();
                 if (xtermRef.current === term) {
@@ -318,14 +331,18 @@ export const GitTerminalView: React.FC = () => {
     );
 
     return (
-        <div style={{
-            flex: 1,
-            height: '100%',
-            background: isDark ? '#1a1a1a' : '#fff',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-        }}>
+        <div
+            className="animate-entrance"
+            style={{
+                flex: 1,
+                height: '100%',
+                background: isDark ? '#1a1a1a' : '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                opacity: 0
+            }}
+        >
             {/* Quick Command Modal */}
             <Modal
                 isOpen={showAddCommand}

@@ -124,12 +124,16 @@ export const GitGraphView: React.FC = () => {
     };
 
     return (
-        <div style={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            background: isDark ? '#1a1a1a' : '#fff'
-        }} className="git-graph-view">
+        <div
+            className="git-graph-view animate-entrance"
+            style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                background: isDark ? '#1a1a1a' : '#fff',
+                opacity: 0
+            }}
+        >
             <SectionHeader
                 title="Grafo de Commits"
                 count={git.log.filter(l => l.hash !== '').length}

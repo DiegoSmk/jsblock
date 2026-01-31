@@ -130,7 +130,17 @@ export const GitStatusView: React.FC = () => {
     const unstaged = git.changes.filter(f => f.workingTree !== ' ' || f.index === '?');
 
     return (
-        <div className="git-panel-container" style={{ background: isDark ? '#1a1a1a' : '#fff', color: isDark ? '#fff' : '#000', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div
+            className="git-panel-container animate-entrance"
+            style={{
+                background: isDark ? '#1a1a1a' : '#fff',
+                color: isDark ? '#fff' : '#000',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                opacity: 0
+            }}
+        >
             {/* Header */}
             <div style={{
                 padding: '12px 20px',

@@ -248,7 +248,26 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                                 <div style={{ width: '100%', height: '40px', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderRadius: '4px', overflow: 'hidden', display: 'flex', alignItems: 'flex-end' }}>
                                     <div
                                         title={`${count} commits em ${day}`}
-                                        style={{ width: '100%', height: `${height}%`, background: isDark ? '#4dabf7' : '#0070f3', opacity: 0.8, transition: 'height 0.3s ease', cursor: 'pointer' }}
+                                        style={{
+                                            width: '100%',
+                                            height: `${height}%`,
+                                            background: isDark
+                                                ? 'linear-gradient(to top, #3b82f6, #06b6d4)'
+                                                : 'linear-gradient(to top, #2563eb, #2dd4bf)',
+                                            opacity: count === weeklyStats.max ? 1 : 0.8,
+                                            transition: 'all 0.3s ease',
+                                            cursor: 'pointer',
+                                            borderRadius: '2px 2px 0 0',
+                                            boxShadow: count === weeklyStats.max ? (isDark ? '0 0 10px rgba(59, 130, 246, 0.4)' : '0 0 8px rgba(0, 112, 243, 0.3)') : 'none'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.opacity = '1';
+                                            e.currentTarget.style.filter = 'brightness(1.1)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.opacity = count === weeklyStats.max ? '1' : '0.8';
+                                            e.currentTarget.style.filter = 'none';
+                                        }}
                                     />
                                 </div>
                                 <span style={{ fontSize: '0.6rem', color: isDark ? '#888' : '#777' }}>{isSmall ? day[0] : day}</span>
@@ -268,7 +287,26 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                                     <div style={{ width: '100%', height: '40px', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderRadius: '2px', overflow: 'hidden', display: 'flex', alignItems: 'flex-end' }}>
                                         <div
                                             title={`${count} commits às ${hour}h`}
-                                            style={{ width: '100%', height: `${height}%`, background: isDark ? '#fbbf24' : '#f59e0b', opacity: 0.8, transition: 'height 0.3s ease', cursor: 'pointer' }}
+                                            style={{
+                                                width: '100%',
+                                                height: `${height}%`,
+                                                background: isDark
+                                                    ? 'linear-gradient(to top, #d97706, #fbbf24)'
+                                                    : 'linear-gradient(to top, #f59e0b, #ffcc33)',
+                                                opacity: count === hourlyStats.max ? 1 : 0.8,
+                                                transition: 'all 0.3s ease',
+                                                cursor: 'pointer',
+                                                borderRadius: '1px 1px 0 0',
+                                                boxShadow: count === hourlyStats.max ? (isDark ? '0 0 10px rgba(251, 191, 36, 0.4)' : '0 0 8px rgba(245, 158, 11, 0.3)') : 'none'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.opacity = '1';
+                                                e.currentTarget.style.filter = 'brightness(1.1)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.opacity = count === hourlyStats.max ? '1' : '0.8';
+                                                e.currentTarget.style.filter = 'none';
+                                            }}
                                         />
                                     </div>
                                     <span style={{ fontSize: '0.5rem', color: isDark ? '#888' : '#777', opacity: showLabel ? 1 : 0 }}>{hour}h</span>
@@ -315,7 +353,19 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
     ];
 
     return (
-        <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative', background: isDark ? '#1a1a1a' : '#fff' }}>
+        <div
+            ref={containerRef}
+            className="animate-entrance"
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                overflow: 'hidden',
+                position: 'relative',
+                background: isDark ? '#1a1a1a' : '#fff',
+                opacity: 0
+            }}
+        >
             <div style={{ padding: '8px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', backdropFilter: 'blur(10px)', zIndex: 20 }}>
                 <span style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: isDark ? '#555' : '#999' }}>Informações Analíticas</span>
                 <button onClick={() => setShowSettings(!showSettings)} style={{ background: showSettings ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: showSettings ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#666' : '#999'), display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', outline: 'none' }} title="Configurar visualização das seções"><Settings2 size={16} /></button>

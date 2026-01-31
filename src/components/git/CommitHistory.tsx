@@ -94,7 +94,16 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
 
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}>
+        <div
+            className="animate-entrance"
+            style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                background: isDark ? '#1a1a1a' : '#fff',
+                opacity: 0 // Start hidden for animation
+            }}
+        >
             <SectionHeader
                 title="Lista de Commits"
                 count={logs.length}
