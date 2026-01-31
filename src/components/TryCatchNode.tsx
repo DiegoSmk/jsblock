@@ -3,7 +3,9 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Shield, ExternalLink } from 'lucide-react';
 
-export const TryCatchNode = ({ data }: { data: any }) => {
+import type { AppNodeData } from '../store/useStore';
+
+export const TryCatchNode = ({ data }: { data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const navigateInto = useStore((state) => state.navigateInto);
     const isDark = theme === 'dark';

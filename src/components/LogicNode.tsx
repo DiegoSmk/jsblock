@@ -2,10 +2,12 @@ import { useMemo } from 'react';
 import { Handle, Position, useHandleConnections } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 
-export const LogicNode = ({ id, data }: { id: string, data: { op: string, scopeId: string } }) => {
+import type { AppNodeData } from '../store/useStore';
+
+export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const nodes = useStore((state) => state.nodes);
-    const updateNodeData = useStore((state) => (state as any).updateNodeData);
+    const updateNodeData = useStore((state) => state.updateNodeData);
     const isDark = theme === 'dark';
 
     const connections = useHandleConnections({
@@ -81,7 +83,7 @@ export const LogicNode = ({ id, data }: { id: string, data: { op: string, scopeI
                 }}>
                 <select
                     className="nodrag"
-                    value={data.op}
+                    value={data.op as string}
                     onChange={(e) => handleSelect(e.target.value)}
                     onMouseDown={(e) => e.stopPropagation()}
                     style={{

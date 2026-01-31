@@ -4,6 +4,7 @@ import { Search, ChevronRight, Box, Code2, StickyNote, Plus } from 'lucide-react
 import { useStore } from '../store/useStore';
 import { useReactFlow } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
+import type { AppNode } from '../store/useStore';
 
 export const FunctionLibrary = () => {
     const { t } = useTranslation();
@@ -14,12 +15,12 @@ export const FunctionLibrary = () => {
 
     // Get all functions in the current context
     const functions = nodes
-        .filter(n => (n.data as any)?.isDecl)
+        .filter(n => n.data.isDecl)
         .map(n => ({
             id: n.id,
-            name: (n.data as any).label.replace('Definition: ', ''),
-            node: n,
-            args: (n.data as any).args || []
+            name: (n.data.label || '').replace('Definition: ', ''),
+            node: n as AppNode,
+            args: n.data.args || []
         }))
         .filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -30,8 +31,8 @@ export const FunctionLibrary = () => {
         }
     };
 
-    const handleEnter = (f: any) => {
-        const scope = (f.node.data).scopes?.body;
+    const handleEnter = (f: { node: AppNode }) => {
+        const scope = f.node.data.scopes?.['body'];
         if (scope) {
             navigateInto(scope.id, scope.label);
         }
@@ -112,7 +113,7 @@ export const FunctionLibrary = () => {
                     fontSize: '0.7rem',
                     fontWeight: 800,
                     color: isDark ? '#555' : '#aaa',
-                    
+
                     letterSpacing: '0.1em',
                     marginBottom: '10px',
                     paddingLeft: '10px'

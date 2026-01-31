@@ -40,9 +40,8 @@ export const FileExplorer: React.FC = () => {
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, path: string } | null>(null);
 
     const loadFiles = async (dirPath: string): Promise<FileEntry[]> => {
-        const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-        if (!electronAPI) return [];
-        const result = await electronAPI.readDir(dirPath) as FileSystemEntry[];
+        if (!window.electronAPI) return [];
+        const result = (await window.electronAPI.readDir(dirPath)) as FileSystemEntry[];
         const ignored = ['.git', '.vscode', 'node_modules', '.block'];
         return result
             .filter((file: FileSystemEntry) => !ignored.includes(file.name))
@@ -64,7 +63,7 @@ export const FileExplorer: React.FC = () => {
                 return;
             }
             setSelectedDirPath(openedFolder);
-            loadFiles(openedFolder).then(setFiles).catch(console.error);
+            void loadFiles(openedFolder).then(setFiles).catch(console.error);
         }
     }, [openedFolder, setOpenedFolder]);
 
@@ -113,12 +112,11 @@ export const FileExplorer: React.FC = () => {
         const parentPath = isCreating.parentPath;
 
         try {
-            const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-            if (!electronAPI) return;
+            if (!window.electronAPI) return;
 
             if (isCreating.type === 'folder') {
                 const dirPath = `${parentPath}/${newName}`;
-                await electronAPI.createDirectory(dirPath);
+                await window.electronAPI.createDirectory(dirPath);
             } else {
                 const ext = isCreating.ext ?? '';
                 const fileName = newName.endsWith(ext) ? newName : `${newName}${ext}`;
@@ -126,7 +124,7 @@ export const FileExplorer: React.FC = () => {
                 let initialContent = '';
                 if (ext === '.block') initialContent = `// JS Block - New code note\n\n`;
                 if (ext === '.md') initialContent = `# ${newName}\n\n`;
-                await electronAPI.createFile(filePath, initialContent);
+                await window.electronAPI.createFile(filePath, initialContent);
                 void setSelectedFile(filePath);
             }
 
@@ -342,7 +340,7 @@ export const FileExplorer: React.FC = () => {
     };
 
     const ActionButton = ({ icon: Icon, color, onClick, title, label }: {
-        icon?: React.ComponentType<{ size: number }>;
+        icon?: React.ElementType;
         color?: string;
         onClick: () => void;
         title: string;

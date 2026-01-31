@@ -2,18 +2,20 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Box } from 'lucide-react';
 
-export const VariableNode = ({ data, id }: { id: string, data: { label: string, value: string, nestedCall?: { name: string, args: string[] } } }) => {
+import type { AppNodeData } from '../store/useStore';
+
+export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const runtimeValues = useStore((state) => state.runtimeValues);
-    const updateNodeData = useStore((state) => (state as any).updateNodeData);
+    const updateNodeData = useStore((state) => state.updateNodeData);
     const isDark = theme === 'dark';
 
-    const isComputed = data.value !== undefined && (data.value.includes(' ') || data.value === '(computed)');
+    const isComputed = typeof data.value === 'string' && (data.value.includes(' ') || data.value === '(computed)');
     const hasNested = !!data.nestedCall || isComputed;
-    const liveValue = runtimeValues[data.label];
+    const liveValue = data.label ? runtimeValues[data.label] : undefined;
 
     // Improved display logic: Runtime Value > Formatted Expression > Static Value
-    const displayValue = liveValue !== undefined ? String(liveValue) : data.value;
+    const displayValue = liveValue !== undefined ? String(liveValue) : (data.value as string);
     const isShowingExpression = liveValue === undefined && isComputed;
 
     return (
@@ -79,7 +81,7 @@ export const VariableNode = ({ data, id }: { id: string, data: { label: string, 
                                             className="handle-data"
                                             style={{ left: '-12px', background: '#f472b6' }}
                                         />
-                                        <span style={{ fontSize: '0.8rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700,  letterSpacing: '0.05em' }}>{arg}</span>
+                                        <span style={{ fontSize: '0.8rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>{arg}</span>
                                     </div>
                                 ))}
                             </div>
@@ -92,7 +94,7 @@ export const VariableNode = ({ data, id }: { id: string, data: { label: string, 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: isDark ? '#94a3b8' : '#64748b', textTransform: 'uppercase' }}>Initial Value</span>
                             <input
-                                value={data.value}
+                                value={data.value as string}
                                 onChange={(e) => updateNodeData(id, { value: e.target.value })}
                                 onKeyDown={(e) => e.stopPropagation()}
                                 style={{

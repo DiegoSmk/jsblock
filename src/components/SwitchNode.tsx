@@ -4,14 +4,16 @@ import { useStore } from '../store/useStore';
 import { Plus, Trash2, ExternalLink } from 'lucide-react';
 import { useEffect } from 'react';
 
-export const SwitchNode = ({ id, data }: { id: string, data: any }) => {
+import type { AppNodeData } from '../store/useStore';
+
+export const SwitchNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
-    const updateNodeData = useStore((state) => (state as any).updateNodeData);
+    const updateNodeData = useStore((state) => state.updateNodeData);
     const navigateInto = useStore((state) => state.navigateInto);
     const updateNodeInternals = useUpdateNodeInternals();
     const isDark = theme === 'dark';
 
-    const cases = data.cases || [];
+    const cases = (data.cases as string[]) || [];
 
     const handleEnterScope = (flowHandle: string) => {
         const scope = data.scopes?.[flowHandle];

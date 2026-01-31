@@ -1,13 +1,14 @@
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Hash, Plus, ExternalLink, Activity } from 'lucide-react';
-import type { FunctionCallData, StoreState, StoreEdge, StoreNode } from '../types/store';
+import type { AppNode, AppNodeData } from '../store/useStore';
+import type { Edge } from '@xyflow/react';
 
-export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallData }) => {
+export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const runtimeValues = useStore((state) => state.runtimeValues);
-    const edges = useStore((state) => state.edges) as StoreEdge[];
-    const addFunctionCall = useStore((state: StoreState) => state.addFunctionCall);
+    const edges = useStore((state) => state.edges);
+    const addFunctionCall = useStore((state) => state.addFunctionCall);
     const navigateInto = useStore((state) => state.navigateInto);
 
     const handleEnterScope = () => {
@@ -18,7 +19,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
     };
 
     const isDark = theme === 'dark';
-    const isConsoleLog = data.label.includes('console.log');
+    const isConsoleLog = typeof data.label === 'string' && data.label.includes('console.log');
     const isDecl = data.isDecl;
 
     const BUILTIN_COLORS: Record<string, string> = {
@@ -42,12 +43,12 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
         return null;
     };
 
-    const builtinColor = getBuiltinColor(data.label);
+    const builtinColor = data.label ? getBuiltinColor(data.label) : null;
     const isBuiltin = !!builtinColor;
 
     const getHeaderLabel = (): string => {
         if (isDecl) return 'Definition';
-        if (isBuiltin) return data.label;
+        if (isBuiltin) return data.label || '';
         return 'Function Call';
     };
 
@@ -57,11 +58,11 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
 
     const getArgValue = (argIndex: number): string | null => {
         const targetHandle = `arg-${argIndex}`;
-        const edge = edges.find((e: StoreEdge) => e.target === id && e.targetHandle === targetHandle);
+        const edge = edges.find((e: Edge) => e.target === id && e.targetHandle === targetHandle);
 
         if (edge) {
-            const nodes = useStore.getState().nodes as StoreNode[];
-            const sourceNode = nodes.find((n: StoreNode) => n.id === edge.source);
+            const nodes = useStore.getState().nodes;
+            const sourceNode = nodes.find((n: AppNode) => n.id === edge.source);
             if (!sourceNode) return null;
 
             if (sourceNode.type === 'variableNode') {
@@ -91,8 +92,8 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
     const returnValue = getReturnValue();
     const hasError = !isDecl && !isConsoleLog && args.length > 0 && args.some((_, i) => getArgValue(i) === null);
 
-    const identityColor = isDecl ? '#4caf50' : (isBuiltin ? (builtinColor ?? '#f472b6') : '#f472b6');
-    const hasBody = !!data.scopes?.body;
+    const identityColor = isDecl ? '#4caf50' : (builtinColor ?? '#f472b6');
+    const hasBody = !!(data.scopes && data.scopes.body);
 
     return (
         <div className="premium-node" style={{
@@ -138,7 +139,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
                         </div>
                     )}
                     <span style={{ color: identityColor, fontWeight: 800, fontSize: '1rem', fontFamily: 'monospace' }}>
-                        {data.label.replace('Definition: ', '')}()
+                        {(data.label || '').replace('Definition: ', '')}()
                     </span>
                     {/* Reference Handles */}
                     {isDecl ? (
@@ -155,7 +156,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                         {args.length > 0 && (
                             <div style={{ padding: '12px', background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)', borderRadius: '10px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
-                                <div style={{ fontSize: '0.65rem', color: isDark ? '#81c784' : '#4caf50', marginBottom: '8px', fontWeight: 800,  letterSpacing: '0.05em' }}>Arguments</div>
+                                <div style={{ fontSize: '0.65rem', color: isDark ? '#81c784' : '#4caf50', marginBottom: '8px', fontWeight: 800, letterSpacing: '0.05em' }}>Arguments</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                     {args.map((arg) => (
                                         <div key={`arg-${arg}`} style={{ background: 'rgba(76,175,80,0.1)', color: '#81c784', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, fontFamily: 'monospace' }}>{arg}</div>
@@ -166,7 +167,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
                         <button
                             onClick={() => {
                                 if (addFunctionCall) {
-                                    addFunctionCall({ label: data.label.replace('Definition: ', ''), args: data.args });
+                                    addFunctionCall(data.label?.replace('Definition: ', '') || '', data.args);
                                 }
                             }}
                             style={{
@@ -248,7 +249,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: FunctionCallD
                             justifyContent: 'center',
                             gap: '8px',
                             cursor: 'pointer',
-                            
+
                             letterSpacing: '0.05em',
                             transition: 'all 0.2s'
                         }}

@@ -18,9 +18,13 @@ export interface AppNodeData {
     value?: unknown;
     scopeId?: string;
     isDecl?: boolean;
+    isStandalone?: boolean;
+    hasReturn?: boolean;
+    usageCount?: number;
+    connectedValues?: Record<string | number, string>;
     type?: string;
     name?: string;
-    args?: unknown[];
+    args?: string[];
     nestedArgsCall?: Record<string, { expression: string }>;
     nestedCall?: { name: string, args: string[] };
     scopes?: Record<string, { id: string; label: string }>;

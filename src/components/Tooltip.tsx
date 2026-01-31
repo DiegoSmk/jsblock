@@ -15,7 +15,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, side = 'top
     const [actualSide, setActualSide] = useState(side);
     const triggerRef = useRef<HTMLDivElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
-    const timeoutRef = useRef<any>(null);
+    const timeoutRef = useRef<number | null>(null);
     const theme = useStore(state => state.theme);
     const isDark = theme === 'dark';
 
@@ -47,7 +47,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, side = 'top
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
+        timeoutRef.current = window.setTimeout(() => {
             updatePosition();
             setIsVisible(true);
         }, delay);
@@ -115,11 +115,14 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, side = 'top
             }
 
             if (top !== coords.top || left !== coords.left || newSide !== actualSide) {
-                setCoords({ top, left });
-                setActualSide(newSide);
+                // Use requestAnimationFrame to avoid synchronous setState in effect
+                requestAnimationFrame(() => {
+                    setCoords({ top, left });
+                    setActualSide(newSide);
+                });
             }
         }
-    }, [isVisible, content]); // Re-run when visible or content changes
+    }, [isVisible, content, coords, actualSide]); // Re-run when visible or content changes
 
     useEffect(() => {
         return () => {
