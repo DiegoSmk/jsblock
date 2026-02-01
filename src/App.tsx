@@ -338,7 +338,7 @@ function App() {
       if (electronAPI?.appReady) {
         void electronAPI.appReady();
       }
-    }, 100);
+    }, 200);
     return () => clearTimeout(timer);
   }, []);
 

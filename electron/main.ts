@@ -12,8 +12,10 @@ import os from 'os';
 const execFileAsync = promisify(execFile);
 // const execAsync = promisify(exec); // unused
 
-// Disable Autofill to check if it suppresses "Request Autofill.enable failed" errors
-app.commandLine.appendSwitch('disable-features', 'Autofill');
+// Disable hardware acceleration to avoid some GPU-related errors and suppress autofill warnings
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-features', 'Autofill,AutofillAddressFormat,AutofillServerCommunication,PasswordManager,PasswordGeneration');
+app.commandLine.appendSwitch('disable-autofill-keyboard-accessor-view', 'true');
 
 
 let mainWindow: BrowserWindow | null;
@@ -60,7 +62,20 @@ function createWindow() {
     });
 
     // Surgical transition: Close splash and show main window only when UI is 100% ready
+    // Failsafe: if the app takes more than 5s to send app-ready, show it anyway
+    const fallbackTimeout = setTimeout(() => {
+        if (mainWindow && !mainWindow.isVisible()) {
+            console.warn('App ready timeout - showing main window as fallback');
+            if (splashWindow && !splashWindow.isDestroyed()) {
+                splashWindow.close();
+                splashWindow = null;
+            }
+            mainWindow.show();
+        }
+    }, 8000); // 8 seconds is a safe margin for slow dev environments
+
     ipcMain.once('app-ready', () => {
+        clearTimeout(fallbackTimeout);
         const elapsedTime = Date.now() - startLoadTime;
         const minimumTime = 1000;
         const remainingTime = Math.max(0, minimumTime - elapsedTime);
@@ -79,6 +94,14 @@ function createWindow() {
     } else {
         void mainWindow.loadURL('http://localhost:5173');
     }
+
+    // Add failure logging
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+        console.error('Failed to load:', errorCode, errorDescription);
+        if (errorCode === -102) { // ERR_CONNECTION_REFUSED
+            console.error('Connection refused. Is the dev server (Vite) running on http://localhost:5173?');
+        }
+    });
 
     mainWindow.on('closed', () => {
         mainWindow = null;

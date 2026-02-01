@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+import { Dropdown } from './ui/Dropdown';
+
 export const SettingsView: React.FC = () => {
     const { t, i18n } = useTranslation();
     const {
@@ -35,6 +37,7 @@ export const SettingsView: React.FC = () => {
         { id: 'terminal', label: t('app.settings.categories.terminal'), icon: Terminal },
         { id: 'appearance', label: t('app.settings.categories.appearance'), icon: Monitor }
     ];
+
 
     const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => (
         <div style={{ marginBottom: '32px' }}>
@@ -140,21 +143,16 @@ export const SettingsView: React.FC = () => {
                                 description={t('app.settings.fields.language.desc')}
                                 icon={Globe}
                             >
-                                <select
-                                    value={i18n.language}
-                                    onChange={(e) => { void i18n.changeLanguage(e.target.value); }}
-                                    style={{
-                                        padding: '6px 12px',
-                                        borderRadius: '6px',
-                                        background: isDark ? '#222' : '#f5f5f5',
-                                        color: isDark ? '#fff' : '#000',
-                                        border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                                        fontSize: '0.85rem'
-                                    }}
-                                >
-                                    <option value="pt">Português (Brasil)</option>
-                                    <option value="en">English</option>
-                                </select>
+                                <Dropdown
+                                    value={i18n.language.split('-')[0]}
+                                    options={[
+                                        { value: 'pt', label: 'Português (Brasil)' },
+                                        { value: 'en', label: 'English' }
+                                    ]}
+                                    onChange={(val: string) => { void i18n.changeLanguage(val); }}
+                                    width="200px"
+                                    isDark={isDark}
+                                />
                             </SettingRow>
                         </SettingGroup>
                     </>
@@ -218,22 +216,16 @@ export const SettingsView: React.FC = () => {
                                 description={t('app.settings.fields.font_size.desc')}
                                 icon={Type}
                             >
-                                <select
+                                <Dropdown
                                     value={settings.fontSize}
-                                    onChange={(e) => updateSettings({ fontSize: parseInt(e.target.value) })}
-                                    style={{
-                                        padding: '6px 12px',
-                                        borderRadius: '6px',
-                                        background: isDark ? '#222' : '#f5f5f5',
-                                        color: isDark ? '#fff' : '#000',
-                                        border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                                        fontSize: '0.85rem'
-                                    }}
-                                >
-                                    {[12, 13, 14, 15, 16].map(size => (
-                                        <option key={size} value={size}>{size}px</option>
-                                    ))}
-                                </select>
+                                    options={[12, 13, 14, 15, 16].map(size => ({
+                                        value: size,
+                                        label: `${size}px`
+                                    }))}
+                                    onChange={(val: number) => updateSettings({ fontSize: val })}
+                                    width="100px"
+                                    isDark={isDark}
+                                />
                             </SettingRow>
                         </SettingGroup>
                     </>
