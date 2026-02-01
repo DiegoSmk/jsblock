@@ -12,11 +12,12 @@ interface GitHistoryProps {
     isDark: boolean;
     logs: GitLogEntry[];
     isOpen: boolean;
-    onToggle: () => void;
+    onToggle?: () => void;
+    hideHeader?: boolean;
 }
 
 export const CommitHistory: React.FC<GitHistoryProps> = ({
-    isDark, logs, isOpen, onToggle
+    isDark, logs, isOpen, onToggle = () => { /* no-op */ }, hideHeader = false
 }) => {
     const { t } = useTranslation();
     const { git, getCommitFiles, openModal, checkoutCommit, createBranch, openedFolder, gitCreateTag } = useStore();
@@ -94,10 +95,6 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
         );
     }, [logs, searchTerm]);
 
-
-
-
-
     return (
         <div
             className="animate-entrance"
@@ -109,34 +106,36 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                 opacity: 0 // Start hidden for animation
             }}
         >
-            <SectionHeader
-                title={t('git.status.history_list')}
-                count={logs.length}
-                isOpen={isOpen}
-                onToggle={onToggle}
-                isDark={isDark}
-                rightElement={
-                    <Tooltip content={t('git.status.history_refresh')} side="bottom">
-                        <button
-                            onClick={(e) => { e.stopPropagation(); void useStore.getState().refreshGit(); }}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                padding: '4px',
-                                cursor: 'pointer',
-                                color: isDark ? '#888' : '#777',
-                                display: 'flex',
-                                alignItems: 'center',
-                                borderRadius: '4px'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <RefreshCw size={14} />
-                        </button>
-                    </Tooltip>
-                }
-            />
+            {!hideHeader && (
+                <SectionHeader
+                    title={t('git.status.history_list')}
+                    count={logs.length}
+                    isOpen={isOpen}
+                    onToggle={onToggle}
+                    isDark={isDark}
+                    rightElement={
+                        <Tooltip content={t('git.status.history_refresh')} side="bottom">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); void useStore.getState().refreshGit(); }}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: '4px',
+                                    cursor: 'pointer',
+                                    color: isDark ? '#888' : '#777',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <RefreshCw size={14} />
+                            </button>
+                        </Tooltip>
+                    }
+                />
+            )}
 
             {isOpen && (
                 <>

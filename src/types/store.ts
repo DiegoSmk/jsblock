@@ -193,12 +193,18 @@ export interface AppState {
   closeModal: () => void;
   setConfirmationModal: (config: AppState['confirmationModal']) => void;
 
-  // UI State
+  // Settings (JSON)
+  settingsConfig: string; // The raw JSON string
+  updateSettingsConfig: (json: string) => void;
+
+  // Runtime Layout (Session Only)
   showSidebar: boolean;
+  runtimeSidebarWidths: Record<string, number>;
   activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings';
   showCode: boolean;
   showCanvas: boolean;
-  toggleSidebar: () => void;
+  toggleSidebar: (show?: boolean) => void;
+  setRuntimeSidebarWidth: (width: number, tab: string) => void;
   setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings') => void;
   toggleCode: () => void;
   toggleCanvas: () => void;

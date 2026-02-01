@@ -12,6 +12,7 @@ import { Tooltip } from '../Tooltip';
 interface GitInfoPanelProps {
     isDark: boolean;
     logs: GitLogEntry[];
+    hideHeader?: boolean;
 }
 
 const StatBox: React.FC<{
@@ -161,7 +162,7 @@ const Heatmap: React.FC<{ isDark: boolean; logs: GitLogEntry[] }> = ({ isDark, l
     );
 };
 
-export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] }) => {
+export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [], hideHeader = false }) => {
     const { git, gitPanelConfig, gitDeleteTag } = useStore();
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -454,10 +455,12 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                 opacity: 0
             }}
         >
-            <div style={{ padding: '8px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', backdropFilter: 'blur(10px)', zIndex: 20 }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', color: isDark ? '#555' : '#999' }}>{t('git.info.title')}</span>
-                <button onClick={() => setShowSettings(!showSettings)} style={{ background: showSettings ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: showSettings ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#666' : '#999'), display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', outline: 'none' }} title={t('git.info.settings_tooltip')}><Settings2 size={16} /></button>
-            </div>
+            {!hideHeader && (
+                <div style={{ padding: '8px 16px', borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)', backdropFilter: 'blur(10px)', zIndex: 20 }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.1em', color: isDark ? '#555' : '#999' }}>{t('git.info.title')}</span>
+                    <button onClick={() => setShowSettings(!showSettings)} style={{ background: showSettings ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent', border: 'none', cursor: 'pointer', padding: '4px', borderRadius: '4px', color: showSettings ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#666' : '#999'), display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', outline: 'none' }} title={t('git.info.settings_tooltip')}><Settings2 size={16} /></button>
+                </div>
+            )}
             <ScrollArea visibility="hover">
                 <div style={{ paddingBottom: '20px' }}>
                     {sectionDefs.map((section, index) => (

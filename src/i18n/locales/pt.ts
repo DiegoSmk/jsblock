@@ -6,6 +6,7 @@ export const pt = {
             folder: "Pasta",
             hide_explorer: "Esconder Explorador",
             show_explorer: "Mostrar Explorador",
+            explorer: "Explorador",
             file_explorer: "Explorador de Arquivos",
             function_library: "Biblioteca de Funções",
             select_file: "Selecione um arquivo para editar",
@@ -75,7 +76,8 @@ export const pt = {
                         desc: "Define o tamanho base da fonte para os elementos da interface."
                     }
                 },
-                terminal_info: "Estas opções estão ativadas por padrão para emular o comportamento de terminais profissionais (como Putty/XShell) e contornar o uso do Ctrl+C para controle de processos."
+                terminal_info: "Estas opções estão ativadas por padrão para emular o comportamento de terminais profissionais (como Putty/XShell) e contornar o uso do Ctrl+C para controle de processos.",
+                json_warning: "Edite o settings.json manualmente. Alterações requerem reinício."
             },
             errors: {
                 generic: "Erro: {{error}}",

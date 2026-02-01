@@ -6,6 +6,7 @@ export const en = {
             folder: "Folder",
             hide_explorer: "Hide Explorer",
             show_explorer: "Show Explorer",
+            explorer: "Explorer",
             file_explorer: "File Explorer",
             function_library: "Function Library",
             select_file: "Select a file to edit",
@@ -75,7 +76,8 @@ export const en = {
                         desc: "Define the base font size for interface elements."
                     }
                 },
-                terminal_info: "These options are enabled by default to emulate professional terminal behavior (like Putty/XShell) and bypass the use of Ctrl+C for process control."
+                terminal_info: "These options are enabled by default to emulate professional terminal behavior (like Putty/XShell) and bypass the use of Ctrl+C for process control.",
+                json_warning: "Edit settings.json manually. Changes apply after restart."
             },
             errors: {
                 generic: "Error: {{error}}",

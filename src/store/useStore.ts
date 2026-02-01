@@ -57,6 +57,61 @@ export const useStore = create<AppState>((set, get) => ({
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
     showSidebar: true,
+    // Settings Configuration
+    settingsConfig: localStorage.getItem('settings.json') ?? JSON.stringify({
+        layout: {
+            sidebar: {
+                vanilla: 250,
+                git: 300
+            }
+        },
+        editor: {
+            fontSize: 14
+        }
+    }, null, 2),
+    updateSettingsConfig: (json: string) => {
+        localStorage.setItem('settings.json', json);
+        set({ settingsConfig: json });
+
+        try {
+            interface SettingsSchema {
+                layout?: { sidebar?: Record<string, number> };
+                editor?: { fontSize?: number };
+            }
+            const parsed = JSON.parse(json) as SettingsSchema;
+            if (parsed.layout?.sidebar) {
+                set({ runtimeSidebarWidths: parsed.layout.sidebar });
+            }
+            if (parsed.editor?.fontSize !== undefined) {
+                const fontSize = parsed.editor.fontSize;
+                set((state) => ({ settings: { ...state.settings, fontSize } }));
+            }
+        } catch {
+            // Silently ignore parse errors while typing
+        }
+    },
+
+    // Runtime Layout (Session Only)
+    runtimeSidebarWidths: (() => {
+        try {
+            // Try to load initial widths from settings
+            const savedSettings = localStorage.getItem('settings.json');
+            if (savedSettings) {
+                interface SettingsSchema {
+                    layout?: { sidebar?: Record<string, number> };
+                }
+                const parsed = JSON.parse(savedSettings) as SettingsSchema;
+                return parsed.layout?.sidebar ?? { vanilla: 250, git: 300 };
+            }
+        } catch (e) {
+            console.error('Failed to parse settings for layout initialization', e);
+        }
+        return { vanilla: 250, git: 300 };
+    })(),
+    setRuntimeSidebarWidth: (width: number, module: string) => {
+        const current = get().runtimeSidebarWidths;
+        set({ runtimeSidebarWidths: { ...current, [module]: width } });
+    },
     confirmationModal: null,
 
     activeSidebarTab: 'explorer',
@@ -325,7 +380,7 @@ export const useStore = create<AppState>((set, get) => ({
             set({ recentEnvironments: validRecents });
         }
     },
-    toggleSidebar: () => set({ showSidebar: !get().showSidebar }),
+    toggleSidebar: (show?: boolean) => set({ showSidebar: show ?? !get().showSidebar }),
     setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings') => set({ activeSidebarTab: tab, showSidebar: true }),
     toggleCode: () => {
         if (get().showCode && !get().showCanvas) return;

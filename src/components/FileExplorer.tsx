@@ -8,6 +8,7 @@ import 'allotment/dist/style.css';
 import { useStore } from '../store/useStore';
 import { DESIGN_TOKENS } from '../constants/design';
 import type { ElectronAPI } from '../types/electron';
+import { PanelSection } from './git/PanelSection';
 
 interface FileEntry {
     name: string;
@@ -380,6 +381,7 @@ export const FileExplorer: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
+            width: '100%',
             backgroundColor: isDark ? '#1e1e1e' : '#f3f4f6',
             borderRight: `1px solid ${isDark ? '#333' : '#e5e7eb'}`
         }}>
@@ -396,123 +398,97 @@ export const FileExplorer: React.FC = () => {
                 />
             )}
 
-            <div style={{
-                padding: '12px 16px',
-                borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: '8px'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden', flex: 1 }}>
-                    <span style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
 
-                        letterSpacing: '0.05em',
-                        opacity: 0.6,
-                        whiteSpace: 'nowrap'
-                    }}>
-                        {openedFolder ? (openedFolder.split(/[\\/]/).pop() ?? t('app.file_explorer')) : t('app.file_explorer')}
-                    </span>
-                    {selectedFile && (
-                        <>
-                            <span style={{ opacity: 0.3 }}>/</span>
-                            <span style={{
-                                fontSize: '0.75rem',
-                                opacity: isDirty ? 1 : 0.8,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                color: isDirty ? (isDark ? '#4fc3f7' : '#0070f3') : 'inherit',
-                                fontWeight: isDirty ? 700 : 400
-                            }}>
-                                {selectedFile.split(/[\\/]/).pop()}
-                            </span>
-                        </>
-                    )}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {openedFolder && (
+            {openedFolder ? (
+                <PanelSection
+                    id="current-folder"
+                    title={openedFolder.split(/[\\/]/).pop() ?? t('app.folder')}
+                    isDark={isDark}
+                    defaultOpen={true}
+                    actions={
                         <button
                             onClick={() => {
                                 setOpenedFolder(null);
                                 void setSelectedFile(null);
                             }}
-                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#aaa' : '#666', padding: 4 }}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: isDark ? '#aaa' : '#666',
+                                padding: 4,
+                                display: 'flex',
+                                alignItems: 'center'
+                            }}
                             title={t('file_explorer.close_folder')}
                         >
                             <LogOut size={14} />
                         </button>
-                    )}
-                </div>
-            </div>
-
-            <div
-                style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    padding: '8px 0',
-                    position: 'relative',
-                    minHeight: 0
-                }}
-                onDragOver={(e) => {
-                    if (openedFolder) {
-                        onDragOver(e, openedFolder, true);
                     }
-                }}
-                onDrop={(e) => {
-                    if (openedFolder) {
-                        void onDrop(e, openedFolder, true);
-                    }
-                }}
-            >
-                {openedFolder ? (
-                    <>
+                >
+                    <div
+                        style={{
+                            flex: 1,
+                            overflowY: 'auto',
+                            padding: '8px 0',
+                            position: 'relative',
+                            minHeight: 0,
+                            height: '100%'
+                        }}
+                        onDragOver={(e) => {
+                            if (openedFolder) {
+                                onDragOver(e, openedFolder, true);
+                            }
+                        }}
+                        onDrop={(e) => {
+                            if (openedFolder) {
+                                void onDrop(e, openedFolder, true);
+                            }
+                        }}
+                    >
                         {renderTree(files)}
                         {/* Hidden spacer to allow dropping at the end of the list to move to root */}
                         <div style={{ height: '100px', cursor: 'default' }} />
-                    </>
-                ) : (
-                    <div style={{ padding: '24px', textAlign: 'center' }}>
-                        <div style={{ marginBottom: '28px' }}>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px', color: isDark ? '#fff' : '#000', opacity: 0.7 }}>
-                                {t('recent.welcome')}
-                            </h2>
-                            <p style={{ fontSize: '0.85rem', opacity: 0.6, color: isDark ? '#ccc' : '#666' }}>
-                                {t('recent.select_env')}
-                            </p>
-                        </div>
-
-                        <button
-                            onClick={() => {
-                                void openFolderDialog();
-                            }}
-                            style={{
-                                backgroundColor: isDark ? '#2d2d2d' : '#fff',
-                                border: `1px solid ${isDark ? '#444' : '#ccc'}`,
-                                color: isDark ? '#ddd' : '#444',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                fontSize: '0.85rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                margin: '0 auto'
-                            }}
-                        >
-                            <FolderPlus size={16} />
-                            {t('file_explorer.open_button')}
-                        </button>
-
-                        <div style={{ marginTop: '16px', textAlign: 'left', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, paddingTop: '12px' }}>
-                            <RecentEnvironments embedded />
-                        </div>
                     </div>
-                )}
-            </div>
+                </PanelSection>
+            ) : (
+                <div style={{ flex: 1, padding: '24px', textAlign: 'center', overflowY: 'auto' }}>
+                    <div style={{ marginBottom: '28px' }}>
+                        <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px', color: isDark ? '#fff' : '#000', opacity: 0.7 }}>
+                            {t('recent.welcome')}
+                        </h2>
+                        <p style={{ fontSize: '0.85rem', opacity: 0.6, color: isDark ? '#ccc' : '#666' }}>
+                            {t('recent.select_env')}
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={() => {
+                            void openFolderDialog();
+                        }}
+                        style={{
+                            backgroundColor: isDark ? '#2d2d2d' : '#fff',
+                            border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                            color: isDark ? '#ddd' : '#444',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            margin: '0 auto'
+                        }}
+                    >
+                        <FolderPlus size={16} />
+                        {t('file_explorer.open_button')}
+                    </button>
+
+                    <div style={{ marginTop: '16px', textAlign: 'left', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, paddingTop: '12px' }}>
+                        <RecentEnvironments embedded />
+                    </div>
+                </div>
+            )}
 
             {openedFolder && (
                 <div style={{ borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>

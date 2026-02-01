@@ -126,7 +126,7 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
     );
 };
 
-export const GitGraphView: React.FC = () => {
+export const GitGraphView: React.FC<{ hideHeader?: boolean }> = ({ hideHeader = false }) => {
     const { git, theme, openCommitDetail, refreshGit } = useStore();
     const { t, i18n } = useTranslation();
     const isDark = theme === 'dark';
@@ -142,33 +142,35 @@ export const GitGraphView: React.FC = () => {
                 opacity: 0
             }}
         >
-            <div className="animate-entrance" style={{ animationDelay: '0.05s', opacity: 0 }}>
-                <SectionHeader
-                    title={t('git.graph.title')}
-                    count={git.log.filter((l: GitLogEntry) => l.hash !== '').length}
-                    isDark={isDark}
-                    rightElement={
-                        <button
-                            onClick={(e) => { e.stopPropagation(); void refreshGit(); }}
-                            title={t('git.common.refresh')}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                padding: '4px',
-                                cursor: 'pointer',
-                                color: isDark ? '#888' : '#777',
-                                display: 'flex',
-                                alignItems: 'center',
-                                borderRadius: '4px'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                            <RefreshCw size={14} />
-                        </button>
-                    }
-                />
-            </div>
+            {!hideHeader && (
+                <div className="animate-entrance" style={{ animationDelay: '0.05s', opacity: 0 }}>
+                    <SectionHeader
+                        title={t('git.graph.title')}
+                        count={git.log.filter((l: GitLogEntry) => l.hash !== '').length}
+                        isDark={isDark}
+                        rightElement={
+                            <button
+                                onClick={(e) => { e.stopPropagation(); void refreshGit(); }}
+                                title={t('git.common.refresh')}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: '4px',
+                                    cursor: 'pointer',
+                                    color: isDark ? '#888' : '#777',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <RefreshCw size={14} />
+                            </button>
+                        }
+                    />
+                </div>
+            )}
 
             <div className="animate-entrance" style={{ animationDelay: '0.1s', opacity: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <ScrollArea style={{ flex: 1 }}>
