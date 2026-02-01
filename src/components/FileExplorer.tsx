@@ -403,6 +403,7 @@ export const FileExplorer: React.FC = () => {
                 <PanelSection
                     id="current-folder"
                     title={openedFolder.split(/[\\/]/).pop() ?? t('app.folder')}
+                    icon={FolderOpen}
                     isDark={isDark}
                     defaultOpen={true}
                     actions={

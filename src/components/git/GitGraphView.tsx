@@ -42,18 +42,20 @@ const getRefColor = (type: string, isDark: boolean) => {
 };
 
 const renderGraphRow = (graph: string, isDark: boolean) => {
-    const charWidth = 12;
+    const charWidth = 16; // Increased width for better spacing
     const rowHeight = 32;
-    const nodeSize = 7.5;
+    const nodeRadius = 5; // Radius for the main circle
+    const haloRadius = 9; // Radius for the halo
     const centerX = charWidth / 2;
     const centerY = rowHeight / 2;
     const laneColors = isDark ? LANE_COLORS_DARK : LANE_COLORS_LIGHT;
 
     return (
-        <svg width={charWidth * 7} height={rowHeight} style={{ overflow: 'visible' }}>
+        <svg width={charWidth * Math.max(graph.length, 2) + 20} height={rowHeight} style={{ overflow: 'visible' }}>
             {graph.split('').map((char, cIdx) => {
                 const x = cIdx * charWidth + centerX;
                 const color = laneColors[cIdx % laneColors.length];
+                const nextColor = laneColors[(cIdx + 1) % laneColors.length];
 
                 const elements = [];
 
@@ -64,21 +66,34 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                             // eslint-disable-next-line react/no-array-index-key
                             key={`v-${cIdx}`}
                             x1={x} y1={0} x2={x} y2={rowHeight}
-                            stroke={color} strokeWidth="2.2" strokeLinecap="round"
-                            opacity={char === '|' ? 0.3 : 1}
+                            stroke={color} strokeWidth="2.5" strokeLinecap="round"
+                            opacity={char === '|' ? 0.5 : 1}
                         />
                     );
                 }
 
-                // Branching paths
+                // Branching paths (Fork: /)
+                // Moves from right (top) to left (bottom) effectively in this text-graph mapping
+                // Actually ' / ' usually means from (bottom-left) to (top-right) or similar depending on tool.
+                // In git log --graph:
+                // * |   commit
+                // |\ \  merge
+                // | \ \
+                //
+                // The character mapping needs to be precise.
+                // / : connects (x+1, top) to (x, bottom) or vice versa?
+                // Typically in git log graph:
+                // \ : (x, top) -> (x+1, bottom) -- fork/split to right
+                // / : (x+1, top) -> (x, bottom) -- merge from right
+
                 if (char === '/') {
                     elements.push(
                         <path
                             // eslint-disable-next-line react/no-array-index-key
                             key={`d-f-${cIdx}`}
                             d={`M ${x + charWidth} 0 C ${x + charWidth} ${centerY}, ${x} ${centerY}, ${x} ${rowHeight}`}
-                            fill="none" stroke={laneColors[(cIdx + 1) % laneColors.length]}
-                            strokeWidth="2.2" strokeLinecap="round" opacity="0.45"
+                            fill="none" stroke={nextColor}
+                            strokeWidth="2.5" strokeLinecap="round" opacity="0.6"
                         />
                     );
                 }
@@ -88,9 +103,9 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                         <path
                             // eslint-disable-next-line react/no-array-index-key
                             key={`d-b-${cIdx}`}
-                            d={`M ${x - charWidth} 0 C ${x - charWidth} ${centerY}, ${x} ${centerY}, ${x} ${rowHeight}`}
-                            fill="none" stroke={laneColors[(cIdx - 1 + laneColors.length) % laneColors.length]}
-                            strokeWidth="2.2" strokeLinecap="round" opacity="0.45"
+                            d={`M ${x} 0 C ${x} ${centerY}, ${x + charWidth} ${centerY}, ${x + charWidth} ${rowHeight}`}
+                            fill="none" stroke={color}
+                            strokeWidth="2.5" strokeLinecap="round" opacity="0.6"
                         />
                     );
                 }
@@ -98,24 +113,34 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                 // Node (Commit)
                 if (char === '*') {
                     elements.push(
-                        <rect
+                        <circle
                             // eslint-disable-next-line react/no-array-index-key
                             key={`n-halo-${cIdx}`}
-                            x={x - (nodeSize + 6) / 2} y={centerY - (nodeSize + 6) / 2}
-                            width={nodeSize + 6} height={nodeSize + 6}
-                            rx={3}
-                            fill={color} opacity="0.18"
+                            cx={x} cy={centerY}
+                            r={haloRadius}
+                            fill={color} opacity="0.25"
                         />
                     );
                     elements.push(
-                        <rect
+                        <circle
                             // eslint-disable-next-line react/no-array-index-key
                             key={`n-${cIdx}`}
-                            x={x - nodeSize / 2} y={centerY - nodeSize / 2}
-                            width={nodeSize} height={nodeSize}
-                            rx={2}
-                            fill="#fff"
+                            cx={x} cy={centerY}
+                            r={nodeRadius}
+                            fill={isDark ? '#1a1a1a' : '#fff'}
                             stroke={color} strokeWidth="2.5"
+                        />
+                    );
+                }
+
+                // Fix for the underscore/horizontal bar if present in some git graphs (less common but possible)
+                if (char === '_') {
+                    elements.push(
+                        <line
+                            // eslint-disable-next-line react/no-array-index-key
+                            key={`h-${cIdx}`}
+                            x1={x} y1={rowHeight} x2={x + charWidth} y2={rowHeight}
+                            stroke={color} strokeWidth="2.5" strokeLinecap="round"
                         />
                     );
                 }

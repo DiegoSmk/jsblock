@@ -12,13 +12,11 @@ export const PanelHeader: React.FC<PanelHeaderProps> = ({ title, icon: Icon, isD
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {Icon && (
                 <div style={{
-                    color: isDark ? '#4ade80' : '#16a34a', // Green-ish color
+                    color: isDark ? '#aaa' : '#666',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: isDark ? 'rgba(74, 222, 128, 0.1)' : 'rgba(22, 163, 74, 0.1)',
                     padding: '4px',
-                    borderRadius: '4px'
                 }}>
                     <Icon size={14} />
                 </div>
