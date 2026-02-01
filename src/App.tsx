@@ -364,10 +364,16 @@ function App() {
     if (activeSidebarTab === 'git' || activeSidebarTab === 'explorer' || activeSidebarTab === 'library') {
       const moduleId = activeSidebarTab === 'git' ? 'git' : 'vanilla';
       const width = runtimeSidebarWidths[moduleId];
-      if (width && containerRef.current) {
-        // We use resizing to ensure smooth transition if size differs
-        containerRef.current.resize([width]);
-      }
+
+      // Wrap in setTimeout to ensure Allotment has finished its internal layout pass
+      // This prevents "Cannot read properties of undefined (reading 'minimumSize')"
+      const timer = setTimeout(() => {
+        if (width && containerRef.current) {
+          containerRef.current.resize([width]);
+        }
+      }, 0);
+
+      return () => clearTimeout(timer);
     }
   }, [activeSidebarTab, runtimeSidebarWidths]);
 
