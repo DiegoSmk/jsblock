@@ -1,4 +1,5 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlow,
   Controls,
@@ -12,7 +13,7 @@ import {
   type Connection
 } from '@xyflow/react';
 import Editor from '@monaco-editor/react';
-import { Allotment } from 'allotment';
+import { Allotment, type AllotmentHandle } from 'allotment';
 import {
   FolderOpen, X, Minus, Square, Info, LogOut,
   History as HistoryIcon, Network, RefreshCw, PanelLeft, Code, Files,
@@ -92,7 +93,17 @@ function FlowContent() {
     activeScopeId,
     openModal,
     saveFile,
-  } = useStore();
+  } = useStore(useShallow(state => ({
+    nodes: state.nodes,
+    edges: state.edges,
+    onNodesChange: state.onNodesChange,
+    onEdgesChange: state.onEdgesChange,
+    onConnect: state.onConnect,
+    theme: state.theme,
+    activeScopeId: state.activeScopeId,
+    openModal: state.openModal,
+    saveFile: state.saveFile,
+  })));
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -319,7 +330,46 @@ function App() {
     setGitSidebarView,
     runtimeSidebarWidths,
     setRuntimeSidebarWidth
-  } = useStore();
+  } = useStore(useShallow(state => ({
+    code: state.code,
+    setCode: state.setCode,
+    forceLayout: state.forceLayout,
+    theme: state.theme,
+    showCode: state.showCode,
+    showCanvas: state.showCanvas,
+    showSidebar: state.showSidebar,
+    activeSidebarTab: state.activeSidebarTab,
+    toggleSidebar: state.toggleSidebar,
+    setSidebarTab: state.setSidebarTab,
+    saveFile: state.saveFile,
+    setOpenedFolder: state.setOpenedFolder,
+    setSelectedFile: state.setSelectedFile,
+    selectedFile: state.selectedFile,
+    openedFolder: state.openedFolder,
+    isBlockFile: state.isBlockFile,
+    confirmationModal: state.confirmationModal,
+    isDirty: state.isDirty,
+    openModal: state.openModal,
+    git: state.git,
+    modal: state.modal,
+    setGitSidebarView: state.setGitSidebarView,
+    runtimeSidebarWidths: state.runtimeSidebarWidths,
+    setRuntimeSidebarWidth: state.setRuntimeSidebarWidth
+  })));
+
+  const containerRef = useRef<AllotmentHandle>(null);
+
+  // Imperative resize effect when switching modules
+  useEffect(() => {
+    if (activeSidebarTab === 'git' || activeSidebarTab === 'explorer' || activeSidebarTab === 'library') {
+      const moduleId = activeSidebarTab === 'git' ? 'git' : 'vanilla';
+      const width = runtimeSidebarWidths[moduleId];
+      if (width && containerRef.current) {
+        // We use resizing to ensure smooth transition if size differs
+        containerRef.current.resize([width]);
+      }
+    }
+  }, [activeSidebarTab, runtimeSidebarWidths]);
 
   const isDark = theme === 'dark';
   const folderName = openedFolder ? openedFolder.split(/[\\/]/).pop() : null;
@@ -727,17 +777,20 @@ function App() {
             <SettingsView />
           ) : (
             <Allotment
-              key={activeSidebarTab === 'git' ? 'git' : 'vanilla'}
+              ref={containerRef}
               onChange={(sizes) => {
                 if (sizes && sizes.length > 0) {
-                  // Snap-to-hide: if user drags below 100px, hide the sidebar
+                  // Snap-to-hide logic
                   if (sizes[0] < 100) {
-                    useStore.getState().toggleSidebar(false);
+                    if (showSidebar) useStore.getState().toggleSidebar(false);
                     return;
                   }
 
-                  const moduleId = activeSidebarTab === 'git' ? 'git' : 'vanilla';
-                  setRuntimeSidebarWidth(sizes[0], moduleId);
+                  // Only update width if we are truly visible and larger than snap threshold
+                  if (showSidebar) {
+                    const moduleId = activeSidebarTab === 'git' ? 'git' : 'vanilla';
+                    setRuntimeSidebarWidth(sizes[0], moduleId);
+                  }
                 }
               }}
             >
