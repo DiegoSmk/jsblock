@@ -86,7 +86,7 @@ export const BranchSwitcher: React.FC<BranchSwitcherProps> = ({ isDark }) => {
                 Cancelar
             </button>
             <button
-                onClick={handleCreateBranch}
+                onClick={() => void handleCreateBranch()}
                 disabled={!newBranchName.trim()}
                 style={{
                     padding: '8px 20px',
@@ -123,7 +123,7 @@ export const BranchSwitcher: React.FC<BranchSwitcherProps> = ({ isDark }) => {
                 Cancelar
             </button>
             <button
-                onClick={handleConfirmDelete}
+                onClick={() => void handleConfirmDelete()}
                 style={{
                     padding: '8px 20px',
                     background: isDark ? 'rgba(248, 113, 113, 0.15)' : 'rgba(248, 113, 113, 0.1)',
@@ -241,7 +241,7 @@ export const BranchSwitcher: React.FC<BranchSwitcherProps> = ({ isDark }) => {
                         {filteredBranches.map(branch => (
                             <div
                                 key={branch}
-                                onClick={() => handleSelectBranch(branch)}
+                                onClick={() => void handleSelectBranch(branch)}
                                 style={{
                                     padding: '8px 12px',
                                     display: 'flex',
@@ -373,7 +373,7 @@ export const BranchSwitcher: React.FC<BranchSwitcherProps> = ({ isDark }) => {
                                     outline: 'none',
                                     boxSizing: 'border-box'
                                 }}
-                                onKeyDown={(e) => e.key === 'Enter' && handleCreateBranch()}
+                                onKeyDown={(e) => e.key === 'Enter' && void handleCreateBranch()}
                             />
                             <div style={{
                                 position: 'absolute',

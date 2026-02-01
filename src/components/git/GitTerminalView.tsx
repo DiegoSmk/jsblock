@@ -43,10 +43,10 @@ export const GitTerminalView: React.FC = () => {
     const [gitSuggestion, setGitSuggestion] = useState<string | null>(null);
     const [lastCommitHash, setLastCommitHash] = useState<string | null>(null);
     const [yesNoPrompt, setYesNoPrompt] = useState(false);
-    const progressTimeoutRef = useRef<any>(null);
-    const suggestionTimeoutRef = useRef<any>(null);
-    const commitTimeoutRef = useRef<any>(null);
-    const promptTimeoutRef = useRef<any>(null);
+    const progressTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const suggestionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const commitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const promptTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (!terminalRef.current) return;
@@ -115,11 +115,11 @@ export const GitTerminalView: React.FC = () => {
             if (terminalRef.current && terminalRef.current.offsetWidth > 0 && terminalRef.current.offsetHeight > 0) {
                 try {
                     fitAddon.fit();
-                    if ((window as any).electronAPI) {
-                        (window as any).electronAPI.terminalResize(term.cols, term.rows);
+                    if (window.electronAPI) {
+                        window.electronAPI.terminalResize(term.cols, term.rows);
                     }
                     return true;
-                } catch (e) {
+                } catch {
                     return false;
                 }
             }
@@ -146,10 +146,10 @@ export const GitTerminalView: React.FC = () => {
 
         xtermRef.current = term;
 
-        if ((window as any).electronAPI) {
-            (window as any).electronAPI.terminalCreate({ cwd: openedFolder });
+        if (window.electronAPI) {
+            window.electronAPI.terminalCreate({ cwd: openedFolder ?? '' });
 
-            const unsubscribe = (window as any).electronAPI.terminalOnData((data: string) => {
+            const unsubscribe = window.electronAPI.terminalOnData((data: string) => {
                 term.write(data);
 
                 // Progress Tracking Logic
@@ -187,9 +187,9 @@ export const GitTerminalView: React.FC = () => {
                 // Git Correction Logic
                 // Detects patterns like: 'git: 'chekout' is not a git command. Did you mean checkout?'
                 if (data.includes('not a git command') || data.includes('The most similar command')) {
-                    const suggestionMatch = (/The most similar command(?:s)? is\s+([a-z-]+)/.exec(data)) ||
+                    const suggestionMatch = (/The most similar command(?:s)? is\s+([a-z-]+)/.exec(data)) ??
                         (/Did you mean this\?\s+([a-z-]+)/.exec(data));
-                    if (suggestionMatch && suggestionMatch[1]) {
+                    if (suggestionMatch?.[1]) {
                         setGitSuggestion(suggestionMatch[1]);
                         if (suggestionTimeoutRef.current) clearTimeout(suggestionTimeoutRef.current);
                         suggestionTimeoutRef.current = setTimeout(() => setGitSuggestion(null), 15000);
@@ -205,7 +205,7 @@ export const GitTerminalView: React.FC = () => {
                 // Detects: [main 3a4f2b1] commit message
                 if (data.includes('] ') && (data.includes('create mode') || data.includes('files changed'))) {
                     const commitMatch = /\[[a-zA-Z0-9\-_./]+\s+([a-f0-9]+)\]/.exec(data);
-                    if (commitMatch && commitMatch[1]) {
+                    if (commitMatch?.[1]) {
                         setLastCommitHash(commitMatch[1]);
                         if (commitTimeoutRef.current) clearTimeout(commitTimeoutRef.current);
                         commitTimeoutRef.current = setTimeout(() => setLastCommitHash(null), 20000);
@@ -226,20 +226,20 @@ export const GitTerminalView: React.FC = () => {
                 if (settings.terminalCopyOnSelect && term.hasSelection()) {
                     const selection = term.getSelection();
                     if (selection) {
-                        navigator.clipboard.writeText(selection);
+                        void navigator.clipboard.writeText(selection);
                     }
                 }
             });
 
             term.onData((data) => {
-                (window as any).electronAPI.terminalSendInput(data);
+                window.electronAPI.terminalSendInput(data);
             });
 
             const handleContextMenu = (e: MouseEvent) => {
                 if (!settings.terminalRightClickPaste) return;
                 e.preventDefault();
-                navigator.clipboard.readText().then(text => {
-                    (window as any).electronAPI.terminalSendInput(text);
+                void navigator.clipboard.readText().then(text => {
+                    window.electronAPI.terminalSendInput(text);
                 });
             };
 
@@ -260,37 +260,37 @@ export const GitTerminalView: React.FC = () => {
                 }
                 unsubscribe();
                 term.dispose();
-                (window as any).electronAPI.terminalKill();
+                window.electronAPI.terminalKill();
             };
         }
-    }, [isDark, openedFolder, settings.terminalCopyOnSelect, settings.terminalRightClickPaste]);
+    }, [isDark, openedFolder, settings.terminalCopyOnSelect, settings.terminalRightClickPaste, t]);
 
     const handleApplySuggestion = (cmd: string) => {
-        if ((window as any).electronAPI) {
+        if (window.electronAPI) {
             // Write git [suggestion] and enter
-            (window as any).electronAPI.terminalSendInput(`git ${cmd}\r`);
+            window.electronAPI.terminalSendInput(`git ${cmd}\r`);
             setGitSuggestion(null);
         }
     };
 
     const handleUndoCommit = () => {
-        if ((window as any).electronAPI) {
+        if (window.electronAPI) {
             // git reset --soft HEAD~1
-            (window as any).electronAPI.terminalSendInput(`git reset --soft HEAD~1\r`);
+            window.electronAPI.terminalSendInput(`git reset --soft HEAD~1\r`);
             setLastCommitHash(null);
         }
     };
 
     const handleRunQuickCommand = (cmd: string, autoExecute = true) => {
-        if ((window as any).electronAPI) {
+        if (window.electronAPI) {
             // Send command + enter if autoExecute (default), otherwise just send command
-            (window as any).electronAPI.terminalSendInput(cmd + (autoExecute !== false ? '\r' : ''));
+            window.electronAPI.terminalSendInput(cmd + (autoExecute !== false ? '\r' : ''));
         }
     };
 
     const handleYesNo = (choice: 'y' | 'n') => {
-        if ((window as any).electronAPI) {
-            (window as any).electronAPI.terminalSendInput(`${choice}\r`);
+        if (window.electronAPI) {
+            window.electronAPI.terminalSendInput(`${choice}\r`);
             setYesNoPrompt(false);
         }
     };
@@ -309,8 +309,8 @@ export const GitTerminalView: React.FC = () => {
     };
 
     const handleOpenExternal = () => {
-        if ((window as any).electronAPI?.openSystemTerminal && openedFolder) {
-            (window as any).electronAPI.openSystemTerminal(openedFolder);
+        if (window.electronAPI?.openSystemTerminal && openedFolder) {
+            void window.electronAPI.openSystemTerminal(openedFolder);
         }
     };
 
@@ -496,7 +496,7 @@ export const GitTerminalView: React.FC = () => {
                     </span>
                     <div style={{ height: '12px', width: '1px', background: isDark ? '#333' : '#ddd', margin: '0 4px' }} />
                     <Tooltip content={t('git.terminal.macros_tooltip')} side="bottom">
-                        <span style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999', fontWeight: 600,  cursor: 'help' }}>Macros</span>
+                        <span style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999', fontWeight: 600, cursor: 'help' }}>Macros</span>
                     </Tooltip>
 
                     <div style={{
@@ -740,7 +740,7 @@ export const GitTerminalView: React.FC = () => {
                             <Zap size={18} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600,  marginBottom: '2px' }}>{t('git.terminal.suggestion.title')}</div>
+                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600, marginBottom: '2px' }}>{t('git.terminal.suggestion.title')}</div>
                             <div style={{ fontSize: '0.85rem', color: isDark ? '#eee' : '#333' }}>
                                 {t('git.terminal.suggestion.message')} <span style={{ fontWeight: 800, color: isDark ? '#4fc3f7' : '#0070f3' }}>git {gitSuggestion}</span>?
                             </div>
@@ -818,7 +818,7 @@ export const GitTerminalView: React.FC = () => {
                             <Check size={18} />
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600,  marginBottom: '2px' }}>{t('git.terminal.success.title')}</div>
+                            <div style={{ fontSize: '0.65rem', color: isDark ? '#777' : '#999', fontWeight: 600, marginBottom: '2px' }}>{t('git.terminal.success.title')}</div>
                             <div style={{ fontSize: '0.85rem', color: isDark ? '#eee' : '#333' }}>
                                 Commit <span style={{ fontWeight: 800, color: isDark ? '#4ade80' : '#16a34a', fontFamily: 'monospace' }}>{lastCommitHash}</span> {t('git.terminal.success.message')}
                             </div>

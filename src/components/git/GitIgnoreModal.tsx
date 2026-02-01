@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Save, EyeOff } from 'lucide-react';
@@ -21,47 +21,54 @@ export const GitIgnoreModal: React.FC<GitIgnoreModalProps> = ({
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [originalContent, setOriginalContent] = useState('');
+    const [prevOpen, setPrevOpen] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && openedFolder) {
-            loadGitIgnore();
-        }
-    }, [isOpen, openedFolder]);
+    const getGitIgnorePath = useCallback(() => {
+        if (!openedFolder) return '';
+        return openedFolder.endsWith('/') || openedFolder.endsWith('\\')
+            ? `${openedFolder}.gitignore`
+            : `${openedFolder}/.gitignore`;
+    }, [openedFolder]);
 
-    const loadGitIgnore = async () => {
+    const loadGitIgnore = useCallback(async () => {
         setIsLoading(true);
         const path = getGitIgnorePath();
         try {
-            const fileContent = await (window as any).electronAPI.readFile(path);
+            const fileContent = await window.electronAPI.readFile(path);
             setContent(fileContent);
             setOriginalContent(fileContent);
-        } catch (e) {
+        } catch {
             // File likely doesn't exist
             setContent('');
             setOriginalContent('');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [getGitIgnorePath]);
 
-    const getGitIgnorePath = () => {
-        if (!openedFolder) return '';
-        return openedFolder.endsWith('/') || openedFolder.endsWith('\\')
-            ? `${openedFolder}.gitignore`
-            : `${openedFolder}/.gitignore`;
-    };
-
-    const handleSave = async () => {
-        const path = getGitIgnorePath();
-        try {
-            await (window as any).electronAPI.writeFile(path, content);
-            addToast({ type: 'success', message: t('git.modals.ignore.success_toast') });
-            await refreshGit();
-            onClose();
-        } catch (e) {
-            console.error(e);
-            addToast({ type: 'error', message: t('git.modals.ignore.error_toast') });
+    useEffect(() => {
+        if (isOpen && !prevOpen && openedFolder) {
+            void loadGitIgnore();
         }
+        setPrevOpen(isOpen);
+    }, [isOpen, prevOpen, openedFolder, loadGitIgnore]);
+
+    const handleSave = () => {
+        const path = getGitIgnorePath();
+        setIsLoading(true);
+        void (async () => {
+            try {
+                await window.electronAPI.writeFile(path, content);
+                addToast({ type: 'success', message: t('git.modals.ignore.success_toast') });
+                await refreshGit();
+                onClose();
+            } catch (e) {
+                console.error(e);
+                addToast({ type: 'error', message: t('git.modals.ignore.error_toast') });
+            } finally {
+                setIsLoading(false);
+            }
+        })();
     };
 
     if (!isOpen) return null;

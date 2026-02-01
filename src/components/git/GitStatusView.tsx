@@ -91,13 +91,15 @@ export const GitStatusView: React.FC = () => {
     const [showProfileManager, setShowProfileManager] = useState(false);
     const [newProfile, setNewProfile] = useState({ name: '', email: '', tag: 'personal' as 'work' | 'personal' | 'ai' | 'custom', customTagName: '' });
 
-    const handleRefresh = async () => {
+    const handleRefresh = () => {
         setIsLoading(true);
-        try {
-            await refreshGit();
-        } finally {
-            setIsLoading(false);
-        }
+        void (async () => {
+            try {
+                await refreshGit();
+            } finally {
+                setIsLoading(false);
+            }
+        })();
     };
 
     // Auto-fill message when Amend is checked
@@ -109,20 +111,22 @@ export const GitStatusView: React.FC = () => {
         }
     }, [isAmend, git.log]);
 
-    const handleCommit = async () => {
+    const handleCommit = () => {
         if (!commitMsg.trim()) return;
         setIsLoading(true);
-        await gitCommit(commitMsg, isAmend);
-        setCommitMsg('');
-        setIsAmend(false);
-        setIsLoading(false);
+        void (async () => {
+            await gitCommit(commitMsg, isAmend);
+            setCommitMsg('');
+            setIsAmend(false);
+            setIsLoading(false);
+        })();
     };
 
-    const handleSaveAuthorModal = async () => {
+    const handleSaveAuthorModal = () => {
         const hasValidData = authorConfigBuffer.name && authorConfigBuffer.email;
         if (hasValidData || (authorConfigBuffer.isGlobal && !isEditingAuthor)) {
             if (!authorConfigBuffer.isGlobal || isEditingAuthor) {
-                await setGitConfig(
+                void setGitConfig(
                     { name: authorConfigBuffer.name, email: authorConfigBuffer.email },
                     authorConfigBuffer.isGlobal
                 );
@@ -135,7 +139,7 @@ export const GitStatusView: React.FC = () => {
 
     const handleAddProfile = () => {
         if (!newProfile.name || !newProfile.email) return;
-        addGitProfile(newProfile);
+        void addGitProfile(newProfile);
         setNewProfile({ name: '', email: '', tag: 'personal', customTagName: '' });
     };
 
@@ -195,7 +199,7 @@ export const GitStatusView: React.FC = () => {
                         <Tooltip content={t('git.status.ignore_tooltip')} side="bottom">
                             <button
                                 onClick={() => {
-                                    if (!isIgnoreDropdownOpen) loadIgnorePatterns();
+                                    if (!isIgnoreDropdownOpen) void loadIgnorePatterns();
                                     setIsIgnoreDropdownOpen(!isIgnoreDropdownOpen);
                                 }}
                                 style={{
@@ -258,12 +262,12 @@ export const GitStatusView: React.FC = () => {
                                                 Nenhum padrão definido ou .gitignore inexistente.
                                             </div>
                                         ) : (
-                                            ignoredPatterns.map((pattern, idx) => {
+                                            ignoredPatterns.map((pattern) => {
                                                 const isDir = pattern.endsWith('/');
                                                 const Icon = isDir ? Folder : FileText;
                                                 return (
                                                     <div
-                                                        key={idx}
+                                                        key={pattern}
                                                         style={{
                                                             padding: '6px 12px',
                                                             fontSize: '0.8rem',
@@ -453,7 +457,7 @@ export const GitStatusView: React.FC = () => {
 
                     {/* Author Avatar Menu */}
                     <div style={{ position: 'relative' }} ref={authorMenuRef}>
-                        <Tooltip content={git.projectAuthor?.name || git.globalAuthor?.name || t('git.modals.author.title')} side="bottom">
+                        <Tooltip content={git.projectAuthor?.name ?? git.globalAuthor?.name ?? t('git.modals.author.title')} side="bottom">
                             <div
                                 onClick={() => setShowAuthorMenu(!showAuthorMenu)}
                                 style={{
@@ -507,10 +511,10 @@ export const GitStatusView: React.FC = () => {
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {git.projectAuthor?.name || git.globalAuthor?.name || t('git.modals.author.title')}
+                                                {git.projectAuthor?.name ?? git.globalAuthor?.name ?? t('git.modals.author.title')}
                                             </div>
                                             <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {git.projectAuthor?.email || git.globalAuthor?.email || ''}
+                                                {git.projectAuthor?.email ?? git.globalAuthor?.email ?? ''}
                                             </div>
                                         </div>
                                         <div style={{
@@ -541,8 +545,8 @@ export const GitStatusView: React.FC = () => {
                                     {/* Global Author Option */}
                                     {git.globalAuthor && git.projectAuthor && (
                                         <div
-                                            onClick={async () => {
-                                                await resetToGlobal();
+                                            onClick={() => {
+                                                void resetToGlobal();
                                                 setShowAuthorMenu(false);
                                             }}
                                             style={{
@@ -580,15 +584,15 @@ export const GitStatusView: React.FC = () => {
 
                                     {gitProfiles
                                         .filter(profile => {
-                                            const current = git.projectAuthor || git.globalAuthor;
+                                            const current = git.projectAuthor ?? git.globalAuthor;
                                             if (!current) return true;
                                             return !(profile.email === current.email && profile.name === current.name);
                                         })
                                         .map(profile => (
                                             <div
                                                 key={profile.id}
-                                                onClick={async () => {
-                                                    await setGitConfig({ name: profile.name, email: profile.email }, false);
+                                                onClick={() => {
+                                                    void setGitConfig({ name: profile.name, email: profile.email }, false);
                                                     setShowAuthorMenu(false);
                                                 }}
                                                 style={{

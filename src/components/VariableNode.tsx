@@ -2,7 +2,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Box } from 'lucide-react';
 
-import type { AppNodeData } from '../store/useStore';
+import type { AppNodeData } from '../types/store';
 
 export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
@@ -15,7 +15,9 @@ export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) =>
     const liveValue = data.label ? runtimeValues[data.label] : undefined;
 
     // Improved display logic: Runtime Value > Formatted Expression > Static Value
-    const displayValue = liveValue !== undefined ? String(liveValue) : (data.value as string);
+    const displayValue = liveValue !== undefined
+        ? (typeof liveValue === 'object' && liveValue !== null ? JSON.stringify(liveValue) : String(liveValue as string | number | boolean))
+        : (data.value as string);
     const isShowingExpression = liveValue === undefined && isComputed;
 
     return (
@@ -52,9 +54,9 @@ export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) =>
                                         left: '50%',
                                         transform: 'translateX(-50%)',
                                         background: data.nestedCall
-                                            ? (['console', 'Math', 'JSON', 'Array', 'Object'].some(p => data.nestedCall?.name.startsWith(p)) || ['alert', 'prompt', 'confirm'].includes(data.nestedCall?.name)
+                                            ? (['console', 'Math', 'JSON', 'Array', 'Object'].some(p => data.nestedCall?.name.startsWith(p)) || ['alert', 'prompt', 'confirm'].includes(data.nestedCall?.name) // eslint-disable-line no-restricted-syntax
                                                 ? '#f7df1e' // Native = Yellow
-                                                : '#4caf50') // Custom Function = Green
+                                                : '#4caf50') // Custom function = Green
                                             : '#f472b6', // Calculation = Pink
                                     }}
                                 />
@@ -73,7 +75,7 @@ export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) =>
                         {data.nestedCall && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {data.nestedCall.args.map((arg, i) => (
-                                    <div key={i} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <div key={`${id}-arg-${arg}`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                                         <Handle
                                             type="target"
                                             position={Position.Left}
@@ -135,7 +137,7 @@ export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) =>
                                     textAlign: 'center',
                                     boxShadow: '0 4px 6px -1px rgba(244, 114, 182, 0.3)'
                                 }}>
-                                    {String(liveValue)}
+                                    {typeof liveValue === 'object' && liveValue !== null ? JSON.stringify(liveValue) : String(liveValue as string | number | boolean)}
                                 </div>
                             </div>
                         )}

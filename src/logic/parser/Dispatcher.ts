@@ -76,7 +76,7 @@ export const processBlockInScope = (
 
     const entryNode = ctx.nodes.find(n => n.id === entryNodeId);
     if (entryNode) {
-        if (!entryNode.data.scopes) entryNode.data.scopes = {};
+        entryNode.data.scopes ??= {};
         entryNode.data.scopes[flowHandle] = {
             id: newScopeId,
             label: `${entryNode.data.label} > ${label}`
@@ -95,7 +95,7 @@ export const processBlockInScope = (
         node.data = { ...node.data, scopeId: newScopeId };
         ctx.nodes.push(node);
         if (node.type === 'variableNode') {
-            const label = node.data.label || 'arg';
+            const label = node.data.label ?? 'arg';
             ctx.variableNodes[label] = node.id;
         }
     });

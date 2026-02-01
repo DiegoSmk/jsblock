@@ -40,10 +40,10 @@ export const TerminalProgressBar: React.FC<TerminalProgressBarProps> = ({ progre
                     fontSize: '0.7rem',
                     fontWeight: 700,
                     color: isDark ? '#4fc3f7' : '#0070f3',
-                    
+
                     letterSpacing: '0.5px'
                 }}>
-                    {label || 'Processando...'}
+                    {label ?? 'Processando...'}
                 </span>
                 <span style={{
                     fontSize: '0.75rem',

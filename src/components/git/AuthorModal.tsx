@@ -21,7 +21,7 @@ interface AuthorModalProps {
     isOpen: boolean;
     onClose: () => void;
     authorConfigBuffer: { name: string; email: string; isGlobal: boolean };
-    setAuthorConfigBuffer: (config: any) => void;
+    setAuthorConfigBuffer: (config: { name: string; email: string; isGlobal: boolean }) => void;
     isEditingAuthor: boolean;
     setIsEditingAuthor: (editing: boolean) => void;
     gitProfiles: Profile[];
@@ -34,7 +34,7 @@ interface AuthorModalProps {
     handleAddProfile: () => void;
     removeGitProfile: (id: string) => void;
     newProfile: { name: string; email: string; tag: 'work' | 'personal' | 'ai' | 'custom'; customTagName: string };
-    setNewProfile: (profile: any) => void;
+    setNewProfile: (profile: { name: string; email: string; tag: 'work' | 'personal' | 'ai' | 'custom'; customTagName: string }) => void;
 }
 
 export const AuthorModal: React.FC<AuthorModalProps> = ({
@@ -271,7 +271,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                             >
                                 <Radio
                                     checked={!authorConfigBuffer.isGlobal}
-                                    onChange={() => { }} // Bubbles up
+                                    onChange={() => { /* noop */ }} // Bubbles up
                                     activeColor={isDark ? '#4fc3f7' : '#0070f3'}
                                     isDark={isDark}
                                 />
@@ -291,7 +291,7 @@ export const AuthorModal: React.FC<AuthorModalProps> = ({
                             >
                                 <Radio
                                     checked={authorConfigBuffer.isGlobal}
-                                    onChange={() => { }} // Bubbles up
+                                    onChange={() => { /* noop */ }} // Bubbles up
                                     activeColor={isDark ? '#4ade80' : '#10b981'}
                                     isDark={isDark}
                                 />

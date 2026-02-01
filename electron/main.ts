@@ -1,7 +1,7 @@
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
-import { app, BrowserWindow, protocol, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { exec, execFile } from 'child_process';
@@ -10,7 +10,7 @@ import * as pty from 'node-pty';
 import os from 'os';
 
 const execFileAsync = promisify(execFile);
-const execAsync = promisify(exec);
+// const execAsync = promisify(exec); // unused
 
 // Disable Autofill to check if it suppresses "Request Autofill.enable failed" errors
 app.commandLine.appendSwitch('disable-features', 'Autofill');
@@ -38,7 +38,7 @@ function createSplashWindow() {
         ? path.join(__dirname, '../../public/splash.html')
         : path.join(__dirname, '../public/splash.html');
 
-    splashWindow.loadFile(splashPath);
+    void splashWindow.loadFile(splashPath);
     splashWindow.center();
 }
 
@@ -75,9 +75,9 @@ function createWindow() {
     });
 
     if (app.isPackaged) {
-        mainWindow.loadFile(path.join(__dirname, '../index.html'));
+        void mainWindow.loadFile(path.join(__dirname, '../index.html'));
     } else {
-        mainWindow.loadURL('http://localhost:5173');
+        void mainWindow.loadURL('http://localhost:5173');
     }
 
     mainWindow.on('closed', () => {
@@ -85,7 +85,7 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
     createSplashWindow();
     createWindow();
 
@@ -127,7 +127,7 @@ ipcMain.handle('ensure-project-config', async (_event, folderPath: string) => {
 
 // IPC Handlers for File System
 ipcMain.handle('select-folder', async () => {
-    const win = BrowserWindow.getFocusedWindow() || mainWindow;
+    const win = BrowserWindow.getFocusedWindow() ?? mainWindow;
     const result = await dialog.showOpenDialog(win!, {
         properties: ['openDirectory']
     });
@@ -168,7 +168,8 @@ ipcMain.handle('write-file', async (_event, filePath: string, content: string) =
     }
 });
 
-ipcMain.handle('create-file', async (_event, filePath: string, content = '') => {
+// eslint-disable-next-line @typescript-eslint/no-inferrable-types
+ipcMain.handle('create-file', async (_event, filePath: string, content: string = '') => {
     try {
         if (fs.existsSync(filePath)) {
             throw new Error('Arquivo já existe');
@@ -195,7 +196,7 @@ ipcMain.handle('create-directory', async (_event, dirPath: string) => {
     }
 });
 
-ipcMain.handle('check-path-exists', async (_event, pathToCheck: string) => {
+ipcMain.handle('check-path-exists', (_event, pathToCheck: string) => {
     try {
         return fs.existsSync(pathToCheck);
     } catch (err) {
@@ -214,7 +215,7 @@ ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => 
     }
 });
 
-ipcMain.handle('open-system-terminal', async (_event, dirPath: string) => {
+ipcMain.handle('open-system-terminal', (_event, dirPath: string) => {
     try {
         if (process.platform === 'linux') {
             // Try common terminal emulators
@@ -241,8 +242,9 @@ ipcMain.handle('git-command', async (_event, dirPath: string, args: string[]) =>
     try {
         const { stdout, stderr } = await execFileAsync('git', args, { cwd: dirPath });
         return { stdout, stderr };
-    } catch (err: any) {
-        return { stdout: err.stdout || '', stderr: err.stderr || err.message };
+    } catch (err: unknown) {
+        const error = err as { stdout?: string; stderr?: string; message?: string };
+        return { stdout: error.stdout ?? '', stderr: error.stderr ?? error.message ?? String(err) };
     }
 });
 
@@ -274,7 +276,9 @@ ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
     if (ptyProcess) {
         try {
             ptyProcess.kill();
-        } catch (e) { }
+        } catch {
+            // Ignore error if process already dead
+        }
         ptyProcess = null;
     }
 
@@ -286,7 +290,7 @@ ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
         args = [];
     } else {
         // Use user's preferred shell if available
-        shell = process.env.SHELL || (process.platform === 'darwin' ? 'zsh' : 'bash');
+        shell = process.env.SHELL ?? (process.platform === 'darwin' ? 'zsh' : 'bash');
         args = process.platform === 'darwin' ? ['-l'] : ['-i'];
     }
 
@@ -302,8 +306,8 @@ ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
                 ...process.env,
                 TERM: 'xterm-256color',
                 COLORTERM: 'truecolor',
-                LANG: process.env.LANG || 'en_US.UTF-8'
-            } as any
+                LANG: process.env.LANG ?? 'en_US.UTF-8'
+            } as Record<string, string>
         });
 
         newPty.onData((data) => {

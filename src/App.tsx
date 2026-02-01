@@ -308,6 +308,7 @@ function App() {
     saveFile, setOpenedFolder, setSelectedFile,
     selectedFile, openedFolder, isBlockFile,
     confirmationModal, isDirty, openModal, git,
+    modal,
     setGitView, setGitSidebarView
   } = useStore();
 
@@ -381,7 +382,7 @@ function App() {
       )}
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <ModernModal />
+        <ModernModal key={modal.isOpen ? 'open' : 'closed'} />
         <CommitDetailModal />
         <header style={{
           height: DESIGN_TOKENS.RIBBON_WIDTH,
@@ -656,8 +657,7 @@ function App() {
             <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
               <button
                 onClick={() => {
-                  const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-                  electronAPI?.windowMinimize().catch(console.error);
+                  void window.electronAPI.windowMinimize();
                 }}
                 title={t('app.window_controls.minimize')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
@@ -668,8 +668,7 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-                  electronAPI?.windowMaximize().catch(console.error);
+                  void window.electronAPI.windowMaximize();
                 }}
                 title={t('app.window_controls.maximize')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
@@ -680,8 +679,7 @@ function App() {
               </button>
               <button
                 onClick={() => {
-                  const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-                  electronAPI?.windowClose().catch(console.error);
+                  void window.electronAPI.windowClose();
                 }}
                 title={t('app.window_controls.close')}
                 style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
@@ -814,9 +812,9 @@ function App() {
           isOpen={confirmationModal.isOpen}
           title={confirmationModal.title}
           message={confirmationModal.message}
-          onConfirm={confirmationModal.onConfirm}
-          onCancel={confirmationModal.onCancel}
-          onDiscard={confirmationModal.onDiscard}
+          onConfirm={() => { if (confirmationModal.onConfirm) void confirmationModal.onConfirm(); }}
+          onCancel={() => { if (confirmationModal.onCancel) void confirmationModal.onCancel(); }}
+          onDiscard={() => { if (confirmationModal.onDiscard) void confirmationModal.onDiscard(); }}
           confirmLabel={confirmationModal.confirmLabel}
           cancelLabel={confirmationModal.cancelLabel}
           discardLabel={confirmationModal.discardLabel}

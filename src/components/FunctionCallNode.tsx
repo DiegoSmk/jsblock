@@ -1,7 +1,7 @@
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Hash, Plus, ExternalLink, Activity } from 'lucide-react';
-import type { AppNode, AppNodeData } from '../store/useStore';
+import type { AppNode, AppNodeData } from '../types/store';
 import type { Edge } from '@xyflow/react';
 
 export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }) => {
@@ -93,7 +93,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }
     const hasError = !isDecl && !isConsoleLog && args.length > 0 && args.some((_, i) => getArgValue(i) === null);
 
     const identityColor = isDecl ? '#4caf50' : (builtinColor ?? '#f472b6');
-    const hasBody = !!(data.scopes && data.scopes.body);
+    const hasBody = !!data.scopes?.body;
 
     return (
         <div className="premium-node" style={{
@@ -167,7 +167,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }
                         <button
                             onClick={() => {
                                 if (addFunctionCall) {
-                                    addFunctionCall(data.label?.replace('Definition: ', '') || '', data.args);
+                                    addFunctionCall(data.label?.replace('Definition: ', '') ?? '', data.args);
                                 }
                             }}
                             style={{

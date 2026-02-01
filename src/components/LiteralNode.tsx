@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Sparkles } from 'lucide-react';
 
-import type { AppNodeData } from '../store/useStore';
+import type { AppNodeData } from '../types/store';
 
 export const LiteralNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
@@ -101,7 +101,7 @@ export const LiteralNode = ({ id, data }: { id: string, data: AppNodeData }) => 
         >
             {/* Magic Wand Icon (Top-left corner) */}
             <button
-                onClick={() => promoteToVariable(id, data.value, data.type || 'string')}
+                onClick={() => promoteToVariable(id, data.value, data.type ?? 'string')}
                 style={{
                     position: 'absolute',
                     top: '4px',

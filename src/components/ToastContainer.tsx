@@ -1,5 +1,6 @@
 import React from 'react';
-import { useStore, type Toast } from '../store/useStore';
+import { useStore } from '../store/useStore';
+import type { Toast } from '../types/store';
 import { CheckCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
 
 export const ToastContainer: React.FC = () => {
@@ -107,7 +108,7 @@ const ToastItem: React.FC<{ toast: Toast; onClose: () => void; isDark: boolean }
                 height: '2px',
                 background: getBorderColor(),
                 width: '100%',
-                animation: `shrink ${toast.duration || 3000}ms linear forwards`,
+                animation: `shrink ${toast.duration ?? 3000}ms linear forwards`,
                 opacity: 0.5
             }} />
 

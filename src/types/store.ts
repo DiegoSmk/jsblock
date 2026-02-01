@@ -180,9 +180,9 @@ export interface AppState {
     isOpen: boolean;
     title: string;
     message: string;
-    onConfirm: () => void;
-    onCancel: () => void;
-    onDiscard?: () => void;
+    onConfirm: () => void | Promise<void>;
+    onCancel: () => void | Promise<void>;
+    onDiscard?: () => void | Promise<void>;
     confirmLabel?: string;
     cancelLabel?: string;
     discardLabel?: string;

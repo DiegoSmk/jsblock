@@ -31,7 +31,7 @@ export const PanelSection: React.FC<PanelSectionProps> = ({
 }) => {
     const [localIsOpen, setLocalIsOpen] = useState(defaultOpen);
 
-    const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : localIsOpen;
+    const isOpen = controlledIsOpen ?? localIsOpen;
 
     const handleToggle = () => {
         if (onToggle) {
@@ -92,7 +92,7 @@ export const PanelSection: React.FC<PanelSectionProps> = ({
                 )}
 
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Tooltip content={tooltip || title} side="top" delay={600}>
+                    <Tooltip content={tooltip ?? title} side="top" delay={600}>
                         <span style={{
                             fontSize: '0.75rem',
                             fontWeight: 700,

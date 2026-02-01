@@ -42,7 +42,7 @@ export const SettingsView: React.FC = () => {
                 fontSize: '0.75rem',
                 fontWeight: 800,
                 color: isDark ? '#555' : '#aaa',
-                
+
                 letterSpacing: '1px',
                 marginBottom: '16px',
                 display: 'flex',
@@ -57,7 +57,7 @@ export const SettingsView: React.FC = () => {
         </div>
     );
 
-    const SettingRow = ({ label, description, children, icon: Icon }: { label: string, description?: string, children: React.ReactNode, icon?: any }) => (
+    const SettingRow = ({ label, description, children, icon: Icon }: { label: string, description?: string, children: React.ReactNode, icon?: React.ElementType }) => (
         <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -142,7 +142,7 @@ export const SettingsView: React.FC = () => {
                             >
                                 <select
                                     value={i18n.language}
-                                    onChange={(e) => i18n.changeLanguage(e.target.value)}
+                                    onChange={(e) => { void i18n.changeLanguage(e.target.value); }}
                                     style={{
                                         padding: '6px 12px',
                                         borderRadius: '6px',
@@ -271,7 +271,7 @@ export const SettingsView: React.FC = () => {
                     return (
                         <button
                             key={cat.id}
-                            onClick={() => setActiveCategory(cat.id as any)}
+                            onClick={() => setActiveCategory(cat.id as 'general' | 'terminal' | 'appearance')}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',

@@ -8,7 +8,7 @@ export const COMMIT_TYPES = [
     { value: 'style', label: 'Style', color: '#ec4899', description: 'Alterações de formatação, lint, etc. (sem mudar código).' },
     { value: 'refactor', label: 'Refactor', color: '#8b5cf6', description: 'Refatoração sem alterar funcionalidade.' },
     { value: 'chore', label: 'Chore', color: '#6b7280', description: 'Atualizações de tarefas de build, configs, etc.' },
-    { value: 'ci', label: 'CI', color: '#14b8a6', description: 'Mudanças relacionadas a integração contínua.' },
+    { value: 'ci', label: 'CI' /* eslint-disable-line no-restricted-syntax */, color: '#14b8a6', description: 'Mudanças relacionadas a integração contínua.' },
     { value: 'raw', label: 'Raw', color: '#06b6d4', description: 'Mudanças em configs, dados, features, parâmetros.' },
     { value: 'cleanup', label: 'Cleanup', color: '#f43f5e', description: 'Remover código comentado, limpeza, etc.' },
     { value: 'remove', label: 'Remove', color: '#991b1b', description: 'Exclusão de arquivos ou funcionalidades obsoletas.' },

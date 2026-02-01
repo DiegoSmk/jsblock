@@ -4,7 +4,7 @@ import { Search, ChevronRight, Code2, StickyNote } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useReactFlow } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
-import type { AppNode } from '../store/useStore';
+import type { AppNode } from '../types/store';
 
 export const FunctionLibrary = () => {
     const { t } = useTranslation();
@@ -18,21 +18,21 @@ export const FunctionLibrary = () => {
         .filter(n => n.data.isDecl)
         .map(n => ({
             id: n.id,
-            name: (n.data.label || '').replace('Definition: ', ''),
-            node: n as AppNode,
-            args: n.data.args || []
+            name: (n.data.label ?? '').replace('Definition: ', ''),
+            node: n,
+            args: n.data.args ?? []
         }))
         .filter(f => f.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const handleFocus = (nodeId: string) => {
         const node = nodes.find(n => n.id === nodeId);
         if (node) {
-            setCenter(node.position.x + 150, node.position.y + 100, { zoom: 1, duration: 800 });
+            void setCenter(node.position.x + 150, node.position.y + 100, { zoom: 1, duration: 800 });
         }
     };
 
     const handleEnter = (f: { node: AppNode }) => {
-        const scope = f.node.data.scopes?.['body'];
+        const scope = f.node.data.scopes?.body;
         if (scope) {
             navigateInto(scope.id, scope.label);
         }
@@ -77,7 +77,7 @@ export const FunctionLibrary = () => {
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
                 {isBlockFile && (
                     <button
-                        onClick={addNoteNode}
+                        onClick={() => { void addNoteNode(); }}
                         style={{
                             width: '100%',
                             padding: '12px',

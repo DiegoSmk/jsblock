@@ -30,7 +30,7 @@ export const CommitDetailModal: React.FC = () => {
                 confirmLabel: t('app.confirm_save.save'),
                 initialValue: '',
                 onSubmit: (name) => {
-                    if (name) createBranch(name, commit.hash);
+                    if (name) void createBranch(name, commit.hash);
                 }
             });
         }
@@ -45,14 +45,14 @@ export const CommitDetailModal: React.FC = () => {
                 confirmLabel: t('git.detail.new_tag'),
                 initialValue: '',
                 onSubmit: (name) => {
-                    if (name) gitCreateTag(name, commit.hash);
+                    if (name) void gitCreateTag(name, commit.hash);
                 }
             });
         }
     };
 
     const copyHashToClipboard = () => {
-        navigator.clipboard.writeText(commit.hash);
+        void navigator.clipboard.writeText(commit.hash);
         setCopiedHash(true);
         setTimeout(() => setCopiedHash(false), 2000);
     };
@@ -282,10 +282,10 @@ export const CommitDetailModal: React.FC = () => {
                                 Nenhuma alteração de arquivo detectada
                             </div>
                         ) : (
-                            files.map((file, idx) => {
+                            files.map((file) => {
                                 const badge = getStatusBadge(file.status);
                                 return (
-                                    <div key={idx} style={{
+                                    <div key={file.path} style={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '10px',
@@ -399,7 +399,7 @@ export const CommitDetailModal: React.FC = () => {
                     </button>
 
                     <button
-                        onClick={handleCheckout}
+                        onClick={() => void handleCheckout()}
                         style={{
                             padding: '9px 18px',
                             background: isDark ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.1)',

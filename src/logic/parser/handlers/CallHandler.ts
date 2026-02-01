@@ -1,6 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId, isNativeApi } from '../utils';
 import type { Node as BabelNode, CallExpression } from '@babel/types';
+import * as t from '@babel/types';
 
 export const CallHandler: ParserHandler = {
     canHandle: (node: BabelNode) => {
@@ -8,7 +9,7 @@ export const CallHandler: ParserHandler = {
         return expr.type === 'CallExpression';
     },
     handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
-        const expr = (node.type === 'ExpressionStatement' ? node.expression : node) as CallExpression;
+        const expr = (t.isExpressionStatement(node) ? node.expression : node) as CallExpression;
         const callee = expr.callee;
         let label = 'function';
 
@@ -56,9 +57,9 @@ export const CallHandler: ParserHandler = {
         }
 
         const args = expr.arguments.map((arg) => {
-            if (arg.type === 'StringLiteral') return `'${(arg).value}'`;
-            if (arg.type === 'NumericLiteral') return String((arg).value);
-            if (arg.type === 'Identifier') return (arg).name;
+            if (t.isStringLiteral(arg)) return `'${arg.value}'`;
+            if (t.isNumericLiteral(arg)) return String(arg.value);
+            if (t.isIdentifier(arg)) return arg.name;
             if (arg.type === 'TemplateLiteral') return '`...`';
             return '...';
         });
@@ -96,16 +97,15 @@ export const CallHandler: ParserHandler = {
         }
 
         expr.arguments.forEach((arg, i: number) => {
-            if (arg.type === 'Identifier') {
-                const sourceId = ctx.variableNodes[(arg).name];
+            if (t.isIdentifier(arg)) {
+                const sourceId = ctx.variableNodes[arg.name];
                 if (sourceId) {
                     ctx.edges.push(createEdge(sourceId, nodeId, 'output', `arg-${i}`));
                 }
-            } else if (arg.type === 'NumericLiteral' || arg.type === 'StringLiteral' || arg.type === 'BooleanLiteral') {
+            } else if (t.isNumericLiteral(arg) || t.isStringLiteral(arg) || t.isBooleanLiteral(arg)) {
                 const litId = generateId('literal');
-                const litArg = arg;
-                const value = String((litArg as any).value);
-                const type = arg.type === 'NumericLiteral' ? 'number' : (arg.type === 'BooleanLiteral' ? 'boolean' : 'string');
+                const value = String(arg.value);
+                const type = t.isNumericLiteral(arg) ? 'number' : (t.isBooleanLiteral(arg) ? 'boolean' : 'string');
 
                 ctx.nodes.push({
                     id: litId,
@@ -116,11 +116,11 @@ export const CallHandler: ParserHandler = {
                 });
 
                 ctx.edges.push(createEdge(litId, nodeId, 'output', `arg-${i}`));
-            } else if (arg.type === 'TemplateLiteral') {
+            } else if (t.isTemplateLiteral(arg)) {
                 // Connect expressions inside the template literal to the argument handle
-                (arg).expressions.forEach((exprNode) => {
-                    if (exprNode.type === 'Identifier') {
-                        const sourceId = ctx.variableNodes[(exprNode).name];
+                arg.expressions.forEach((exprNode) => {
+                    if (t.isIdentifier(exprNode)) {
+                        const sourceId = ctx.variableNodes[exprNode.name];
                         if (sourceId) {
                             ctx.edges.push(createEdge(sourceId, nodeId, 'output', `arg-${i}`));
                         }

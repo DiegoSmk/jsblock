@@ -1,6 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { createEdge, generateId } from '../utils';
 import type { Node as BabelNode, SwitchStatement, SwitchCase } from '@babel/types';
+import * as t from '@babel/types';
 
 export const SwitchHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'SwitchStatement',
@@ -11,8 +12,8 @@ export const SwitchHandler: ParserHandler = {
         // Map Cases for UI
         const cases = stmt.cases.map((c: SwitchCase) => {
             if (c.test) {
-                if (c.test.type === 'NumericLiteral' || c.test.type === 'StringLiteral' || c.test.type === 'BooleanLiteral') {
-                    return String((c.test as any).value);
+                if (t.isNumericLiteral(c.test) || t.isStringLiteral(c.test) || t.isBooleanLiteral(c.test)) {
+                    return String(c.test.value);
                 }
                 return 'case';
             }
@@ -48,8 +49,7 @@ export const SwitchHandler: ParserHandler = {
 
             if (c.consequent && c.consequent.length > 0) {
                 // Wrap consequent array in a block structure for the processBlock utility
-                // Casting to any because of library bridge
-                const dummyBlock = { type: 'BlockStatement', body: c.consequent } as any;
+                const dummyBlock = t.blockStatement(c.consequent);
                 ctx.processBlock(dummyBlock, nodeId, handleId, caseLabel);
             }
         });

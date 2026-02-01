@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store/useStore';
+import type { GitLogEntry } from '../../types/store';
 import { useTranslation } from 'react-i18next';
 import { ScrollArea } from '../ui/ScrollArea';
 import { PanelSection } from './PanelSection';
@@ -10,7 +11,7 @@ import { Tooltip } from '../Tooltip';
 
 interface GitInfoPanelProps {
     isDark: boolean;
-    logs: any[];
+    logs: GitLogEntry[];
 }
 
 const StatBox: React.FC<{
@@ -51,7 +52,7 @@ const StatBox: React.FC<{
     return tooltip ? <Tooltip content={tooltip} side="top">{content}</Tooltip> : content;
 };
 
-const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) => {
+const Heatmap: React.FC<{ isDark: boolean; logs: GitLogEntry[] }> = ({ isDark, logs }) => {
     const { t, i18n } = useTranslation();
     const data = useMemo(() => {
         const heatmap: Record<string, number> = {};
@@ -61,10 +62,12 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
                 if (isNaN(date.getTime())) return;
                 const key = date.toISOString().split('T')[0];
                 heatmap[key] = (heatmap[key] || 0) + 1;
-            } catch (e) { }
+            } catch {
+                // Ignore parsing errors
+            }
         });
 
-        const weeks: any[] = [];
+        const weeks: { date: string; count: number; dayObj: Date }[][] = [];
         const today = new Date();
         const startDate = new Date();
         startDate.setDate(today.getDate() - (20 * 7));
@@ -89,14 +92,14 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
             const date = week[0].dayObj;
             const prevWeek = weeks[i - 1];
             const prevDate = prevWeek ? prevWeek[0].dayObj : null;
-            if (!prevDate || date.getMonth() !== prevDate.getMonth()) {
+            if (date.getMonth() !== prevDate?.getMonth()) {
                 return { label: date.toLocaleDateString(i18n.language, { month: 'short' }).replace('.', ''), index: i };
             }
             return null;
         }).filter(m => m !== null);
 
         return { weeks, months };
-    }, [logs]);
+    }, [logs, i18n.language]);
 
     const getGithubColor = (count: number) => {
         if (count === 0) return isDark ? '#2d2d2d' : '#ebedf0';
@@ -124,11 +127,11 @@ const Heatmap: React.FC<{ isDark: boolean; logs: any[] }> = ({ isDark, logs }) =
                             {data.weeks.map((week, wIndex) => {
                                 const month = data.months.find(m => m.index === wIndex);
                                 return (
-                                    <div key={wIndex} style={{ display: 'flex', flexDirection: 'column', gap: `${cellGap}px` }}>
+                                    <div key={week[0]?.date ?? `week-${wIndex}`} style={{ display: 'flex', flexDirection: 'column', gap: `${cellGap}px` }}>
                                         <div style={{ height: '16px', position: 'relative', fontSize: '0.6rem', color: isDark ? '#888' : '#777', fontWeight: 600 }}>
                                             {month && <div style={{ position: 'absolute', left: 0, bottom: '2px', whiteSpace: 'nowrap' }}>{month.label}</div>}
                                         </div>
-                                        {week.map((day: any) => (
+                                        {week.map((day) => (
                                             <Tooltip key={day.date} content={<div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, marginBottom: '2px' }}>{day.count} {t('git.info.heatmap.contributions')}</div><div style={{ opacity: 0.8, fontSize: '0.7rem' }}>{new Date(day.date + 'T12:00:00').toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>} side="top" delay={0}>
                                                 <div
                                                     style={{ width: `${cellSize}px`, height: `${cellSize}px`, borderRadius: '2px', backgroundColor: getGithubColor(day.count), cursor: day.count > 0 ? 'pointer' : 'default', transition: 'transform 0.1s' }}
@@ -186,10 +189,10 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
             authors[name].count++;
         });
         return Object.entries(authors).sort((a, b) => b[1].count - a[1].count).map(([name, data]) => ({ name, ...data }));
-    }, [logs]);
+    }, [logs, t]);
 
     const hourlyStats = useMemo(() => {
-        const stats = new Array(24).fill(0);
+        const stats: number[] = Array.from({ length: 24 }, () => 0);
         logs.forEach((l) => {
             const d = new Date(l.date);
             if (!isNaN(d.getTime())) stats[d.getHours()]++;
@@ -199,7 +202,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
     }, [logs]);
 
     const weeklyStats = useMemo(() => {
-        const stats = new Array(7).fill(0);
+        const stats: number[] = Array.from({ length: 7 }, () => 0);
         logs.forEach(l => {
             const d = new Date(l.date);
             if (!isNaN(d.getTime())) stats[d.getDay()]++;
@@ -242,7 +245,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
         } else {
             // If it doesn't exist in config, it means it's currently using default (Open/True).
             // So we want to add it as Closed/False.
-            const label = sectionDefs.find(s => s.id === id)?.title || id;
+            const label = sectionDefs.find(s => s.id === id)?.title ?? id;
             sections = [...sections, { id, visible: true, expanded: false, label }];
         }
 
@@ -273,7 +276,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                         t('git.common.days.fri'),
                         t('git.common.days.sat')
                     ].map((day, i) => {
-                        const count = weeklyStats.stats[i] || 0;
+                        const count = weeklyStats.stats[i] ?? 0;
                         const height = (count / weeklyStats.max) * 100;
                         return (
                             <div key={day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
@@ -315,6 +318,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                             const height = (count / hourlyStats.max) * 100;
                             const showLabel = hour % 6 === 0;
                             return (
+                                // eslint-disable-next-line react/no-array-index-key
                                 <div key={hour} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
                                     <div style={{ width: '100%', height: '40px', background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)', borderRadius: '2px', overflow: 'hidden', display: 'flex', alignItems: 'flex-end' }}>
                                         <div
@@ -350,8 +354,8 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
             );
             case 'contributors': return (
                 <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {authorsData.slice(0, 10).map((author, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                    {authorsData.slice(0, 10).map((author) => (
+                        <div key={author.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
                                 <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: isDark ? '#333' : '#e0e0e0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '0.7rem', color: isDark ? '#aaa' : '#555', flexShrink: 0 }}>{author.name[0]}</div>
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isDark ? '#ddd' : '#333' }}>{author.name}</span>
@@ -399,7 +403,7 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [] })
                                 <button
                                     onClick={() => {
                                         if (confirm(t('git.info.tags.delete_confirm', { tag: tag.name }))) {
-                                            gitDeleteTag(tag.name);
+                                            void gitDeleteTag(tag.name);
                                         }
                                     }}
                                     style={{

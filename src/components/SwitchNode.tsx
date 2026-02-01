@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import { Plus, Trash2, ExternalLink } from 'lucide-react';
 import { useEffect } from 'react';
 
-import type { AppNodeData } from '../store/useStore';
+import type { AppNodeData } from '../types/store';
 
 export const SwitchNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
@@ -83,7 +83,8 @@ export const SwitchNode = ({ id, data }: { id: string, data: AppNodeData }) => {
                 {/* Cases List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {cases.map((caseVal: string, i: number) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+                        // eslint-disable-next-line react/no-array-index-key
+                        <div key={`case-${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <div style={{
                                     display: 'flex',

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Handle, Position, useHandleConnections } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 
-import type { AppNodeData } from '../store/useStore';
+import type { AppNodeData } from '../types/store';
 
 export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);

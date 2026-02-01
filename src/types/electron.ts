@@ -11,7 +11,7 @@ export interface ElectronAPI {
   // Directory operations
   openDirectory: () => Promise<string | null>;
   selectFolder: () => Promise<string | null>;
-  readDir: (dirPath: string) => Promise<any[]>;
+  readDir: (dirPath: string) => Promise<unknown[]>;
   createDirectory: (dirPath: string) => Promise<void>;
   deleteFile: (filePath: string) => Promise<void>;
   deleteDirectory: (dirPath: string) => Promise<void>;

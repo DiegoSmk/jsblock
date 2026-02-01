@@ -1,10 +1,11 @@
 import React, { memo, useCallback } from 'react';
-import { Handle, Position, NodeResizer } from '@xyflow/react';
+import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import type { AppNode } from '../types/store';
 import { useStore } from '../store/useStore';
 import { StickyNote, Move } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-export const NoteNode = memo(({ id, data, selected }: any) => {
+export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
     const updateNodeData = useStore(state => state.updateNodeData);
     const theme = useStore(state => state.theme);
     const { t } = useTranslation();
@@ -105,7 +106,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
                 }}>
                     <StickyNote size={15} color={isDark ? '#a855f7' : '#d4a017'} />
                     <input
-                        value={data.label || ''}
+                        value={data.label ?? ''}
                         onChange={handleTitleChange}
                         placeholder={t('note.title_placeholder')}
                         style={{
@@ -125,7 +126,7 @@ export const NoteNode = memo(({ id, data, selected }: any) => {
 
                 <textarea
                     className="note-node-textarea"
-                    value={data.text || ''}
+                    value={data.text ?? ''}
                     onChange={handleTextChange}
                     placeholder={t('note.text_placeholder')}
                     style={{

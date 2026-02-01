@@ -45,7 +45,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
         }
     };
 
-    const handleUndo = async () => {
+    const handleUndo = () => {
         setConfirmationModal({
             isOpen: true,
             title: t('git.status.undo_confirm_title'),
@@ -54,7 +54,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
             cancelLabel: t('git.common.cancel'),
             variant: 'danger',
             onConfirm: () => {
-                handleAction(gitUndoLastCommit);
+                void handleAction(gitUndoLastCommit);
                 setConfirmationModal(null);
             },
             onCancel: () => setConfirmationModal(null)
@@ -87,7 +87,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} ref={dropdownRef}>
                 <Tooltip content={hasChanges ? t('git.status.stash_tooltip') : t('git.status.stash_empty_tooltip')} side="bottom">
                     <button
-                        onClick={handleStash}
+                        onClick={() => void handleStash()}
                         disabled={isProcessing || !hasChanges}
                         style={{
                             background: isDark ? '#252525' : '#fff',
@@ -123,7 +123,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                 <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                     <Tooltip content={hasStashes ? t('git.status.pop_tooltip') : t('git.status.pop_empty_tooltip')} side="bottom">
                         <button
-                            onClick={() => handleAction(() => gitPopStash(0))}
+                            onClick={() => void handleAction(() => gitPopStash(0))}
                             disabled={isProcessing || !hasStashes}
                             style={{
                                 background: isDark ? '#252525' : '#fff',
@@ -250,7 +250,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                                                 <Tooltip content={t('git.status.pop_confirm_desc')} side="top">
                                                     <button
                                                         onClick={() => {
-                                                            handleAction(() => gitPopStash(stash.index));
+                                                            void handleAction(() => gitPopStash(stash.index));
                                                             setIsOpen(false);
                                                         }}
                                                         style={{
@@ -267,7 +267,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                                                 <Tooltip content={t('git.status.apply_confirm_desc')} side="top">
                                                     <button
                                                         onClick={() => {
-                                                            handleAction(() => gitApplyStash(stash.index));
+                                                            void handleAction(() => gitApplyStash(stash.index));
                                                             setIsOpen(false);
                                                         }}
                                                         style={{
@@ -292,7 +292,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                                                                 cancelLabel: t('git.common.cancel'),
                                                                 variant: 'danger',
                                                                 onConfirm: () => {
-                                                                    handleAction(() => gitDropStash(stash.index));
+                                                                    void handleAction(() => gitDropStash(stash.index));
                                                                     setConfirmationModal(null);
                                                                 },
                                                                 onCancel: () => setConfirmationModal(null)
@@ -325,7 +325,7 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
             {/* History Group */}
             <Tooltip content={hasHistory ? t('git.status.undo_commit_tooltip') : t('git.status.undo_commit_empty_tooltip')} side="bottom">
                 <button
-                    onClick={handleUndo}
+                    onClick={() => void handleUndo()}
                     disabled={isProcessing || !hasHistory}
                     style={{
                         background: isDark ? '#252525' : '#fff',

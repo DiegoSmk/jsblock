@@ -2,18 +2,19 @@ import type { ParserContext, ParserHandler } from '../types';
 import { isNativeApi } from '../utils';
 import { LogicHandler } from './LogicHandler';
 import type { Node as BabelNode, VariableDeclaration, VariableDeclarator } from '@babel/types';
+import * as t from '@babel/types';
 
 const getExpressionCode = (node: BabelNode | null | undefined): string => {
     if (!node) return '';
-    if (node.type === 'BinaryExpression' || node.type === 'LogicalExpression') {
-        const left = (node as any).left as BabelNode;
-        const right = (node as any).right as BabelNode;
-        const operator = (node as any).operator as string;
-        return `${getExpressionCode(left)} ${operator} ${getExpressionCode(right)}`;
+    if (t.isBinaryExpression(node) || t.isLogicalExpression(node)) {
+        const left = node.left;
+        const right = node.right;
+        const operator = t.isBinaryExpression(node) || t.isLogicalExpression(node) ? node.operator : '';
+        return `${getExpressionCode(left as BabelNode)} ${operator} ${getExpressionCode(right as BabelNode)}`;
     }
     if (node.type === 'Identifier') return node.name;
-    if (node.type === 'NumericLiteral' || node.type === 'StringLiteral' || node.type === 'BooleanLiteral') {
-        return String((node as any).value);
+    if (t.isNumericLiteral(node) || t.isStringLiteral(node) || t.isBooleanLiteral(node)) {
+        return String(node.value);
     }
     if (node.type === 'CallExpression') {
         const callee = node.callee;
@@ -34,13 +35,13 @@ export const VariableHandler: ParserHandler = {
                 const nodeId = idSuffix ? `var-${varName}-${idSuffix}` : `var-${varName}`;
 
                 let value = '';
-                let nestedCall: any = undefined;
+                let nestedCall: { name: string, args: string[] } | undefined = undefined;
 
                 if (decl.init) {
                     const init = decl.init;
-                    if (init.type === 'NumericLiteral' || init.type === 'StringLiteral' || init.type === 'BooleanLiteral') {
-                        value = String((init as any).value);
-                        if (init.type === 'StringLiteral') value = `'${value}'`;
+                    if (t.isNumericLiteral(init) || t.isStringLiteral(init) || t.isBooleanLiteral(init)) {
+                        value = String(init.value);
+                        if (t.isStringLiteral(init)) value = `'${value}'`;
                     } else if (init.type === 'CallExpression') {
                         const callInit = init;
                         value = '(computed)';
@@ -98,8 +99,8 @@ export const VariableHandler: ParserHandler = {
 
                         const argNames = callInit.arguments.map((arg) => {
                             if (arg.type === 'Identifier') return arg.name;
-                            if (arg.type === 'NumericLiteral' || arg.type === 'StringLiteral' || arg.type === 'BooleanLiteral') {
-                                return String((arg as any).value);
+                            if (t.isNumericLiteral(arg) || t.isStringLiteral(arg) || t.isBooleanLiteral(arg)) {
+                                return String(arg.value);
                             }
                             return 'arg';
                         });
@@ -136,7 +137,7 @@ export const VariableHandler: ParserHandler = {
                         label: varName,
                         value,
                         expression: value === '(computed)' || value.includes(' ') ? value : undefined,
-                        nestedCall,
+                        nestedCall: nestedCall as { name: string, args: string[] } | undefined,
                         scopeId: ctx.currentScopeId
                     }
                 });

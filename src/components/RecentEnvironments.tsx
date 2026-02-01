@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { RecentEnvironment } from '../store/useStore';
+import type { RecentEnvironment } from '../types/store';
 
 import {
     Clock,
@@ -48,20 +48,18 @@ const LabelIcon = ({ label, size = 14 }: { label: string, size?: number }) => {
 
 export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean }) => {
     const { t } = useTranslation();
-    const {
-        recentEnvironments,
-        removeRecent,
-        toggleFavorite,
-        setRecentLabel,
-        setOpenedFolder,
-        validateRecents,
-        theme
-    } = useStore();
+    const recentEnvironments = useStore(state => state.recentEnvironments);
+    const removeRecent = useStore(state => state.removeRecent);
+    const toggleFavorite = useStore(state => state.toggleFavorite);
+    const setRecentLabel = useStore(state => state.setRecentLabel);
+    const setOpenedFolder = useStore(state => state.setOpenedFolder);
+    const validateRecents = useStore(state => state.validateRecents);
+    const theme = useStore(state => state.theme);
     const isDark = theme === 'dark';
 
     useEffect(() => {
-        validateRecents();
-    }, []);
+        void validateRecents();
+    }, [validateRecents]);
 
     const handleOpen = async (path: string) => {
         if (window.electronAPI) {
@@ -195,11 +193,13 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
 
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                     <button
-                        onClick={async () => {
-                            if (window.electronAPI) {
-                                const path = await window.electronAPI.selectFolder();
-                                if (path) setOpenedFolder(path);
-                            }
+                        onClick={() => {
+                            void (async () => {
+                                if (window.electronAPI) {
+                                    const path = await window.electronAPI.selectFolder();
+                                    if (path) setOpenedFolder(path);
+                                }
+                            })();
                         }}
                         style={{
                             display: 'flex',
@@ -293,10 +293,10 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
 interface EnvironmentProps {
     env: RecentEnvironment;
     isDark: boolean;
-    onOpen: (path: string) => void;
-    onToggleFavorite: (path: string) => void;
-    onSetLabel: (path: string, label?: 'personal' | 'work' | 'fun' | 'other') => void;
-    onRemove: (path: string) => void;
+    onOpen: (path: string) => void | Promise<void>;
+    onToggleFavorite: (path: string) => void | Promise<void>;
+    onSetLabel: (path: string, label?: 'personal' | 'work' | 'fun' | 'other') => void | Promise<void>;
+    onRemove: (path: string) => void | Promise<void>;
     t: TFunction;
     compact?: boolean;
 }
@@ -320,7 +320,7 @@ const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, on
             }}
             onMouseEnter={() => setShowActions(true)}
             onMouseLeave={() => setShowActions(false)}
-            onClick={() => onOpen(env.path)}
+            onClick={() => void onOpen(env.path)}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{
@@ -332,7 +332,7 @@ const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, on
                     <FolderOpen size={24} />
                 </div>
                 <button
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(env.path); }}
+                    onClick={(e) => { e.stopPropagation(); void onToggleFavorite(env.path); }}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                 >
                     <Star size={20} fill={env.isFavorite ? "#eab308" : "none"} color="#eab308" />
@@ -383,9 +383,9 @@ const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, on
                     borderRadius: '8px',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                 }} onClick={e => e.stopPropagation()}>
-                    <LabelSelector currentLabel={env.label} onSelect={(l: RecentEnvironment['label']) => onSetLabel(env.path, l)} isDark={isDark} t={t} />
+                    <LabelSelector currentLabel={env.label} onSelect={(l) => { void onSetLabel(env.path, l); }} isDark={isDark} t={t} />
                     <button
-                        onClick={(e) => { e.stopPropagation(); onRemove(env.path); }}
+                        onClick={(e) => { e.stopPropagation(); void onRemove(env.path); }}
                         style={{ padding: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}
                         title={t('recent.remove')}
                     >
@@ -423,7 +423,7 @@ const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onR
                 e.currentTarget.style.backgroundColor = compact ? 'transparent' : (isDark ? '#1f2937' : '#ffffff');
                 setIsHovered(false);
             }}
-            onClick={() => onOpen(env.path)}
+            onClick={() => void onOpen(env.path)}
         >
             <div style={{
                 display: 'flex',
@@ -479,15 +479,15 @@ const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onR
                 transition: 'opacity 0.2s'
             }} onClick={e => e.stopPropagation()}>
                 <button
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(env.path); }}
+                    onClick={(e) => { e.stopPropagation(); void onToggleFavorite(env.path); }}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: env.isFavorite ? "#eab308" : (isDark ? '#555' : '#ccc') }}
                     title={t('recent.favorite')}
                 >
                     <Star size={12} fill={env.isFavorite ? "#eab308" : "none"} />
                 </button>
-                <LabelSelector currentLabel={env.label} onSelect={(l: RecentEnvironment['label']) => onSetLabel(env.path, l)} isDark={isDark} compact={compact} t={t} />
+                <LabelSelector currentLabel={env.label} onSelect={(l) => { void onSetLabel(env.path, l); }} isDark={isDark} compact={compact} t={t} />
                 <button
-                    onClick={(e) => { e.stopPropagation(); onRemove(env.path); }}
+                    onClick={(e) => { e.stopPropagation(); void onRemove(env.path); }}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: isDark ? '#555' : '#ccc' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
                     onMouseLeave={e => e.currentTarget.style.color = isDark ? '#555' : '#ccc'}

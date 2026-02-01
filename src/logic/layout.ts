@@ -6,7 +6,7 @@ import type { AppNode } from '../types/store';
 export const getLayoutedElements = (nodes: AppNode[], edges: Edge[]) => {
     const scopes: Record<string, AppNode[]> = {};
     nodes.forEach(node => {
-        const scopeId = node.data.scopeId || 'root';
+        const scopeId = node.data.scopeId ?? 'root';
         if (!scopes[scopeId]) scopes[scopeId] = [];
         scopes[scopeId].push(node);
     });
@@ -34,7 +34,7 @@ export const getLayoutedElements = (nodes: AppNode[], edges: Edge[]) => {
         // 3. Layout Flow Nodes using Dagre
         const g = new dagre.graphlib.Graph();
         g.setDefaultEdgeLabel(() => ({}));
-        g.setGraph({ rankdir: 'LR', nodesep: 60, ranksep: 100, marginx: 50, marginy: 50 });
+        g.setGraph({ rankdir: 'LR' /* eslint-disable-line no-restricted-syntax */, nodesep: 60, ranksep: 100, marginx: 50, marginy: 50 });
 
         flowNodes.forEach(node => {
             let width = 350;
@@ -47,7 +47,7 @@ export const getLayoutedElements = (nodes: AppNode[], edges: Edge[]) => {
             }
             else if (node.type === 'functionCallNode') {
                 width = 350;
-                const argCount = node.data.args?.length || 0;
+                const argCount = node.data.args?.length ?? 0;
                 height = 100 + (argCount * 40);
             }
             else if (node.type === 'ifNode' || node.type === 'forNode' || node.type === 'whileNode') {

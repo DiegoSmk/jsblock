@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { Check, AlertCircle } from 'lucide-react';
-import type { Node } from '@xyflow/react';
+import type { AppNode } from '../types/store';
 import { Modal } from './ui/Modal';
 import pkg from '../../package.json';
 
@@ -11,12 +11,17 @@ export const ModernModal = () => {
     const [error, setError] = useState<string | null>(null);
     const isDark = theme === 'dark';
 
-    useEffect(() => {
+    const [prevOpen, setPrevOpen] = useState(modal.isOpen);
+    const [prevInitialValue, setPrevInitialValue] = useState(modal.initialValue);
+
+    if (modal.isOpen !== prevOpen || modal.initialValue !== prevInitialValue) {
+        setPrevOpen(modal.isOpen);
+        setPrevInitialValue(modal.initialValue);
         if (modal.isOpen) {
-            setInputValue(modal.initialValue || '');
+            setInputValue(modal.initialValue ?? '');
             setError(null);
         }
-    }, [modal.isOpen, modal.initialValue]);
+    }
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -44,7 +49,7 @@ export const ModernModal = () => {
                 return `"${name}" é palavra reservada`;
             }
 
-            const exists = nodes.some((n: Node) => n.id === `var-${name}` || (n.data as any).label === name);
+            const exists = nodes.some((n: AppNode) => n.id === `var-${name}` || n.data.label === name);
             if (exists) {
                 return `Variável "${name}" já existe`;
             }
@@ -70,7 +75,7 @@ export const ModernModal = () => {
         closeModal();
     };
 
-    const currentError = error || validate(inputValue);
+    const currentError = error ?? validate(inputValue);
     const isValid = (modal.type === 'about' || modal.type === 'optional-prompt') || (inputValue.trim() && !currentError);
 
     const footer = (
@@ -117,7 +122,7 @@ export const ModernModal = () => {
                     opacity: !isValid ? 0.6 : 1
                 }}
             >
-                {modal.confirmLabel || 'Confirmar'}
+                {modal.confirmLabel ?? 'Confirmar'}
             </button>
         </>
     );
@@ -156,7 +161,7 @@ export const ModernModal = () => {
 
                                     return (
                                         <div
-                                            key={i}
+                                            key={letter}
                                             style={{
                                                 width: '36px',
                                                 height: '36px',
@@ -279,7 +284,7 @@ export const ModernModal = () => {
                                         setInputValue(e.target.value);
                                         setError(null);
                                     }}
-                                    placeholder={modal.placeholder || (modal.type === 'variable' ? "ex: minhaVariavel" : "Digite aqui...")}
+                                    placeholder={modal.placeholder ?? (modal.type === 'variable' ? "ex: minhaVariavel" : "Digite aqui...")}
                                     style={{
                                         width: '100%',
                                         padding: '12px 14px',

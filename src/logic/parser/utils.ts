@@ -26,9 +26,10 @@ export const createGroupNode = (label: string): Node => {
         position: { x: 0, y: 0 },
         data: { label },
         style: { zIndex: -1 } // Put background behind everything
-    } as any;
+    } as Node;
 };
 
+// eslint-disable-next-line no-restricted-syntax
 const NATIVE_GLOBALS = new Set(['console', 'Math', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'Date', 'Promise', 'window', 'document', 'navigator', 'localStorage', 'sessionStorage', 'fetch', 'setTimeout', 'setInterval', 'alert', 'confirm', 'prompt']);
 
 export const isNativeApi = (name: string): boolean => {

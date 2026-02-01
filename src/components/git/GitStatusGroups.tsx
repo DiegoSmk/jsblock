@@ -16,15 +16,27 @@ interface GitStatusGroupsProps {
     isDark: boolean;
     staged: GitFile[];
     unstaged: GitFile[];
-    gitUnstageAll: () => void;
-    gitStageAll: () => void;
-    gitDiscardAll: () => void;
-    gitUnstage: (path: string) => void;
-    gitStage: (path: string) => void;
-    gitDiscard: (path: string) => void;
+    gitUnstageAll: () => Promise<void>;
+    gitStageAll: () => Promise<void>;
+    gitDiscardAll: () => Promise<void>;
+    gitUnstage: (path: string) => Promise<void>;
+    gitStage: (path: string) => Promise<void>;
+    gitDiscard: (path: string) => Promise<void>;
     gitClean: () => Promise<void>;
     gitIgnore: (pattern: string) => Promise<void>;
-    setConfirmationModal: (config: any) => void;
+    setConfirmationModal: (config: {
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void | Promise<void>;
+        onCancel: () => void | Promise<void>;
+        confirmLabel?: string;
+        cancelLabel?: string;
+        discardLabel?: string;
+        variant?: 'danger' | 'warning' | 'info' | 'primary';
+        discardVariant?: 'danger' | 'warning' | 'info' | 'primary' | 'secondary';
+        onDiscard?: () => void | Promise<void>;
+    } | null) => void;
 }
 
 interface TreeToggleProps {
@@ -127,7 +139,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     <ActionToolbar isDark={isDark}>
                         <Tooltip content={t('git.status.unstage_all_tooltip')} side="top">
                             <button
-                                onClick={gitUnstageAll}
+                                onClick={() => void gitUnstageAll()}
                                 className="git-button-base"
                                 style={{
                                     border: `1px solid ${isDark ? '#444' : '#ddd'}`,
@@ -152,20 +164,20 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     {isTreeView && staged.length > 0 ? (
                         <FileTreeView
                             files={staged}
-                            onUnstage={gitUnstage}
+                            onUnstage={(path) => void gitUnstage(path)}
                             isDark={isDark}
                         />
                     ) : (
                         <>
-                            {staged.map((file, i) => (
-                                <div key={i} className="git-file-item">
+                            {staged.map((file) => (
+                                <div key={file.path} className="git-file-item">
                                     <div style={{ width: '18px', height: '18px', borderRadius: '4px', background: 'rgba(74, 222, 128, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#4ade80', fontWeight: 800 }}>
                                         {file.index}
                                     </div>
                                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.path}</span>
                                     <Tooltip content={t('git.status.action_unstage_tooltip')} side="top">
                                         <button
-                                            onClick={() => gitUnstage(file.path)}
+                                            onClick={() => void gitUnstage(file.path)}
                                             className="git-file-action-button discard"
                                             style={{ color: '#f87171' }}
                                         >
@@ -210,7 +222,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     <ActionToolbar isDark={isDark}>
                         <Tooltip content={t('git.status.stage_all_tooltip')} side="top">
                             <button
-                                onClick={gitStageAll}
+                                onClick={() => void gitStageAll()}
                                 className="git-button-base"
                                 style={{
                                     border: `1px solid ${isDark ? '#444' : '#ddd'}`,
@@ -231,7 +243,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                         </Tooltip>
                         <Tooltip content={t('git.status.discard_all_tooltip')} side="top">
                             <button
-                                onClick={gitDiscardAll}
+                                onClick={() => void gitDiscardAll()}
                                 className="git-button-base"
                                 style={{
                                     border: `1px solid ${isDark ? '#444' : '#ddd'}`,
@@ -279,14 +291,14 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     {isTreeView && unstaged.length > 0 ? (
                         <FileTreeView
                             files={unstaged}
-                            onStage={gitStage}
-                            onDiscard={gitDiscard}
+                            onStage={(path) => void gitStage(path)}
+                            onDiscard={(path) => void gitDiscard(path)}
                             isDark={isDark}
                         />
                     ) : (
                         <>
-                            {unstaged.map((file, i) => (
-                                <div key={i} className="git-file-item">
+                            {unstaged.map((file) => (
+                                <div key={file.path} className="git-file-item">
                                     <div style={{
                                         width: '18px',
                                         height: '18px',
@@ -317,11 +329,11 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                                                         variant: 'primary',
                                                         discardVariant: 'secondary',
                                                         onConfirm: () => {
-                                                            gitIgnore(file.path);
+                                                            void gitIgnore(file.path);
                                                             setConfirmationModal(null);
                                                         },
                                                         onDiscard: ext ? () => {
-                                                            gitIgnore(ext);
+                                                            void gitIgnore(ext);
                                                             setConfirmationModal(null);
                                                         } : undefined,
                                                         onCancel: () => setConfirmationModal(null)
@@ -335,7 +347,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                                         </Tooltip>
                                         <Tooltip content={t('git.status.action_discard_tooltip')} side="top">
                                             <button
-                                                onClick={() => gitDiscard(file.path)}
+                                                onClick={() => void gitDiscard(file.path)}
                                                 className="git-file-action-button discard"
                                                 style={{ color: '#f87171' }}
                                             >
@@ -344,7 +356,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                                         </Tooltip>
                                         <Tooltip content={t('git.status.action_stage_tooltip')} side="top">
                                             <button
-                                                onClick={() => gitStage(file.path)}
+                                                onClick={() => void gitStage(file.path)}
                                                 className="git-file-action-button stage"
                                                 style={{ color: '#4ade80' }}
                                             >

@@ -6,9 +6,11 @@ import { ScrollArea } from '../ui/ScrollArea';
 import { Tooltip } from '../Tooltip';
 import { useStore } from '../../store/useStore';
 
+import type { GitLogEntry, GitCommitFile } from '../../types/store';
+
 interface GitHistoryProps {
     isDark: boolean;
-    logs: any[];
+    logs: GitLogEntry[];
     isOpen: boolean;
     onToggle: () => void;
 }
@@ -20,7 +22,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
     const { git, getCommitFiles, openModal, checkoutCommit, createBranch, openedFolder, gitCreateTag } = useStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedCommits, setExpandedCommits] = useState<Set<string>>(new Set());
-    const [commitFiles, setCommitFiles] = useState<Record<string, any[]>>({});
+    const [commitFiles, setCommitFiles] = useState<Record<string, GitCommitFile[]>>({});
     const [commitStats, setCommitStats] = useState<Record<string, { insertions: number, deletions: number }>>({});
     const [loadingFiles, setLoadingFiles] = useState<Set<string>>(new Set());
 
@@ -29,7 +31,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return dateStr;
             return date.toLocaleDateString();
-        } catch (e) {
+        } catch {
             return dateStr;
         }
     };
@@ -49,20 +51,20 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                     // Fetch stats
                     let stats = { insertions: 0, deletions: 0 };
                     try {
-                        if ((window as any).electronAPI && openedFolder) {
-                            const statRes = await (window as any).electronAPI.gitCommand(openedFolder, ['show', '--shortstat', '--format=', hash]);
+                        if (window.electronAPI && openedFolder) {
+                            const statRes = await window.electronAPI.gitCommand(openedFolder, ['show', '--shortstat', '--format=', hash]);
                             const statLine = statRes.stdout.trim();
                             if (statLine) {
-                                const insMatch = statLine.match(/(\d+) insertions?\(\+\)/);
-                                const delMatch = statLine.match(/(\d+) deletions?\(-\)/);
+                                const insMatch = /(\d+) insertions?\(\+\)/.exec(statLine);
+                                const delMatch = /(\d+) deletions?\(-\)/.exec(statLine);
                                 stats = {
                                     insertions: insMatch ? parseInt(insMatch[1]) : 0,
                                     deletions: delMatch ? parseInt(delMatch[1]) : 0
                                 };
                             }
                         }
-                    } catch (e) {
-                        console.warn('Failed to fetch stats for history:', e);
+                    } catch {
+                        // ignore
                     }
 
                     setCommitFiles(prev => ({ ...prev, [hash]: files }));
@@ -116,7 +118,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                 rightElement={
                     <Tooltip content={t('git.status.history_refresh')} side="bottom">
                         <button
-                            onClick={(e) => { e.stopPropagation(); useStore.getState().refreshGit(); }}
+                            onClick={(e) => { e.stopPropagation(); void useStore.getState().refreshGit(); }}
                             style={{
                                 background: 'none',
                                 border: 'none',
@@ -193,7 +195,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                 }}
                                                 onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}
                                                 onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                                onClick={() => toggleCommit(commit.hash)}
+                                                onClick={() => void toggleCommit(commit.hash)}
                                             >
                                                 <div style={{ marginTop: '4px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                                     <div style={{
@@ -258,7 +260,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                         <span>•</span>
                                                         <span>{formatDate(commit.date)}</span>
                                                         <span style={{ fontFamily: 'monospace', opacity: 0.6 }}>{commit.hash.substring(0, 7)}</span>
-                                                        {isExpanded && commitStats && commitStats[commit.hash] && (
+                                                        {isExpanded && commitStats?.[commit.hash] && (
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '2px' }}>
                                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0px', color: '#10b981' }}>
                                                                     <Plus size={8} strokeWidth={3} />{commitStats[commit.hash].insertions}
@@ -282,7 +284,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                     <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                                                         <Tooltip content={t('git.status.history_checkout_tooltip')} side="top">
                                                             <button
-                                                                onClick={(e) => { e.stopPropagation(); checkoutCommit(commit.hash); }}
+                                                                onClick={(e) => { e.stopPropagation(); void checkoutCommit(commit.hash); }}
                                                                 style={{
                                                                     background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.05)',
                                                                     border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.1)'}`,
@@ -311,7 +313,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                                         confirmLabel: 'Criar',
                                                                         initialValue: '',
                                                                         onSubmit: (name) => {
-                                                                            if (name) createBranch(name, commit.hash);
+                                                                            if (name) void createBranch(name, commit.hash);
                                                                         }
                                                                     });
                                                                 }}
@@ -343,7 +345,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                                         confirmLabel: 'Criar Tag',
                                                                         initialValue: '',
                                                                         onSubmit: (name) => {
-                                                                            if (name) gitCreateTag(name, commit.hash);
+                                                                            if (name) void gitCreateTag(name, commit.hash);
                                                                         }
                                                                     });
                                                                 }}
@@ -367,7 +369,7 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                     </div>
 
                                                     {/* Files List */}
-                                                    <div style={{ color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 600, fontSize: '0.65rem',  display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <div style={{ color: isDark ? '#666' : '#999', marginBottom: '8px', fontWeight: 600, fontSize: '0.65rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                         <FileText size={10} /> {t('git.status.history_files_changed')}
                                                     </div>
 
@@ -377,8 +379,8 @@ export const CommitHistory: React.FC<GitHistoryProps> = ({
                                                         <div style={{ padding: '10px 0', color: isDark ? '#444' : '#ccc' }}>{t('git.status.history_no_files')}</div>
                                                     ) : (
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                            {files.map((file, idx) => (
-                                                                <div key={idx} style={{
+                                                            {files.map((file) => (
+                                                                <div key={file.path} style={{
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     gap: '8px',

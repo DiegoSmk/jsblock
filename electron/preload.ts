@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     terminalCreate: (options: { cwd: string }) => ipcRenderer.send('terminal-create', options),
     terminalSendInput: (data: string) => ipcRenderer.send('terminal-input', data),
     terminalOnData: (callback: (data: string) => void) => {
-        const subscription = (_event: any, data: string) => callback(data);
+        const subscription = (_event: unknown, data: string) => callback(data);
         ipcRenderer.on('terminal-data', subscription);
         return () => ipcRenderer.removeListener('terminal-data', subscription);
     },

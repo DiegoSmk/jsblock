@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
+import type { GitLogEntry } from '../../types/store';
 import { ScrollArea } from '../ui/ScrollArea';
 import { GitBranch, History, Tag, RefreshCw } from 'lucide-react';
 import { SectionHeader } from './SharedComponents';
@@ -60,6 +61,7 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                 if (char === '|' || char === '*') {
                     elements.push(
                         <line
+                            // eslint-disable-next-line react/no-array-index-key
                             key={`v-${cIdx}`}
                             x1={x} y1={0} x2={x} y2={rowHeight}
                             stroke={color} strokeWidth="2.2" strokeLinecap="round"
@@ -72,7 +74,8 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                 if (char === '/') {
                     elements.push(
                         <path
-                            key={`d-${cIdx}`}
+                            // eslint-disable-next-line react/no-array-index-key
+                            key={`d-f-${cIdx}`}
                             d={`M ${x + charWidth} 0 C ${x + charWidth} ${centerY}, ${x} ${centerY}, ${x} ${rowHeight}`}
                             fill="none" stroke={laneColors[(cIdx + 1) % laneColors.length]}
                             strokeWidth="2.2" strokeLinecap="round" opacity="0.45"
@@ -83,7 +86,8 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                 if (char === '\\') {
                     elements.push(
                         <path
-                            key={`d-${cIdx}`}
+                            // eslint-disable-next-line react/no-array-index-key
+                            key={`d-b-${cIdx}`}
                             d={`M ${x - charWidth} 0 C ${x - charWidth} ${centerY}, ${x} ${centerY}, ${x} ${rowHeight}`}
                             fill="none" stroke={laneColors[(cIdx - 1 + laneColors.length) % laneColors.length]}
                             strokeWidth="2.2" strokeLinecap="round" opacity="0.45"
@@ -95,6 +99,7 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                 if (char === '*') {
                     elements.push(
                         <rect
+                            // eslint-disable-next-line react/no-array-index-key
                             key={`n-halo-${cIdx}`}
                             x={x - (nodeSize + 6) / 2} y={centerY - (nodeSize + 6) / 2}
                             width={nodeSize + 6} height={nodeSize + 6}
@@ -104,6 +109,7 @@ const renderGraphRow = (graph: string, isDark: boolean) => {
                     );
                     elements.push(
                         <rect
+                            // eslint-disable-next-line react/no-array-index-key
                             key={`n-${cIdx}`}
                             x={x - nodeSize / 2} y={centerY - nodeSize / 2}
                             width={nodeSize} height={nodeSize}
@@ -139,7 +145,7 @@ export const GitGraphView: React.FC = () => {
             <div className="animate-entrance" style={{ animationDelay: '0.05s', opacity: 0 }}>
                 <SectionHeader
                     title={t('git.graph.title')}
-                    count={git.log.filter(l => l.hash !== '').length}
+                    count={git.log.filter((l: GitLogEntry) => l.hash !== '').length}
                     isDark={isDark}
                     rightElement={
                         <button
@@ -174,14 +180,14 @@ export const GitGraphView: React.FC = () => {
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                {git.log.map((entry, idx) => {
-                                    const refs = parseRefs((entry as any).refs || '');
+                                {git.log.map((entry: GitLogEntry, idx: number) => {
+                                    const refs = parseRefs(entry.refs ?? '');
                                     const isCommit = entry.hash !== '';
                                     const tooltipText = isCommit ? `${entry.author} • ${new Date(entry.date).toLocaleString(i18n.language)}\n${entry.hash}` : '';
 
                                     return (
                                         <div
-                                            key={idx}
+                                            key={entry.hash || idx}
                                             title={tooltipText}
                                             style={{
                                                 display: 'flex',
@@ -198,7 +204,7 @@ export const GitGraphView: React.FC = () => {
                                             onMouseLeave={(e) => {
                                                 if (isCommit) e.currentTarget.style.background = 'transparent';
                                             }}
-                                            onClick={() => isCommit && openCommitDetail(entry)}
+                                            onClick={() => isCommit && void openCommitDetail(entry)}
                                         >
                                             {/* Graph Column */}
                                             <div style={{
@@ -209,7 +215,7 @@ export const GitGraphView: React.FC = () => {
                                                 alignItems: 'center',
                                                 overflow: 'visible'
                                             }}>
-                                                {renderGraphRow(entry.graph || '', isDark)}
+                                                {renderGraphRow(entry.graph ?? '', isDark)}
                                             </div>
 
                                             {/* Commit Info Column */}
@@ -259,9 +265,9 @@ export const GitGraphView: React.FC = () => {
 
                                                     {refs.length > 0 && (
                                                         <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                                                            {refs.map((ref, rIdx) => (
+                                                            {refs.map((ref) => (
                                                                 <div
-                                                                    key={rIdx}
+                                                                    key={ref.name}
                                                                     style={{
                                                                         fontSize: '0.6rem',
                                                                         fontWeight: 700,

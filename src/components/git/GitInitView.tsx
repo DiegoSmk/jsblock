@@ -1,28 +1,31 @@
-import React from 'react';
 import { GitBranch, AlertCircle, User, Settings, Check, Edit3, ShieldAlert, Plus, RefreshCw, ChevronDown, X } from 'lucide-react';
+import type { GitProfile } from '../../types/store';
 
 interface GitInitViewProps {
     isDark: boolean;
     openedFolder: string | null;
     isLoading: boolean;
-    git: any;
+    git: {
+        globalAuthor: { name: string; email: string } | null;
+        projectAuthor: { name: string; email: string } | null;
+    };
     configLevel: 'global' | 'local';
     setConfigLevel: (level: 'global' | 'local') => void;
     authorBuffer: { name: string; email: string };
     setAuthorBuffer: (buffer: { name: string; email: string }) => void;
     isEditingAuthor: boolean;
     setIsEditingAuthor: (editing: boolean) => void;
-    gitProfiles: any[];
+    gitProfiles: GitProfile[];
     showProfileManager: boolean;
     setShowProfileManager: (show: boolean) => void;
-    startInit: () => void;
-    handleSaveGlobalConfig: () => void;
+    startInit: () => void | Promise<void>;
+    handleSaveGlobalConfig: () => void | Promise<void>;
     handleAddProfile: () => void;
     removeGitProfile: (id: string) => void;
     getTagIcon: (tag: string) => React.ReactNode;
     getTagColor: (tag: string) => string;
-    newProfile: any;
-    setNewProfile: (profile: any) => void;
+    newProfile: Omit<GitProfile, 'id'> | GitProfile;
+    setNewProfile: (profile: Omit<GitProfile, 'id'> | GitProfile) => void;
 }
 
 export const GitInitView: React.FC<GitInitViewProps> = ({
@@ -42,7 +45,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
         );
     }
 
-    const hasGlobal = !!(git.globalAuthor?.name || git.globalAuthor?.email);
+    const hasGlobal = !!(git.globalAuthor?.name ?? git.globalAuthor?.email);
 
     return (
         <div
@@ -140,7 +143,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                 color: isDark ? '#888' : '#666',
                                 fontSize: '0.75rem',
                                 fontWeight: 600,
-                                
+
                                 letterSpacing: '0.5px'
                             }}>
                                 <User size={14} />
@@ -150,7 +153,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
 
                         {/* Config Level Selector */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
-                            <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', fontWeight: 600,  letterSpacing: '0.5px' }}>
+                            <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', fontWeight: 600, letterSpacing: '0.5px' }}>
                                 Onde salvar?
                             </div>
 
@@ -196,7 +199,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                     checked={configLevel === 'global'}
                                     onChange={() => {
                                         setConfigLevel('global');
-                                        if (hasGlobal) {
+                                        if (hasGlobal && git.globalAuthor) {
                                             setAuthorBuffer(git.globalAuthor);
                                         }
                                     }}
@@ -342,7 +345,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                             <div style={{ position: 'relative' }}>
                                                 <select
                                                     value={newProfile.tag}
-                                                    onChange={(e) => setNewProfile({ ...newProfile, tag: e.target.value as any })}
+                                                    onChange={(e) => setNewProfile({ ...newProfile, tag: e.target.value as GitProfile['tag'] })}
                                                     style={{
                                                         width: '100%',
                                                         padding: '6px 8px',
@@ -483,8 +486,10 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                         </div>
                                         <button
                                             onClick={() => {
-                                                setAuthorBuffer(git.globalAuthor);
-                                                setIsEditingAuthor(true);
+                                                if (git.globalAuthor) {
+                                                    setAuthorBuffer(git.globalAuthor);
+                                                    setIsEditingAuthor(true);
+                                                }
                                             }}
                                             style={{
                                                 width: '100%',
@@ -562,7 +567,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <button
-                                                onClick={handleSaveGlobalConfig}
+                                                onClick={() => void handleSaveGlobalConfig()}
                                                 style={{
                                                     flex: 1,
                                                     padding: '8px',
@@ -603,7 +608,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                     {/* Init Button */}
                     <div className="animate-entrance" style={{ animationDelay: '0.2s', opacity: 0 }}>
                         <button
-                            onClick={startInit}
+                            onClick={() => void startInit()}
                             disabled={isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal)}
                             style={{
                                 width: '100%',

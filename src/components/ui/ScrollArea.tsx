@@ -70,7 +70,9 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
     const [thumbHeight, setThumbHeight] = useState(0);
     const [thumbTop, setThumbTop] = useState(0);
     const [hasScroll, setHasScroll] = useState(false);
-    const [reduceMotion, setReduceMotion] = useState(false);
+    const [reduceMotion, setReduceMotion] = useState(() =>
+        typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false
+    );
 
     const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dragStartRef = useRef<{ y: number; scrollTop: number } | null>(null);
@@ -80,7 +82,6 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
 
         // Check for reduced motion preference
         const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-        setReduceMotion(mediaQuery.matches);
 
         const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
         mediaQuery.addEventListener('change', handler);
@@ -244,7 +245,7 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
                 position: 'relative',
                 width: '100%',
                 height: maxHeight ? undefined : '100%',
-                maxHeight: maxHeight || undefined,
+                maxHeight: maxHeight ?? undefined,
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
@@ -295,7 +296,7 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
                         bottom: 2,
                         right: 4,
                         width: thumbWidth + 4,
-                        background: trackColor || 'transparent',
+                        background: trackColor ?? 'transparent',
                         opacity: isVisible ? 1 : 0,
                         transition: reduceMotion ? 'none' : 'opacity 0.2s ease',
                         pointerEvents: isVisible ? 'auto' : 'none',
@@ -314,8 +315,8 @@ export const ScrollArea: React.FC<ScrollAreaProps> = ({
                             width: thumbWidth,
                             height: thumbHeight,
                             background: isDragging || isHovering || isFocused
-                                ? (thumbHoverColor || 'rgba(150, 150, 150, 0.5)')
-                                : (thumbColor || 'rgba(150, 150, 150, 0.3)'),
+                                ? (thumbHoverColor ?? 'rgba(150, 150, 150, 0.5)')
+                                : (thumbColor ?? 'rgba(150, 150, 150, 0.3)'),
                             borderRadius: thumbWidth / 2,
                             transition: isDragging || reduceMotion
                                 ? 'none'

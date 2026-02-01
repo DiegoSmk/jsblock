@@ -3,6 +3,7 @@ import { createEdge, generateId } from '../utils';
 import { LogicHandler } from './LogicHandler';
 import { CallHandler } from './CallHandler';
 import type { Node as BabelNode, ReturnStatement } from '@babel/types';
+import * as t from '@babel/types';
 
 export const ReturnHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ReturnStatement',
@@ -33,17 +34,16 @@ export const ReturnHandler: ParserHandler = {
                 ctx.edges.push(createEdge(sourceId, nodeId, 'output', 'arg-0'));
             };
 
-            if (argument.type === 'Identifier') {
-                const varName = (argument).name;
+            if (t.isIdentifier(argument)) {
+                const varName = argument.name;
                 const sourceId = ctx.variableNodes[varName];
                 if (sourceId) {
                     connectToReturn(sourceId);
                 }
-            } else if (argument.type === 'NumericLiteral' || argument.type === 'StringLiteral' || argument.type === 'BooleanLiteral') {
+            } else if (t.isNumericLiteral(argument) || t.isStringLiteral(argument) || t.isBooleanLiteral(argument)) {
                 const litId = generateId('literal');
-                const litArg = argument;
-                const value = String((litArg as any).value);
-                const type = argument.type === 'NumericLiteral' ? 'number' : (argument.type === 'BooleanLiteral' ? 'boolean' : 'string');
+                const value = String(argument.value);
+                const type = t.isNumericLiteral(argument) ? 'number' : (t.isBooleanLiteral(argument) ? 'boolean' : 'string');
 
                 ctx.nodes.push({
                     id: litId,

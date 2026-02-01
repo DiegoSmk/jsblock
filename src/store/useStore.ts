@@ -33,6 +33,8 @@ import type {
 
 // import { v4 as uuidv4 } from 'uuid'; // Removed to avoid dependency check
 const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+// eslint-disable-next-line no-restricted-syntax
+const GIT_HEAD = 'HEAD';
 
 import { parseCodeToFlow } from '../logic/CodeParser';
 import { generateCodeFromFlow } from '../logic/CodeGenerator';
@@ -208,9 +210,9 @@ export const useStore = create<AppState>((set, get) => ({
                 const statLine = statRes.stdout.trim();
                 // Format example: " 2 files changed, 10 insertions(+), 5 deletions(-)"
                 if (statLine) {
-                    const filesMatch = statLine.match(/(\d+) files? changed/);
-                    const insMatch = statLine.match(/(\d+) insertions?\(\+\)/);
-                    const delMatch = statLine.match(/(\d+) deletions?\(-\)/);
+                    const filesMatch = /(\d+) files? changed/.exec(statLine);
+                    const insMatch = /(\d+) insertions?\(\+\)/.exec(statLine);
+                    const delMatch = /(\d+) deletions?\(-\)/.exec(statLine);
 
                     stats = {
                         filesChanged: filesMatch ? parseInt(filesMatch[1]) : 0,
@@ -259,7 +261,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     setDirty: (dirty: boolean) => set({ isDirty: dirty }),
-    recentEnvironments: JSON.parse(localStorage.getItem('recentEnvironments') || '[]'),
+    recentEnvironments: (JSON.parse(localStorage.getItem('recentEnvironments') ?? '[]') as RecentEnvironment[]),
 
     addRecent: async (path: string) => {
         const { recentEnvironments } = get();
@@ -339,7 +341,7 @@ export const useStore = create<AppState>((set, get) => ({
         initialValue: '',
         type: '',
         payload: null,
-        onSubmit: () => { }
+        onSubmit: () => { /* no-op */ }
     },
 
     setCode: (code: string, shouldSetDirty = true) => {
@@ -365,11 +367,11 @@ export const useStore = create<AppState>((set, get) => ({
             // 1. Identify items to capture
             const varNames = nodes
                 .filter(n => n.id.startsWith('var-'))
-                .map(n => ({ id: n.data.label as string, expr: n.data.label as string }));
+                .map(n => ({ id: n.data.label!, expr: n.data.label! }));
 
             const callExpressions = nodes
                 .filter(n => n.type === 'functionCallNode' && !n.data.isDecl && n.data.expression)
-                .map(n => ({ id: n.id, expr: n.data.expression as string }));
+                .map(n => ({ id: n.id, expr: n.data.expression! }));
 
             const nestedExpressions: { id: string, expr: string }[] = [];
             nodes.forEach(n => {
@@ -497,7 +499,7 @@ export const useStore = create<AppState>((set, get) => ({
         set({ edges: newEdges });
 
         if (isBlockFile) {
-            if (autoSave) get().saveFile();
+            if (autoSave) void get().saveFile();
             else set({ isDirty: true });
         } else {
             const newCode = generateCodeFromFlow(code, nodes, newEdges);
@@ -575,7 +577,7 @@ export const useStore = create<AppState>((set, get) => ({
         setCode(code + forCode);
     },
 
-    promoteToVariable: (literalNodeId: string, literalValue: any, type: string) => {
+    promoteToVariable: (literalNodeId: string, literalValue: unknown, type: string) => {
         const { openModal, setCode, nodes, code, edges } = get();
 
         openModal({
@@ -604,7 +606,7 @@ export const useStore = create<AppState>((set, get) => ({
                     type: 'variableNode',
                     data: { label: varName },
                     position: { x: 0, y: 0 }
-                } as any;
+                } as AppNode;
 
                 const finalCode = generateCodeFromFlow(baseCode, [...nodes, virtualVarNode], newEdges);
                 setCode(finalCode);
@@ -682,12 +684,12 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
-    setOpenedFolder: async (path) => {
+    setOpenedFolder: (path) => {
         set({ openedFolder: path });
         if (path) {
-            get().addRecent(path); // Add to recents when opened
-            if ((window as any).electronAPI) {
-                await (window as any).electronAPI.ensureProjectConfig(path);
+            void get().addRecent(path); // Add to recents when opened
+            if (window.electronAPI) {
+                void window.electronAPI.ensureProjectConfig(path);
             }
         }
     },
@@ -711,7 +713,7 @@ export const useStore = create<AppState>((set, get) => ({
                 // For this implementation, we will use the Store to trigger the modal, 
                 // and the modal's callbacks will trigger the ACTUAL switch.
 
-                const fileName = previousFile.split(/[\\/]/).pop() || '';
+                const fileName = previousFile.split(/[\\/]/).pop() ?? '';
                 get().setConfirmationModal({
                     isOpen: true,
                     title: i18n.t('app.confirm_save.title'),
@@ -756,10 +758,10 @@ export const useStore = create<AppState>((set, get) => ({
 
                 if (isBlock) {
                     try {
-                        const data = JSON.parse(content);
+                        const data = JSON.parse(content) as { nodes?: AppNode[]; edges?: Edge[] };
                         set({
-                            nodes: data.nodes || [],
-                            edges: data.edges || [],
+                            nodes: data.nodes ?? [],
+                            edges: data.edges ?? [],
                             showCode: false,
                             showCanvas: true
                         });
@@ -785,13 +787,13 @@ export const useStore = create<AppState>((set, get) => ({
 
     saveFile: async () => {
         const { selectedFile, code, nodes, edges, isBlockFile } = get();
-        if (selectedFile && (window as any).electronAPI) {
+        if (selectedFile && window.electronAPI) {
             try {
                 let contentToSave = code;
                 if (isBlockFile) {
                     contentToSave = JSON.stringify({ nodes, edges }, null, 2);
                 }
-                await (window as any).electronAPI.writeFile(selectedFile, contentToSave);
+                await window.electronAPI.writeFile(selectedFile, contentToSave);
                 set({ isDirty: false });
             } catch (err) {
                 console.error('Failed to save file:', err);
@@ -808,12 +810,12 @@ export const useStore = create<AppState>((set, get) => ({
             style: { width: 250, height: 180 }
         };
         set({ nodes: [...get().nodes, newNode] });
-        get().saveFile();
+        void get().saveFile();
     },
 
     refreshGit: async () => {
         const { openedFolder } = get();
-        if (!openedFolder || !(window as any).electronAPI) return;
+        if (!openedFolder || !window.electronAPI) return;
 
         try {
             // Check if it's a repo
@@ -828,7 +830,7 @@ export const useStore = create<AppState>((set, get) => ({
             }
 
             // Get current branch
-            const branchRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', 'HEAD']);
+            const branchRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', GIT_HEAD]);
             const currentBranch = branchRes.stdout.trim();
 
             // Get all branches
@@ -900,7 +902,7 @@ export const useStore = create<AppState>((set, get) => ({
                 if (parts.length >= 5) {
                     const part0 = parts[0];
                     // The hash (%h) is the first element, at the end of part0
-                    const hashMatch = part0.match(/([0-9a-f]{7,40})$/);
+                    const hashMatch = /([0-9a-f]{7,40})$/.exec(part0);
                     const hash = hashMatch ? hashMatch[1] : '';
                     const graph = hash ? part0.substring(0, part0.length - hash.length) : part0;
 
@@ -965,7 +967,7 @@ export const useStore = create<AppState>((set, get) => ({
 
                 // Project Size (Tracked files)
                 try {
-                    const treeRes = await window.electronAPI.gitCommand(openedFolder, ['ls-tree', '-r', '-l', 'HEAD']);
+                    const treeRes = await window.electronAPI.gitCommand(openedFolder, ['ls-tree', '-r', '-l', GIT_HEAD]);
                     const treeLines = treeRes.stdout.split('\n');
                     let totalBytes = 0;
                     for (const line of treeLines) {
@@ -980,7 +982,9 @@ export const useStore = create<AppState>((set, get) => ({
                     if (totalBytes < 1024) projectSize = totalBytes + ' B';
                     else if (totalBytes < 1024 * 1024) projectSize = (totalBytes / 1024).toFixed(1) + ' KB';
                     else projectSize = (totalBytes / (1024 * 1024)).toFixed(1) + ' MB';
-                } catch { }
+                } catch {
+                    // Ignore errors during size calculation
+                }
 
             } catch (err) {
                 console.warn('Failed to fetch repo stats', err);
@@ -1018,7 +1022,7 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder } = get();
         if (!window.electronAPI) return;
 
-        const baseDir = openedFolder || '.';
+        const baseDir = openedFolder ?? '.';
 
         try {
             // Fetch Global
@@ -1074,11 +1078,11 @@ export const useStore = create<AppState>((set, get) => ({
         if (!openedFolder) return;
         try {
             // Check if HEAD exists (to handle initial commit state where HEAD is invalid)
-            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
+            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', GIT_HEAD]);
             const hasHead = !headRes.stderr && headRes.stdout.trim();
 
             if (hasHead) {
-                await window.electronAPI.gitCommand(openedFolder, ['reset', 'HEAD', path]);
+                await window.electronAPI.gitCommand(openedFolder, ['reset', GIT_HEAD, path]);
             } else {
                 // Initial commit: use rm --cached to unstage
                 await window.electronAPI.gitCommand(openedFolder, ['rm', '--cached', path]);
@@ -1106,10 +1110,10 @@ export const useStore = create<AppState>((set, get) => ({
         if (!openedFolder) return;
         try {
             // Check if HEAD exists
-            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', 'HEAD']);
+            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', GIT_HEAD]);
             const hasHead = !headRes.stderr && headRes.stdout.trim();
             if (hasHead) {
-                await window.electronAPI.gitCommand(openedFolder, ['reset', 'HEAD']);
+                await window.electronAPI.gitCommand(openedFolder, ['reset', GIT_HEAD]);
             } else {
                 await window.electronAPI.gitCommand(openedFolder, ['rm', '--cached', '-r', '.']);
             }
@@ -1242,7 +1246,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     fetchTags: async () => {
         const { openedFolder } = get();
-        if (!openedFolder || !(window as any).electronAPI) return;
+        if (!openedFolder || !window.electronAPI) return;
         try {
             // Using for-each-ref for structured output: name | hash | subject (message) | date
             const res = await window.electronAPI.gitCommand(openedFolder, [
@@ -1356,7 +1360,7 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['reset', '--soft', 'HEAD~1']);
+            await window.electronAPI.gitCommand(openedFolder, ['reset', '--soft', `${GIT_HEAD}~1`]);
             await refreshGit();
             get().addToast({ type: 'success', message: 'Último commit desfeito (Soft Reset).' });
         } catch {
@@ -1381,7 +1385,7 @@ export const useStore = create<AppState>((set, get) => ({
         const { openedFolder, fetchGitConfig } = get();
         if (!window.electronAPI) return;
 
-        const dir = openedFolder || '.';
+        const dir = openedFolder ?? '.';
 
         if (isGlobal) {
             // Setting Global Config
@@ -1423,12 +1427,11 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         await fetchGitConfig();
-        console.log('Fetch config executed');
     },
 
     resetToGlobal: async () => {
         const { openedFolder, fetchGitConfig } = get();
-        if (!(window as any).electronAPI || !openedFolder) return;
+        if (!window.electronAPI || !openedFolder) return;
 
         try {
             await window.electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.name']);
@@ -1449,7 +1452,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     getCommitFiles: async (hash: string) => {
         const { openedFolder } = get();
-        if (!openedFolder || !(window as any).electronAPI) return [];
+        if (!openedFolder || !window.electronAPI) return [];
 
         try {
             const res = await window.electronAPI.gitCommand(openedFolder, ['show', '--name-status', '--pretty=format:', hash]);

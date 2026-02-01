@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Radio } from '../ui/Radio';
 import { Tooltip } from '../Tooltip';
@@ -8,7 +8,7 @@ interface CommitSectionProps {
     isDark: boolean;
     commitMessage: string;
     setCommitMessage: (msg: string) => void;
-    onCommit: () => void;
+    onCommit: () => void | Promise<void>;
     stagedCount: number;
     isAmend: boolean;
     setIsAmend: (amend: boolean) => void;
@@ -23,11 +23,13 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Auto-expand if message comes with a body (e.g. from a template)
-    useEffect(() => {
+    const [prevCommitMessage, setPrevCommitMessage] = useState(commitMessage);
+    if (commitMessage !== prevCommitMessage) {
+        setPrevCommitMessage(commitMessage);
         if (commitMessage.includes('\n\n') && !isExpanded) {
             setIsExpanded(true);
         }
-    }, [commitMessage]);
+    }
 
     const handleTypeClick = (type: string) => {
         const prefix = `${type}: `;
@@ -155,7 +157,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                         <input
                             type="text"
                             placeholder={t('git.modals.template.subject_placeholder')}
-                            value={commitMessage.split('\n\n')[0]} // First part is title
+                            value={commitMessage.split('\n\n')[0] ?? ''} // First part is title
                             onChange={(e) => {
                                 const parts = commitMessage.split('\n\n');
                                 const body = parts.slice(1).join('\n\n');
@@ -176,9 +178,9 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                         />
                         <textarea
                             placeholder={t('git.modals.template.body_placeholder')}
-                            value={commitMessage.split('\n\n').slice(1).join('\n\n')} // Rest is body
+                            value={commitMessage.split('\n\n').slice(1).join('\n\n') ?? ''} // Rest is body
                             onChange={(e) => {
-                                const title = commitMessage.split('\n\n')[0] || '';
+                                const title = commitMessage.split('\n\n')[0] ?? '';
                                 setCommitMessage(`${title}\n\n${e.target.value}`);
                             }}
                             style={{
@@ -240,7 +242,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                     </div>
                 </Tooltip>
                 <button
-                    onClick={onCommit}
+                    onClick={() => { void onCommit(); }}
                     disabled={!commitMessage || stagedCount === 0}
                     style={{
                         padding: '6px 16px',
