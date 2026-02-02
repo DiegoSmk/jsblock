@@ -28,7 +28,7 @@ import { parseCodeToFlow } from '../logic/CodeParser';
 import { generateCodeFromFlow } from '../logic/CodeGenerator';
 import { getLayoutedElements } from '../logic/layout';
 import i18n from '../i18n/config';
-import { createGitSlice } from './slices/createGitSlice';
+import { createGitSlice } from './slices/git/slice';
 
 const initialCode = '';
 
@@ -174,8 +174,6 @@ export const useStore = create<AppState>((set, get, api) => ({
     isBlockFile: false,
     openedFolder: null,
 
-    // Git logic moved to createGitSlice
-
     settings: (() => {
         const defaultSettings = {
             terminalCopyOnSelect: true,
@@ -224,10 +222,6 @@ export const useStore = create<AppState>((set, get, api) => ({
             console.error('Failed to sync settings', e);
         }
     },
-
-    // Quick Commands moved to createGitSlice but used here?
-    // QuickCommand logic is shared. It was in GitSlice in my previous step,
-    // so I should remove it here.
 
     selectedFile: null,
     autoSave: (() => {

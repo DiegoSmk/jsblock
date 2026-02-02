@@ -1,16 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollArea } from '../ui/ScrollArea';
 import { useStore } from '../../store/useStore';
-import { RefreshCw, User, Check, Settings, Globe, Briefcase, Sparkles, Smile, FileText, ChevronDown, EyeOff, Folder } from 'lucide-react';
-import { Tooltip } from '../Tooltip';
 import { GitStatusGroups } from './GitStatusGroups';
 import { CommitSection } from './CommitSection';
 import { AuthorModal } from './AuthorModal';
 import { CommitTemplateModal } from './CommitTemplateModal';
-import { BranchSwitcher } from './BranchSwitcher';
 import { ProductivityToolbar } from './ProductivityToolbar';
 import { GitIgnoreModal } from './GitIgnoreModal';
+import { GitStatusHeader } from './GitStatusHeader';
+import { Briefcase, User, Sparkles, Smile } from 'lucide-react';
 import './GitPanel.css';
 
 export const GitStatusView: React.FC = () => {
@@ -19,7 +17,7 @@ export const GitStatusView: React.FC = () => {
         gitStage, gitUnstage, gitCommit,
         gitStageAll, gitUnstageAll, gitDiscard, gitDiscardAll,
         addGitProfile, removeGitProfile,
-        resetToGlobal, commitTemplates, setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal
+        commitTemplates, setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal
     } = useStore();
 
     const { t } = useTranslation();
@@ -28,43 +26,13 @@ export const GitStatusView: React.FC = () => {
     const [isAmend, setIsAmend] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showAuthorMenu, setShowAuthorMenu] = useState(false);
-    const authorMenuRef = useRef<HTMLDivElement>(null);
 
     // Template State
-    const [isTemplateDropdownOpen, setIsTemplateDropdownOpen] = useState(false);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-    const templateDropdownRef = useRef<HTMLDivElement>(null);
 
     // Git Ignore State
-    const [isIgnoreDropdownOpen, setIsIgnoreDropdownOpen] = useState(false);
     const [isIgnoreModalOpen, setIsIgnoreModalOpen] = useState(false);
     const [ignoredPatterns, setIgnoredPatterns] = useState<string[]>([]);
-    const ignoreDropdownRef = useRef<HTMLDivElement>(null);
-
-    // Handle click outside for author menu
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (authorMenuRef.current && !authorMenuRef.current.contains(event.target as Node)) {
-                setShowAuthorMenu(false);
-            }
-            if (templateDropdownRef.current && !templateDropdownRef.current.contains(event.target as Node)) {
-                setIsTemplateDropdownOpen(false);
-            }
-            if (ignoreDropdownRef.current && !ignoreDropdownRef.current.contains(event.target as Node)) {
-                setIsIgnoreDropdownOpen(false);
-            }
-        };
-
-        if (showAuthorMenu || isTemplateDropdownOpen || isIgnoreDropdownOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showAuthorMenu, isTemplateDropdownOpen, isIgnoreDropdownOpen]);
 
     const loadIgnorePatterns = async () => {
         if (!useStore.getState().openedFolder) return;
@@ -106,8 +74,6 @@ export const GitStatusView: React.FC = () => {
     React.useEffect(() => {
         if (isAmend && git.log.length > 0) {
             setCommitMsg(git.log[0].message);
-        } else if (!isAmend) {
-            // Optional: clear message or keep it? user might have been typing
         }
     }, [isAmend, git.log]);
 
@@ -176,493 +142,20 @@ export const GitStatusView: React.FC = () => {
                 opacity: 0
             }}
         >
-            {/* Header */}
-            <div
-                className="animate-entrance"
-                style={{
-                    padding: '12px 20px',
-                    borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    animationDelay: '0.05s',
-                    opacity: 0,
-                    position: 'relative',
-                    zIndex: 30
-                }}
-            >
-                <BranchSwitcher isDark={isDark} />
-
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {/* Git Ignore Dropdown */}
-                    <div style={{ position: 'relative' }} ref={ignoreDropdownRef}>
-                        <Tooltip content={t('git.status.ignore_tooltip')} side="bottom">
-                            <button
-                                onClick={() => {
-                                    if (!isIgnoreDropdownOpen) void loadIgnorePatterns();
-                                    setIsIgnoreDropdownOpen(!isIgnoreDropdownOpen);
-                                }}
-                                style={{
-                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '6px 10px',
-                                    fontSize: '0.75rem',
-                                    color: isDark ? '#aaa' : '#666',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = isDark ? '#fff' : '#000';
-                                    e.currentTarget.style.background = isDark ? '#3d3d3d' : '#e5e5e5';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = isDark ? '#aaa' : '#666';
-                                    e.currentTarget.style.background = isDark ? '#2d2d2d' : '#f5f5f5';
-                                }}
-                            >
-                                <EyeOff size={14} />
-                                <ChevronDown size={12} style={{ transform: isIgnoreDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                            </button>
-                        </Tooltip>
-
-                        {isIgnoreDropdownOpen && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: 0,
-                                marginTop: '8px',
-                                background: isDark ? '#1a1a1a' : '#fff',
-                                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                                borderRadius: '8px',
-                                minWidth: '280px',
-                                boxShadow: isDark ? '0 10px 25px rgba(0,0,0,0.5)' : '0 10px 25px rgba(0,0,0,0.1)',
-                                zIndex: 1000,
-                                overflow: 'hidden',
-                                transformOrigin: 'top right',
-                                display: 'flex',
-                                flexDirection: 'column'
-                            }}>
-                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999' }}>
-                                    {t('git.modals.ignore.title')}
-                                </div>
-
-                                <div style={{ height: '200px' }}>
-                                    <ScrollArea
-                                        style={{ height: '100%' }}
-                                        thumbColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
-                                        thumbHoverColor={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
-                                    >
-                                        {ignoredPatterns.length === 0 ? (
-                                            <div style={{ padding: '12px', fontSize: '0.75rem', color: isDark ? '#666' : '#999', fontStyle: 'italic', textAlign: 'center' }}>
-                                                Nenhum padrão definido ou .gitignore inexistente.
-                                            </div>
-                                        ) : (
-                                            ignoredPatterns.map((pattern) => {
-                                                const isDir = pattern.endsWith('/');
-                                                const Icon = isDir ? Folder : FileText;
-                                                return (
-                                                    <div
-                                                        key={pattern}
-                                                        style={{
-                                                            padding: '6px 12px',
-                                                            fontSize: '0.8rem',
-                                                            color: isDark ? '#ddd' : '#333',
-                                                            fontFamily: 'monospace',
-                                                            borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#f5f5f5'}`,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '8px'
-                                                        }}
-                                                    >
-                                                        <Icon size={12} color={isDark ? '#666' : '#999'} />
-                                                        {pattern}
-                                                    </div>
-                                                );
-                                            })
-                                        )}
-                                    </ScrollArea>
-                                </div>
-
-                                <div style={{ padding: '8px', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, background: isDark ? '#222' : '#f9fafb' }}>
-                                    <button
-                                        onClick={() => {
-                                            setIsIgnoreModalOpen(true);
-                                            setIsIgnoreDropdownOpen(false);
-                                        }}
-                                        style={{
-                                            width: '100%',
-                                            padding: '6px',
-                                            borderRadius: '6px',
-                                            border: 'none',
-                                            background: isDark ? '#333' : '#e5e7eb',
-                                            color: isDark ? '#ccc' : '#666',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '6px'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#444' : '#d1d5db'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = isDark ? '#333' : '#e5e7eb'}
-                                    >
-                                        <Settings size={12} />
-                                        {t('git.status.ignore_tooltip')}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Templates Button & Dropdown */}
-                    <div style={{ position: 'relative' }} ref={templateDropdownRef}>
-                        <Tooltip content={t('git.status.template_tooltip')} side="bottom">
-                            <button
-                                onClick={() => setIsTemplateDropdownOpen(!isTemplateDropdownOpen)}
-                                style={{
-                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '6px 10px',
-                                    fontSize: '0.75rem',
-                                    color: isDark ? '#aaa' : '#666',
-                                    transition: 'all 0.2s',
-                                    outline: 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = isDark ? '#fff' : '#000';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = isDark ? '#aaa' : '#666';
-                                }}
-                            >
-                                <FileText size={14} />
-                                <ChevronDown size={12} style={{ transform: isTemplateDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-                            </button>
-                        </Tooltip>
-
-                        {isTemplateDropdownOpen && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: 0,
-                                marginTop: '8px',
-                                background: isDark ? '#1a1a1a' : '#fff',
-                                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                                borderRadius: '8px',
-                                minWidth: '240px',
-                                boxShadow: isDark ? '0 10px 25px rgba(0,0,0,0.5)' : '0 10px 25px rgba(0,0,0,0.1)',
-                                zIndex: 1000,
-                                overflow: 'hidden',
-                                transformOrigin: 'top right'
-                            }}>
-                                <div style={{ padding: '8px 12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#666' : '#999' }}>
-                                    {t('git.status.template_tooltip')}
-                                </div>
-
-                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                    {commitTemplates.length === 0 ? (
-                                        <div style={{ padding: '12px', fontSize: '0.75rem', color: isDark ? '#666' : '#999', fontStyle: 'italic', textAlign: 'center' }}>
-                                            Nenhum template salvo
-                                        </div>
-                                    ) : (
-                                        commitTemplates.map((template) => (
-                                            <div
-                                                key={template.id}
-                                                onClick={() => {
-                                                    setCommitMsg(template.content);
-                                                    setIsTemplateDropdownOpen(false);
-                                                }}
-                                                style={{
-                                                    padding: '8px 12px',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    fontSize: '0.8rem',
-                                                    color: isDark ? '#ddd' : '#333',
-                                                    borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#f5f5f5'}`
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                                            >
-                                                <FileText size={14} color={isDark ? '#4fc3f7' : '#0070f3'} />
-                                                <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{template.name}</span>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-
-                                <div style={{ padding: '8px', borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, background: isDark ? '#222' : '#f9fafb' }}>
-                                    <button
-                                        onClick={() => {
-                                            setIsTemplateModalOpen(true);
-                                            setIsTemplateDropdownOpen(false);
-                                        }}
-                                        style={{
-                                            width: '100%',
-                                            padding: '6px',
-                                            borderRadius: '6px',
-                                            border: 'none',
-                                            background: isDark ? '#333' : '#e5e7eb',
-                                            color: isDark ? '#ccc' : '#666',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: '6px'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#444' : '#d1d5db'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = isDark ? '#333' : '#e5e7eb'}
-                                    >
-                                        <Settings size={12} />
-                                        {t('git.status.template_tooltip')}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                    <Tooltip content={t('git.status.refresh_tooltip')} side="bottom">
-                        <button
-                            onClick={handleRefresh}
-                            disabled={isLoading}
-                            style={{
-                                background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: isDark ? '#aaa' : '#666',
-                                padding: '8px',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                outline: 'none'
-                            }}
-                        >
-                            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-                        </button>
-                    </Tooltip>
-
-                    {/* Author Avatar Menu */}
-                    <div style={{ position: 'relative' }} ref={authorMenuRef}>
-                        <Tooltip content={git.projectAuthor?.name ?? git.globalAuthor?.name ?? t('git.modals.author.title')} side="bottom">
-                            <div
-                                onClick={() => setShowAuthorMenu(!showAuthorMenu)}
-                                style={{
-                                    width: '32px',
-                                    height: '32px',
-                                    borderRadius: '8px',
-                                    background: isDark ? '#2d2d2d' : '#f5f5f5',
-                                    border: `1px solid ${isDark ? '#444' : '#e5e7eb'}`,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    color: isDark ? '#aaa' : '#666'
-                                }}
-                            >
-                                <User size={16} />
-                            </div>
-                        </Tooltip>
-
-                        {showAuthorMenu && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                right: 0,
-                                marginTop: '8px',
-                                background: isDark ? '#1a1a1a' : '#fff',
-                                border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                                borderRadius: '8px',
-                                minWidth: '280px',
-                                boxShadow: isDark ? '0 4px 6px -1px rgba(0, 0, 0, 0.3)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                zIndex: 1000,
-                                overflow: 'hidden'
-                            }}>
-                                {/* Current Author */}
-                                <div style={{ padding: '12px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', marginBottom: '6px', letterSpacing: '0.5px' }}>
-                                        {t('git.graph.author')}
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{
-                                            width: '28px',
-                                            height: '28px',
-                                            borderRadius: '6px',
-                                            background: isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.1)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            color: isDark ? '#4fc3f7' : '#0070f3'
-                                        }}>
-                                            <User size={14} />
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {git.projectAuthor?.name ?? git.globalAuthor?.name ?? t('git.modals.author.title')}
-                                            </div>
-                                            <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {git.projectAuthor?.email ?? git.globalAuthor?.email ?? ''}
-                                            </div>
-                                        </div>
-                                        <div style={{
-                                            fontSize: '0.65rem',
-                                            background: git.projectAuthor
-                                                ? 'rgba(79, 195, 247, 0.1)'
-                                                : 'rgba(74, 222, 128, 0.1)',
-                                            color: git.projectAuthor
-                                                ? (isDark ? '#4fc3f7' : '#0070f3')
-                                                : '#10b981',
-                                            padding: '3px 6px',
-                                            borderRadius: '4px',
-                                            border: git.projectAuthor
-                                                ? `1px solid ${isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.15)'}`
-                                                : '1px solid rgba(74, 222, 128, 0.2)'
-                                        }}>
-                                            {git.projectAuthor ? 'Local' : 'Global'}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Saved Profiles */}
-                                <div style={{ padding: '8px', borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}` }}>
-                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', padding: '4px 8px', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                                        Trocar para
-                                    </div>
-
-                                    {/* Global Author Option */}
-                                    {git.globalAuthor && git.projectAuthor && (
-                                        <div
-                                            onClick={() => {
-                                                void resetToGlobal();
-                                                setShowAuthorMenu(false);
-                                            }}
-                                            style={{
-                                                padding: '8px',
-                                                borderRadius: '6px',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                fontSize: '0.8rem'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.background = 'transparent';
-                                            }}
-                                        >
-                                            <span style={{ color: '#10b981', flexShrink: 0 }}>
-                                                <Globe size={14} />
-                                            </span>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {git.globalAuthor.name}
-                                                </div>
-                                                <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {git.globalAuthor.email} <span style={{ opacity: 0.7 }}>(Global)</span>
-                                                </div>
-                                            </div>
-                                            {!git.projectAuthor && (
-                                                <Check size={14} color="#10b981" />
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {gitProfiles
-                                        .filter(profile => {
-                                            const current = git.projectAuthor ?? git.globalAuthor;
-                                            if (!current) return true;
-                                            return !(profile.email === current.email && profile.name === current.name);
-                                        })
-                                        .map(profile => (
-                                            <div
-                                                key={profile.id}
-                                                onClick={() => {
-                                                    void setGitConfig({ name: profile.name, email: profile.email }, false);
-                                                    setShowAuthorMenu(false);
-                                                }}
-                                                style={{
-                                                    padding: '8px',
-                                                    borderRadius: '6px',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    fontSize: '0.8rem'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'transparent';
-                                                }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: getTagColor(profile.tag), flexShrink: 0 }}>
-                                                    {getTagIcon(profile.tag)}
-                                                </div>
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {profile.name}
-                                                    </div>
-                                                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {profile.email}
-                                                    </div>
-                                                </div>
-                                                {git.projectAuthor?.email === profile.email && git.projectAuthor?.name === profile.name && (
-                                                    <Check size={14} color="#10b981" />
-                                                )}
-                                            </div>
-                                        ))}
-                                </div>
-
-                                {/* Actions */}
-                                <div style={{ padding: '8px' }}>
-                                    <div
-                                        onClick={() => {
-                                            setShowAuthorMenu(false);
-                                            setAuthorConfigBuffer({ name: '', email: '', isGlobal: false });
-                                            setShowAuthorConfigModal(true);
-                                        }}
-                                        style={{
-                                            padding: '8px',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            fontSize: '0.8rem',
-                                            color: isDark ? '#4fc3f7' : '#0070f3'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(0, 112, 243, 0.08)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = 'transparent';
-                                        }}
-                                    >
-                                        <Settings size={14} />
-                                        {t('git.modals.author.title')}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+            <GitStatusHeader
+                isDark={isDark}
+                isLoading={isLoading}
+                onRefresh={handleRefresh}
+                onOpenTemplateModal={() => setIsTemplateModalOpen(true)}
+                onSelectTemplate={(content) => setCommitMsg(content)}
+                onOpenIgnoreModal={() => setIsIgnoreModalOpen(true)}
+                onLoadIgnorePatterns={() => void loadIgnorePatterns()}
+                ignoredPatterns={ignoredPatterns}
+                showAuthorMenu={showAuthorMenu}
+                setShowAuthorMenu={setShowAuthorMenu}
+                setAuthorConfigBuffer={setAuthorConfigBuffer}
+                setShowAuthorConfigModal={setShowAuthorConfigModal}
+            />
 
             <div className="animate-entrance" style={{ animationDelay: '0.1s', opacity: 0 }}>
                 <CommitSection
@@ -682,28 +175,21 @@ export const GitStatusView: React.FC = () => {
                 />
             </div>
 
-            <div className="animate-entrance" style={{ flex: 1, display: 'flex', flexDirection: 'column', animationDelay: '0.2s', opacity: 0 }}>
-                <ScrollArea
-                    style={{ flex: 1 }}
-                    autoHide
-                    thumbColor={isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)'}
-                    thumbHoverColor={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'}
-                >
-                    <GitStatusGroups
-                        isDark={isDark}
-                        staged={staged}
-                        unstaged={unstaged}
-                        gitUnstageAll={gitUnstageAll}
-                        gitStageAll={gitStageAll}
-                        gitDiscardAll={gitDiscardAll}
-                        gitUnstage={gitUnstage}
-                        gitStage={gitStage}
-                        gitDiscard={gitDiscard}
-                        gitClean={gitClean}
-                        gitIgnore={gitIgnore}
-                        setConfirmationModal={setConfirmationModal}
-                    />
-                </ScrollArea>
+            <div className="animate-entrance" style={{ flex: 1, display: 'flex', flexDirection: 'column', animationDelay: '0.2s', opacity: 0, overflow: 'hidden' }}>
+                <GitStatusGroups
+                    isDark={isDark}
+                    staged={staged}
+                    unstaged={unstaged}
+                    gitUnstageAll={gitUnstageAll}
+                    gitStageAll={gitStageAll}
+                    gitDiscardAll={gitDiscardAll}
+                    gitUnstage={gitUnstage}
+                    gitStage={gitStage}
+                    gitDiscard={gitDiscard}
+                    gitClean={gitClean}
+                    gitIgnore={gitIgnore}
+                    setConfirmationModal={setConfirmationModal}
+                />
             </div>
 
             <AuthorModal
