@@ -11,11 +11,123 @@ import {
     Settings as SettingsIcon,
     Sun,
     Moon,
-    FileJson
+    FileJson,
+    Layers,
+    RotateCcw
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ScrollArea } from './ui/ScrollArea';
 import { Dropdown } from './ui/Dropdown';
+
+const SidebarWidthInput = ({ moduleId }: { moduleId: string }) => {
+    const widths = useStore(state => state.runtimeSidebarWidths);
+    const setWidth = useStore(state => state.setRuntimeSidebarWidth);
+    const theme = useStore(state => state.theme);
+    const isDark = theme === 'dark';
+    const defaultWidths: Record<string, number> = { vanilla: 250, git: 300, extensions: 180 };
+
+    return (
+        <input
+            type="number"
+            value={widths[moduleId] || defaultWidths[moduleId]}
+            onChange={(e) => {
+                const val = parseInt(e.target.value);
+                if (!isNaN(val)) {
+                    setWidth(val, moduleId);
+                }
+            }}
+            style={{
+                width: '80px',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                background: isDark ? '#2d2d2d' : '#fff',
+                color: isDark ? '#fff' : '#000',
+                fontSize: '0.9rem'
+            }}
+        />
+    );
+};
+
+const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => {
+    const isDark = useStore(state => state.theme === 'dark');
+    return (
+        <div style={{ marginBottom: '32px' }}>
+            <h3 style={{
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                color: isDark ? '#555' : '#aaa',
+                letterSpacing: '1px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+            }}>
+                {title}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: isDark ? '#2d2d2d' : '#e5e7eb', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${isDark ? '#2d2d2d' : '#e5e7eb'}` }}>
+                {children}
+            </div>
+        </div>
+    );
+};
+
+const SettingRow = ({ label, description, children, icon: Icon }: { label: string, description?: string, children: React.ReactNode, icon?: React.ElementType }) => {
+    const isDark = useStore(state => state.theme === 'dark');
+    return (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px',
+            background: isDark ? '#1a1a1a' : '#fff',
+            transition: 'background 0.2s'
+        }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                {Icon && <div style={{ color: isDark ? '#666' : '#999' }}><Icon size={18} /></div>}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: isDark ? '#eee' : '#111' }}>{label}</span>
+                    {description && <span style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999' }}>{description}</span>}
+                </div>
+            </div>
+            <div>
+                {children}
+            </div>
+        </div>
+    );
+};
+
+const Switch = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => {
+    const isDark = useStore(state => state.theme === 'dark');
+    return (
+        <button
+            onClick={onChange}
+            style={{
+                width: '36px',
+                height: '20px',
+                backgroundColor: checked ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#333' : '#e5e7eb'),
+                borderRadius: '12px',
+                border: 'none',
+                cursor: 'pointer',
+                position: 'relative',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                padding: 0
+            }}
+        >
+            <div style={{
+                position: 'absolute',
+                top: '2px',
+                left: checked ? '18px' : '2px',
+                width: '16px',
+                height: '16px',
+                backgroundColor: '#fff',
+                borderRadius: '50%',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+            }} />
+        </button>
+    );
+};
 
 export const SettingsView: React.FC = () => {
     const { t } = useTranslation();
@@ -49,76 +161,7 @@ export const SettingsView: React.FC = () => {
         { id: 'json', label: 'JSON Configuration', icon: FileJson }
     ];
 
-    const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => (
-        <div style={{ marginBottom: '32px' }}>
-            <h3 style={{
-                fontSize: '0.75rem',
-                fontWeight: 800,
-                color: isDark ? '#555' : '#aaa',
-                letterSpacing: '1px',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-            }}>
-                {title}
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: isDark ? '#2d2d2d' : '#e5e7eb', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${isDark ? '#2d2d2d' : '#e5e7eb'}` }}>
-                {children}
-            </div>
-        </div>
-    );
 
-    const SettingRow = ({ label, description, children, icon: Icon }: { label: string, description?: string, children: React.ReactNode, icon?: React.ElementType }) => (
-        <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px',
-            background: isDark ? '#1a1a1a' : '#fff',
-            transition: 'background 0.2s'
-        }}>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                {Icon && <div style={{ color: isDark ? '#666' : '#999' }}><Icon size={18} /></div>}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: isDark ? '#eee' : '#111' }}>{label}</span>
-                    {description && <span style={{ fontSize: '0.75rem', color: isDark ? '#666' : '#999' }}>{description}</span>}
-                </div>
-            </div>
-            <div>
-                {children}
-            </div>
-        </div>
-    );
-
-    const Switch = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-        <button
-            onClick={onChange}
-            style={{
-                width: '36px',
-                height: '20px',
-                backgroundColor: checked ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#333' : '#e5e7eb'),
-                borderRadius: '12px',
-                border: 'none',
-                cursor: 'pointer',
-                position: 'relative',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                padding: 0
-            }}
-        >
-            <div style={{
-                position: 'absolute',
-                top: '2px',
-                left: checked ? '18px' : '2px',
-                width: '16px',
-                height: '16px',
-                backgroundColor: '#fff',
-                borderRadius: '50%',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-            }} />
-        </button>
-    );
 
     const renderCategoryContent = (categoryId: string) => {
         switch (categoryId) {
@@ -139,8 +182,30 @@ export const SettingsView: React.FC = () => {
             case 'terminal':
                 return (
                     <>
-                        <div style={{ padding: '0 4px' }}>
-                            <div style={{ fontSize: '0.8rem', color: isDark ? '#aaa' : '#666', lineHeight: 1.5 }}>
+                        <SettingGroup title={t('app.settings.categories.terminal')}>
+                            <SettingRow
+                                label="Copiar ao selecionar"
+                                description="Copia automaticamente o texto selecionado para a área de transferência."
+                                icon={ChevronRight}
+                            >
+                                <Switch
+                                    checked={settings.terminalCopyOnSelect}
+                                    onChange={() => updateSettings({ terminalCopyOnSelect: !settings.terminalCopyOnSelect })}
+                                />
+                            </SettingRow>
+                            <SettingRow
+                                label="Colar com botão direito"
+                                description="Cola o conteúdo da área de transferência ao clicar com o botão direito."
+                                icon={ChevronRight}
+                            >
+                                <Switch
+                                    checked={settings.terminalRightClickPaste}
+                                    onChange={() => updateSettings({ terminalRightClickPaste: !settings.terminalRightClickPaste })}
+                                />
+                            </SettingRow>
+                        </SettingGroup>
+                        <div style={{ padding: '8px 4px' }}>
+                            <div style={{ fontSize: '0.8rem', color: isDark ? '#aaa' : '#666', lineHeight: 1.5, opacity: 0.7 }}>
                                 {t('app.settings.terminal_info')}
                             </div>
                         </div>
@@ -157,6 +222,85 @@ export const SettingsView: React.FC = () => {
                             >
                                 <Switch checked={isDark} onChange={toggleTheme} />
                             </SettingRow>
+                            <SettingRow
+                                label="Borda do Aplicativo"
+                                description="Adiciona uma borda colorida animada em volta de todo o aplicativo."
+                                icon={Layers}
+                            >
+                                <Switch
+                                    checked={settings.showAppBorder}
+                                    onChange={() => updateSettings({ showAppBorder: !settings.showAppBorder })}
+                                />
+                            </SettingRow>
+                        </SettingGroup>
+
+                        <SettingGroup title="Layout">
+                            <SettingRow
+                                label="Largura da Sidebar (Geral)"
+                                description="Painéis de Explorador e Biblioteca."
+                                icon={ChevronRight}
+                            >
+                                <SidebarWidthInput moduleId="vanilla" />
+                            </SettingRow>
+                            <SettingRow
+                                label="Largura da Sidebar (Git)"
+                                description="Painel de controle de versão."
+                                icon={ChevronRight}
+                            >
+                                <SidebarWidthInput moduleId="git" />
+                            </SettingRow>
+                            <SettingRow
+                                label="Largura da Sidebar (Extensões)"
+                                description="Ajuste o tamanho do painel lateral de extensões."
+                                icon={ChevronRight}
+                            >
+                                <SidebarWidthInput moduleId="extensions" />
+                            </SettingRow>
+                            <SettingRow
+                                label="Auto Layout de Nodes"
+                                description="Organiza automaticamente os nós quando novas conexões são feitas."
+                                icon={ChevronRight}
+                            >
+                                <Switch
+                                    checked={settings.autoLayoutNodes}
+                                    onChange={() => updateSettings({ autoLayoutNodes: !settings.autoLayoutNodes })}
+                                />
+                            </SettingRow>
+
+                            <div style={{ padding: '8px 16px' }}>
+                                <button
+                                    onClick={() => {
+                                        const setWidth = useStore.getState().setRuntimeSidebarWidth;
+                                        setWidth(250, 'vanilla');
+                                        setWidth(300, 'git');
+                                        setWidth(180, 'extensions');
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '8px 12px',
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: isDark ? '#aaa' : '#666',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                                        e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                                        e.currentTarget.style.color = isDark ? '#aaa' : '#666';
+                                    }}
+                                >
+                                    <RotateCcw size={14} />
+                                    Restaurar Padrões
+                                </button>
+                            </div>
                         </SettingGroup>
                         <SettingGroup title={t('app.settings.groups.typography')}>
                             <SettingRow

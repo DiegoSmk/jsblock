@@ -63,6 +63,9 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 import { FileControls } from './components/FileControls';
 import { ToastContainer } from './components/ToastContainer';
 import { SettingsView } from './components/SettingsView';
+import { ExtensionsView } from './components/ExtensionsView';
+import { ExtensionDetailsView } from './components/ExtensionDetailsView';
+import { ExtensionLandingPage } from './components/ExtensionLandingPage';
 import { CommandPalette } from './components/CommandPalette';
 import { DESIGN_TOKENS } from './constants/design';
 
@@ -329,7 +332,9 @@ function App() {
     modal,
     setGitSidebarView,
     runtimeSidebarWidths,
-    setRuntimeSidebarWidth
+    setRuntimeSidebarWidth,
+    selectedPluginId,
+    settings
   } = useStore(useShallow(state => ({
     code: state.code,
     setCode: state.setCode,
@@ -354,28 +359,39 @@ function App() {
     modal: state.modal,
     setGitSidebarView: state.setGitSidebarView,
     runtimeSidebarWidths: state.runtimeSidebarWidths,
-    setRuntimeSidebarWidth: state.setRuntimeSidebarWidth
+    setRuntimeSidebarWidth: state.setRuntimeSidebarWidth,
+    selectedPluginId: state.selectedPluginId,
+    settings: state.settings
   })));
 
   const containerRef = useRef<AllotmentHandle>(null);
 
   // Imperative resize effect when switching modules
   useEffect(() => {
-    if (activeSidebarTab === 'git' || activeSidebarTab === 'explorer' || activeSidebarTab === 'library') {
-      const moduleId = activeSidebarTab === 'git' ? 'git' : 'vanilla';
-      const width = runtimeSidebarWidths[moduleId];
+    if (activeSidebarTab === 'git' || activeSidebarTab === 'explorer' || activeSidebarTab === 'library' || activeSidebarTab === 'extensions') {
+      const moduleId = activeSidebarTab === 'git' ? 'git' : (activeSidebarTab === 'extensions' ? 'extensions' : 'vanilla');
+      const defaultWidth = moduleId === 'git' ? 300 : (moduleId === 'extensions' ? 180 : 250);
+      const width = runtimeSidebarWidths[moduleId] ?? defaultWidth;
 
       // Wrap in setTimeout to ensure Allotment has finished its internal layout pass
-      // This prevents "Cannot read properties of undefined (reading 'minimumSize')"
       const timer = setTimeout(() => {
         if (width && containerRef.current) {
-          containerRef.current.resize([width]);
+          // Providing sizes for all panes to avoid 'minimumSize' error
+          // We only care about the first pane (sidebar), the rest can be left to distribute
+          try {
+            // Revert to simple resize for the first pane only
+            // usage of resize([width]) is the standard way to resize the first pane
+            containerRef.current.resize([width]);
+          } catch (e) {
+            // Silently fail if resize isn't possible yet
+            console.warn('Resize failed', e);
+          }
         }
-      }, 0);
+      }, 50); // Increased timeout slightly
 
       return () => clearTimeout(timer);
     }
-  }, [activeSidebarTab, runtimeSidebarWidths]);
+  }, [activeSidebarTab]);
 
   const isDark = theme === 'dark';
   const folderName = openedFolder ? openedFolder.split(/[\\/]/).pop() : null;
@@ -424,567 +440,620 @@ function App() {
     void saveFile();
   }, [saveFile]);
 
+  const showAppBorder = settings.showAppBorder;
+
   return (
     <div style={{
       width: '100vw',
       height: '100vh',
       display: 'flex',
-      color: isDark ? '#e0e0e0' : '#333',
-      backgroundColor: isDark ? '#121212' : '#fff',
-      overflow: 'hidden'
+      flexDirection: 'column',
+      background: isDark ? '#000' : '#fff',
+      color: isDark ? '#fff' : '#000',
+      overflow: 'hidden',
+      padding: showAppBorder ? '4px' : '0',
+      transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      position: 'relative'
     }}>
-      <SideRibbon />
-
-      {activeSidebarTab === 'git' && (
-        <ContextRibbon
-          activeId={git.activeView === 'terminal' ? 'terminal' : 'status'}
-          onSelect={(id) => {
-            if (id === 'terminal') {
-              useStore.getState().setGitView('terminal');
-            } else {
-              useStore.getState().setGitView('status');
-            }
-          }}
-          items={[
-            { id: 'status', icon: Layers, label: t('git.info.title') },
-            { icon: Terminal, id: 'terminal', label: t('git.terminal.title') }
-          ]}
-        />
+      {showAppBorder && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(45deg, #6366f1, #a855f7, #ec4899, #3b82f6)',
+          backgroundSize: '300% 300%',
+          animation: 'border-pulse 8s linear infinite',
+          zIndex: 0
+        }} />
       )}
+      <style>
+        {`
+          @keyframes border-pulse {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+        `}
+      </style>
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        color: isDark ? '#e0e0e0' : '#333',
+        backgroundColor: isDark ? '#121212' : '#fff',
+        overflow: 'hidden',
+        borderRadius: showAppBorder ? '8px' : '0',
+        position: 'relative',
+        zIndex: 1,
+        boxShadow: showAppBorder ? '0 8px 32px rgba(0,0,0,0.4)' : 'none',
+        transition: 'border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
+        <SideRibbon />
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <ModernModal key={modal.isOpen ? 'open' : 'closed'} />
-        <CommitDetailModal />
-        <header style={{
-          height: DESIGN_TOKENS.RIBBON_WIDTH,
-          padding: '0 8px',
-          background: isDark ? '#1e1e1e' : '#f3f4f6',
-          borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          zIndex: 10,
-          userSelect: 'none',
-          WebkitAppRegion: 'drag'
-        } as React.CSSProperties}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            {['explorer', 'library', 'git'].includes(activeSidebarTab) && (
-              <button
-                onClick={() => toggleSidebar()}
-                title={showSidebar ? t('app.hide_explorer') : t('app.show_explorer')}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: showSidebar ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
-                  padding: '4px',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <PanelLeft size={20} strokeWidth={2} />
-              </button>
-            )}
+        {activeSidebarTab === 'git' && (
+          <ContextRibbon
+            activeId={git.activeView === 'terminal' ? 'terminal' : 'status'}
+            onSelect={(id) => {
+              if (id === 'terminal') {
+                useStore.getState().setGitView('terminal');
+              } else {
+                useStore.getState().setGitView('status');
+              }
+            }}
+            items={[
+              { id: 'status', icon: Layers, label: t('git.info.title') },
+              { icon: Terminal, id: 'terminal', label: t('git.terminal.title') }
+            ]}
+          />
+        )}
 
-            {showSidebar && (activeSidebarTab === 'explorer' || activeSidebarTab === 'library') && (
-              <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <ModernModal key={modal.isOpen ? 'open' : 'closed'} />
+          <CommitDetailModal />
+          <header style={{
+            height: DESIGN_TOKENS.RIBBON_WIDTH,
+            padding: '0 8px',
+            background: isDark ? '#1e1e1e' : '#f3f4f6',
+            borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            zIndex: 10,
+            userSelect: 'none',
+            WebkitAppRegion: 'drag'
+          } as React.CSSProperties}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+              {['explorer', 'library', 'git'].includes(activeSidebarTab) && (
                 <button
-                  onClick={() => setSidebarTab('explorer')}
-                  title="Explorador de Arquivos"
+                  onClick={() => toggleSidebar()}
+                  title={showSidebar ? t('app.hide_explorer') : t('app.show_explorer')}
                   style={{
-                    background: activeSidebarTab === 'explorer' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                    background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
-                    color: activeSidebarTab === 'explorer' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
-                    padding: '6px',
+                    color: showSidebar ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#888' : '#666'),
+                    padding: '4px',
                     borderRadius: '4px',
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  <Files size={18} />
+                  <PanelLeft size={20} strokeWidth={2} />
                 </button>
-                <button
-                  onClick={() => openedFolder && setSidebarTab('library')}
-                  title="Biblioteca de Funções"
-                  disabled={!openedFolder}
-                  style={{
-                    background: activeSidebarTab === 'library' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                    border: 'none',
-                    cursor: !openedFolder ? 'default' : 'pointer',
-                    color: !openedFolder ? (isDark ? '#333' : '#ccc') : activeSidebarTab === 'library' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
-                    padding: '6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    opacity: !openedFolder ? 0.5 : 1
-                  }}
-                >
-                  <Library size={18} />
-                </button>
-              </div>
-            )}
+              )}
 
-            {showSidebar && activeSidebarTab === 'git' && (
-              <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
-                <button
-                  onClick={() => setGitSidebarView('info')}
-                  title={t('git.info.title')}
-                  style={{
-                    background: git.sidebarView === 'info' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: git.sidebarView === 'info' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
-                    padding: '6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Info size={18} />
-                </button>
-                <button
-                  onClick={() => setGitSidebarView('history')}
-                  title={t('git.status.history_list')}
-                  style={{
-                    background: git.sidebarView === 'history' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: git.sidebarView === 'history' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
-                    padding: '6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <HistoryIcon size={18} />
-                </button>
-                <button
-                  onClick={() => setGitSidebarView('graph')}
-                  title={t('git.graph.title')}
-                  style={{
-                    background: git.sidebarView === 'graph' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: git.sidebarView === 'graph' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
-                    padding: '6px',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Network size={18} />
-                </button>
-              </div>
-            )}
-
-
-            <div
-              className="app-logo"
-              style={{ transform: 'scale(0.8)', cursor: 'pointer', marginLeft: '8px' }}
-              onClick={() => {
-                const randomIndex = Math.floor(Math.random() * 5); // Fallback random
-                openModal({
-                  title: 'About',
-                  initialValue: '',
-                  type: 'about',
-                  payload: { fallenIndex: randomIndex },
-                  confirmLabel: 'Close',
-                  onSubmit: () => {
-                    // Modal closed
-                  }
-                });
-              }}
-            >
-              <span className="logo-js" style={{ fontSize: '14px' }}>JS</span>
-              <div className="logo-blocks" style={{ gap: '2px' }}>
-                {['B', 'L', 'O', 'C', 'K'].map((letter) => (
-                  <div
-                    key={`logo-${letter}`}
-                    className="logo-block"
+              {showSidebar && (activeSidebarTab === 'explorer' || activeSidebarTab === 'library') && (
+                <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
+                  <button
+                    onClick={() => setSidebarTab('explorer')}
+                    title="Explorador de Arquivos"
                     style={{
-                      width: '14px',
-                      height: '14px',
-                      fontSize: '9px',
-                      borderRadius: '3px',
-                      background: 'transparent',
-                      color: isDark ? '#fff' : '#000',
-                      fontWeight: 700
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const randomIndex = Math.floor(Math.random() * 5);
-                      openModal({
-                        title: 'About',
-                        initialValue: '',
-                        type: 'about',
-                        payload: { fallenIndex: randomIndex },
-                        confirmLabel: 'Close',
-                        onSubmit: () => {
-                          // Modal closed
-                        }
-                      });
+                      background: activeSidebarTab === 'explorer' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: activeSidebarTab === 'explorer' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                      padding: '6px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
                     }}
                   >
-                    <span className="logo-letter-visual">{letter}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    <Files size={18} />
+                  </button>
+                  <button
+                    onClick={() => openedFolder && setSidebarTab('library')}
+                    title="Biblioteca de Funções"
+                    disabled={!openedFolder}
+                    style={{
+                      background: activeSidebarTab === 'library' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                      border: 'none',
+                      cursor: !openedFolder ? 'default' : 'pointer',
+                      color: !openedFolder ? (isDark ? '#333' : '#ccc') : activeSidebarTab === 'library' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                      padding: '6px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      opacity: !openedFolder ? 0.5 : 1
+                    }}
+                  >
+                    <Library size={18} />
+                  </button>
+                </div>
+              )}
 
-            {activeSidebarTab === 'settings' && (
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.5, color: isDark ? '#fff' : '#000', marginLeft: '12px' }}>
-                System / Settings
-              </div>
-            )}
+              {showSidebar && activeSidebarTab === 'git' && (
+                <div style={{ display: 'flex', gap: '2px', marginLeft: '4px', paddingRight: '12px', borderRight: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
+                  <button
+                    onClick={() => setGitSidebarView('info')}
+                    title={t('git.info.title')}
+                    style={{
+                      background: git.sidebarView === 'info' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: git.sidebarView === 'info' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                      padding: '6px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Info size={18} />
+                  </button>
+                  <button
+                    onClick={() => setGitSidebarView('history')}
+                    title={t('git.status.history_list')}
+                    style={{
+                      background: git.sidebarView === 'history' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: git.sidebarView === 'history' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                      padding: '6px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <HistoryIcon size={18} />
+                  </button>
+                  <button
+                    onClick={() => setGitSidebarView('graph')}
+                    title={t('git.graph.title')}
+                    style={{
+                      background: git.sidebarView === 'graph' ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: git.sidebarView === 'graph' ? (isDark ? '#fff' : '#000') : (isDark ? '#888' : '#666'),
+                      padding: '6px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Network size={18} />
+                  </button>
+                </div>
+              )}
 
-            {folderName && activeSidebarTab !== 'settings' && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.75rem',
-                opacity: 0.8,
-                padding: '2px 8px',
-                borderRadius: '4px',
-                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                color: isDark ? '#aaa' : '#666'
-              }}>
-                <FolderOpen size={12} />
-                <span style={{ fontWeight: 500 }}>{folderName}</span>
-              </div>
-            )}
 
-            {/* Global Save Button - Only visible when a file is open */}
-            {selectedFile && (
-              <FileControls
-                isDark={isDark}
-                isDirty={isDirty}
-                onSave={handleSaveFile}
-                onClose={() => {
-                  void setSelectedFile(null);
-                }}
-              />
-            )}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-            <div
-              style={{
-                marginRight: '0',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              <button
+              <div
+                className="app-logo"
+                style={{ transform: 'scale(0.8)', cursor: 'pointer', marginLeft: '8px' }}
                 onClick={() => {
-                  forceLayout();
+                  const randomIndex = Math.floor(Math.random() * 5); // Fallback random
+                  openModal({
+                    title: 'About',
+                    initialValue: '',
+                    type: 'about',
+                    payload: { fallenIndex: randomIndex },
+                    confirmLabel: 'Close',
+                    onSubmit: () => {
+                      // Modal closed
+                    }
+                  });
                 }}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: isDark ? '#aaa' : '#666',
+              >
+                <span className="logo-js" style={{ fontSize: '14px' }}>JS</span>
+                <div className="logo-blocks" style={{ gap: '2px' }}>
+                  {['B', 'L', 'O', 'C', 'K'].map((letter) => (
+                    <div
+                      key={`logo-${letter}`}
+                      className="logo-block"
+                      style={{
+                        width: '14px',
+                        height: '14px',
+                        fontSize: '9px',
+                        borderRadius: '3px',
+                        background: 'transparent',
+                        color: isDark ? '#fff' : '#000',
+                        fontWeight: 700
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const randomIndex = Math.floor(Math.random() * 5);
+                        openModal({
+                          title: 'About',
+                          initialValue: '',
+                          type: 'about',
+                          payload: { fallenIndex: randomIndex },
+                          confirmLabel: 'Close',
+                          onSubmit: () => {
+                            // Modal closed
+                          }
+                        });
+                      }}
+                    >
+                      <span className="logo-letter-visual">{letter}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {activeSidebarTab === 'settings' && (
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, opacity: 0.5, color: isDark ? '#fff' : '#000', marginLeft: '12px' }}>
+                  System / Settings
+                </div>
+              )}
+
+              {folderName && activeSidebarTab !== 'settings' && (
+                <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   fontSize: '0.75rem',
-                  fontWeight: 600,
-                  padding: '4px 8px',
-                  borderRadius: '4px'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                <RefreshCw size={14} />
-                <span>{t('app.layout')}</span>
-              </button>
+                  opacity: 0.8,
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                  color: isDark ? '#aaa' : '#666'
+                }}>
+                  <FolderOpen size={12} />
+                  <span style={{ fontWeight: 500 }}>{folderName}</span>
+                </div>
+              )}
 
-              <button
-                onClick={() => {
-                  if (openedFolder) {
-                    setOpenedFolder(null);
+              {/* Global Save Button - Only visible when a file is open */}
+              {selectedFile && (
+                <FileControls
+                  isDark={isDark}
+                  isDirty={isDirty}
+                  onSave={handleSaveFile}
+                  onClose={() => {
                     void setSelectedFile(null);
-                  } else {
-                    const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-                    if (electronAPI) {
-                      electronAPI.selectFolder()
-                        .then((path) => {
-                          if (path) setOpenedFolder(path);
-                        })
-                        .catch(console.error);
+                  }}
+                />
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+              <div
+                style={{
+                  marginRight: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <button
+                  onClick={() => {
+                    forceLayout();
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: isDark ? '#aaa' : '#666',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    padding: '4px 8px',
+                    borderRadius: '4px'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <RefreshCw size={14} />
+                  <span>{t('app.layout')}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (openedFolder) {
+                      setOpenedFolder(null);
+                      void setSelectedFile(null);
+                    } else {
+                      const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
+                      if (electronAPI) {
+                        electronAPI.selectFolder()
+                          .then((path) => {
+                            if (path) setOpenedFolder(path);
+                          })
+                          .catch(console.error);
+                      }
+                    }
+                  }}
+                  style={{
+                    background: isDark ? '#2d2d2d' : '#fff',
+                    border: `1px solid ${isDark ? '#444' : '#ccc'}`,
+                    cursor: 'pointer',
+                    color: isDark ? '#ddd' : '#444',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    borderRadius: '4px'
+                  }}
+                >
+                  {openedFolder ? <LogOut size={14} /> : <FolderOpen size={14} />}
+                  <span>{openedFolder ? t('app.window_controls.close') : t('app.open')}</span>
+                </button>
+
+                {/* Window Controls */}
+                <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
+                  <button
+                    onClick={() => {
+                      void window.electronAPI.windowMinimize();
+                    }}
+                    title={t('app.window_controls.minimize')}
+                    style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      void window.electronAPI.windowMaximize();
+                    }}
+                    title={t('app.window_controls.maximize')}
+                    style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
+                  >
+                    <Square size={14} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      void window.electronAPI.windowClose();
+                    }}
+                    title={t('app.window_controls.close')}
+                    style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            {activeSidebarTab === 'settings' ? (
+              <SettingsView />
+            ) : (
+              <Allotment
+                ref={containerRef}
+                onChange={(sizes) => {
+                  if (sizes && sizes.length > 0) {
+                    // Snap-to-hide logic
+                    if (sizes[0] < 100) {
+                      if (showSidebar) useStore.getState().toggleSidebar(false);
+                      return;
+                    }
+
+                    // Only update width if we are truly visible and larger than snap threshold
+                    if (showSidebar) {
+                      const moduleId = activeSidebarTab === 'git' ? 'git' : (activeSidebarTab === 'extensions' ? 'extensions' : 'vanilla');
+                      setRuntimeSidebarWidth(sizes[0], moduleId);
                     }
                   }
                 }}
-                style={{
-                  background: isDark ? '#2d2d2d' : '#fff',
-                  border: `1px solid ${isDark ? '#444' : '#ccc'}`,
-                  cursor: 'pointer',
-                  color: isDark ? '#ddd' : '#444',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: '4px'
-                }}
               >
-                {openedFolder ? <LogOut size={14} /> : <FolderOpen size={14} />}
-                <span>{openedFolder ? t('app.window_controls.close') : t('app.open')}</span>
-              </button>
-
-              {/* Window Controls */}
-              <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
-                <button
-                  onClick={() => {
-                    void window.electronAPI.windowMinimize();
-                  }}
-                  title={t('app.window_controls.minimize')}
-                  style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
+                <Allotment.Pane
+                  minSize={activeSidebarTab === 'git' ? 200 : 60}
+                  preferredSize={(() => {
+                    const moduleId = activeSidebarTab === 'git' ? 'git' : (activeSidebarTab === 'extensions' ? 'extensions' : 'vanilla');
+                    const min = activeSidebarTab === 'git' ? 200 : 60;
+                    const defaultWidth = moduleId === 'git' ? 300 : (moduleId === 'extensions' ? 180 : 250);
+                    const width = runtimeSidebarWidths[moduleId] ?? defaultWidth;
+                    return Math.max(min, width);
+                  })()}
+                  maxSize={600}
+                  visible={showSidebar}
+                  snap
                 >
-                  <Minus size={16} />
-                </button>
-                <button
-                  onClick={() => {
-                    void window.electronAPI.windowMaximize();
-                  }}
-                  title={t('app.window_controls.maximize')}
-                  style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {/* GIT PANEL CONTAINER */}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: activeSidebarTab === 'git' ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}>
+                      <SidebarPanel
+                        isDark={isDark}
+                        title={
+                          git.sidebarView === 'graph' ? t('git.graph.title')
+                            : git.sidebarView === 'info' ? t('git.info.title')
+                              : t('git.status.history_list')
+                        }
+                        icon={
+                          git.sidebarView === 'graph' ? Network
+                            : git.sidebarView === 'info' ? Info
+                              : HistoryIcon
+                        }
+                        headerActions={
+                          <button
+                            onClick={(e) => { e.stopPropagation(); void useStore.getState().refreshGit(); }}
+                            title={t('git.common.refresh')}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: '4px',
+                              cursor: 'pointer',
+                              color: isDark ? '#888' : '#777',
+                              display: 'flex',
+                              alignItems: 'center',
+                              borderRadius: '4px'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                          >
+                            <RefreshCw size={14} />
+                          </button>
+                        }
+                      >
+                        {git.sidebarView === 'graph' ? <GitGraphView hideHeader />
+                          : git.sidebarView === 'info' ? <GitInfoPanel isDark={isDark} logs={git.log} hideHeader />
+                            : <CommitHistory isDark={isDark} logs={git.log} isOpen={true} hideHeader />}
+                      </SidebarPanel>
+                    </div>
+
+                    {/* EXPLORER PANEL CONTAINER */}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: activeSidebarTab === 'explorer' ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}>
+                      <SidebarPanel
+                        isDark={isDark}
+                        title={t('app.explorer')}
+                        icon={Files}
+                      >
+                        <FileExplorer />
+                      </SidebarPanel>
+                    </div>
+
+                    {/* LIBRARY PANEL CONTAINER */}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: activeSidebarTab === 'library' ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}>
+                      <SidebarPanel
+                        isDark={isDark}
+                        title={t('app.function_library')}
+                        icon={Network}
+                      >
+                        <ReactFlowProvider>
+                          <FunctionLibrary />
+                        </ReactFlowProvider>
+                      </SidebarPanel>
+                    </div>
+
+                    {/* EXTENSIONS PANEL CONTAINER */}
+                    <div style={{
+                      width: '100%',
+                      height: '100%',
+                      display: activeSidebarTab === 'extensions' ? 'flex' : 'none',
+                      flexDirection: 'column'
+                    }}>
+                      <ExtensionsView />
+                    </div>
+                  </div>
+                </Allotment.Pane>
+
+                <Allotment.Pane
+                  minSize={activeSidebarTab === 'git' || activeSidebarTab === 'extensions' || (!isBlockFile && showCode) ? 200 : 0}
+                  preferredSize={activeSidebarTab === 'git' || activeSidebarTab === 'extensions' || (!isBlockFile && showCode) ? 350 : 0}
+                  visible={activeSidebarTab === 'git' || activeSidebarTab === 'extensions' || (!isBlockFile && showCode)}
                 >
-                  <Square size={14} />
-                </button>
-                <button
-                  onClick={() => {
-                    void window.electronAPI.windowClose();
-                  }}
-                  title={t('app.window_controls.close')}
-                  style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                  onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#aaa' : '#666'}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          {activeSidebarTab === 'settings' ? (
-            <SettingsView />
-          ) : (
-            <Allotment
-              ref={containerRef}
-              onChange={(sizes) => {
-                if (sizes && sizes.length > 0) {
-                  // Snap-to-hide logic
-                  if (sizes[0] < 100) {
-                    if (showSidebar) useStore.getState().toggleSidebar(false);
-                    return;
-                  }
-
-                  // Only update width if we are truly visible and larger than snap threshold
-                  if (showSidebar) {
-                    const moduleId = activeSidebarTab === 'git' ? 'git' : 'vanilla';
-                    setRuntimeSidebarWidth(sizes[0], moduleId);
-                  }
-                }
-              }}
-            >
-              <Allotment.Pane
-                minSize={activeSidebarTab === 'git' ? 300 : 150}
-                preferredSize={(() => {
-                  const moduleId = activeSidebarTab === 'git' ? 'git' : 'vanilla';
-                  const min = activeSidebarTab === 'git' ? 300 : 150;
-                  const width = runtimeSidebarWidths[moduleId] ?? (moduleId === 'git' ? 300 : 250);
-                  return Math.max(min, width);
-                })()}
-                maxSize={600}
-                visible={showSidebar}
-                snap
-              >
-                <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                  {/* GIT PANEL CONTAINER */}
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: activeSidebarTab === 'git' ? 'flex' : 'none',
-                    flexDirection: 'column'
-                  }}>
-                    <SidebarPanel
-                      isDark={isDark}
-                      title={
-                        git.sidebarView === 'graph' ? t('git.graph.title')
-                          : git.sidebarView === 'info' ? t('git.info.title')
-                            : t('git.status.history_list')
-                      }
-                      icon={
-                        git.sidebarView === 'graph' ? Network
-                          : git.sidebarView === 'info' ? Info
-                            : HistoryIcon
-                      }
-                      headerActions={
-                        <button
-                          onClick={(e) => { e.stopPropagation(); void useStore.getState().refreshGit(); }}
-                          title={t('git.common.refresh')}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: '4px',
-                            cursor: 'pointer',
-                            color: isDark ? '#888' : '#777',
-                            display: 'flex',
-                            alignItems: 'center',
-                            borderRadius: '4px'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                        >
-                          <RefreshCw size={14} />
-                        </button>
-                      }
+                  {activeSidebarTab === 'git' ? (
+                    <MainWorkspace isDark={isDark}>
+                      <GitPanel />
+                    </MainWorkspace>
+                  ) : activeSidebarTab === 'extensions' ? (
+                    <MainWorkspace isDark={isDark}>
+                      {selectedPluginId ? <ExtensionDetailsView /> : <ExtensionLandingPage />}
+                    </MainWorkspace>
+                  ) : (
+                    <div
+                      style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
+                      onKeyDown={(e) => e.stopPropagation()}
                     >
-                      {git.sidebarView === 'graph' ? <GitGraphView hideHeader />
-                        : git.sidebarView === 'info' ? <GitInfoPanel isDark={isDark} logs={git.log} hideHeader />
-                          : <CommitHistory isDark={isDark} logs={git.log} isOpen={true} hideHeader />}
-                    </SidebarPanel>
-                  </div>
+                      {selectedFile && (
+                        <div style={{
+                          height: '32px',
+                          background: isDark ? '#2d2d2d' : '#f0f0f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '0 12px',
+                          fontSize: '0.75rem',
+                          color: isDark ? '#aaa' : '#666',
+                          borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
+                        }}>
+                          <Code size={14} style={{ marginRight: '8px' }} />
+                          {selectedFile.split(/[\\/]/).pop()}
+                        </div>
+                      )}
+                      {!selectedFile ? (
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                          <Code size={48} opacity={0.3} />
+                          <p>{t('app.select_file')}</p>
+                        </div>
+                      ) : (
+                        <Editor
+                          height="100%"
+                          defaultLanguage="typescript"
+                          value={code}
+                          onChange={handleEditorChange}
+                          onMount={handleEditorDidMount}
+                          theme={isDark ? "vs-dark" : "light"}
+                          options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
+                        />
+                      )}
+                    </div>
+                  )}
+                </Allotment.Pane>
 
-                  {/* EXPLORER PANEL CONTAINER */}
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: (!openedFolder || activeSidebarTab === 'explorer') && activeSidebarTab !== 'git' ? 'flex' : 'none',
-                    flexDirection: 'column'
-                  }}>
-                    <SidebarPanel
-                      isDark={isDark}
-                      title={t('app.explorer')}
-                      icon={Files}
-                    >
-                      <FileExplorer />
-                    </SidebarPanel>
-                  </div>
-
-                  {/* LIBRARY PANEL CONTAINER */}
-                  <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: activeSidebarTab !== 'git' && !((!openedFolder || activeSidebarTab === 'explorer')) ? 'flex' : 'none',
-                    flexDirection: 'column'
-                  }}>
-                    <SidebarPanel
-                      isDark={isDark}
-                      title={t('app.function_library')}
-                      icon={Network}
-                    >
-                      <ReactFlowProvider>
-                        <FunctionLibrary />
-                      </ReactFlowProvider>
-                    </SidebarPanel>
-                  </div>
-                </div>
-              </Allotment.Pane>
-
-              <Allotment.Pane
-                minSize={activeSidebarTab === 'git' || (!isBlockFile && showCode) ? 200 : 0}
-                preferredSize={activeSidebarTab === 'git' || (!isBlockFile && showCode) ? 350 : 0}
-                visible={activeSidebarTab === 'git' || (!isBlockFile && showCode)}
-              >
-                {activeSidebarTab === 'git' ? (
-                  <MainWorkspace isDark={isDark}>
-                    <GitPanel />
-                  </MainWorkspace>
-                ) : (
-                  <div
-                    style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
-                    onKeyDown={(e) => e.stopPropagation()}
-                  >
-                    {selectedFile && (
-                      <div style={{
-                        height: '32px',
-                        background: isDark ? '#2d2d2d' : '#f0f0f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '0 12px',
-                        fontSize: '0.75rem',
-                        color: isDark ? '#aaa' : '#666',
-                        borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
-                      }}>
-                        <Code size={14} style={{ marginRight: '8px' }} />
-                        {selectedFile.split(/[\\/]/).pop()}
+                <Allotment.Pane minSize={400} visible={activeSidebarTab !== 'git' && activeSidebarTab !== 'extensions' && (isBlockFile || showCanvas)}>
+                  <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
+                      <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
+                        <ScopeBreadcrumbs />
                       </div>
-                    )}
+                    </div>
                     {!selectedFile ? (
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                        <Code size={48} opacity={0.3} />
-                        <p>{t('app.select_file')}</p>
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                        <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
+                        <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
                       </div>
                     ) : (
-                      <Editor
-                        height="100%"
-                        defaultLanguage="typescript"
-                        value={code}
-                        onChange={handleEditorChange}
-                        onMount={handleEditorDidMount}
-                        theme={isDark ? "vs-dark" : "light"}
-                        options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
-                      />
+                      <ReactFlowProvider>
+                        <FlowContent />
+                      </ReactFlowProvider>
                     )}
                   </div>
-                )}
-              </Allotment.Pane>
-
-              <Allotment.Pane minSize={400} visible={activeSidebarTab !== 'git' && (isBlockFile || showCanvas)}>
-                <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
-                  <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
-                    <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
-                      <ScopeBreadcrumbs />
-                    </div>
-                  </div>
-                  {!selectedFile ? (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                      <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
-                      <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
-                    </div>
-                  ) : (
-                    <ReactFlowProvider>
-                      <FlowContent />
-                    </ReactFlowProvider>
-                  )}
-                </div>
-              </Allotment.Pane>
-            </Allotment>
-          )}
+                </Allotment.Pane>
+              </Allotment>
+            )}
+          </div>
+          {
+            confirmationModal && (
+              <ConfirmationModal
+                isOpen={confirmationModal.isOpen}
+                title={confirmationModal.title}
+                message={confirmationModal.message}
+                onConfirm={() => { if (confirmationModal.onConfirm) void confirmationModal.onConfirm(); }}
+                onCancel={() => { if (confirmationModal.onCancel) void confirmationModal.onCancel(); }}
+                onDiscard={() => { if (confirmationModal.onDiscard) void confirmationModal.onDiscard(); }}
+                confirmLabel={confirmationModal.confirmLabel}
+                cancelLabel={confirmationModal.cancelLabel}
+                discardLabel={confirmationModal.discardLabel}
+                variant={confirmationModal.variant}
+                discardVariant={confirmationModal.discardVariant}
+              />
+            )
+          }
+          <ToastContainer />
+          <CommandPalette />
         </div>
-        {
-          confirmationModal && (
-            <ConfirmationModal
-              isOpen={confirmationModal.isOpen}
-              title={confirmationModal.title}
-              message={confirmationModal.message}
-              onConfirm={() => { if (confirmationModal.onConfirm) void confirmationModal.onConfirm(); }}
-              onCancel={() => { if (confirmationModal.onCancel) void confirmationModal.onCancel(); }}
-              onDiscard={() => { if (confirmationModal.onDiscard) void confirmationModal.onDiscard(); }}
-              confirmLabel={confirmationModal.confirmLabel}
-              cancelLabel={confirmationModal.cancelLabel}
-              discardLabel={confirmationModal.discardLabel}
-              variant={confirmationModal.variant}
-              discardVariant={confirmationModal.discardVariant}
-            />
-          )
-        }
-        <ToastContainer />
-        <CommandPalette />
       </div>
     </div>
   );

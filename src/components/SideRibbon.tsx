@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Sun, Moon, GitBranch, Box } from 'lucide-react';
+import { Settings, Sun, Moon, GitBranch, Box, Blocks } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTranslation } from 'react-i18next';
 import { DESIGN_TOKENS } from '../constants/design';
@@ -101,6 +101,13 @@ export const SideRibbon: React.FC = () => {
                 onClick={() => setSidebarTab('git')}
                 title={t('app.tooltips.git')}
                 disabled={!openedFolder}
+                isDark={isDark}
+            />
+            <RibbonButton
+                icon={Blocks}
+                active={activeSidebarTab === 'extensions'}
+                onClick={() => setSidebarTab('extensions')}
+                title={t('app.tooltips.extensions')}
                 isDark={isDark}
             />
 
