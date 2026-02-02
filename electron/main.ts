@@ -51,8 +51,6 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        minWidth: 800,
-        minHeight: 600,
         show: false, // Don't show until ready
         backgroundColor: '#0f172a', // Match app's dark theme background
         titleBarStyle: 'hidden',
