@@ -1,0 +1,282 @@
+import React, { useEffect, useCallback, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import {
+  ReactFlow,
+  Controls,
+  Background,
+  MiniMap,
+  useReactFlow,
+  type NodeTypes,
+  type Node,
+  type Edge,
+  type Connection
+} from '@xyflow/react';
+import { Edit2, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useStore } from '../store/useStore';
+import { Tooltip } from './Tooltip';
+
+import { VariableNode } from './VariableNode';
+import { FunctionCallNode } from './FunctionCallNode';
+import { LiteralNode } from './LiteralNode';
+import { LogicNode } from './LogicNode';
+import { IfNode } from './IfNode';
+import { SwitchNode } from './SwitchNode';
+import { WhileNode } from './WhileNode';
+import { ForNode } from './ForNode';
+import { TryCatchNode } from './TryCatchNode';
+import { GroupNode } from './GroupNode';
+import { NativeApiNode } from './NativeApiNode';
+import { NoteNode } from './NoteNode';
+
+const nodeTypes: NodeTypes = {
+  variableNode: VariableNode,
+  functionCallNode: FunctionCallNode,
+  literalNode: LiteralNode,
+  logicNode: LogicNode,
+  ifNode: IfNode,
+  switchNode: SwitchNode,
+  whileNode: WhileNode,
+  forNode: ForNode,
+  tryCatchNode: TryCatchNode,
+  groupNode: GroupNode,
+  nativeApiNode: NativeApiNode,
+  noteNode: NoteNode
+};
+
+export function FlowContent() {
+  const { t } = useTranslation();
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    theme,
+    activeScopeId,
+    openModal,
+    saveFile,
+  } = useStore(useShallow(state => ({
+    nodes: state.nodes,
+    edges: state.edges,
+    onNodesChange: state.onNodesChange,
+    onEdgesChange: state.onEdgesChange,
+    onConnect: state.onConnect,
+    theme: state.theme,
+    activeScopeId: state.activeScopeId,
+    openModal: state.openModal,
+    saveFile: state.saveFile,
+  })));
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveFile().catch(console.error);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [saveFile]);
+
+
+  const { fitView, deleteElements, getEdge, updateEdge } = useReactFlow();
+  const isDark = theme === 'dark';
+
+  // Edge Context Menu state
+  const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+
+  const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setEdgeMenu({
+      id: edge.id,
+      x: event.clientX,
+      y: event.clientY
+    });
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setEdgeMenu(null);
+  }, []);
+
+  const handleEdgeAction = (action: 'comment' | 'delete') => {
+    if (!edgeMenu) return;
+
+    if (action === 'delete') {
+      void deleteElements({ edges: [{ id: edgeMenu.id }] });
+    } else if (action === 'comment') {
+      const edge = getEdge(edgeMenu.id);
+      if (edge) {
+        const currentLabel = (edge.label as string) ?? '';
+        openModal({
+          title: currentLabel ? t('edge.edit_comment') : t('edge.add_comment'),
+          initialValue: currentLabel,
+          type: 'prompt',
+          placeholder: t('edge.comment_prompt'),
+          confirmLabel: 'Save',
+          onSubmit: (newLabel: string) => {
+            updateEdge(edgeMenu.id, { label: newLabel });
+          }
+        });
+      }
+    }
+    setEdgeMenu(null);
+  };
+
+  const scopeNodes = nodes.filter((n: Node) =>
+    n.id !== 'node-js-runtime' && (
+      n.data?.scopeId === activeScopeId ||
+      (activeScopeId === 'root' && (!n.data?.scopeId || n.data?.scopeId === 'root'))
+    )
+  );
+
+  const hasNativeCalls = edges.some((e: Edge) =>
+    e.source === 'node-js-runtime' &&
+    scopeNodes.some((n: Node) => n.id === e.target)
+  );
+
+  const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
+  const filteredNodes: Node[] = (hasNativeCalls && runtimeNode)
+    ? [...scopeNodes, runtimeNode]
+    : scopeNodes;
+
+  const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
+  const filteredEdges = edges.filter(e => {
+    if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
+    if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
+    return false;
+  });
+
+  useEffect(() => {
+    if (filteredNodes.length > 0) {
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.2, duration: 400, includeHiddenNodes: false }).catch(console.error);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [activeScopeId, fitView, filteredNodes.length]);
+
+  // Determine if the currently selected edge (in context menu) has a label/comment
+  const currentEdgeLabel = edgeMenu ? getEdge(edgeMenu.id)?.label : null;
+  const hasComment = !!currentEdgeLabel;
+
+  const isValidConnection = useCallback(
+    (edge: Connection | Edge) => edge.source !== edge.target,
+    []
+  );
+
+  return (
+    <div style={{ width: '100%', height: '100%' }}>
+      <ReactFlow
+        nodes={filteredNodes}
+        edges={filteredEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onEdgeClick={onEdgeClick}
+        onPaneClick={onPaneClick}
+        isValidConnection={isValidConnection}
+        nodeTypes={nodeTypes}
+        colorMode={isDark ? 'dark' : 'light'}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
+        minZoom={0.1}
+        maxZoom={4}
+        snapToGrid={true}
+        snapGrid={[15, 15]}
+        connectionRadius={50}
+        defaultEdgeOptions={{
+          style: { strokeWidth: 3, stroke: isDark ? '#4fc3f7' : '#0070f3' },
+          animated: true,
+          labelStyle: { fill: isDark ? '#fff' : '#000', fontWeight: 700, fontSize: 12 },
+          labelBgStyle: { fill: isDark ? '#1e1e1e' : '#fff', fillOpacity: 0.8 }
+        }}
+      >
+        <Background color={isDark ? '#333' : '#ddd'} gap={20} />
+        <Controls />
+        <MiniMap style={{ background: isDark ? '#1e1e1e' : '#fff' }} nodeColor={isDark ? '#444' : '#eee'} maskColor={isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)'} />
+
+        {edgeMenu && (
+          <div
+            style={{
+              position: 'fixed',
+              top: edgeMenu.y - 40,
+              left: edgeMenu.x - 40,
+              background: isDark ? 'rgba(30, 30, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(12px)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              borderRadius: '50px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+              zIndex: 1000,
+              padding: '6px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              animation: 'fadeIn 0.15s ease-out'
+            }}
+          >
+            <Tooltip content={hasComment ? t('edge.edit_comment') : t('edge.add_comment')} side="top">
+              <button
+                onClick={() => handleEdgeAction('comment')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: isDark ? '#e0e0e0' : '#444',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Edit2 size={18} color={hasComment ? (isDark ? '#4ade80' : '#22c55e') : (isDark ? '#a855f7' : '#8b5cf6')} />
+              </button>
+            </Tooltip>
+
+            <div style={{ width: '1px', height: '16px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+
+            <Tooltip content={t('edge.delete_connection')} side="top">
+              <button
+                onClick={() => handleEdgeAction('delete')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Trash2 size={18} />
+              </button>
+            </Tooltip>
+          </div>
+        )}
+      </ReactFlow>
+    </div>
+  );
+}
