@@ -19,36 +19,6 @@ import { useTranslation } from 'react-i18next';
 import { ScrollArea } from './ui/ScrollArea';
 import { Dropdown } from './ui/Dropdown';
 
-const SidebarWidthInput = ({ moduleId }: { moduleId: string }) => {
-    const widths = useStore(state => state.runtimeSidebarWidths);
-    const setWidth = useStore(state => state.setRuntimeSidebarWidth);
-    const theme = useStore(state => state.theme);
-    const isDark = theme === 'dark';
-    const defaultWidths: Record<string, number> = { vanilla: 250, git: 300, extensions: 180 };
-
-    return (
-        <input
-            type="number"
-            value={widths[moduleId] || defaultWidths[moduleId]}
-            onChange={(e) => {
-                const val = parseInt(e.target.value);
-                if (!isNaN(val)) {
-                    setWidth(val, moduleId);
-                }
-            }}
-            style={{
-                width: '80px',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                background: isDark ? '#2d2d2d' : '#fff',
-                color: isDark ? '#fff' : '#000',
-                fontSize: '0.9rem'
-            }}
-        />
-    );
-};
-
 const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => {
     const isDark = useStore(state => state.theme === 'dark');
     return (
@@ -236,27 +206,6 @@ export const SettingsView: React.FC = () => {
 
                         <SettingGroup title="Layout">
                             <SettingRow
-                                label="Largura da Sidebar (Geral)"
-                                description="Painéis de Explorador e Biblioteca."
-                                icon={ChevronRight}
-                            >
-                                <SidebarWidthInput moduleId="vanilla" />
-                            </SettingRow>
-                            <SettingRow
-                                label="Largura da Sidebar (Git)"
-                                description="Painel de controle de versão."
-                                icon={ChevronRight}
-                            >
-                                <SidebarWidthInput moduleId="git" />
-                            </SettingRow>
-                            <SettingRow
-                                label="Largura da Sidebar (Extensões)"
-                                description="Ajuste o tamanho do painel lateral de extensões."
-                                icon={ChevronRight}
-                            >
-                                <SidebarWidthInput moduleId="extensions" />
-                            </SettingRow>
-                            <SettingRow
                                 label="Auto Layout de Nodes"
                                 description="Organiza automaticamente os nós quando novas conexões são feitas."
                                 icon={ChevronRight}
@@ -266,41 +215,6 @@ export const SettingsView: React.FC = () => {
                                     onChange={() => updateSettings({ autoLayoutNodes: !settings.autoLayoutNodes })}
                                 />
                             </SettingRow>
-
-                            <div style={{ padding: '8px 16px' }}>
-                                <button
-                                    onClick={() => {
-                                        const setWidth = useStore.getState().setRuntimeSidebarWidth;
-                                        setWidth(250, 'vanilla');
-                                        setWidth(300, 'git');
-                                        setWidth(180, 'extensions');
-                                    }}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        padding: '8px 12px',
-                                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                        border: 'none',
-                                        borderRadius: '6px',
-                                        color: isDark ? '#aaa' : '#666',
-                                        fontSize: '0.8rem',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-                                        e.currentTarget.style.color = isDark ? '#fff' : '#000';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
-                                        e.currentTarget.style.color = isDark ? '#aaa' : '#666';
-                                    }}
-                                >
-                                    <RotateCcw size={14} />
-                                    Restaurar Padrões
-                                </button>
-                            </div>
                         </SettingGroup>
                         <SettingGroup title={t('app.settings.groups.typography')}>
                             <SettingRow

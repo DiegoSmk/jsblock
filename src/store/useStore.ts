@@ -46,6 +46,7 @@ import i18n from '../i18n/config';
 const initialCode = '';
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export const useStore = create<AppState>((set, get) => ({
     code: initialCode,
@@ -65,14 +66,13 @@ export const useStore = create<AppState>((set, get) => ({
     runtimeValues: {},
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
-    showSidebar: true,
     plugins: [],
     selectedPluginId: null,
     // Settings Configuration
     settingsConfig: localStorage.getItem('settings.json') ?? JSON.stringify({
         appearance: { theme: 'dark', showAppBorder: false },
         layout: {
-            sidebar: { vanilla: 250, git: 300, extensions: 180 }
+            sidebar: { width: 300 }
         },
         editor: { fontSize: 14, autoLayoutNodes: false },
         terminal: { copyOnSelect: true, rightClickPaste: true },
@@ -90,8 +90,10 @@ export const useStore = create<AppState>((set, get) => ({
             if (parsed.appearance?.theme) {
                 set({ theme: parsed.appearance.theme });
             }
-            if (parsed.layout?.sidebar) {
-                set({ runtimeSidebarWidths: parsed.layout.sidebar });
+            if (parsed.layout?.sidebar?.width) {
+                set((state) => ({
+                    layout: { ...state.layout, sidebar: { ...state.layout.sidebar, width: parsed.layout.sidebar.width } }
+                }));
             }
             if (parsed.files?.autoSave !== undefined) {
                 set({ autoSave: parsed.files.autoSave });
@@ -112,37 +114,49 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     // Runtime Layout (Session Only)
-    runtimeSidebarWidths: (() => {
+    layout: (() => {
+        let width = 300;
         try {
             const savedSettings = localStorage.getItem('settings.json');
             if (savedSettings) {
                 const parsed = JSON.parse(savedSettings);
-                return parsed.layout?.sidebar ?? { vanilla: 250, git: 300, extensions: 180 };
+                // Handle legacy or new format
+                const sb = parsed.layout?.sidebar;
+                if (typeof sb === 'number') width = sb;
+                else if (typeof sb?.width === 'number') width = sb.width;
+                else if (typeof sb === 'object') width = sb.vanilla || 250;
             }
-        } catch (e) {
-            console.error('Failed to parse settings for layout initialization', e);
-        }
-        return { vanilla: 250, git: 300, extensions: 180 };
+        } catch { }
+        return {
+            sidebar: {
+                width: Math.max(200, Math.min(800, width)),
+                isVisible: true
+            }
+        };
     })(),
 
-    setRuntimeSidebarWidth: (width: number, module: string) => {
-        const current = get().runtimeSidebarWidths;
-        const newWidths = { ...current, [module]: width };
-        set({ runtimeSidebarWidths: newWidths });
+    setSidebarWidth: (width: number) => {
+        const newWidth = Math.max(200, Math.min(800, Math.round(width)));
+        set((state) => ({
+            layout: { ...state.layout, sidebar: { ...state.layout.sidebar, width: newWidth } }
+        }));
 
-        // Sync back to settingsConfig
-        try {
-            const parsed = JSON.parse(get().settingsConfig);
-            if (!parsed.layout) parsed.layout = {};
-            if (!parsed.layout.sidebar) parsed.layout.sidebar = {};
-            parsed.layout.sidebar[module] = width;
+        // Debounced Save
+        if (saveLayoutTimeout) clearTimeout(saveLayoutTimeout);
+        saveLayoutTimeout = setTimeout(() => {
+            try {
+                const parsed = JSON.parse(get().settingsConfig);
+                if (!parsed.layout) parsed.layout = {};
+                if (!parsed.layout.sidebar) parsed.layout.sidebar = {};
+                parsed.layout.sidebar = { width: newWidth };
 
-            const newJson = JSON.stringify(parsed, null, 2);
-            localStorage.setItem('settings.json', newJson);
-            set({ settingsConfig: newJson });
-        } catch (e) {
-            console.error('Failed to sync sidebar width', e);
-        }
+                const newJson = JSON.stringify(parsed, null, 2);
+                localStorage.setItem('settings.json', newJson);
+                set({ settingsConfig: newJson });
+            } catch (e) {
+                console.error('Failed to sync sidebar width', e);
+            }
+        }, 500);
     },
     confirmationModal: null,
 
@@ -467,8 +481,25 @@ export const useStore = create<AppState>((set, get) => ({
             set({ recentEnvironments: validRecents });
         }
     },
-    toggleSidebar: (show?: boolean) => set({ showSidebar: show ?? !get().showSidebar }),
-    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions') => set({ activeSidebarTab: tab, showSidebar: true }),
+    toggleSidebar: (show?: boolean) => set((state) => ({
+        layout: {
+            ...state.layout,
+            sidebar: {
+                ...state.layout.sidebar,
+                isVisible: show ?? !state.layout.sidebar.isVisible
+            }
+        }
+    })),
+    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions') => set((state) => ({
+        activeSidebarTab: tab,
+        layout: {
+            ...state.layout,
+            sidebar: {
+                ...state.layout.sidebar,
+                isVisible: true
+            }
+        }
+    })),
     toggleCode: () => {
         if (get().showCode && !get().showCanvas) return;
         set({ showCode: !get().showCode });

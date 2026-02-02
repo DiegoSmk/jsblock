@@ -210,13 +210,17 @@ export interface AppState {
   updateSettingsConfig: (json: string) => void;
 
   // Runtime Layout (Session Only)
-  showSidebar: boolean;
-  runtimeSidebarWidths: Record<string, number>;
+  layout: {
+    sidebar: {
+      width: number;
+      isVisible: boolean;
+    };
+  };
   activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions';
   showCode: boolean;
   showCanvas: boolean;
+  setSidebarWidth: (width: number) => void;
   toggleSidebar: (show?: boolean) => void;
-  setRuntimeSidebarWidth: (width: number, tab: string) => void;
   setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions') => void;
   toggleCode: () => void;
   toggleCanvas: () => void;
