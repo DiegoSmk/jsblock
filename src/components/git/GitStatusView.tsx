@@ -9,6 +9,7 @@ import { GitIgnoreModal } from './GitIgnoreModal';
 import { GitStatusHeader } from './GitStatusHeader';
 import { Briefcase, User, Sparkles, Smile } from 'lucide-react';
 import './GitPanel.css';
+import './GitStatus.css';
 
 export const GitStatusView: React.FC = () => {
     const {
@@ -130,15 +131,8 @@ export const GitStatusView: React.FC = () => {
 
     return (
         <div
-            className="git-panel-container animate-entrance"
-            style={{
-                background: isDark ? '#1a1a1a' : '#fff',
-                color: isDark ? '#fff' : '#000',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                opacity: 0
-            }}
+            className="git-panel-container git-status-container animate-entrance"
+            style={{ opacity: 0 }}
         >
             <GitStatusHeader
                 isDark={isDark}
