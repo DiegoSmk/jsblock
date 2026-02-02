@@ -17,8 +17,9 @@ import { Allotment } from 'allotment';
 import {
   FolderOpen, X, Minus, Square, Info, LogOut,
   History as HistoryIcon, Network, RefreshCw, PanelLeft, Code, Files,
-  Library, Box, Edit2, Trash2, Layers, Terminal
+  Library, Box, Edit2, Trash2, Layers, Terminal, Palette
 } from 'lucide-react';
+import { EdgeStylePopup } from './components/EdgeStylePopup';
 import { GitPanel } from './components/GitPanel';
 import { CommitHistory } from './components/git/CommitHistory';
 import { GitGraphView } from './components/git/GitGraphView';
@@ -124,6 +125,7 @@ function FlowContent() {
 
   // Edge Context Menu state
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [edgeStyleMenu, setEdgeStyleMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
@@ -133,17 +135,20 @@ function FlowContent() {
       x: event.clientX,
       y: event.clientY
     });
+    setEdgeStyleMenu(null);
   }, []);
 
   const onPaneClick = useCallback(() => {
     setEdgeMenu(null);
+    setEdgeStyleMenu(null);
   }, []);
 
-  const handleEdgeAction = (action: 'comment' | 'delete') => {
+  const handleEdgeAction = (action: 'comment' | 'delete' | 'style') => {
     if (!edgeMenu) return;
 
     if (action === 'delete') {
       void deleteElements({ edges: [{ id: edgeMenu.id }] });
+      setEdgeMenu(null);
     } else if (action === 'comment') {
       const edge = getEdge(edgeMenu.id);
       if (edge) {
@@ -159,8 +164,47 @@ function FlowContent() {
           }
         });
       }
+      setEdgeMenu(null);
+    } else if (action === 'style') {
+      setEdgeStyleMenu({
+        id: edgeMenu.id,
+        x: edgeMenu.x,
+        y: edgeMenu.y
+      });
+      setEdgeMenu(null);
     }
-    setEdgeMenu(null);
+  };
+
+  const handleStyleUpdate = (updates: any) => {
+    if (!edgeStyleMenu) return;
+    const edge = getEdge(edgeStyleMenu.id);
+    if (!edge) return;
+
+    const currentCustomStyle = edge.data?.customStyle as Record<string, any> || {};
+    const newCustomStyle = { ...currentCustomStyle, ...updates };
+
+    const edgeUpdates: any = {
+      data: { ...edge.data, customStyle: newCustomStyle }
+    };
+
+    if (updates.type) edgeUpdates.type = updates.type;
+
+    // Merge styles
+    if (updates.stroke || updates.strokeWidth || updates.strokeDasharray !== undefined) {
+      edgeUpdates.style = {
+        ...edge.style,
+        ...(updates.stroke ? { stroke: updates.stroke } : {}),
+        ...(updates.strokeWidth ? { strokeWidth: updates.strokeWidth } : {}),
+        ...(updates.strokeDasharray !== undefined ? { strokeDasharray: updates.strokeDasharray } : {})
+      };
+
+      // Remove strokeDasharray if undefined (solid)
+      if (updates.strokeDasharray === undefined && edgeUpdates.style.strokeDasharray) {
+         delete edgeUpdates.style.strokeDasharray;
+      }
+    }
+
+    updateEdge(edgeStyleMenu.id, edgeUpdates);
   };
 
   const scopeNodes = nodes.filter((n: Node) =>
@@ -285,6 +329,36 @@ function FlowContent() {
 
             <div style={{ width: '1px', height: '16px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
 
+            <Tooltip content="Estilo da Conexão" side="top">
+              <button
+                onClick={() => handleEdgeAction('style')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: isDark ? '#e0e0e0' : '#444',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Palette size={18} color={isDark ? '#4fc3f7' : '#0070f3'} />
+              </button>
+            </Tooltip>
+
+            <div style={{ width: '1px', height: '16px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+
             <Tooltip content={t('edge.delete_connection')} side="top">
               <button
                 onClick={() => handleEdgeAction('delete')}
@@ -312,6 +386,29 @@ function FlowContent() {
                 <Trash2 size={18} />
               </button>
             </Tooltip>
+          </div>
+        )}
+
+        {edgeStyleMenu && (
+          <div
+             style={{
+              position: 'fixed',
+              top: edgeStyleMenu.y + 10,
+              left: edgeStyleMenu.x - 120,
+              zIndex: 1001,
+            }}
+          >
+            <EdgeStylePopup
+              isDark={isDark}
+              onClose={() => setEdgeStyleMenu(null)}
+              currentStyle={{
+                type: getEdge(edgeStyleMenu.id)?.type || 'default',
+                stroke: getEdge(edgeStyleMenu.id)?.style?.stroke as string || (isDark ? '#4fc3f7' : '#0070f3'),
+                strokeWidth: Number(getEdge(edgeStyleMenu.id)?.style?.strokeWidth) || 3,
+                strokeDasharray: getEdge(edgeStyleMenu.id)?.style?.strokeDasharray as string
+              }}
+              onUpdate={handleStyleUpdate}
+            />
           </div>
         )}
       </ReactFlow>

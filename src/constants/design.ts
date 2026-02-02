@@ -29,3 +29,19 @@ export const DESIGN_TOKENS = {
         }
     }
 } as const;
+
+export const NOTE_PALETTE = {
+    BLUE: '#0070f3',
+    PURPLE: '#a855f7',
+    GREEN: '#22c55e',
+    YELLOW: '#eab308',
+    RED: '#ef4444',
+    GRAY: '#64748b'
+} as const;
+
+export const STROKE_OPACITY = {
+    SOLID: 1.0,
+    HIGH: 0.75,
+    MEDIUM: 0.50,
+    LOW: 0.25
+} as const;
