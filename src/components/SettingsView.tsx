@@ -109,7 +109,8 @@ export const SettingsView: React.FC = () => {
         settingsConfig,
         updateSettingsConfig,
         autoSave,
-        toggleAutoSave
+        toggleAutoSave,
+        resetSettings
     } = useStore();
 
     const [activeCategory, setActiveCategory] = useState<'general' | 'terminal' | 'appearance' | 'json'>('general');
@@ -215,6 +216,39 @@ export const SettingsView: React.FC = () => {
                                     onChange={() => updateSettings({ autoLayoutNodes: !settings.autoLayoutNodes })}
                                 />
                             </SettingRow>
+                            <div style={{ padding: '8px 16px' }}>
+                                <button
+                                    onClick={() => {
+                                        if (confirm(t('app.settings.reset_confirm', 'Tem certeza que deseja restaurar as configurações padrão?'))) {
+                                            resetSettings();
+                                        }
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '8px 12px',
+                                        backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: isDark ? '#f87171' : '#dc2626',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        width: '100%',
+                                        justifyContent: 'center'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+                                    }}
+                                >
+                                    <RotateCcw size={14} />
+                                    Restaurar Configurações Padrão
+                                </button>
+                            </div>
                         </SettingGroup>
                         <SettingGroup title={t('app.settings.groups.typography')}>
                             <SettingRow
