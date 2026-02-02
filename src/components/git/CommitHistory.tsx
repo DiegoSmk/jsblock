@@ -4,8 +4,8 @@ import { SectionHeader } from './SharedComponents';
 import { Search, RefreshCw, ChevronDown, ChevronRight, History, GitBranch, FileText, Plus, Minus, Tag } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 import { useStore } from '../../store/useStore';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { List } from 'react-window';
+import { AutoSizer } from 'react-virtualized-auto-sizer';
 
 import type { GitLogEntry, GitCommitFile } from '../../types/store';
 

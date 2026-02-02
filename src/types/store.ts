@@ -124,6 +124,29 @@ export interface Settings {
   showAppBorder: boolean;
 }
 
+export interface SettingsConfig {
+  appearance?: {
+    theme?: 'light' | 'dark';
+    showAppBorder?: boolean;
+  };
+  layout?: {
+    sidebar?: {
+      width?: number;
+    };
+  };
+  editor?: {
+    fontSize?: number;
+    autoLayoutNodes?: boolean;
+  };
+  terminal?: {
+    copyOnSelect?: boolean;
+    rightClickPaste?: boolean;
+  };
+  files?: {
+    autoSave?: boolean;
+  };
+}
+
 export interface GitPanelSection {
   id: string;
   label: string;

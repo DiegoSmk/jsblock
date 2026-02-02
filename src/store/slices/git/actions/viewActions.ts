@@ -1,17 +1,16 @@
-import { StateCreator } from 'zustand';
 import type { AppState, GitSlice, GitLogEntry } from '../../../../types/store';
 
-export const createViewActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
+export const createViewActions = (set: any, get: any): Partial<GitSlice> => ({
     setGitView: (view) => {
         set((state: AppState) => ({
             git: { ...state.git, activeView: view }
         }));
     },
 
-    setGitSidebarView: (view) => {
+    setGitSidebarView: (view: any) => {
         set((state: AppState) => ({
             git: { ...state.git, sidebarView: view }
-        }));
+        }) as Partial<AppState>);
     },
 
     openCommitDetail: async (commit: GitLogEntry) => {

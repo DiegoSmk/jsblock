@@ -1,4 +1,4 @@
-import { StateCreator } from 'zustand';
+import type { StateCreator } from 'zustand';
 import type { AppState, GitSlice } from '../../../types/store';
 import { initialGitState } from './initialState';
 import { createBranchActions } from './actions/branchActions';
@@ -35,14 +35,14 @@ export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, ge
         };
         if (saved) {
             try {
-                const parsed = JSON.parse(saved);
+                const parsed = JSON.parse(saved) as { sections: any[] };
                 const sections = [...defaultView.sections];
-                parsed.sections.forEach((s: any) => {
+                parsed.sections.forEach((s) => {
                     const idx = sections.findIndex(def => def.id === s.id);
                     if (idx >= 0) {
                         sections[idx] = { ...sections[idx], ...s };
                     } else {
-                        sections.push(s);
+                        sections.push(s as any);
                     }
                 });
                 return { sections };
@@ -73,4 +73,4 @@ export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, ge
     ...createStashActions(set, get),
     ...createTagActions(set, get),
     ...createViewActions(set, get),
-});
+}) as GitSlice;

@@ -18,7 +18,8 @@ import type {
     RecentEnvironment,
     AppState,
     Toast,
-    Settings
+    Settings,
+    SettingsConfig
 } from '../types/store';
 
 // import { v4 as uuidv4 } from 'uuid'; // Removed to avoid dependency check
@@ -48,11 +49,12 @@ export const useStore = create<AppState>((set, get, api) => ({
         try {
             const saved = localStorage.getItem('settings.json');
             if (saved) {
-                const parsed = JSON.parse(saved);
-                return parsed.appearance?.theme ?? 'dark';
+                const parsed = JSON.parse(saved) as SettingsConfig;
+                const theme = parsed.appearance?.theme;
+                if (theme === 'dark' || theme === 'light') return theme;
             }
         } catch { }
-        return 'dark';
+        return 'dark' as 'dark' | 'light';
     })(),
     toasts: [],
     runtimeValues: {},
@@ -92,15 +94,16 @@ export const useStore = create<AppState>((set, get, api) => ({
         set({ settingsConfig: json });
 
         try {
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as SettingsConfig;
 
             // Sync all states from parsed JSON
             if (parsed.appearance?.theme) {
                 set({ theme: parsed.appearance.theme });
             }
             if (parsed.layout?.sidebar?.width) {
+                const width = parsed.layout.sidebar.width;
                 set((state) => ({
-                    layout: { ...state.layout, sidebar: { ...state.layout.sidebar, width: parsed.layout.sidebar.width } }
+                    layout: { ...state.layout, sidebar: { ...state.layout.sidebar, width } }
                 }));
             }
             if (parsed.files?.autoSave !== undefined) {
@@ -127,15 +130,11 @@ export const useStore = create<AppState>((set, get, api) => ({
         try {
             const savedSettings = localStorage.getItem('settings.json');
             if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
+                const parsed = JSON.parse(savedSettings) as SettingsConfig;
                 // Handle legacy or new format
                 const sb = parsed.layout?.sidebar;
                 if (typeof sb === 'number') width = sb;
                 else if (typeof sb?.width === 'number') width = sb.width;
-                else if (typeof sb === 'object') {
-                    // Legacy object with vanilla/git keys
-                    width = 260;
-                }
             }
         } catch { }
         return {

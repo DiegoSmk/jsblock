@@ -1,10 +1,9 @@
 import type { GitSlice, AppState, CommitTemplate } from '../../../../types/store';
-import { StateCreator } from 'zustand';
 
 const gitHead = 'HEAD';
 const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-export const createCommitActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
+export const createCommitActions = (set: any, get: any): Partial<GitSlice> => ({
     gitCommit: async (message: string, isAmend = false) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;
@@ -56,8 +55,8 @@ export const createCommitActions = (set: StateCreator<AppState>['setState'], get
     },
 
     removeCommitTemplate: (id: string) => {
-        const newTemplates = get().commitTemplates.filter((t: CommitTemplate) => t.id !== id);
+        const newTemplates = (get() as AppState).commitTemplates.filter((t: CommitTemplate) => t.id !== id);
         localStorage.setItem('commitTemplates', JSON.stringify(newTemplates));
-        set({ commitTemplates: newTemplates });
+        set({ commitTemplates: newTemplates } as Partial<AppState>);
     },
 });

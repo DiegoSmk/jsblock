@@ -1,7 +1,6 @@
 import type { GitSlice, AppState, GitAuthor, GitProfile } from '../../../../types/store';
-import { StateCreator } from 'zustand';
 
-export const createConfigActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
+export const createConfigActions = (set: any, get: any): Partial<GitSlice> => ({
     gitInit: async (author?: GitAuthor, isGlobal = false) => {
         const { openedFolder, refreshGit, setGitConfig } = get();
         if (!openedFolder) return;
@@ -116,7 +115,7 @@ export const createConfigActions = (set: StateCreator<AppState>['setState'], get
                     globalAuthor: globalAuthor.name || globalAuthor.email ? globalAuthor : null,
                     projectAuthor
                 }
-            }));
+            }) as Partial<AppState>);
         } catch (err) {
             console.error('Fetch git config failed:', err);
         }

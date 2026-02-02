@@ -4,8 +4,8 @@ import { Plus, Minus, RotateCcw, List as ListIcon, Indent, Eraser, EyeOff } from
 import { SectionHeader, ActionToolbar } from './SharedComponents';
 import { Tooltip } from '../Tooltip';
 import { FileTreeView } from './FileTreeView';
-import { FixedSizeList as List } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { List } from 'react-window';
+import { AutoSizer } from 'react-virtualized-auto-sizer';
 
 interface GitFile {
     path: string;
