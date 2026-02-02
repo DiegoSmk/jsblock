@@ -1,0 +1,112 @@
+[
+  {
+    "file": "src/store/useStore.ts",
+    "lineRange": [1, 1200],
+    "issue": "God Object / Monolithic Store",
+    "type": "structural",
+    "severity": "High",
+    "explanation": "The store handles Git, File System, UI, Settings, and Plugins in a single file, making it hard to maintain and test.",
+    "recommendation": "Split into slices (GitSlice, FileSystemSlice, etc.) using Zustand's slice pattern.",
+    "estimated_effort_hours": 8,
+    "metric_impact": { "cyclomatic_before": 150, "cyclomatic_after": 30 }
+  },
+  {
+    "file": "src/store/useStore.ts",
+    "lineRange": [500, 520],
+    "issue": "Use of eval()",
+    "type": "security",
+    "severity": "Critical",
+    "explanation": "The code uses `eval()` to simulate a JS runtime. This is extremely dangerous if the input code comes from an untrusted source.",
+    "recommendation": "Use a sandboxed environment like `sandboxr`, `quickjs-emscripten`, or a Web Worker with strict CSP.",
+    "estimated_effort_hours": 16,
+    "metric_impact": { "security_risk": "High", "security_risk_after": "Low" }
+  },
+  {
+    "file": "src/App.tsx",
+    "lineRange": [1, 450],
+    "issue": "Large Component / Mixed Concerns",
+    "type": "structural",
+    "severity": "Medium",
+    "explanation": "App.tsx handles routing, layout, and contains the `FlowContent` sub-component definition.",
+    "recommendation": "Extract `FlowContent` to `src/components/FlowContent.tsx`.",
+    "estimated_effort_hours": 2,
+    "metric_impact": { "lines_of_code": 450, "lines_of_code_after": 250 }
+  },
+  {
+    "file": "src/logic/CodeGenerator.ts",
+    "lineRange": [1, 300],
+    "issue": "Heavy Computation on Main Thread",
+    "type": "performance",
+    "severity": "Medium",
+    "explanation": "Code generation runs synchronously on the main thread, potentially blocking UI during large flow updates.",
+    "recommendation": "Move to a Web Worker.",
+    "estimated_effort_hours": 6,
+    "metric_impact": { "blocking_time_ms": 50, "blocking_time_ms_after": 0 }
+  },
+  {
+    "file": "src/components/SidebarContainer.tsx",
+    "lineRange": [1, 150],
+    "issue": "Potential Layout Thrashing",
+    "type": "performance",
+    "severity": "Low",
+    "explanation": "Resizing logic uses JS driven layout updates. While requestAnimationFrame is used, CSS variables might be more performant.",
+    "recommendation": "Verify performance with large DOM.",
+    "estimated_effort_hours": 2,
+    "metric_impact": null
+  },
+  {
+    "file": "src/logic/CodeParser.ts",
+    "lineRange": [1, 200],
+    "issue": "Complex Parsing Logic",
+    "type": "maintainability",
+    "severity": "Medium",
+    "explanation": "Parser logic is dense and hard to debug.",
+    "recommendation": "Add more unit tests and break down into smaller utility functions.",
+    "estimated_effort_hours": 4,
+    "metric_impact": { "cyclomatic_before": 25, "cyclomatic_after": 10 }
+  },
+  {
+    "file": "electron/main.ts",
+    "lineRange": [1, 300],
+    "issue": "Main Process Complexity",
+    "type": "structural",
+    "severity": "Medium",
+    "explanation": "Main process handles window creation, IPC, and file system ops.",
+    "recommendation": "Extract IPC handlers to `electron/handlers`.",
+    "estimated_effort_hours": 3,
+    "metric_impact": null
+  },
+  {
+    "file": "src/components/VariableNode.tsx",
+    "lineRange": [1, 150],
+    "issue": "Prop Drilling",
+    "type": "maintainability",
+    "severity": "Low",
+    "explanation": "Passes many props deeply.",
+    "recommendation": "Use context or store selectors more effectively.",
+    "estimated_effort_hours": 2,
+    "metric_impact": null
+  },
+  {
+    "file": "package.json",
+    "lineRange": [1, 50],
+    "issue": "Missing Security Audit Script",
+    "type": "security",
+    "severity": "Low",
+    "explanation": "No automated security audit in scripts.",
+    "recommendation": "Add `npm audit` to CI pipeline.",
+    "estimated_effort_hours": 0.5,
+    "metric_impact": null
+  },
+  {
+    "file": "src/store/useStore.ts",
+    "lineRange": [1, 100],
+    "issue": "Hardcoded Constants",
+    "type": "maintainability",
+    "severity": "Low",
+    "explanation": "Constants like default sidebar width are hardcoded.",
+    "recommendation": "Move to `src/constants/config.ts`.",
+    "estimated_effort_hours": 1,
+    "metric_impact": null
+  }
+]

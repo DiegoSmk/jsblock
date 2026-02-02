@@ -142,7 +142,96 @@ export interface QuickCommand {
   autoExecute: boolean;
 }
 
-export interface AppState {
+export interface GitSlice {
+  git: {
+    isRepo: boolean;
+    currentBranch: string;
+    changes: GitFileStatus[];
+    log: GitLogEntry[];
+    rawLog: string;
+    globalAuthor: GitAuthor | null;
+    projectAuthor: GitAuthor | null;
+    activeView: 'status' | 'terminal' | 'graph';
+    sidebarView: 'history' | 'graph' | 'info';
+    branches: string[];
+    stashes: GitStashEntry[];
+    stats: {
+      fileCount: number;
+      repoSize: string;
+      projectSize: string;
+    };
+    tags: GitTag[];
+    isInitialized: boolean;
+  };
+  gitProfiles: GitProfile[];
+  commitTemplates: CommitTemplate[];
+  commitDetail: {
+    isOpen: boolean;
+    commit: GitLogEntry | null;
+    files: GitCommitFile[];
+    fullMessage: string;
+    stats?: {
+      insertions: number;
+      deletions: number;
+      filesChanged: number;
+    };
+  };
+  quickCommands: QuickCommand[];
+  gitPanelConfig: GitPanelConfig;
+
+  // Actions
+  setGitView: (view: 'status' | 'terminal' | 'graph') => void;
+  setGitSidebarView: (view: 'history' | 'graph' | 'info') => void;
+  openCommitDetail: (commit: GitLogEntry) => Promise<void>;
+  closeCommitDetail: () => void;
+  refreshGit: () => Promise<void>;
+  fetchGitConfig: () => Promise<void>;
+  changeBranch: (branch: string) => Promise<void>;
+  createBranch: (branch: string, startPoint?: string) => Promise<void>;
+  deleteBranch: (branch: string) => Promise<void>;
+  checkoutCommit: (hash: string) => Promise<void>;
+  gitStage: (path: string) => Promise<void>;
+  gitStageAll: () => Promise<void>;
+  gitUnstage: (path: string) => Promise<void>;
+  gitUnstageAll: () => Promise<void>;
+  gitDiscard: (path: string) => Promise<void>;
+  gitDiscardAll: () => Promise<void>;
+  gitCommit: (message: string, isAmend?: boolean) => Promise<void>;
+  gitStash: (message?: string) => Promise<void>;
+  gitPopStash: (index?: number) => Promise<void>;
+  gitApplyStash: (index: number) => Promise<void>;
+  gitDropStash: (index: number) => Promise<void>;
+  fetchStashes: () => Promise<void>;
+  gitUndoLastCommit: () => Promise<void>;
+  gitInit: (author?: GitAuthor, isGlobal?: boolean) => Promise<void>;
+  setGitConfig: (author: GitAuthor, isGlobal: boolean) => Promise<void>;
+  addGitProfile: (profile: Omit<GitProfile, 'id'>) => void;
+  removeGitProfile: (id: string) => void;
+  updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
+  resetToGlobal: () => Promise<void>;
+  getCommitFiles: (hash: string) => Promise<GitCommitFile[]>;
+
+  // Tags
+  gitCreateTag: (name: string, hash: string, message?: string) => Promise<void>;
+  gitDeleteTag: (name: string) => Promise<void>;
+  gitClean: () => Promise<void>;
+  gitIgnore: (pattern: string) => Promise<void>;
+  fetchTags: () => Promise<void>;
+
+  // Commit Templates
+  addCommitTemplate: (template: Omit<CommitTemplate, 'id'>) => void;
+  removeCommitTemplate: (id: string) => void;
+
+  // Quick Commands
+  addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => void;
+  removeQuickCommand: (id: string) => void;
+
+  // Git Panel Configuration
+  updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => void;
+  resetGitPanelConfig: () => void;
+}
+
+export interface AppState extends GitSlice {
   code: string;
   nodes: AppNode[];
   edges: Edge[];
@@ -248,88 +337,6 @@ export interface AppState {
   setRecentLabel: (path: string, label: 'personal' | 'work' | 'fun' | 'other' | undefined) => void;
   validateRecents: () => Promise<void>;
 
-  // Git Actions
-  git: {
-    isRepo: boolean;
-    currentBranch: string;
-    changes: GitFileStatus[];
-    log: GitLogEntry[];
-    rawLog: string;
-    globalAuthor: GitAuthor | null;
-    projectAuthor: GitAuthor | null;
-    activeView: 'status' | 'terminal' | 'graph';
-    sidebarView: 'history' | 'graph' | 'info';
-    branches: string[];
-    stashes: GitStashEntry[];
-    stats: {
-      fileCount: number;
-      repoSize: string;
-      projectSize: string;
-    };
-    tags: GitTag[];
-    isInitialized: boolean;
-  };
-  gitProfiles: GitProfile[];
-  commitTemplates: CommitTemplate[];
-
-  commitDetail: {
-    isOpen: boolean;
-    commit: GitLogEntry | null;
-    files: GitCommitFile[];
-    fullMessage: string;
-    stats?: {
-      insertions: number;
-      deletions: number;
-      filesChanged: number;
-    };
-  };
-  setGitView: (view: 'status' | 'terminal' | 'graph') => void;
-  setGitSidebarView: (view: 'history' | 'graph' | 'info') => void;
-  openCommitDetail: (commit: GitLogEntry) => Promise<void>;
-  closeCommitDetail: () => void;
-  refreshGit: () => Promise<void>;
-  fetchGitConfig: () => Promise<void>;
-  changeBranch: (branch: string) => Promise<void>;
-  createBranch: (branch: string, startPoint?: string) => Promise<void>;
-  deleteBranch: (branch: string) => Promise<void>;
-  checkoutCommit: (hash: string) => Promise<void>;
-  gitStage: (path: string) => Promise<void>;
-  gitStageAll: () => Promise<void>;
-  gitUnstage: (path: string) => Promise<void>;
-  gitUnstageAll: () => Promise<void>;
-  gitDiscard: (path: string) => Promise<void>;
-  gitDiscardAll: () => Promise<void>;
-  gitCommit: (message: string, isAmend?: boolean) => Promise<void>;
-  gitStash: (message?: string) => Promise<void>;
-  gitPopStash: (index?: number) => Promise<void>;
-  gitApplyStash: (index: number) => Promise<void>;
-  gitDropStash: (index: number) => Promise<void>;
-  fetchStashes: () => Promise<void>;
-  gitUndoLastCommit: () => Promise<void>;
-  gitInit: (author?: GitAuthor, isGlobal?: boolean) => Promise<void>;
-  setGitConfig: (author: GitAuthor, isGlobal: boolean) => Promise<void>;
-  addGitProfile: (profile: Omit<GitProfile, 'id'>) => void;
-  removeGitProfile: (id: string) => void;
-  updateGitProfile: (id: string, updates: Partial<Omit<GitProfile, 'id'>>) => void;
-  resetToGlobal: () => Promise<void>;
-  getCommitFiles: (hash: string) => Promise<GitCommitFile[]>;
-
-  // Tags
-  gitCreateTag: (name: string, hash: string, message?: string) => Promise<void>;
-  gitDeleteTag: (name: string) => Promise<void>;
-  gitClean: () => Promise<void>;
-  gitIgnore: (pattern: string) => Promise<void>;
-  fetchTags: () => Promise<void>;
-
-  // Commit Templates
-  addCommitTemplate: (template: Omit<CommitTemplate, 'id'>) => void;
-  removeCommitTemplate: (id: string) => void;
-
-  // Quick Commands
-  quickCommands: QuickCommand[];
-  addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => void;
-  removeQuickCommand: (id: string) => void;
-
   // Toast Actions
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => void;
@@ -347,11 +354,6 @@ export interface AppState {
   installPlugin: () => Promise<void>;
   uninstallPlugin: (id: string) => Promise<void>;
   setSelectedPluginId: (id: string | null) => void;
-
-  // Git Panel Configuration
-  gitPanelConfig: GitPanelConfig;
-  updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => void;
-  resetGitPanelConfig: () => void;
 
   resetSettings: () => void;
 }
