@@ -18,8 +18,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
     const { t } = useTranslation();
     const {
         activeSidebarTab,
-        showCode,
-        isBlockFile,
         toggleSidebar,
         setSidebarTab,
         saveFile,

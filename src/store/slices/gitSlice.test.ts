@@ -1,15 +1,26 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { useStore } from '../useStore';
+
+interface MockElectronAPI {
+  gitCommand: Mock;
+  checkPathExists: Mock;
+  readFile: Mock;
+  writeFile: Mock;
+}
 
 describe('Git Slice', () => {
   beforeEach(() => {
     localStorage.clear();
     // Mock Electron API
-    (window as any).electronAPI = {
+    const mockAPI: MockElectronAPI = {
       gitCommand: vi.fn(),
       checkPathExists: vi.fn(),
+      readFile: vi.fn(),
+      writeFile: vi.fn(),
     };
+    (window as unknown as { electronAPI: MockElectronAPI }).electronAPI = mockAPI;
+
     useStore.setState({
       git: {
         isRepo: false,
@@ -39,9 +50,9 @@ describe('Git Slice', () => {
 
   it('should initialize git if repo', async () => {
     const { refreshGit } = useStore.getState();
-    const mockGit = (window as any).electronAPI.gitCommand;
+    const mockAPI = (window as unknown as { electronAPI: MockElectronAPI }).electronAPI;
 
-    mockGit.mockImplementation((path: string, args: string[]) => {
+    mockAPI.gitCommand.mockImplementation((_path: string, args: string[]) => {
       if (args[0] === 'rev-parse' && args[1] === '--is-inside-work-tree') return Promise.resolve({ stdout: 'true' });
       if (args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return Promise.resolve({ stdout: 'main' });
       if (args[0] === 'branch') return Promise.resolve({ stdout: 'main\n' });

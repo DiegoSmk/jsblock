@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { GitStatusGroups } from './GitStatusGroups';
 import { CommitSection } from './CommitSection';
@@ -17,10 +16,9 @@ export const GitStatusView: React.FC = () => {
         gitStage, gitUnstage, gitCommit,
         gitStageAll, gitUnstageAll, gitDiscard, gitDiscardAll,
         addGitProfile, removeGitProfile,
-        commitTemplates, setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal
+        setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal
     } = useStore();
 
-    const { t } = useTranslation();
     const isDark = theme === 'dark';
     const [commitMsg, setCommitMsg] = useState('');
     const [isAmend, setIsAmend] = useState(false);

@@ -1,6 +1,6 @@
 import type { GitSlice, AppState, GitPanelConfig, QuickCommand } from '../../../../types/store';
 
-export const createPanelActions = (set: any, get: any): Partial<GitSlice> => ({
+export const createPanelActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => {
         const current = get().gitPanelConfig;
         const newValue = { ...current, ...updates };

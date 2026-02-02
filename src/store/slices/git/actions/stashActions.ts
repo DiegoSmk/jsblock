@@ -1,6 +1,6 @@
 import type { GitSlice, AppState, GitStashEntry } from '../../../../types/store';
 
-export const createStashActions = (set: any, get: any): Partial<GitSlice> => ({
+export const createStashActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     gitStash: async (message?: string) => {
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;

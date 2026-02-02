@@ -53,7 +53,7 @@ export const useStore = create<AppState>((set, get, api) => ({
                 const theme = parsed.appearance?.theme;
                 if (theme === 'dark' || theme === 'light') return theme;
             }
-        } catch { }
+        } catch { /* Handle missing or corrupt theme settings */ }
         return 'dark' as 'dark' | 'light';
     })(),
     toasts: [],
@@ -74,9 +74,10 @@ export const useStore = create<AppState>((set, get, api) => ({
         const saved = localStorage.getItem('settings.json');
         if (saved) {
             try {
-                const parsed = JSON.parse(saved);
+                const parsed = JSON.parse(saved) as SettingsConfig;
                 // Migration Logic for Sidebar
-                if (parsed.layout?.sidebar && (parsed.layout.sidebar.vanilla || parsed.layout.sidebar.git)) {
+                const sb = parsed.layout?.sidebar as Record<string, unknown> | undefined;
+                if (parsed.layout && sb && (sb.vanilla || sb.git)) {
                     // Legacy structure detected, migrate to simple width
                     parsed.layout.sidebar = { width: 260 };
                     return JSON.stringify(parsed, null, 2);
@@ -136,7 +137,7 @@ export const useStore = create<AppState>((set, get, api) => ({
                 if (typeof sb === 'number') width = sb;
                 else if (typeof sb?.width === 'number') width = sb.width;
             }
-        } catch { }
+        } catch { /* Ignore missing or corrupt layout settings */ }
         return {
             sidebar: {
                 width: Math.max(200, Math.min(800, width)),
@@ -155,10 +156,10 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (saveLayoutTimeout) clearTimeout(saveLayoutTimeout);
         saveLayoutTimeout = setTimeout(() => {
             try {
-                const parsed = JSON.parse(get().settingsConfig);
-                if (!parsed.layout) parsed.layout = {};
-                if (!parsed.layout.sidebar) parsed.layout.sidebar = {};
-                parsed.layout.sidebar = { width: newWidth };
+                const parsed = JSON.parse(get().settingsConfig) as SettingsConfig;
+                parsed.layout ??= {};
+                parsed.layout.sidebar ??= {};
+                parsed.layout.sidebar.width = newWidth;
 
                 const newJson = JSON.stringify(parsed, null, 2);
                 localStorage.setItem('settings.json', newJson);
@@ -187,7 +188,7 @@ export const useStore = create<AppState>((set, get, api) => ({
         try {
             const saved = localStorage.getItem('settings.json');
             if (saved) {
-                const parsed = JSON.parse(saved);
+                const parsed = JSON.parse(saved) as SettingsConfig;
                 return {
                     terminalCopyOnSelect: parsed.terminal?.copyOnSelect ?? defaultSettings.terminalCopyOnSelect,
                     terminalRightClickPaste: parsed.terminal?.rightClickPaste ?? defaultSettings.terminalRightClickPaste,
@@ -196,7 +197,7 @@ export const useStore = create<AppState>((set, get, api) => ({
                     showAppBorder: parsed.appearance?.showAppBorder ?? false,
                 };
             }
-        } catch { }
+        } catch { /* Ignore missing or corrupt settings */ }
         return defaultSettings;
     })(),
 
@@ -207,9 +208,10 @@ export const useStore = create<AppState>((set, get, api) => ({
 
         // Sync to JSON
         try {
-            const parsed = JSON.parse(get().settingsConfig);
-            if (!parsed.editor) parsed.editor = {};
-            if (!parsed.terminal) parsed.terminal = {};
+            const parsed = JSON.parse(get().settingsConfig) as SettingsConfig;
+            parsed.editor ??= {};
+            parsed.terminal ??= {};
+            parsed.appearance ??= {};
 
             if (updates.fontSize !== undefined) parsed.editor.fontSize = updates.fontSize;
             if (updates.autoLayoutNodes !== undefined) parsed.editor.autoLayoutNodes = updates.autoLayoutNodes;
@@ -230,10 +232,10 @@ export const useStore = create<AppState>((set, get, api) => ({
         try {
             const saved = localStorage.getItem('settings.json');
             if (saved) {
-                const parsed = JSON.parse(saved);
+                const parsed = JSON.parse(saved) as SettingsConfig;
                 return parsed.files?.autoSave ?? false;
             }
-        } catch { }
+        } catch { /* Default to no auto-save */ }
         return false;
     })(),
     isDirty: false,
@@ -244,8 +246,8 @@ export const useStore = create<AppState>((set, get, api) => ({
 
         // Sync to JSON
         try {
-            const parsed = JSON.parse(get().settingsConfig);
-            if (!parsed.files) parsed.files = {};
+            const parsed = JSON.parse(get().settingsConfig) as SettingsConfig;
+            parsed.files ??= {};
             parsed.files.autoSave = newValue;
 
             const newJson = JSON.stringify(parsed, null, 2);
@@ -408,7 +410,7 @@ export const useStore = create<AppState>((set, get, api) => ({
                 if (!runtimeWorker) {
                     runtimeWorker = new Worker(new URL('../workers/runtime.worker.ts', import.meta.url), { type: 'module' });
                     runtimeWorker.onmessage = (e) => {
-                        const runtimeValues = e.data;
+                        const runtimeValues = e.data as Record<string, unknown>;
                         set({ runtimeValues });
                     };
                 }
@@ -509,8 +511,8 @@ export const useStore = create<AppState>((set, get, api) => ({
 
         // Sync to JSON
         try {
-            const parsed = JSON.parse(get().settingsConfig);
-            if (!parsed.appearance) parsed.appearance = {};
+            const parsed = JSON.parse(get().settingsConfig) as SettingsConfig;
+            parsed.appearance ??= {};
             parsed.appearance.theme = nextTheme;
 
             const newJson = JSON.stringify(parsed, null, 2);

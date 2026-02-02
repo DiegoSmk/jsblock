@@ -33,7 +33,7 @@ self.onmessage = (e: MessageEvent) => {
         // Still has access to globals, but in a worker environment damage is contained to the worker
         // eslint-disable-next-line @typescript-eslint/no-implied-eval
         const evaluator = new Function(captureCode);
-        const result = evaluator() as Record<string, unknown>;
+        const result = (evaluator as () => Record<string, unknown>)();
         self.postMessage(result);
     } catch (err) {
         console.warn("Worker evaluation failed:", err);

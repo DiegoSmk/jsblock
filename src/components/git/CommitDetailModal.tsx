@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Modal } from '../ui/Modal';
-import { FileText, User, Calendar, Hash, History, GitCommit, Copy, Check, GitBranch, Plus, Minus, Tag } from 'lucide-react';
+import { FileText, User, Calendar, Hash, History as HistoryIcon, GitCommit, Copy, Check, GitBranch, Plus, Minus, Tag } from 'lucide-react';
 
 export const CommitDetailModal: React.FC = () => {
     const { t } = useTranslation();
@@ -399,7 +399,7 @@ export const CommitDetailModal: React.FC = () => {
                     </button>
 
                     <button
-                        onClick={() => void handleCheckout()}
+                        onClick={() => { void handleCheckout(); }}
                         style={{
                             padding: '9px 18px',
                             background: isDark ? 'rgba(96, 165, 250, 0.15)' : 'rgba(37, 99, 235, 0.1)',
@@ -415,7 +415,7 @@ export const CommitDetailModal: React.FC = () => {
                             transition: 'all 0.2s'
                         }}
                     >
-                        <History size={15} />
+                        <HistoryIcon size={15} />
                         {t('git.detail.checkout')}
                     </button>
                 </div>

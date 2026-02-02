@@ -1,8 +1,8 @@
 import type { GitSlice, AppState, GitFileStatus, GitLogEntry } from '../../../../types/store';
 
-const gitHead = 'HEAD';
+const gitHead = 'Head';
 
-export const createLifecycleActions = (set: any, get: any): Partial<GitSlice> => ({
+export const createLifecycleActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     refreshGit: async () => {
         const { openedFolder, fetchStashes, fetchTags } = get();
         if (!openedFolder || !window.electronAPI) return;

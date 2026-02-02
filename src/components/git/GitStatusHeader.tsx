@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, User, Check, Settings, Globe, FileText, ChevronDown, EyeOff, Folder, Briefcase, Sparkles, Smile } from 'lucide-react';
+import { RefreshCw, User, Settings, Globe, FileText, ChevronDown, EyeOff, Folder, Briefcase, Sparkles, Smile } from 'lucide-react';
 import { Tooltip } from '../Tooltip';
 import { BranchSwitcher } from './BranchSwitcher';
 import { ScrollArea } from '../ui/ScrollArea';
@@ -17,7 +17,7 @@ interface GitStatusHeaderProps {
     ignoredPatterns: string[];
     showAuthorMenu: boolean;
     setShowAuthorMenu: (show: boolean) => void;
-    setAuthorConfigBuffer: (config: any) => void;
+    setAuthorConfigBuffer: (config: { name: string, email: string, isGlobal: boolean }) => void;
     setShowAuthorConfigModal: (show: boolean) => void;
 }
 

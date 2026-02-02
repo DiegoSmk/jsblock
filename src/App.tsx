@@ -33,7 +33,6 @@ import { ModernModal } from './components/ModernModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { ToastContainer } from './components/ToastContainer';
 import { SettingsView } from './components/SettingsView';
-import { ExtensionsView } from './components/ExtensionsView';
 import { ExtensionDetailsView } from './components/ExtensionDetailsView';
 import { ExtensionLandingPage } from './components/ExtensionLandingPage';
 import { CommandPalette } from './components/CommandPalette';
@@ -201,9 +200,9 @@ function App() {
               <SettingsView />
             ) : (
               <>
-                 <SidebarContainer />
-                 <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
-                    <Allotment>
+                <SidebarContainer />
+                <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
+                  <Allotment>
                     <Allotment.Pane
                       minSize={activeSidebarTab === 'git' || activeSidebarTab === 'extensions' || (!isBlockFile && showCode) ? 200 : 0}
                       preferredSize={activeSidebarTab === 'git' || activeSidebarTab === 'extensions' || (!isBlockFile && showCode) ? 350 : 0}
@@ -277,7 +276,7 @@ function App() {
                       </div>
                     </Allotment.Pane>
                   </Allotment>
-                 </div>
+                </div>
               </>
             )}
           </div>

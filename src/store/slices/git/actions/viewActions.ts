@@ -1,16 +1,16 @@
 import type { AppState, GitSlice, GitLogEntry } from '../../../../types/store';
 
-export const createViewActions = (set: any, get: any): Partial<GitSlice> => ({
-    setGitView: (view) => {
+export const createViewActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
+    setGitView: (view: 'status' | 'terminal' | 'graph') => {
         set((state: AppState) => ({
             git: { ...state.git, activeView: view }
         }));
     },
 
-    setGitSidebarView: (view: any) => {
+    setGitSidebarView: (view: 'history' | 'graph' | 'info') => {
         set((state: AppState) => ({
             git: { ...state.git, sidebarView: view }
-        }) as Partial<AppState>);
+        }));
     },
 
     openCommitDetail: async (commit: GitLogEntry) => {
@@ -41,7 +41,7 @@ export const createViewActions = (set: any, get: any): Partial<GitSlice> => ({
                 console.warn('Failed to fetch commit stats:', err);
             }
 
-            set({
+            set((_state: AppState) => ({
                 commitDetail: {
                     isOpen: true,
                     commit,
@@ -49,14 +49,14 @@ export const createViewActions = (set: any, get: any): Partial<GitSlice> => ({
                     fullMessage,
                     stats
                 }
-            });
+            }));
         } catch (err) {
             console.error('Failed to open commit detail:', err);
         }
     },
 
     closeCommitDetail: () => {
-        set({
+        set((_state: AppState) => ({
             commitDetail: {
                 isOpen: false,
                 commit: null,
@@ -64,6 +64,6 @@ export const createViewActions = (set: any, get: any): Partial<GitSlice> => ({
                 fullMessage: '',
                 stats: undefined
             }
-        });
+        }));
     },
 });

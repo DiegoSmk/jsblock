@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { AppState, GitSlice } from '../../../types/store';
+import type { AppState, GitSlice, QuickCommand, GitProfile, CommitTemplate } from '../../../types/store';
 import { initialGitState } from './initialState';
 import { createBranchActions } from './actions/branchActions';
 import { createCommitActions } from './actions/commitActions';
@@ -35,14 +35,14 @@ export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, ge
         };
         if (saved) {
             try {
-                const parsed = JSON.parse(saved) as { sections: any[] };
+                const parsed = JSON.parse(saved) as { sections: { id: string, visible: boolean, expanded: boolean }[] };
                 const sections = [...defaultView.sections];
                 parsed.sections.forEach((s) => {
                     const idx = sections.findIndex(def => def.id === s.id);
                     if (idx >= 0) {
                         sections[idx] = { ...sections[idx], ...s };
                     } else {
-                        sections.push(s as any);
+                        sections.push(s as unknown as { id: string, label: string, visible: boolean, expanded: boolean });
                     }
                 });
                 return { sections };
@@ -53,8 +53,8 @@ export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, ge
         return defaultView;
     })(),
 
-    gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') ?? '[]'),
-    commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') ?? '[]'),
+    gitProfiles: JSON.parse(localStorage.getItem('gitProfiles') ?? '[]') as GitProfile[],
+    commitTemplates: JSON.parse(localStorage.getItem('commitTemplates') ?? '[]') as CommitTemplate[],
     commitDetail: {
         isOpen: false,
         commit: null,
@@ -62,7 +62,7 @@ export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, ge
         fullMessage: '',
         stats: undefined
     },
-    quickCommands: JSON.parse(localStorage.getItem('quickCommands') ?? '[]'),
+    quickCommands: JSON.parse(localStorage.getItem('quickCommands') ?? '[]') as QuickCommand[],
 
     ...createBranchActions(set, get),
     ...createCommitActions(set, get),

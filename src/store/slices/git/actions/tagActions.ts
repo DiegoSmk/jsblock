@@ -1,6 +1,6 @@
 import type { GitSlice, AppState, GitTag } from '../../../../types/store';
 
-export const createTagActions = (set: any, get: any): Partial<GitSlice> => ({
+export const createTagActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     fetchTags: async () => {
         const { openedFolder } = get();
         if (!openedFolder || !window.electronAPI) return;
