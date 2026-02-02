@@ -69,15 +69,34 @@ export const useStore = create<AppState>((set, get) => ({
     plugins: [],
     selectedPluginId: null,
     // Settings Configuration
-    settingsConfig: localStorage.getItem('settings.json') ?? JSON.stringify({
-        appearance: { theme: 'dark', showAppBorder: false },
-        layout: {
-            sidebar: { width: 300 }
-        },
-        editor: { fontSize: 14, autoLayoutNodes: false },
-        terminal: { copyOnSelect: true, rightClickPaste: true },
-        files: { autoSave: false }
-    }, null, 2),
+    settingsConfig: (() => {
+        const defaults = {
+            appearance: { theme: 'dark', showAppBorder: false },
+            layout: { sidebar: { width: 260 } },
+            editor: { fontSize: 14, autoLayoutNodes: false },
+            terminal: { copyOnSelect: true, rightClickPaste: true },
+            files: { autoSave: false }
+        };
+        const saved = localStorage.getItem('settings.json');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Migration Logic for Sidebar
+                if (parsed.layout?.sidebar && (parsed.layout.sidebar.vanilla || parsed.layout.sidebar.git)) {
+                    // Legacy structure detected, migrate to simple width
+                    parsed.layout.sidebar = { width: 260 };
+                    // Persist immediately? Better to just use the migrated value in memory
+                    // But if we want to fix the JSON file, we should update it.
+                    // We'll return the migrated object as string.
+                    return JSON.stringify(parsed, null, 2);
+                }
+                return saved;
+            } catch {
+                return JSON.stringify(defaults, null, 2);
+            }
+        }
+        return JSON.stringify(defaults, null, 2);
+    })(),
 
     updateSettingsConfig: (json: string) => {
         localStorage.setItem('settings.json', json);
@@ -115,7 +134,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     // Runtime Layout (Session Only)
     layout: (() => {
-        let width = 300;
+        let width = 260;
         try {
             const savedSettings = localStorage.getItem('settings.json');
             if (savedSettings) {
@@ -124,7 +143,10 @@ export const useStore = create<AppState>((set, get) => ({
                 const sb = parsed.layout?.sidebar;
                 if (typeof sb === 'number') width = sb;
                 else if (typeof sb?.width === 'number') width = sb.width;
-                else if (typeof sb === 'object') width = sb.vanilla || 250;
+                else if (typeof sb === 'object') {
+                    // Legacy object with vanilla/git keys
+                    width = 260;
+                }
             }
         } catch { }
         return {
@@ -1807,4 +1829,30 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     setSelectedPluginId: (id: string | null) => set({ selectedPluginId: id }),
+
+    resetSettings: () => {
+        const defaults = {
+            appearance: { theme: 'dark', showAppBorder: false },
+            layout: { sidebar: { width: 260 } },
+            editor: { fontSize: 14, autoLayoutNodes: false },
+            terminal: { copyOnSelect: true, rightClickPaste: true },
+            files: { autoSave: false }
+        };
+        const json = JSON.stringify(defaults, null, 2);
+        localStorage.setItem('settings.json', json);
+        set({
+            settingsConfig: json,
+            settings: {
+                terminalCopyOnSelect: true,
+                terminalRightClickPaste: true,
+                autoLayoutNodes: false,
+                fontSize: 14,
+                showAppBorder: false
+            },
+            layout: {
+                sidebar: { width: 260, isVisible: true }
+            }
+        });
+        get().addToast({ type: 'info', message: 'Configurações restauradas para o padrão.' });
+    }
 }));

@@ -352,4 +352,6 @@ export interface AppState {
   gitPanelConfig: GitPanelConfig;
   updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => void;
   resetGitPanelConfig: () => void;
+
+  resetSettings: () => void;
 }
