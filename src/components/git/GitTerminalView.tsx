@@ -6,24 +6,20 @@ import { FitAddon } from 'xterm-addon-fit';
 import {
     Terminal as TerminalIcon,
     ExternalLink,
-    Plus,
-    X,
     Zap,
     Check
 } from 'lucide-react';
-import { Modal } from '../ui/Modal';
-import { Radio } from '../ui/Radio';
 import { Tooltip } from '../Tooltip';
 import { TerminalProgressBar } from './TerminalProgressBar';
+import { QuickCommandModal } from './terminal/QuickCommandModal';
+import { GitTerminalToolbar } from './terminal/GitTerminalToolbar';
 import 'xterm/css/xterm.css';
 
 export const GitTerminalView: React.FC = () => {
     const {
         theme,
         openedFolder,
-        quickCommands,
         addQuickCommand,
-        removeQuickCommand,
         settings
     } = useStore();
     const { t } = useTranslation();
@@ -51,7 +47,6 @@ export const GitTerminalView: React.FC = () => {
     useEffect(() => {
         if (!terminalRef.current) return;
 
-        // Cleanup previous instance
         if (xtermRef.current) {
             xtermRef.current.dispose();
             xtermRef.current = null;
@@ -126,14 +121,11 @@ export const GitTerminalView: React.FC = () => {
             return false;
         };
 
-        // Delay both open and fit to let the animation/container stabilize
         const initialFitTimer = setTimeout(() => {
             try {
                 if (terminalRef.current) {
                     terminalRef.current.innerHTML = '';
                     term.open(terminalRef.current);
-
-                    // Small additional tick to ensure internal measures are ready
                     requestAnimationFrame(() => {
                         safeFit();
                         if (term.element) term.focus();
@@ -152,13 +144,9 @@ export const GitTerminalView: React.FC = () => {
             const unsubscribe = window.electronAPI.terminalOnData((data: string) => {
                 term.write(data);
 
-                // Progress Tracking Logic
-                // 1. Search for percentage patterns (e.g. 45%, 10/100, etc)
                 const percentMatch = /(\d+)%/.exec(data);
                 if (percentMatch) {
                     const percent = parseInt(percentMatch[1]);
-
-                    // Filter out small common numbers that aren't real progress
                     if (percent > 0 || (percent === 0 && data.includes('progress'))) {
                         setTerminalProgress({
                             percent,
@@ -168,7 +156,6 @@ export const GitTerminalView: React.FC = () => {
                             visible: true
                         });
 
-                        // reset timeout to hide
                         if (progressTimeoutRef.current) clearTimeout(progressTimeoutRef.current);
 
                         if (percent >= 100) {
@@ -176,7 +163,6 @@ export const GitTerminalView: React.FC = () => {
                                 setTerminalProgress(p => ({ ...p, visible: false }));
                             }, 3000);
                         } else {
-                            // If no progress for 10 seconds, hide it (stale)
                             progressTimeoutRef.current = setTimeout(() => {
                                 setTerminalProgress(p => ({ ...p, visible: false }));
                             }, 10000);
@@ -184,8 +170,6 @@ export const GitTerminalView: React.FC = () => {
                     }
                 }
 
-                // Git Correction Logic
-                // Detects patterns like: 'git: 'chekout' is not a git command. Did you mean checkout?'
                 if (data.includes('not a git command') || data.includes('The most similar command')) {
                     const suggestionMatch = (/The most similar command(?:s)? is\s+([a-z-]+)/.exec(data)) ??
                         (/Did you mean this\?\s+([a-z-]+)/.exec(data));
@@ -196,13 +180,6 @@ export const GitTerminalView: React.FC = () => {
                     }
                 }
 
-                // Clear suggestion when a new line starts (user is typing something else)
-                if (data.includes('\r') || data.includes('\n')) {
-                    // We keep it for a bit after the error, but if a long time passes it clears via timeout
-                }
-
-                // Undo Commit Logic
-                // Detects: [main 3a4f2b1] commit message
                 if (data.includes('] ') && (data.includes('create mode') || data.includes('files changed'))) {
                     const commitMatch = /\[[a-zA-Z0-9\-_./]+\s+([a-f0-9]+)\]/.exec(data);
                     if (commitMatch?.[1]) {
@@ -212,12 +189,9 @@ export const GitTerminalView: React.FC = () => {
                     }
                 }
 
-                // Yes/No Prompt Logic
-                // Detects various forms of (y/n) prompts, including Portuguese [S/n] and phrases
                 if (/(?:\(y\/n\)|\(Y\/n\)|\(y\/N\)|\? \[y\/N\]|\[S\/n\]|\[s\/N\]|Are you sure.*y\/n|want to continue\?|quer continuar\?)/i.exec(data)) {
                     setYesNoPrompt(true);
                     if (promptTimeoutRef.current) clearTimeout(promptTimeoutRef.current);
-                    // Hide after 30s if no interaction, though prompt usually waits indefinitely
                     promptTimeoutRef.current = setTimeout(() => setYesNoPrompt(false), 30000);
                 }
             });
@@ -267,7 +241,6 @@ export const GitTerminalView: React.FC = () => {
 
     const handleApplySuggestion = (cmd: string) => {
         if (window.electronAPI) {
-            // Write git [suggestion] and enter
             window.electronAPI.terminalSendInput(`git ${cmd}\r`);
             setGitSuggestion(null);
         }
@@ -275,7 +248,6 @@ export const GitTerminalView: React.FC = () => {
 
     const handleUndoCommit = () => {
         if (window.electronAPI) {
-            // git reset --soft HEAD~1
             window.electronAPI.terminalSendInput(`git reset --soft HEAD~1\r`);
             setLastCommitHash(null);
         }
@@ -283,7 +255,6 @@ export const GitTerminalView: React.FC = () => {
 
     const handleRunQuickCommand = (cmd: string, autoExecute = true) => {
         if (window.electronAPI) {
-            // Send command + enter if autoExecute (default), otherwise just send command
             window.electronAPI.terminalSendInput(cmd + (autoExecute !== false ? '\r' : ''));
         }
     };
@@ -314,43 +285,6 @@ export const GitTerminalView: React.FC = () => {
         }
     };
 
-    const addCommandModalFooter = (
-        <>
-            <button
-                onClick={() => setShowAddCommand(false)}
-                style={{
-                    padding: '8px 16px',
-                    background: 'transparent',
-                    color: isDark ? '#888' : '#666',
-                    border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: 600
-                }}
-            >
-                {t('git.terminal.modal.cancel')}
-            </button>
-            <button
-                onClick={handleAddQuickCommand}
-                disabled={!newCmdLabel.trim() || !newCmdValue.trim()}
-                style={{
-                    padding: '8px 20px',
-                    background: (!newCmdLabel.trim() || !newCmdValue.trim()) ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
-                    color: (!newCmdLabel.trim() || !newCmdValue.trim()) ? (isDark ? '#444' : '#999') : (isDark ? '#4fc3f7' : '#0070f3'),
-                    border: `1px solid ${(!newCmdLabel.trim() || !newCmdValue.trim()) ? (isDark ? '#333' : '#eee') : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s'
-                }}
-            >
-                {t('git.terminal.modal.create')}
-            </button>
-        </>
-    );
-
     return (
         <div
             className="animate-entrance"
@@ -364,117 +298,19 @@ export const GitTerminalView: React.FC = () => {
                 opacity: 0
             }}
         >
-            {/* Quick Command Modal */}
-            <Modal
+            <QuickCommandModal
                 isOpen={showAddCommand}
                 onClose={() => setShowAddCommand(false)}
-                title={t('git.terminal.modal.title')}
                 isDark={isDark}
-                headerIcon={<Zap size={16} color={isDark ? '#4fc3f7' : '#0070f3'} />}
-                footer={addCommandModalFooter}
-                maxWidth="400px"
-            >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div>
-                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>{t('git.terminal.modal.name_label')}</label>
-                        <input
-                            autoFocus
-                            placeholder={t('git.terminal.modal.name_placeholder')}
-                            value={newCmdLabel}
-                            onChange={(e) => setNewCmdLabel(e.target.value)}
-                            style={{
-                                width: '100%',
-                                background: isDark ? '#252525' : '#fff',
-                                border: `1px solid ${isDark ? '#444' : '#ddd'}`,
-                                borderRadius: '8px',
-                                fontSize: '0.9rem',
-                                padding: '10px 12px',
-                                color: isDark ? '#fff' : '#000',
-                                outline: 'none',
-                                boxSizing: 'border-box'
-                            }}
-                        />
-                    </div>
-                    <div>
-                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', marginBottom: '6px', fontWeight: 700, textTransform: 'uppercase' }}>{t('git.terminal.modal.cmd_label')}</label>
-                        <input
-                            placeholder={t('git.terminal.modal.cmd_placeholder')}
-                            value={newCmdValue}
-                            onChange={(e) => setNewCmdValue(e.target.value)}
-                            style={{
-                                width: '100%',
-                                background: isDark ? '#252525' : '#fff',
-                                border: `1px solid ${isDark ? '#444' : '#ddd'}`,
-                                borderRadius: '8px',
-                                fontSize: '0.9rem',
-                                padding: '10px 12px',
-                                color: isDark ? '#fff' : '#000',
-                                outline: 'none',
-                                boxSizing: 'border-box'
-                            }}
-                            onKeyDown={(e) => e.key === 'Enter' && handleAddQuickCommand()}
-                        />
-                    </div>
+                newCmdLabel={newCmdLabel}
+                setNewCmdLabel={setNewCmdLabel}
+                newCmdValue={newCmdValue}
+                setNewCmdValue={setNewCmdValue}
+                newCmdAutoExecute={newCmdAutoExecute}
+                setNewCmdAutoExecute={setNewCmdAutoExecute}
+                onAdd={handleAddQuickCommand}
+            />
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <label style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', display: 'block', fontWeight: 700, textTransform: 'uppercase' }}>{t('git.terminal.modal.interaction_label')}</label>
-
-                        <div
-                            onClick={() => setNewCmdAutoExecute(true)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                padding: '12px',
-                                borderRadius: '10px',
-                                background: newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.08)' : 'rgba(0, 112, 243, 0.04)') : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
-                                border: `1px solid ${newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)') : (isDark ? '#333' : '#eee')}`,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <Radio
-                                checked={newCmdAutoExecute}
-                                onChange={() => setNewCmdAutoExecute(true)}
-                                activeColor={isDark ? '#4fc3f7' : '#0070f3'}
-                                isDark={isDark}
-                            />
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>{t('git.terminal.modal.auto_exec.title')}</div>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>{t('git.terminal.modal.auto_exec.desc')}</div>
-                            </div>
-                        </div>
-
-                        <div
-                            onClick={() => setNewCmdAutoExecute(false)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                padding: '12px',
-                                borderRadius: '10px',
-                                background: !newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.08)' : 'rgba(0, 112, 243, 0.04)') : (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'),
-                                border: `1px solid ${!newCmdAutoExecute ? (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)') : (isDark ? '#333' : '#eee')}`,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            <Radio
-                                checked={!newCmdAutoExecute}
-                                onChange={() => setNewCmdAutoExecute(false)}
-                                activeColor={isDark ? '#4fc3f7' : '#0070f3'}
-                                isDark={isDark}
-                            />
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isDark ? '#fff' : '#333', marginBottom: '2px' }}>{t('git.terminal.modal.fill_only.title')}</div>
-                                <div style={{ fontSize: '0.7rem', color: isDark ? '#888' : '#666', lineHeight: '1.4' }}>{t('git.terminal.modal.fill_only.desc')}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Terminal Header */}
             <div
                 className="animate-entrance"
                 style={{
@@ -499,14 +335,7 @@ export const GitTerminalView: React.FC = () => {
                         <span style={{ fontSize: '0.65rem', color: isDark ? '#666' : '#999', fontWeight: 600, cursor: 'help' }}>Macros</span>
                     </Tooltip>
 
-                    <div style={{
-                        fontSize: '0.65rem',
-                        color: isDark ? '#555' : '#aaa',
-                        display: 'flex',
-                        gap: '12px',
-                        marginLeft: '12px',
-                        fontWeight: 500
-                    }}>
+                    <div style={{ fontSize: '0.65rem', color: isDark ? '#555' : '#aaa', display: 'flex', gap: '12px', marginLeft: '12px', fontWeight: 500 }}>
                         {settings.terminalCopyOnSelect && (
                             <Tooltip content="Texto selecionado é copiado automaticamente" side="bottom">
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>
@@ -549,123 +378,12 @@ export const GitTerminalView: React.FC = () => {
                 </div>
             </div>
 
-            {/* Macros Bar */}
-            <div
-                className="animate-entrance"
-                style={{
-                    padding: '8px 16px',
-                    borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
-                    background: isDark ? '#1a1a1a' : '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    minHeight: '40px',
-                    animationDelay: '0.1s',
-                    opacity: 0
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isDark ? '#555' : '#aaa' }}>
-                    <Zap size={14} />
-                </div>
+            <GitTerminalToolbar
+                isDark={isDark}
+                onAddClick={() => setShowAddCommand(true)}
+                onRunCommand={handleRunQuickCommand}
+            />
 
-                <div style={{
-                    flex: 1,
-                    height: '40px',
-                    overflowX: 'auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    paddingBottom: '4px',
-                }} className="terminal-macros-scroll">
-                    <style>{`
-                        .terminal-macros-scroll::-webkit-scrollbar {
-                            height: 4px;
-                        }
-                        .terminal-macros-scroll::-webkit-scrollbar-track {
-                            background: transparent;
-                        }
-                        .terminal-macros-scroll::-webkit-scrollbar-thumb {
-                            background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
-                            border-radius: 4px;
-                        }
-                        .terminal-macros-scroll::-webkit-scrollbar-thumb:hover {
-                            background: ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)'};
-                        }
-                    `}</style>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '100%' }}>
-                        {quickCommands.map((cmd) => (
-                            <div
-                                key={cmd.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    background: isDark ? '#252525' : '#f0f0f0',
-                                    borderRadius: '4px',
-                                    padding: '2px 4px 2px 8px',
-                                    fontSize: '0.7rem',
-                                    color: isDark ? '#bbb' : '#444',
-                                    border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                                    whiteSpace: 'nowrap',
-                                    height: '24px'
-                                }}
-                            >
-                                <span
-                                    onClick={() => handleRunQuickCommand(cmd.command, cmd.autoExecute)}
-                                    title={`${cmd.autoExecute ? 'Executar' : 'Preencher'}: ${cmd.command}`}
-                                    style={{ cursor: 'pointer', fontWeight: 600, marginRight: '4px' }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = isDark ? '#4fc3f7' : '#0070f3'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}
-                                >
-                                    {cmd.label}
-                                </span>
-                                <button
-                                    onClick={() => removeQuickCommand(cmd.id)}
-                                    style={{
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: isDark ? '#555' : '#ccc',
-                                        cursor: 'pointer',
-                                        padding: '2px',
-                                        display: 'flex',
-                                        alignItems: 'center'
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = '#f87171'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#555' : '#ccc'}
-                                >
-                                    <X size={12} />
-                                </button>
-                            </div>
-                        ))}
-
-                        <button
-                            onClick={() => setShowAddCommand(true)}
-                            style={{
-                                background: 'transparent',
-                                border: `1px dashed ${isDark ? '#444' : '#ccc'}`,
-                                borderRadius: '4px',
-                                width: '24px',
-                                height: '24px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: isDark ? '#444' : '#ccc',
-                                cursor: 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.borderColor = isDark ? '#666' : '#999';
-                                e.currentTarget.style.color = isDark ? '#666' : '#999';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.borderColor = isDark ? '#444' : '#ccc';
-                                e.currentTarget.style.color = isDark ? '#444' : '#ccc';
-                            }}
-                        >
-                            <Plus size={14} />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Terminal Viewport */}
             <div
                 className="terminal-viewport-container animate-entrance"
                 style={{
@@ -704,6 +422,7 @@ export const GitTerminalView: React.FC = () => {
                     />
                 )}
 
+                {/* Suggestions and Prompts could also be extracted but keeping them here for now as they are tightly coupled with terminal events */}
                 {gitSuggestion && (
                     <div style={{
                         position: 'absolute',

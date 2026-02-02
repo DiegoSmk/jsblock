@@ -1,0 +1,34 @@
+[
+  {
+    "id": "refactor-store",
+    "priority": "High",
+    "effort": "Medium",
+    "risk": "Medium",
+    "dependency": [],
+    "description": "Split src/store/useStore.ts into slices."
+  },
+  {
+    "id": "fix-security-eval",
+    "priority": "Critical",
+    "effort": "High",
+    "risk": "High",
+    "dependency": ["refactor-store"],
+    "description": "Replace eval() with a secure sandbox."
+  },
+  {
+    "id": "refactor-app-component",
+    "priority": "Medium",
+    "effort": "Low",
+    "risk": "Low",
+    "dependency": [],
+    "description": "Extract FlowContent from App.tsx."
+  },
+  {
+    "id": "optimize-codegen",
+    "priority": "Low",
+    "effort": "Medium",
+    "risk": "Medium",
+    "dependency": [],
+    "description": "Move CodeGenerator to Web Worker."
+  }
+]

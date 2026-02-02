@@ -2,6 +2,43 @@ import React from 'react';
 import { Blocks, Power, Trash2, Info, ShieldCheck, Cpu } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
+// Helper for section headers to match SettingsView
+const SectionHeader = ({ title, icon: Icon, isDark }: { title: string, icon?: React.ElementType, isDark: boolean }) => (
+    <h3 style={{
+        fontSize: '1rem',
+        fontWeight: 700,
+        color: isDark ? '#fff' : '#111',
+        marginBottom: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+    }}>
+        {Icon && <Icon size={16} />}
+        {title}
+    </h3>
+);
+
+// Helper for information rows
+const InfoRow = ({ label, value, isDark, monospace = false }: { label: string, value: React.ReactNode, isDark: boolean, monospace?: boolean }) => (
+    <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '12px 16px',
+        borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#f0f0f0'}`,
+        fontSize: '0.9rem'
+    }}>
+        <span style={{ color: isDark ? '#888' : '#666', fontWeight: 500 }}>{label}</span>
+        <span style={{
+            color: isDark ? '#ccc' : '#333',
+            fontFamily: monospace ? '"JetBrains Mono", monospace' : 'inherit',
+            fontSize: monospace ? '0.85rem' : 'inherit'
+        }}>
+            {value}
+        </span>
+    </div>
+);
+
 export const ExtensionDetailsView: React.FC = () => {
     const {
         plugins,
@@ -35,43 +72,6 @@ export const ExtensionDetailsView: React.FC = () => {
             onCancel: () => setConfirmationModal(null)
         });
     };
-
-    // Helper for section headers to match SettingsView
-    const SectionHeader = ({ title, icon: Icon }: { title: string, icon?: React.ElementType }) => (
-        <h3 style={{
-            fontSize: '1rem',
-            fontWeight: 700,
-            color: isDark ? '#fff' : '#111',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-        }}>
-            {Icon && <Icon size={16} />}
-            {title}
-        </h3>
-    );
-
-    // Helper for information rows
-    const InfoRow = ({ label, value, monospace = false }: { label: string, value: React.ReactNode, monospace?: boolean }) => (
-        <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 16px',
-            borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#f0f0f0'}`,
-            fontSize: '0.9rem'
-        }}>
-            <span style={{ color: isDark ? '#888' : '#666', fontWeight: 500 }}>{label}</span>
-            <span style={{
-                color: isDark ? '#ccc' : '#333',
-                fontFamily: monospace ? '"JetBrains Mono", monospace' : 'inherit',
-                fontSize: monospace ? '0.85rem' : 'inherit'
-            }}>
-                {value}
-            </span>
-        </div>
-    );
 
     return (
         <div style={{
@@ -131,7 +131,7 @@ export const ExtensionDetailsView: React.FC = () => {
                                         v{plugin.version}
                                     </span>
                                     <span style={{ fontSize: '0.9rem', color: isDark ? '#666' : '#999' }}>
-                                        by {plugin.author || 'Unknown'}
+                                        by {plugin.author ?? 'Unknown'}
                                     </span>
                                 </div>
                             </div>
@@ -203,23 +203,23 @@ export const ExtensionDetailsView: React.FC = () => {
                     {/* Main Content */}
                     <div>
                         <div style={{ marginBottom: '40px' }}>
-                            <SectionHeader title="Technical Overview" icon={Info} />
+                            <SectionHeader title="Technical Overview" icon={Info} isDark={isDark} />
                             <div style={{
                                 background: isDark ? '#161616' : '#fafafa',
                                 border: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
                                 borderRadius: '12px',
                                 overflow: 'hidden'
                             }}>
-                                <InfoRow label="Identifier" value={plugin.id} monospace />
-                                <InfoRow label="Entry Point" value={plugin.entry} monospace />
-                                <InfoRow label="Execution" value={<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Cpu size={14} /><span>Isolated Proccess</span></div>} />
+                                <InfoRow label="Identifier" value={plugin.id} monospace isDark={isDark} />
+                                <InfoRow label="Entry Point" value={plugin.entry} monospace isDark={isDark} />
+                                <InfoRow label="Execution" value={<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Cpu size={14} /><span>Isolated Proccess</span></div>} isDark={isDark} />
                             </div>
                         </div>
                     </div>
 
                     {/* Permissions Sidebar */}
                     <div>
-                        <SectionHeader title="Permissions" icon={ShieldCheck} />
+                        <SectionHeader title="Permissions" icon={ShieldCheck} isDark={isDark} />
                         <div style={{
                             background: isDark ? '#161616' : '#fafafa',
                             border: `1px solid ${isDark ? '#2d2d2d' : '#eee'}`,
@@ -227,7 +227,7 @@ export const ExtensionDetailsView: React.FC = () => {
                             padding: '20px'
                         }}>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {(plugin.permissions || ['No specific permissions']).map(p => (
+                                {(plugin.permissions ?? ['No specific permissions']).map(p => (
                                     <span key={p} style={{
                                         fontSize: '0.8rem',
                                         padding: '4px 10px',
