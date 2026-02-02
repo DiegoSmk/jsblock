@@ -1,6 +1,7 @@
-import type { GitSlice, GitTag } from '../../../../types/store';
+import type { GitSlice, AppState, GitTag } from '../../../../types/store';
+import { StateCreator } from 'zustand';
 
-export const createTagActions = (set: Function, get: Function): Partial<GitSlice> => ({
+export const createTagActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
     fetchTags: async () => {
         const { openedFolder } = get();
         if (!openedFolder || !window.electronAPI) return;
@@ -28,7 +29,7 @@ export const createTagActions = (set: Function, get: Function): Partial<GitSlice
                 })
                 .filter((tag): tag is GitTag => tag !== null);
 
-            set((state: any) => ({ git: { ...state.git, tags } }));
+            set((state: AppState) => ({ git: { ...state.git, tags } }));
         } catch (err) {
             console.error('Error fetching tags', err);
         }

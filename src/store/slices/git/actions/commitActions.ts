@@ -1,9 +1,10 @@
-import type { GitSlice, CommitTemplate } from '../../../../types/store';
+import type { GitSlice, AppState, CommitTemplate } from '../../../../types/store';
+import { StateCreator } from 'zustand';
 
 const gitHead = 'HEAD';
 const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-export const createCommitActions = (set: Function, get: Function): Partial<GitSlice> => ({
+export const createCommitActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
     gitCommit: async (message: string, isAmend = false) => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder) return;

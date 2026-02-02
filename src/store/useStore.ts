@@ -35,6 +35,9 @@ const initialCode = '';
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 
+// Worker instance
+let runtimeWorker: Worker | null = null;
+
 export const useStore = create<AppState>((set, get, api) => ({
     ...createGitSlice(set, get, api),
 
@@ -371,11 +374,8 @@ export const useStore = create<AppState>((set, get, api) => ({
             }
         }
 
-        let runtimeValues: Record<string, unknown> = {};
-
         // Advanced Sandbox Evaluation
-        // SECURITY: Critical - Eval usage.
-        // The code uses `eval()` to simulate a JS runtime. This is extremely dangerous if the input code comes from an untrusted source.
+        // SECURITY: Replaced eval with Web Worker
         try {
             // 1. Identify items to capture
             const varNames = nodes
@@ -405,41 +405,26 @@ export const useStore = create<AppState>((set, get, api) => ({
             const allItems = [...varNames, ...callExpressions, ...nestedExpressions];
 
             if (allItems.length > 0) {
-                // We construct a massive object return that evaluates everything in context
-                // Security Note: 'eval' is used for this prototyping tool to simulate a JS runtime.
-                // In production, this would be a separate worker or defined sandbox.
+                // Initialize worker if needed
+                if (!runtimeWorker) {
+                    runtimeWorker = new Worker(new URL('../workers/runtime.worker.ts', import.meta.url), { type: 'module' });
+                    runtimeWorker.onmessage = (e) => {
+                        const runtimeValues = e.data;
+                        set({ runtimeValues });
+                    };
+                }
 
-                // We wrap calls in try-catch to prevent one failure from breaking all
-                const returnObject = allItems.map(item => {
-                    // Escape ID for key if needed, but we use simple keys here
-                    return `"${item.id}": (function(){ try { return ${item.expr} } catch(e) { return undefined } })()`;
-                }).join(',');
-
-                const captureCode = `
-                    (function() {
-                        // Redeclare functions globally so they are available
-                        // This is a naive approach; a better one would parse function bodies.
-                        // For now we just eval the whole code first to set up scope.
-                        try {
-                            ${code}
-                            return { ${returnObject} };
-                        } catch {
-                            return {};
-                        }
-                    })()
-                `;
-                runtimeValues = eval(captureCode) as Record<string, unknown>;
+                // Send code to worker
+                runtimeWorker.postMessage({ code, items: allItems });
+            } else {
+                set({ runtimeValues: {} });
             }
         } catch (err) {
             console.warn("Runtime evaluation failed:", err);
         }
 
         const nodesWithValues = nodes.map(node => {
-            // Variables get values directly attached (legacy support) but useStore is source of truth
             if (node.id.startsWith('var-')) {
-                // DO NOT overwrite data.value! That is the SOURCE definition.
-                // We keep runtime values separate in the store's runtimeValues state.
-                // VariableNode already reads from runtimeValues directly.
                 return node;
             }
             return node;
@@ -450,20 +435,13 @@ export const useStore = create<AppState>((set, get, api) => ({
 
         const layouted = getLayoutedElements(nodesWithValues, edges);
 
-        // Check if the currently active scope still exists in the new node set
-
-        // If the scope relies on a specific node being present (like a function Definition), check for it
-        // The simple check involves seeing if we can traverse the stack in the new/existing nodes?
-        // For now, simple existence check: if we are in a scope, ensure that scope ID is valid or that we are at root.
-        // Actually, scopeId usually corresponds to a container node ID (like loop-123). Let's check if that node exists.
         const activeNodeExists = currentScopeId === 'root' || layouted.nodes.some(n => n.id === currentScopeId);
 
         set({
             code,
             nodes: layouted.nodes,
             edges: layouted.edges,
-            runtimeValues,
-            // Preserve navigation if the active scope node still exists
+            // runtimeValues is updated asynchronously via worker callback
             navigationStack: activeNodeExists ? currentStack : [{ id: 'root', label: 'Main' }],
             activeScopeId: activeNodeExists ? currentScopeId : 'root'
         });

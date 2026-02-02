@@ -1,6 +1,7 @@
-import type { GitSlice, GitAuthor, GitProfile } from '../../../../types/store';
+import type { GitSlice, AppState, GitAuthor, GitProfile } from '../../../../types/store';
+import { StateCreator } from 'zustand';
 
-export const createConfigActions = (set: Function, get: Function): Partial<GitSlice> => ({
+export const createConfigActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
     gitInit: async (author?: GitAuthor, isGlobal = false) => {
         const { openedFolder, refreshGit, setGitConfig } = get();
         if (!openedFolder) return;
@@ -109,7 +110,7 @@ export const createConfigActions = (set: Function, get: Function): Partial<GitSl
                 }
             }
 
-            set((state: any) => ({
+            set((state: AppState) => ({
                 git: {
                     ...state.git,
                     globalAuthor: globalAuthor.name || globalAuthor.email ? globalAuthor : null,

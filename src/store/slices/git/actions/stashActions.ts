@@ -1,6 +1,7 @@
-import type { GitSlice, GitStashEntry } from '../../../../types/store';
+import type { GitSlice, AppState, GitStashEntry } from '../../../../types/store';
+import { StateCreator } from 'zustand';
 
-export const createStashActions = (set: Function, get: Function): Partial<GitSlice> => ({
+export const createStashActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
     gitStash: async (message?: string) => {
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
@@ -82,7 +83,7 @@ export const createStashActions = (set: Function, get: Function): Partial<GitSli
                     }
                     return { index, branch: '?', message: line, description: line };
                 });
-            set((state: any) => ({ git: { ...state.git, stashes } }));
+            set((state: AppState) => ({ git: { ...state.git, stashes } }));
         } catch (err) {
             console.error('Error fetching stashes', err);
         }

@@ -1,8 +1,9 @@
-import type { GitSlice, GitFileStatus, GitLogEntry } from '../../../../types/store';
+import type { GitSlice, AppState, GitFileStatus, GitLogEntry } from '../../../../types/store';
+import { StateCreator } from 'zustand';
 
 const gitHead = 'HEAD';
 
-export const createLifecycleActions = (set: Function, get: Function): Partial<GitSlice> => ({
+export const createLifecycleActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
     refreshGit: async () => {
         const { openedFolder, fetchStashes, fetchTags } = get();
         if (!openedFolder || !window.electronAPI) return;
@@ -12,7 +13,7 @@ export const createLifecycleActions = (set: Function, get: Function): Partial<Gi
             const isRepo = isRepoRes.stdout.trim() === 'true';
 
             if (!isRepo) {
-                set((state: any) => ({
+                set((state: AppState) => ({
                     git: { ...state.git, isRepo: false }
                 }));
                 return;
@@ -155,7 +156,7 @@ export const createLifecycleActions = (set: Function, get: Function): Partial<Gi
                 console.warn('Failed to fetch repo stats', err);
             }
 
-            set((state: any) => ({
+            set((state: AppState) => ({
                 git: {
                     ...state.git,
                     isRepo: true,
@@ -177,7 +178,7 @@ export const createLifecycleActions = (set: Function, get: Function): Partial<Gi
             await fetchTags();
         } catch (err) {
             console.error('Git refresh failed:', err);
-            set((state: any) => ({
+            set((state: AppState) => ({
                 git: { ...state.git, isRepo: false, isInitialized: true }
             }));
         }

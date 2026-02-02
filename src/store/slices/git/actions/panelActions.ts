@@ -1,6 +1,7 @@
-import type { GitSlice, GitPanelConfig, QuickCommand } from '../../../../types/store';
+import type { GitSlice, AppState, GitPanelConfig, QuickCommand } from '../../../../types/store';
+import { StateCreator } from 'zustand';
 
-export const createPanelActions = (set: Function, get: Function): Partial<GitSlice> => ({
+export const createPanelActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
     updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => {
         const current = get().gitPanelConfig;
         const newValue = { ...current, ...updates };

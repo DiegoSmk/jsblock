@@ -1,8 +1,9 @@
-import type { GitSlice } from '../../../../types/store';
+import type { GitSlice, AppState } from '../../../../types/store';
+import { StateCreator } from 'zustand';
 
 const gitHead = 'HEAD';
 
-export const createStageActions = (set: Function, get: Function): Partial<GitSlice> => ({
+export const createStageActions = (set: StateCreator<AppState>['setState'], get: StateCreator<AppState>['getState']): Partial<GitSlice> => ({
     gitStage: async (path: string) => {
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
