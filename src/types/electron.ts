@@ -42,6 +42,13 @@ export interface ElectronAPI {
   // App lifecycle
   appReady: () => void;
 
+  // Plugins
+  discoverPlugins: () => Promise<PluginManifest[]>;
+  togglePlugin: (id: string, enabled: boolean) => Promise<boolean>;
+  installPlugin: () => Promise<PluginManifest>;
+  uninstallPlugin: (id: string) => Promise<boolean>;
+  onPluginNotification: (callback: (data: { message: string }) => void) => () => void;
+
   // Environment (if needed, but not in preload.ts currently)
   getEnvironmentInfo?: () => Promise<{
     platform: string;
@@ -50,6 +57,8 @@ export interface ElectronAPI {
     electronVersion: string;
   }>;
 }
+
+import type { PluginManifest } from './store';
 
 declare global {
   interface Window {

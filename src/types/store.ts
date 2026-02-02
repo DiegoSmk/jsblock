@@ -96,6 +96,17 @@ export interface CommitTemplate {
   content: string;
 }
 
+export interface PluginManifest {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  author?: string;
+  entry: string;
+  permissions?: string[];
+  enabled?: boolean;
+}
+
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface Toast {
@@ -110,6 +121,7 @@ export interface Settings {
   terminalRightClickPaste: boolean;
   autoLayoutNodes: boolean;
   fontSize: number;
+  showAppBorder: boolean;
 }
 
 export interface GitPanelSection {
@@ -200,12 +212,12 @@ export interface AppState {
   // Runtime Layout (Session Only)
   showSidebar: boolean;
   runtimeSidebarWidths: Record<string, number>;
-  activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings';
+  activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions';
   showCode: boolean;
   showCanvas: boolean;
   toggleSidebar: (show?: boolean) => void;
   setRuntimeSidebarWidth: (width: number, tab: string) => void;
-  setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings') => void;
+  setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions') => void;
   toggleCode: () => void;
   toggleCanvas: () => void;
 
@@ -322,6 +334,15 @@ export interface AppState {
   // Settings
   settings: Settings;
   updateSettings: (updates: Partial<Settings>) => void;
+
+  // Plugins
+  plugins: PluginManifest[];
+  selectedPluginId: string | null;
+  discoverPlugins: () => Promise<void>;
+  togglePlugin: (id: string, enabled: boolean) => Promise<void>;
+  installPlugin: () => Promise<void>;
+  uninstallPlugin: (id: string) => Promise<void>;
+  setSelectedPluginId: (id: string | null) => void;
 
   // Git Panel Configuration
   gitPanelConfig: GitPanelConfig;

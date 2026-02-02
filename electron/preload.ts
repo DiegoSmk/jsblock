@@ -26,5 +26,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     terminalResize: (cols: number, rows: number) => ipcRenderer.send('terminal-resize', { cols, rows }),
     terminalKill: () => ipcRenderer.send('terminal-kill'),
     openSystemTerminal: (path: string) => ipcRenderer.invoke('open-system-terminal', path),
-    appReady: () => ipcRenderer.send('app-ready')
+    appReady: () => ipcRenderer.send('app-ready'),
+
+    // Plugins
+    discoverPlugins: () => ipcRenderer.invoke('plugins:discover'),
+    togglePlugin: (id: string, enabled: boolean) => ipcRenderer.invoke('plugins:toggle', id, enabled),
+    installPlugin: () => ipcRenderer.invoke('plugins:install'),
+    uninstallPlugin: (id: string) => ipcRenderer.invoke('plugins:uninstall', id),
+    onPluginNotification: (callback: (data: { message: string }) => void) => {
+        const subscription = (_event: unknown, data: { message: string }) => callback(data);
+        ipcRenderer.on('plugin:notification', subscription);
+        return () => ipcRenderer.removeListener('plugin:notification', subscription);
+    }
 });

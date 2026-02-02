@@ -51,41 +51,61 @@ export const useStore = create<AppState>((set, get) => ({
     code: initialCode,
     nodes: [],
     edges: [],
-    theme: 'dark',
+    theme: (() => {
+        try {
+            const saved = localStorage.getItem('settings.json');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed.appearance?.theme ?? 'dark';
+            }
+        } catch { }
+        return 'dark';
+    })(),
     toasts: [],
     runtimeValues: {},
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
     showSidebar: true,
+    plugins: [],
+    selectedPluginId: null,
     // Settings Configuration
     settingsConfig: localStorage.getItem('settings.json') ?? JSON.stringify({
+        appearance: { theme: 'dark', showAppBorder: false },
         layout: {
-            sidebar: {
-                vanilla: 250,
-                git: 300
-            }
+            sidebar: { vanilla: 250, git: 300, extensions: 180 }
         },
-        editor: {
-            fontSize: 14
-        }
+        editor: { fontSize: 14, autoLayoutNodes: false },
+        terminal: { copyOnSelect: true, rightClickPaste: true },
+        files: { autoSave: false }
     }, null, 2),
+
     updateSettingsConfig: (json: string) => {
         localStorage.setItem('settings.json', json);
         set({ settingsConfig: json });
 
         try {
-            interface SettingsSchema {
-                layout?: { sidebar?: Record<string, number> };
-                editor?: { fontSize?: number };
+            const parsed = JSON.parse(json);
+
+            // Sync all states from parsed JSON
+            if (parsed.appearance?.theme) {
+                set({ theme: parsed.appearance.theme });
             }
-            const parsed = JSON.parse(json) as SettingsSchema;
             if (parsed.layout?.sidebar) {
                 set({ runtimeSidebarWidths: parsed.layout.sidebar });
             }
-            if (parsed.editor?.fontSize !== undefined) {
-                const fontSize = parsed.editor.fontSize;
-                set((state) => ({ settings: { ...state.settings, fontSize } }));
+            if (parsed.files?.autoSave !== undefined) {
+                set({ autoSave: parsed.files.autoSave });
             }
+
+            // Sync settings object
+            const newSettings = { ...get().settings };
+            if (parsed.editor?.fontSize !== undefined) newSettings.fontSize = parsed.editor.fontSize;
+            if (parsed.editor?.autoLayoutNodes !== undefined) newSettings.autoLayoutNodes = parsed.editor.autoLayoutNodes;
+            if (parsed.terminal?.copyOnSelect !== undefined) newSettings.terminalCopyOnSelect = parsed.terminal.copyOnSelect;
+            if (parsed.terminal?.rightClickPaste !== undefined) newSettings.terminalRightClickPaste = parsed.terminal.rightClickPaste;
+            if (parsed.appearance?.showAppBorder !== undefined) newSettings.showAppBorder = parsed.appearance.showAppBorder;
+
+            set({ settings: newSettings });
         } catch {
             // Silently ignore parse errors while typing
         }
@@ -94,23 +114,35 @@ export const useStore = create<AppState>((set, get) => ({
     // Runtime Layout (Session Only)
     runtimeSidebarWidths: (() => {
         try {
-            // Try to load initial widths from settings
             const savedSettings = localStorage.getItem('settings.json');
             if (savedSettings) {
-                interface SettingsSchema {
-                    layout?: { sidebar?: Record<string, number> };
-                }
-                const parsed = JSON.parse(savedSettings) as SettingsSchema;
-                return parsed.layout?.sidebar ?? { vanilla: 250, git: 300 };
+                const parsed = JSON.parse(savedSettings);
+                return parsed.layout?.sidebar ?? { vanilla: 250, git: 300, extensions: 180 };
             }
         } catch (e) {
             console.error('Failed to parse settings for layout initialization', e);
         }
-        return { vanilla: 250, git: 300 };
+        return { vanilla: 250, git: 300, extensions: 180 };
     })(),
+
     setRuntimeSidebarWidth: (width: number, module: string) => {
         const current = get().runtimeSidebarWidths;
-        set({ runtimeSidebarWidths: { ...current, [module]: width } });
+        const newWidths = { ...current, [module]: width };
+        set({ runtimeSidebarWidths: newWidths });
+
+        // Sync back to settingsConfig
+        try {
+            const parsed = JSON.parse(get().settingsConfig);
+            if (!parsed.layout) parsed.layout = {};
+            if (!parsed.layout.sidebar) parsed.layout.sidebar = {};
+            parsed.layout.sidebar[module] = width;
+
+            const newJson = JSON.stringify(parsed, null, 2);
+            localStorage.setItem('settings.json', newJson);
+            set({ settingsConfig: newJson });
+        } catch (e) {
+            console.error('Failed to sync sidebar width', e);
+        }
     },
     confirmationModal: null,
 
@@ -205,19 +237,53 @@ export const useStore = create<AppState>((set, get) => ({
     },
     quickCommands: JSON.parse(localStorage.getItem('quickCommands') ?? '[]') as QuickCommand[],
 
-    settings: {
-        terminalCopyOnSelect: localStorage.getItem('settings_terminalCopyOnSelect') !== 'false',
-        terminalRightClickPaste: localStorage.getItem('settings_terminalRightClickPaste') !== 'false',
-        autoLayoutNodes: localStorage.getItem('settings_autoLayoutNodes') === 'true',
-        fontSize: parseInt(localStorage.getItem('settings_fontSize') ?? '14'),
-    },
+    settings: (() => {
+        const defaultSettings = {
+            terminalCopyOnSelect: true,
+            terminalRightClickPaste: true,
+            autoLayoutNodes: false,
+            fontSize: 14,
+            showAppBorder: false,
+        };
+        try {
+            const saved = localStorage.getItem('settings.json');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return {
+                    terminalCopyOnSelect: parsed.terminal?.copyOnSelect ?? defaultSettings.terminalCopyOnSelect,
+                    terminalRightClickPaste: parsed.terminal?.rightClickPaste ?? defaultSettings.terminalRightClickPaste,
+                    autoLayoutNodes: parsed.editor?.autoLayoutNodes ?? defaultSettings.autoLayoutNodes,
+                    fontSize: parsed.editor?.fontSize ?? defaultSettings.fontSize,
+                    showAppBorder: parsed.appearance?.showAppBorder ?? false,
+                };
+            }
+        } catch { }
+        return defaultSettings;
+    })(),
 
     updateSettings: (updates: Partial<Settings>) => {
-        const newSettings = { ...get().settings, ...updates };
-        Object.keys(updates).forEach(key => {
-            localStorage.setItem(`settings_${key}`, String((updates as Record<string, unknown>)[key]));
-        });
+        const current = get().settings;
+        const newSettings = { ...current, ...updates };
         set({ settings: newSettings });
+
+        // Sync to JSON
+        try {
+            const parsed = JSON.parse(get().settingsConfig);
+            if (!parsed.editor) parsed.editor = {};
+            if (!parsed.terminal) parsed.terminal = {};
+
+            if (updates.fontSize !== undefined) parsed.editor.fontSize = updates.fontSize;
+            if (updates.autoLayoutNodes !== undefined) parsed.editor.autoLayoutNodes = updates.autoLayoutNodes;
+            if (updates.terminalCopyOnSelect !== undefined) parsed.terminal.copyOnSelect = updates.terminalCopyOnSelect;
+            if (updates.terminalRightClickPaste !== undefined) parsed.terminal.rightClickPaste = updates.terminalRightClickPaste;
+            if (updates.showAppBorder !== undefined) parsed.appearance.showAppBorder = updates.showAppBorder;
+
+            const newJson = JSON.stringify(parsed, null, 2);
+            localStorage.setItem('settings.json', newJson);
+            set({ settingsConfig: newJson });
+        } catch (e) {
+            console.error('Failed to sync settings', e);
+        }
     },
 
     addQuickCommand: (cmd: Omit<QuickCommand, 'id'>) => {
@@ -306,13 +372,34 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     selectedFile: null,
-    autoSave: localStorage.getItem('autoSave') === 'true',
+    autoSave: (() => {
+        try {
+            const saved = localStorage.getItem('settings.json');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return parsed.files?.autoSave ?? false;
+            }
+        } catch { }
+        return false;
+    })(),
     isDirty: false,
 
     toggleAutoSave: () => {
         const newValue = !get().autoSave;
-        localStorage.setItem('autoSave', String(newValue));
         set({ autoSave: newValue });
+
+        // Sync to JSON
+        try {
+            const parsed = JSON.parse(get().settingsConfig);
+            if (!parsed.files) parsed.files = {};
+            parsed.files.autoSave = newValue;
+
+            const newJson = JSON.stringify(parsed, null, 2);
+            localStorage.setItem('settings.json', newJson);
+            set({ settingsConfig: newJson });
+        } catch (e) {
+            console.error('Failed to sync autoSave', e);
+        }
     },
 
     setDirty: (dirty: boolean) => set({ isDirty: dirty }),
@@ -381,7 +468,7 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
     toggleSidebar: (show?: boolean) => set({ showSidebar: show ?? !get().showSidebar }),
-    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings') => set({ activeSidebarTab: tab, showSidebar: true }),
+    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions') => set({ activeSidebarTab: tab, showSidebar: true }),
     toggleCode: () => {
         if (get().showCode && !get().showCanvas) return;
         set({ showCode: !get().showCode });
@@ -569,7 +656,21 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     toggleTheme: () => {
-        set({ theme: get().theme === 'light' ? 'dark' : 'light' });
+        const nextTheme = get().theme === 'light' ? 'dark' : 'light';
+        set({ theme: nextTheme });
+
+        // Sync to JSON
+        try {
+            const parsed = JSON.parse(get().settingsConfig);
+            if (!parsed.appearance) parsed.appearance = {};
+            parsed.appearance.theme = nextTheme;
+
+            const newJson = JSON.stringify(parsed, null, 2);
+            localStorage.setItem('settings.json', newJson);
+            set({ settingsConfig: newJson });
+        } catch (e) {
+            console.error('Failed to sync theme', e);
+        }
     },
 
     updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => {
@@ -746,6 +847,9 @@ export const useStore = create<AppState>((set, get) => ({
             if (window.electronAPI) {
                 void window.electronAPI.ensureProjectConfig(path);
             }
+        } else if (get().activeSidebarTab === 'git') {
+            // Reset to explorer if closing folder while in git tab
+            set({ activeSidebarTab: 'explorer' });
         }
     },
 
@@ -1621,5 +1725,55 @@ export const useStore = create<AppState>((set, get) => ({
         } catch {
             get().addToast({ type: 'error', message: `Erro ao deletar branch ${branch}` });
         }
-    }
+    },
+
+    discoverPlugins: async () => {
+        try {
+            const plugins = await window.electronAPI.discoverPlugins();
+            set({ plugins });
+        } catch (err) {
+            get().addToast({ type: 'error', message: `Erro ao descobrir plugins: ${String(err)}` });
+        }
+    },
+
+    togglePlugin: async (id: string, enabled: boolean) => {
+        try {
+            await window.electronAPI.togglePlugin(id, enabled);
+            const plugins = get().plugins.map(p => p.id === id ? { ...p, enabled } : p);
+            set({ plugins });
+            get().addToast({
+                type: 'info',
+                message: `Plugin ${enabled ? 'ativado' : 'desativado'}. Reinicie para aplicar.`
+            });
+        } catch (err) {
+            get().addToast({ type: 'error', message: `Erro ao alterar estado do plugin: ${String(err)}` });
+        }
+    },
+
+    installPlugin: async () => {
+        try {
+            const manifest = await window.electronAPI.installPlugin();
+            if (manifest) {
+                await get().discoverPlugins();
+                get().addToast({ type: 'success', message: `Plugin "${manifest.name}" instalado!` });
+            }
+        } catch (err) {
+            get().addToast({ type: 'error', message: `Erro ao instalar plugin: ${String(err)}` });
+        }
+    },
+
+    uninstallPlugin: async (id: string) => {
+        try {
+            await window.electronAPI.uninstallPlugin(id);
+            set((state) => ({
+                plugins: state.plugins.filter(p => p.id !== id),
+                selectedPluginId: state.selectedPluginId === id ? null : state.selectedPluginId
+            }));
+            get().addToast({ type: 'success', message: 'Plugin removido.' });
+        } catch (err) {
+            get().addToast({ type: 'error', message: `Erro ao remover plugin: ${String(err)}` });
+        }
+    },
+
+    setSelectedPluginId: (id: string | null) => set({ selectedPluginId: id }),
 }));

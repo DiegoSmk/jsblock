@@ -8,6 +8,7 @@ import { exec, execFile } from 'child_process';
 import { promisify } from 'util';
 import * as pty from 'node-pty';
 import os from 'os';
+import { PluginManager } from './services/PluginManager';
 
 const execFileAsync = promisify(execFile);
 // const execAsync = promisify(exec); // unused
@@ -108,9 +109,16 @@ function createWindow() {
     });
 }
 
+const pluginManager = new PluginManager();
+
 void app.whenReady().then(() => {
     createSplashWindow();
     createWindow();
+    if (mainWindow) pluginManager.setMainWindow(mainWindow);
+
+    // Initial discovery and host start
+    pluginManager.discoverPlugins();
+    pluginManager.startExtensionHost();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -269,6 +277,38 @@ ipcMain.handle('git-command', async (_event, dirPath: string, args: string[]) =>
         const error = err as { stdout?: string; stderr?: string; message?: string };
         return { stdout: error.stdout ?? '', stderr: error.stderr ?? error.message ?? String(err) };
     }
+});
+
+// Plugin System Handlers
+ipcMain.handle('plugins:discover', () => {
+    return pluginManager.discoverPlugins();
+});
+
+ipcMain.handle('plugins:toggle', (_event, id: string, enabled: boolean) => {
+    pluginManager.togglePlugin(id, enabled);
+    return true;
+});
+
+ipcMain.handle('plugins:install', async () => {
+    const win = BrowserWindow.getFocusedWindow() ?? mainWindow;
+    const result = await dialog.showOpenDialog(win!, {
+        properties: ['openDirectory'],
+        title: 'Selecionar pasta do Plugin'
+    });
+
+    if (result.canceled) return null;
+
+    try {
+        return pluginManager.installPlugin(result.filePaths[0]);
+    } catch (err) {
+        console.error('Failed to install plugin:', err);
+        throw err;
+    }
+});
+
+ipcMain.handle('plugins:uninstall', (_event, id: string) => {
+    pluginManager.uninstallPlugin(id);
+    return true;
 });
 
 
