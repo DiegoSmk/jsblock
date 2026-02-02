@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
-import type { AppNode } from '../types/store';
+import type { AppNode, NodeCustomStyle } from '../types/store';
 import { useStore } from '../store/useStore';
 import { StickyNote, Move, Palette, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -22,11 +22,7 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
     const [isStyleOpen, setIsStyleOpen] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
 
-    const customStyle = (data.customStyle as {
-        borderColor?: string;
-        borderOpacity?: number;
-        borderStyle?: 'solid' | 'dashed' | 'dotted';
-    }) ?? {};
+    const customStyle = data.customStyle ?? {};
 
     // Defaults
     const borderOpacity = customStyle.borderOpacity ?? 1;
@@ -45,7 +41,7 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
         updateNodeData(id, { ...data, label: e.target.value });
     }, [id, data, updateNodeData]);
 
-    const handleStyleUpdate = (updates: Partial<typeof customStyle>) => {
+    const handleStyleUpdate = (updates: Partial<NodeCustomStyle>) => {
         updateNodeData(id, {
             customStyle: {
                 ...customStyle,
@@ -152,7 +148,7 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                     }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 700, fontSize: '0.8rem', color: isDark ? '#fff' : '#000' }}>Estilo da Nota</span>
                         <button
                             onClick={() => setIsStyleOpen(false)}
@@ -181,8 +177,8 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                         ))}
                     </div>
 
-                     {/* Opacity */}
-                     <div>
+                    {/* Opacity */}
+                    <div>
                         <span style={{ fontSize: '0.7rem', fontWeight: 600, color: isDark ? '#aaa' : '#666', marginBottom: '4px', display: 'block' }}>Opacidade</span>
                         <div style={{ display: 'flex', gap: '4px' }}>
                             {Object.entries(STROKE_OPACITY).map(([label, value]) => (
@@ -216,7 +212,7 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                                 style={{ flex: 1, height: '20px', background: 'transparent', border: `1px dashed ${isDark ? '#aaa' : '#666'}`, cursor: 'pointer', opacity: borderStyle === 'dashed' ? 1 : 0.5 }}
                                 onClick={() => handleStyleUpdate({ borderStyle: 'dashed' })}
                             />
-                             <button
+                            <button
                                 style={{ flex: 1, height: '20px', background: 'transparent', border: `1px dotted ${isDark ? '#aaa' : '#666'}`, cursor: 'pointer', opacity: borderStyle === 'dotted' ? 1 : 0.5 }}
                                 onClick={() => handleStyleUpdate({ borderStyle: 'dotted' })}
                             />

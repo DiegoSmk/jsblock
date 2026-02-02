@@ -8,19 +8,11 @@ import {
     X
 } from 'lucide-react';
 
+import type { EdgeCustomStyle } from '../types/store';
+
 interface EdgeStylePopupProps {
-    currentStyle: {
-        type: string;
-        stroke: string;
-        strokeWidth: number;
-        strokeDasharray?: string; // '5 5' for dashed, '1 5' for dotted
-    };
-    onUpdate: (updates: {
-        type?: string;
-        stroke?: string;
-        strokeWidth?: number;
-        strokeDasharray?: string;
-    }) => void;
+    currentStyle: EdgeCustomStyle;
+    onUpdate: (updates: EdgeCustomStyle) => void;
     onClose: () => void;
     isDark: boolean;
 }

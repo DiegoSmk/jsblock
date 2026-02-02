@@ -11,6 +11,19 @@ export interface Scope {
   label: string;
 }
 
+export interface NodeCustomStyle {
+  borderColor?: string;
+  borderOpacity?: number;
+  borderStyle?: 'solid' | 'dashed' | 'dotted';
+}
+
+export interface EdgeCustomStyle {
+  type?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  strokeDasharray?: string;
+}
+
 export interface AppNodeData {
   label?: string;
   expression?: string;
@@ -29,6 +42,7 @@ export interface AppNodeData {
   scopes?: Record<string, { id: string; label: string }>;
   fallenIndex?: number;
   text?: string;
+  customStyle?: NodeCustomStyle;
   [key: string]: unknown;
 }
 
