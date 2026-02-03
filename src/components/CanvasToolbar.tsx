@@ -1,8 +1,9 @@
 import React from 'react';
 import { Panel } from '@xyflow/react';
-import { StickyNote, Plus, Wrench, Copy, CheckSquare } from 'lucide-react';
+import { StickyNote, Plus, Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store/useStore';
+import { getAllUtilities, type UtilityType } from '../registry/utilities';
 
 interface CanvasToolbarProps {
     isDark: boolean;
@@ -112,28 +113,22 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
                         minWidth: '150px',
                         zIndex: 1000
                     }}>
-                        <button
-                            style={dropdownActionStyle}
-                            className="menu-item"
-                            onClick={() => {
-                                addUtilityNode('copy');
-                                setShowUtilityMenu(false);
-                            }}
-                        >
-                            <Copy size={16} />
-                            <span>Copiar Texto</span>
-                        </button>
-                        <button
-                            style={dropdownActionStyle}
-                            className="menu-item"
-                            onClick={() => {
-                                addUtilityNode('task');
-                                setShowUtilityMenu(false);
-                            }}
-                        >
-                            <CheckSquare size={16} />
-                            <span>Criar Tarefa</span>
-                        </button>
+                        <div style={{ padding: '4px' }}>
+                            {getAllUtilities().map((util) => (
+                                <button
+                                    key={util.type}
+                                    style={dropdownActionStyle}
+                                    className="menu-item"
+                                    onClick={() => {
+                                        addUtilityNode(util.type);
+                                        setShowUtilityMenu(false);
+                                    }}
+                                >
+                                    <util.icon size={16} />
+                                    <span>{util.label}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

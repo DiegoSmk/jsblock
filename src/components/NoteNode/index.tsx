@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { NodeResizer, type NodeProps } from '@xyflow/react';
 import { Move, MoreHorizontal, StickyNote } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useStore } from '../../store/useStore';
 import type { AppNode } from '../../types/store';
 import { useNoteLogic } from './useNoteLogic';
@@ -78,23 +79,26 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
             />
 
             {/* Content Container */}
-            <div
+            <motion.div
                 className="nodrag"
+                initial={false}
+                animate={{
+                    backgroundColor,
+                    borderColor: selected ? (customStyle.borderColor ?? '#a855f7') : effectiveBorderColor,
+                    opacity: taskStatus === 'completed' ? 0.7 : 1
+                }}
+                transition={{ duration: 0.3 }}
                 style={{
                     position: 'absolute',
                     inset: 0,
-                    background: backgroundColor,
                     borderWidth: '2px',
                     borderStyle: borderStyle,
-                    borderColor: selected ? (customStyle.borderColor ?? '#a855f7') : effectiveBorderColor,
                     borderRadius: '10px',
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
                     cursor: 'default',
-                    boxShadow: selected ? `0 0 0 1px ${customStyle.borderColor ?? '#a855f7'}` : '0 2px 4px rgba(0,0,0,0.1)',
-                    transition: 'border-color 0.2s ease, border-style 0.2s ease, background 0.3s ease',
-                    opacity: taskStatus === 'completed' ? 0.7 : 1
+                    boxShadow: selected ? `0 0 0 1px ${customStyle.borderColor ?? '#a855f7'}` : '0 2px 4px rgba(0,0,0,0.1)'
                 }}
             >
                 {/* Header */}
@@ -175,7 +179,7 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                         }}
                     />
                 </div>
-            </div>
+            </motion.div>
 
             <NoteNodeHandles
                 id={id}
