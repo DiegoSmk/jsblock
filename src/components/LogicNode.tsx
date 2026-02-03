@@ -1,12 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { Handle, Position, useHandleConnections } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 
 import type { AppNodeData } from '../types/store';
 
-export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
+export const LogicNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
-    const nodes = useStore((state) => state.nodes);
     const updateNodeData = useStore((state) => state.updateNodeData);
     const isDark = theme === 'dark';
 
@@ -16,7 +15,7 @@ export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
     });
 
     const targetNodeId = connections[0]?.target;
-    const targetNode = useMemo(() => nodes.find(n => n.id === targetNodeId), [nodes, targetNodeId]);
+    const targetNode = useStore((state) => state.nodes.find(n => n.id === targetNodeId));
 
     const operators = useMemo(() => {
         const allOps = ['+', '-', '*', '/', '==', '===', '!=', '>', '<', '>=', '<=', '&&', '||'];
@@ -52,10 +51,9 @@ export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
                 type="target"
                 position={Position.Left}
                 id="input-a"
-                className="handle-data"
+                className="handle-data target"
                 style={{
                     left: '-8px',
-                    background: '#f472b6' // Input
                 }}
             />
 
@@ -63,10 +61,9 @@ export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
                 type="target"
                 position={Position.Right}
                 id="input-b"
-                className="handle-data"
+                className="handle-data target"
                 style={{
                     right: '-8px',
-                    background: '#f472b6' // Input
                 }}
             />
 
@@ -131,12 +128,11 @@ export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
                 type="source"
                 position={Position.Bottom}
                 id="result"
-                className="handle-data"
+                className="handle-data source handle-logic"
                 style={{
                     bottom: '-8px',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    // Default grey via CSS
                 }}
             />
 
@@ -154,4 +150,6 @@ export const LogicNode = ({ id, data }: { id: string, data: AppNodeData }) => {
             `}</style>
         </div>
     );
-};
+});
+
+LogicNode.displayName = 'LogicNode';

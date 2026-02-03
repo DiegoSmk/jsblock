@@ -1,11 +1,11 @@
-
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Sparkles } from 'lucide-react';
 
 import type { AppNodeData } from '../types/store';
 
-export const LiteralNode = ({ id, data }: { id: string, data: AppNodeData }) => {
+export const LiteralNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const updateNodeData = useStore((state) => state.updateNodeData);
     const promoteToVariable = useStore((state) => state.promoteToVariable);
@@ -86,7 +86,7 @@ export const LiteralNode = ({ id, data }: { id: string, data: AppNodeData }) => 
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
-            transition: 'all 0.2s ease',
+            transition: 'box-shadow 0.2s ease',
         }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'scale(1.05)';
@@ -166,7 +166,7 @@ export const LiteralNode = ({ id, data }: { id: string, data: AppNodeData }) => 
                 type="source"
                 position={Position.Right}
                 id="output"
-                className="handle-data"
+                className="handle-data source"
                 style={{
                     right: '-8px',
                     top: '50%',
@@ -175,4 +175,6 @@ export const LiteralNode = ({ id, data }: { id: string, data: AppNodeData }) => 
             />
         </div >
     );
-};
+});
+
+LiteralNode.displayName = 'LiteralNode';

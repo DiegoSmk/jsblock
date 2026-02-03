@@ -1,11 +1,11 @@
-
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Shield, ExternalLink } from 'lucide-react';
 
 import type { AppNodeData } from '../types/store';
 
-export const TryCatchNode = ({ data }: { data: AppNodeData }) => {
+export const TryCatchNode = memo(({ data }: { data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const navigateInto = useStore((state) => state.navigateInto);
     const isDark = theme === 'dark';
@@ -84,4 +84,6 @@ export const TryCatchNode = ({ data }: { data: AppNodeData }) => {
             </div>
         </div>
     );
-};
+});
+
+TryCatchNode.displayName = 'TryCatchNode';

@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Box } from 'lucide-react';
 
 import type { AppNodeData } from '../types/store';
 
-export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) => {
+export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const runtimeValues = useStore((state) => state.runtimeValues);
     const updateNodeData = useStore((state) => state.updateNodeData);
@@ -149,7 +150,7 @@ export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) =>
                 type="source"
                 position={Position.Right}
                 id="output"
-                className="handle-data"
+                className="handle-data source"
                 style={{
                     right: '-8px',
                     top: '50%',
@@ -158,4 +159,6 @@ export const VariableNode = ({ data, id }: { id: string, data: AppNodeData }) =>
             />
         </div>
     );
-};
+});
+
+VariableNode.displayName = 'VariableNode';

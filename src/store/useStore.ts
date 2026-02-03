@@ -525,7 +525,7 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => {
         const { nodes, code, edges, isBlockFile, autoSave } = get();
-        const updatedNodes = nodes.map((n: AppNode) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData } } : n);
+        const updatedNodes = nodes.map((n: AppNode) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData, updatedAt: Date.now() } } : n);
         set({ nodes: updatedNodes });
 
         if (isBlockFile) {
@@ -541,6 +541,23 @@ export const useStore = create<AppState>((set, get, api) => ({
             // Regenerate code based on the new data
             const newCode = generateCodeFromFlow(code, updatedNodes, edges);
             get().setCode(newCode);
+        }
+    },
+
+    updateEdge: (edgeId, updates) => {
+        const { edges, isBlockFile, autoSave } = get();
+        const updatedEdges = edges.map(e => e.id === edgeId ? { ...e, ...updates } : e);
+        set({ edges: updatedEdges });
+
+        if (isBlockFile) {
+            if (autoSave) {
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    void get().saveFile();
+                }, 1000);
+            } else {
+                set({ isDirty: true });
+            }
         }
     },
 
@@ -815,7 +832,12 @@ export const useStore = create<AppState>((set, get, api) => ({
             id: `note-${Date.now()}`,
             type: 'noteNode',
             position: { x: Math.random() * 400, y: Math.random() * 400 },
-            data: { label: 'Nova Nota', text: '' },
+            data: {
+                label: 'Nova Nota',
+                text: '',
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            },
             style: { width: 250, height: 180 }
         };
         set({ nodes: [...get().nodes, newNode] });

@@ -87,7 +87,8 @@ export const pt = {
         },
         note: {
             title_placeholder: "Título da Nota",
-            text_placeholder: "Digite suas anotações..."
+            text_placeholder: "Digite suas anotações...",
+            delete: "Excluir"
         },
         edge: {
             add_comment: "Inserir Comentário",

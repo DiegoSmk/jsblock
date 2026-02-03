@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Repeat, ExternalLink } from 'lucide-react';
 
 import type { AppNodeData } from '../types/store';
 
-export const WhileNode = ({ data }: { id: string, data: AppNodeData }) => {
+export const WhileNode = memo(({ data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const navigateInto = useStore((state) => state.navigateInto);
     const isDark = theme === 'dark';
@@ -42,7 +43,7 @@ export const WhileNode = ({ data }: { id: string, data: AppNodeData }) => {
                         type="target"
                         position={Position.Left}
                         id="condition"
-                        className="handle-data"
+                        className="handle-data target"
                         style={{
                             left: '-6px',
                             top: '50%',
@@ -109,4 +110,6 @@ export const WhileNode = ({ data }: { id: string, data: AppNodeData }) => {
             </div>
         </div>
     );
-};
+});
+
+WhileNode.displayName = 'WhileNode';
