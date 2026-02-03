@@ -23,6 +23,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
         saveFile,
         setOpenedFolder,
         setSelectedFile,
+        setConfirmationModal,
         selectedFile,
         openedFolder,
         isDirty,
@@ -293,8 +294,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                     <button
                         onClick={() => {
                             if (openedFolder) {
-                                setOpenedFolder(null);
-                                void setSelectedFile(null);
+                                setConfirmationModal({
+                                    isOpen: true,
+                                    title: t('app.confirm_close_folder.title') ?? 'Fechar Projeto',
+                                    message: t('app.confirm_close_folder.message') ?? 'Tem certeza que deseja fechar a pasta atual? Quaisquer alterações não salvas serão perdidas.',
+                                    confirmLabel: t('app.window_controls.close') ?? 'Fechar',
+                                    cancelLabel: t('app.common.cancel') ?? 'Cancelar',
+                                    variant: 'warning',
+                                    onConfirm: () => {
+                                        setOpenedFolder(null);
+                                        void setSelectedFile(null);
+                                        setConfirmationModal(null);
+                                    },
+                                    onCancel: () => setConfirmationModal(null)
+                                });
                             } else {
                                 const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
                                 if (electronAPI) {

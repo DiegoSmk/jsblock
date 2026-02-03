@@ -54,6 +54,7 @@ const MenuButton = ({ icon: Icon, label, onClick, color, isDark }: MenuButtonPro
 
 export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
     const updateNodeData = useStore(state => state.updateNodeData);
+    const setConfirmationModal = useStore(state => state.setConfirmationModal);
     const theme = useStore(state => state.theme);
     const { t } = useTranslation();
     const isDark = theme === 'dark';
@@ -70,12 +71,12 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
     const borderStyle = customStyle.borderStyle ?? 'solid';
 
     const effectiveBorderColor = React.useMemo(() => hexToRgba(
-        customStyle.borderColor ?? (isDark ? '#444444' : '#e6c02a'),
+        customStyle.borderColor ?? (isDark ? '#444444' : '#94a3b8'), // Changed light fallback to gray
         borderOpacity
     ), [customStyle.borderColor, borderOpacity, isDark]);
 
     const scrollThumbColor = React.useMemo(() => hexToRgba(
-        customStyle.borderColor ?? (isDark ? '#444444' : '#e6c02a'),
+        customStyle.borderColor ?? (isDark ? '#444444' : '#94a3b8'), // Changed light fallback to gray
         Math.min(1, borderOpacity * 0.5)
     ), [customStyle.borderColor, borderOpacity, isDark]);
 
@@ -128,11 +129,14 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
         state.edges.filter(edge => edge.source === id || edge.target === id),
         [id])));
     const onNodesChange = useStore(state => state.onNodesChange);
-    const getHandleColors = (handleId: string, type: 'source' | 'target') => {
+    const getHandleColors = (baseHandleId: string) => {
+        // Check both source and target versions of this side's handle
+        const sourceHandleId = baseHandleId.endsWith('-s') ? baseHandleId : (['top', 'left'].includes(baseHandleId) ? `${baseHandleId}-s` : baseHandleId);
+        const targetHandleId = baseHandleId.endsWith('-t') ? baseHandleId : (['right', 'bottom'].includes(baseHandleId) ? `${baseHandleId}-t` : baseHandleId);
+
         const connectedEdges = edges.filter(edge =>
-            type === 'source'
-                ? edge.source === id && edge.sourceHandle === handleId
-                : edge.target === id && edge.targetHandle === handleId
+            (edge.source === id && (edge.sourceHandle === sourceHandleId || edge.sourceHandle === baseHandleId)) ||
+            (edge.target === id && (edge.targetHandle === targetHandleId || edge.targetHandle === baseHandleId))
         );
 
         const colors = new Set<string>();
@@ -144,9 +148,11 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
         return Array.from(colors);
     };
 
-    const renderHandleVisual = (handleId: string, type: 'source' | 'target') => {
-        const colors = getHandleColors(handleId, type);
+    const renderHandleVisual = (baseHandleId: string) => {
+        const colors = getHandleColors(baseHandleId);
         const hasConnection = colors.length > 0;
+
+        const handleId = baseHandleId;
 
         // Generate animation name if multiple colors
         const animationName = `blink-${id}-${handleId}`;
@@ -157,7 +163,9 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
               }`
             : '';
 
-        const style: React.CSSProperties = {};
+        const style: React.CSSProperties = {
+            backgroundColor: effectiveBorderColor
+        };
         if (colors.length === 1) {
             style.borderColor = colors[0];
         } else if (colors.length > 1) {
@@ -189,19 +197,8 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
 
 
     return (
-        <div className="note-node-wrapper" style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <NodeResizer
-                minWidth={200}
-                minHeight={150}
-                isVisible={selected}
-                lineStyle={{ opacity: 0 }}
-                handleStyle={{
-                    opacity: 0,
-                    width: 40,
-                    height: 40,
-                    borderRadius: '50%'
-                }}
-            />
+        <div className={`note-node-wrapper note-node-${id}`} style={{ position: 'relative', width: '100%', height: '100%' }}>
+
 
             {/* Move Handle */}
             <div
@@ -283,7 +280,19 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                                     color={isDark ? '#ef4444' : '#dc2626'}
                                     isDark={isDark}
                                     onClick={() => {
-                                        onNodesChange([{ id, type: 'remove' }]);
+                                        setConfirmationModal({
+                                            isOpen: true,
+                                            title: t('note.delete_title') ?? 'Excluir Nota',
+                                            message: t('note.delete_confirm', { label: data.label ?? 'Nota' }) ?? 'Tem certeza que deseja excluir esta nota?',
+                                            confirmLabel: t('app.common.delete') ?? 'Excluir',
+                                            cancelLabel: t('app.common.cancel') ?? 'Cancelar',
+                                            variant: 'danger',
+                                            onConfirm: () => {
+                                                onNodesChange([{ id, type: 'remove' }]);
+                                                setConfirmationModal(null);
+                                            },
+                                            onCancel: () => setConfirmationModal(null)
+                                        });
                                         setMenuState('closed');
                                     }}
                                 />
@@ -503,6 +512,8 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                         value={data.label ?? ''}
                         onChange={handleTitleChange}
                         placeholder={t('note.title_placeholder')}
+                        autoComplete="off"
+                        spellCheck={false}
                         style={{
                             background: 'transparent',
                             border: 'none',
@@ -545,6 +556,8 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                     value={data.text ?? ''}
                     onChange={handleTextChange}
                     placeholder={t('note.text_placeholder')}
+                    autoComplete="off"
+                    spellCheck={false}
                     style={{
                         flex: 1,
                         background: 'transparent',
@@ -563,7 +576,8 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                 />
             </div>
 
-            {/* Connection Handles */}
+            {/* Connection Handles - Using dual handles for bi-directional connectivity */}
+            {/* Top Side */}
             <Handle
                 id="top"
                 type="target"
@@ -571,8 +585,17 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                 className="note-handle"
                 style={{ ...handleStyle, top: -20 }}
             >
-                {renderHandleVisual('top', 'target')}
+                {renderHandleVisual('top')}
             </Handle>
+            <Handle
+                id="top-s"
+                type="source"
+                position={Position.Top}
+                className="note-handle"
+                style={{ ...handleStyle, top: -20, opacity: 0 }}
+            />
+
+            {/* Right Side */}
             <Handle
                 id="right"
                 type="source"
@@ -580,8 +603,17 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                 className="note-handle"
                 style={{ ...handleStyle, right: -20 }}
             >
-                {renderHandleVisual('right', 'source')}
+                {renderHandleVisual('right')}
             </Handle>
+            <Handle
+                id="right-t"
+                type="target"
+                position={Position.Right}
+                className="note-handle"
+                style={{ ...handleStyle, right: -20, opacity: 0 }}
+            />
+
+            {/* Bottom Side */}
             <Handle
                 id="bottom"
                 type="source"
@@ -589,8 +621,17 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                 className="note-handle"
                 style={{ ...handleStyle, bottom: -20 }}
             >
-                {renderHandleVisual('bottom', 'source')}
+                {renderHandleVisual('bottom')}
             </Handle>
+            <Handle
+                id="bottom-t"
+                type="target"
+                position={Position.Bottom}
+                className="note-handle"
+                style={{ ...handleStyle, bottom: -20, opacity: 0 }}
+            />
+
+            {/* Left Side */}
             <Handle
                 id="left"
                 type="target"
@@ -598,82 +639,112 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                 className="note-handle"
                 style={{ ...handleStyle, left: -20 }}
             >
-                {renderHandleVisual('left', 'target')}
+                {renderHandleVisual('left')}
             </Handle>
+            <Handle
+                id="left-s"
+                type="source"
+                position={Position.Left}
+                className="note-handle"
+                style={{ ...handleStyle, left: -20, opacity: 0 }}
+            />
 
             <style>{`
                 /* Show Style Button on Hover */
-                .note-node-wrapper:hover .style-btn,
-                .style-btn:focus,
-                .style-btn:active {
+                .note-node-${id}:hover .style-btn,
+                .note-node-${id} .style-btn:focus,
+                .note-node-${id} .style-btn:active {
                     opacity: 1 !important;
                     background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'};
                 }
 
                 /* Ensure Handle component overrides */
-                .note-handle {
-                    width: 40px !important;
-                    height: 40px !important;
-                    min-width: 40px !important;
-                    min-height: 40px !important;
+                .note-node-${id} .note-handle {
+                    width: 32px !important;
+                    height: 32px !important;
+                    min-width: 32px !important;
+                    min-height: 32px !important;
                     background: transparent !important;
                     border: none !important;
                     box-shadow: none !important;
-                    z-index: 50 !important;
+                    z-index: 300 !important; /* Higher than Resizer (200) to ensure connection priority */
                 }
 
                 /* Visual Square */
-                .visual-handle {
-                    width: 12px;
-                    height: 12px;
-                    background: ${effectiveBorderColor}; /* Inner color matches note border/theme */
+                .note-node-${id} .visual-handle {
+                    width: 14px;
+                    height: 14px;
                     border: 2px solid #ffffff; /* FORCE WHITE BORDER for visibility */
                     border-radius: 4px;
-                    opacity: 0 !important;
+                    opacity: 0; /* HIDDEN BY DEFAULT */
                     transition: all 0.15s ease-out;
-                    transform: scale(0.8);
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Stronger shadow */
+                    transform: scale(0.9);
+                    box-shadow: 0 1px 4px rgba(0,0,0,0.4); /* Stronger shadow */
                 }
 
-                /* Neutralize Hover if not selected or custom colored */
+                /* Show at low opacity when node is hovered to show they exist */
+                .note-node-${id}:hover .visual-handle {
+                    opacity: 0.3;
+                }
                 
-                /* Show on Hover OR Connected */
-                .note-handle:hover .visual-handle,
-                .visual-handle.connected {
+                /* Show at full opacity when port is hovered or connected */
+                .note-node-${id} .note-handle:hover .visual-handle,
+                .note-node-${id} .visual-handle.connected {
                     opacity: 1 !important;
                     transform: scale(1);
                 }
                 
-                .visual-handle.connected {
-                    /* Background color always matches note accent/border */
-                    background: ${effectiveBorderColor};
+                /* Keep connected ones visible even when not hovering node */
+                .note-node-${id} .visual-handle.connected {
+                    opacity: 1 !important;
+                }
+                
+                .note-node-${id} .visual-handle.connected {
                     /* Border color is handled by inline style for connections */
                 }
 
-                .visual-handle.connected:hover {
+                .note-node-${id} .visual-handle.connected:hover {
                     box-shadow: 0 0 0 2px ${effectiveBorderColor};
                 }
 
-                .note-node-textarea::-webkit-scrollbar {
+                .note-node-${id} .note-node-textarea::-webkit-scrollbar {
                     width: 10px;
                     cursor: default;
                 }
-                .note-node-textarea::-webkit-scrollbar-track {
+                .note-node-${id} .note-node-textarea::-webkit-scrollbar-track {
                     background: transparent;
                     cursor: default;
                 }
-                .note-node-textarea::-webkit-scrollbar-thumb {
+                .note-node-${id} .note-node-textarea::-webkit-scrollbar-thumb {
                     background-color: ${scrollThumbColor}; 
                     border-radius: 6px;
                     border: 3px solid transparent;
                     background-clip: content-box;
                     cursor: pointer !important;
                 }
-                .note-node-textarea::-webkit-scrollbar-thumb:hover {
+                .note-node-${id} .note-node-textarea::-webkit-scrollbar-thumb:hover {
                     background-color: ${effectiveBorderColor}; /* Full note opacity on hover */
                     cursor: pointer !important;
                 }
             `}</style>
+
+            {/* Resizer at the bottom but with lower z-index than connection handles */}
+            <NodeResizer
+                minWidth={200}
+                minHeight={150}
+                isVisible={selected}
+                lineStyle={{
+                    border: `1.5px dashed ${isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)'}`,
+                    opacity: 1
+                }}
+                handleStyle={{
+                    opacity: 0, // Remove the "balls" as requested
+                    width: 20,
+                    height: 20,
+                    zIndex: 200,
+                    margin: -10
+                }}
+            />
         </div >
     );
 });

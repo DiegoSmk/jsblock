@@ -10,6 +10,7 @@ export const NotesLibrary: React.FC = () => {
     const { nodes, theme, addNoteNode } = useStore();
     const { setCenter } = useReactFlow();
     const [searchTerm, setSearchTerm] = useState('');
+    const [isExpanded, setIsExpanded] = useState(true);
     const isDark = theme === 'dark';
 
     // Get all notes in the current context
@@ -63,6 +64,8 @@ export const NotesLibrary: React.FC = () => {
                         placeholder={t('library.notes.search_placeholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        autoComplete="off"
+                        spellCheck={false}
                         style={{
                             background: 'transparent',
                             border: 'none',
@@ -76,45 +79,42 @@ export const NotesLibrary: React.FC = () => {
             </div>
 
             {/* Content List */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-                <button
-                    onClick={() => { void addNoteNode(); }}
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        marginBottom: '16px',
-                        background: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)',
-                        border: `2px dashed ${isDark ? '#a855f7' : '#a855f7'}88`,
-                        borderRadius: '12px',
-                        color: '#a855f7',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        cursor: 'pointer',
-                        fontWeight: 700,
-                        fontSize: '0.9rem',
-                        transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.background = isDark ? 'rgba(168, 85, 247, 0.2)' : 'rgba(168, 85, 247, 0.1)';
-                        e.currentTarget.style.borderColor = '#a855f7';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.background = isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(168, 85, 247, 0.05)';
-                        e.currentTarget.style.borderColor = '#a855f788';
-                    }}
-                >
-                    <Plus size={18} />
-                    {t('library.new_block_note')}
-                </button>
-
+            <div style={{ flex: 1, overflowY: 'auto' }}>
                 <PanelSection
                     id="notes-list"
+                    icon={StickyNote}
                     title={t('library.notes.title')}
                     count={notes.length}
-                    defaultOpen={true}
+                    isOpen={isExpanded}
+                    onToggle={() => setIsExpanded(!isExpanded)}
                     isDark={isDark}
+                    actions={
+                        <button
+                            onClick={(e) => { e.stopPropagation(); void addNoteNode(); }}
+                            title={t('library.new_block_note')}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: '4px',
+                                cursor: 'pointer',
+                                color: isDark ? '#666' : '#999',
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderRadius: '4px',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                                e.currentTarget.style.color = '#a855f7';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.color = isDark ? '#666' : '#999';
+                            }}
+                        >
+                            <Plus size={14} />
+                        </button>
+                    }
                 >
                     {notes.length === 0 ? (
                         <div style={{ padding: '30px 20px', textAlign: 'center', color: '#777', fontSize: '0.85rem' }}>

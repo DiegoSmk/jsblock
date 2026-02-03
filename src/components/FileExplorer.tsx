@@ -25,7 +25,7 @@ interface FileSystemEntry {
 
 export const FileExplorer: React.FC = () => {
     const { t } = useTranslation();
-    const { openedFolder, setOpenedFolder, selectedFile, setSelectedFile, theme, isDirty } = useStore();
+    const { openedFolder, setOpenedFolder, selectedFile, setSelectedFile, theme, isDirty, setConfirmationModal, addToast } = useStore();
     const [files, setFiles] = useState<FileEntry[]>([]);
     const [isCreating, setIsCreating] = useState<{ type: 'file' | 'folder', ext?: string, parentPath: string } | null>(null);
     const [selectedDirPath, setSelectedDirPath] = useState<string | null>(null);
@@ -136,7 +136,7 @@ export const FileExplorer: React.FC = () => {
                 setFiles(updated);
             }
         } catch (err) {
-            alert(t('app.errors.generic', { error: err }));
+            addToast({ type: 'error', message: t('app.errors.generic', { error: err }) });
         } finally {
             setIsCreating(null);
             setNewName('');
@@ -201,7 +201,7 @@ export const FileExplorer: React.FC = () => {
             }
 
             if (await electronAPI.checkPathExists(newPath)) {
-                alert(t('file_explorer.already_exists') ?? 'An item with this name already exists at the destination.');
+                addToast({ type: 'warning', message: t('file_explorer.already_exists') ?? 'An item with this name already exists at the destination.' });
                 return;
             }
 
@@ -213,7 +213,7 @@ export const FileExplorer: React.FC = () => {
                 setFiles(updated);
             }
         } catch (err) {
-            alert(t('app.errors.move', { error: err }));
+            addToast({ type: 'error', message: t('app.errors.move', { error: err }) });
         }
         setDraggedItem(null);
     };
@@ -231,24 +231,48 @@ export const FileExplorer: React.FC = () => {
         if (!contextMenu) return;
 
         if (type === 'delete') {
-            if (confirm(t('file_explorer.delete_confirm', { name: contextMenu.path.split(/[\\/]/).pop() }))) {
-                try {
-                    if (!window.electronAPI) return;
-                    if (contextMenu.isDirectory) {
-                        await window.electronAPI.deleteDirectory(contextMenu.path);
-                    } else {
-                        await window.electronAPI.deleteFile(contextMenu.path);
-                    }
+            const fileName = contextMenu.path.split(/[\\/]/).pop();
+            setConfirmationModal({
+                isOpen: true,
+                title: t('file_explorer.delete_title') ?? 'Excluir Item',
+                message: t('file_explorer.delete_confirm', { name: fileName }),
+                confirmLabel: t('app.common.delete') ?? 'Excluir',
+                cancelLabel: t('app.common.cancel') ?? 'Cancelar',
+                variant: 'danger',
+                onConfirm: async () => {
+                    try {
+                        if (!window.electronAPI) return;
 
-                    // Refresh
-                    if (openedFolder) {
-                        const updated = await refreshFiles(openedFolder);
-                        setFiles(updated);
+                        // Check if we are deleting the currently open file
+                        const isDeletingActiveFile = !contextMenu.isDirectory && selectedFile === contextMenu.path;
+                        const isDeletingActiveFolder = contextMenu.isDirectory && selectedFile && selectedFile.startsWith(contextMenu.path);
+
+                        if (contextMenu.isDirectory) {
+                            await window.electronAPI.deleteDirectory(contextMenu.path);
+                        } else {
+                            await window.electronAPI.deleteFile(contextMenu.path);
+                        }
+
+                        // Close file if it's gone
+                        if (isDeletingActiveFile || isDeletingActiveFolder) {
+                            void setSelectedFile(null);
+                        }
+
+                        // Refresh
+                        if (openedFolder) {
+                            const updated = await refreshFiles(openedFolder);
+                            setFiles(updated);
+                        }
+
+                        addToast({ type: 'success', message: t('file_explorer.delete_success') ?? 'Item excluído com sucesso' });
+                        setConfirmationModal(null);
+                    } catch (err) {
+                        addToast({ type: 'error', message: t('app.errors.delete', { error: err }) });
+                        setConfirmationModal(null);
                     }
-                } catch (err) {
-                    alert(t('app.errors.delete', { error: err }));
-                }
-            }
+                },
+                onCancel: () => setConfirmationModal(null)
+            });
         } else {
             setIsCreating({ type, ext, parentPath: contextMenu.path });
         }

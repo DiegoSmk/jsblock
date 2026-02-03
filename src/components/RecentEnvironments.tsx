@@ -54,6 +54,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
     const setRecentLabel = useStore(state => state.setRecentLabel);
     const setOpenedFolder = useStore(state => state.setOpenedFolder);
     const validateRecents = useStore(state => state.validateRecents);
+    const setConfirmationModal = useStore(state => state.setConfirmationModal);
     const theme = useStore(state => state.theme);
     const isDark = theme === 'dark';
 
@@ -117,6 +118,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                                 onToggleFavorite={toggleFavorite}
                                 onSetLabel={setRecentLabel}
                                 onRemove={removeRecent}
+                                setConfirmationModal={setConfirmationModal}
                                 compact
                                 t={t}
                             />
@@ -148,6 +150,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                                 onToggleFavorite={toggleFavorite}
                                 onSetLabel={setRecentLabel}
                                 onRemove={removeRecent}
+                                setConfirmationModal={setConfirmationModal}
                                 compact
                                 t={t}
                             />
@@ -248,6 +251,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                                     onToggleFavorite={toggleFavorite}
                                     onSetLabel={setRecentLabel}
                                     onRemove={removeRecent}
+                                    setConfirmationModal={setConfirmationModal}
                                     t={t}
                                 />
                             ))}
@@ -279,6 +283,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                                     onToggleFavorite={toggleFavorite}
                                     onSetLabel={setRecentLabel}
                                     onRemove={removeRecent}
+                                    setConfirmationModal={setConfirmationModal}
                                     t={t}
                                 />
                             ))}
@@ -297,11 +302,12 @@ interface EnvironmentProps {
     onToggleFavorite: (path: string) => void | Promise<void>;
     onSetLabel: (path: string, label?: 'personal' | 'work' | 'fun' | 'other') => void | Promise<void>;
     onRemove: (path: string) => void | Promise<void>;
+    setConfirmationModal: (config: AppState['confirmationModal']) => void;
     t: TFunction;
     compact?: boolean;
 }
 
-const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, t }: EnvironmentProps) => {
+const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, setConfirmationModal, t }: EnvironmentProps) => {
     const [showActions, setShowActions] = useState(false);
 
     return (
@@ -385,7 +391,22 @@ const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, on
                 }} onClick={e => e.stopPropagation()}>
                     <LabelSelector currentLabel={env.label} onSelect={(l) => { void onSetLabel(env.path, l); }} isDark={isDark} t={t} />
                     <button
-                        onClick={(e) => { e.stopPropagation(); void onRemove(env.path); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmationModal({
+                                isOpen: true,
+                                title: t('recent.remove_title') ?? 'Remover Recente',
+                                message: t('recent.remove_confirm', { path: env.path }),
+                                confirmLabel: t('app.common.remove') ?? 'Remover',
+                                cancelLabel: t('app.common.cancel') ?? 'Cancelar',
+                                variant: 'danger',
+                                onConfirm: () => {
+                                    void onRemove(env.path);
+                                    setConfirmationModal(null);
+                                },
+                                onCancel: () => setConfirmationModal(null)
+                            });
+                        }}
                         style={{ padding: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}
                         title={t('recent.remove')}
                     >
@@ -397,7 +418,7 @@ const EnvironmentCard = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, on
     );
 };
 
-const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, compact, t }: EnvironmentProps) => {
+const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onRemove, setConfirmationModal, compact, t }: EnvironmentProps) => {
     const [isHovered, setIsHovered] = useState(false);
 
     return (
@@ -487,7 +508,22 @@ const EnvironmentRow = ({ env, isDark, onOpen, onToggleFavorite, onSetLabel, onR
                 </button>
                 <LabelSelector currentLabel={env.label} onSelect={(l) => { void onSetLabel(env.path, l); }} isDark={isDark} compact={compact} t={t} />
                 <button
-                    onClick={(e) => { e.stopPropagation(); void onRemove(env.path); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmationModal({
+                            isOpen: true,
+                            title: t('recent.remove_title') ?? 'Remover Recente',
+                            message: t('recent.remove_confirm', { path: env.path }),
+                            confirmLabel: t('app.common.remove') ?? 'Remover',
+                            cancelLabel: t('app.common.cancel') ?? 'Cancelar',
+                            variant: 'danger',
+                            onConfirm: () => {
+                                void onRemove(env.path);
+                                setConfirmationModal(null);
+                            },
+                            onCancel: () => setConfirmationModal(null)
+                        });
+                    }}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: isDark ? '#555' : '#ccc' }}
                     onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
                     onMouseLeave={e => e.currentTarget.style.color = isDark ? '#555' : '#ccc'}

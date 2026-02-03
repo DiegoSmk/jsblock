@@ -24,6 +24,18 @@ export const pt = {
                 cancel: "Cancelar",
                 discard: "Descartar"
             },
+            confirm_close_folder: {
+                title: "Fechar Projeto?",
+                message: "Tem certeza que deseja fechar a pasta atual? Quaisquer alterações não salvas serão perdidas."
+            },
+            common: {
+                delete: "Excluir",
+                cancel: "Cancelar",
+                remove: "Remover",
+                save: "Salvar",
+                discard: "Descartar",
+                confirm: "Confirmar"
+            },
             tooltips: {
                 blueprints: "Ambiente de Blueprints",
                 git: "Git (Controle de Versão)",
@@ -78,7 +90,10 @@ export const pt = {
                     }
                 },
                 terminal_info: "Estas opções estão ativadas por padrão para emular o comportamento de terminais profissionais (como Putty/XShell) e contornar o uso do Ctrl+C para controle de processos.",
-                json_warning: "Edite o settings.json manualmente. Alterações requerem reinício."
+                json_warning: "Edite o settings.json manualmente. Alterações requerem reinício.",
+                reset_title: "Restaurar Configurações",
+                reset_confirm: "Tem certeza que deseja restaurar as configurações padrão? Isso irá redefinir todos os ajustes de tema, editor e terminal.",
+                reset_button: "Restaurar Padrões"
             },
             errors: {
                 generic: "Erro: {{error}}",
@@ -89,7 +104,9 @@ export const pt = {
         note: {
             title_placeholder: "Título da Nota",
             text_placeholder: "Digite suas anotações...",
-            delete: "Excluir"
+            delete: "Excluir",
+            delete_title: "Excluir Nota",
+            delete_confirm: "Tem certeza que deseja excluir a nota \"{{label}}\"?"
         },
         edge: {
             add_comment: "Inserir Comentário",
@@ -114,7 +131,10 @@ export const pt = {
                 new_ts: "Novo TS",
                 new_md: "Nova Nota MD",
                 new_block: "Novo Bloco (.block)"
-            }
+            },
+            delete_title: "Excluir Item",
+            delete_confirm: "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
+            delete_success: "Item excluído com sucesso"
         },
         library: {
             search_placeholder: "Buscar funções...",
@@ -146,6 +166,8 @@ export const pt = {
             favorite: "Favoritar",
             tag: "Etiqueta",
             none: "Nenhuma",
+            remove_title: "Remover dos Recentes",
+            remove_confirm: "Remover {{path}} do histórico recente?",
             labels: {
                 personal: "Pessoal",
                 work: "Trabalho",
@@ -307,8 +329,9 @@ export const pt = {
                 },
                 tags: {
                     empty: "Nenhuma tag encontrada neste repositório.",
-                    delete_confirm: "Tem certeza que deseja deletar a tag {{tag}}?",
-                    delete_tooltip: "Deletar Tag"
+                    delete_title: "Excluir Tag",
+                    delete_confirm: "Tem certeza que deseja excluir a tag {{tag}}?",
+                    delete_tooltip: "Excluir Tag"
                 },
                 panel_config: {
                     title: "Personalizar Painel",
