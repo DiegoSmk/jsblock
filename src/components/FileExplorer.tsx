@@ -38,7 +38,7 @@ export const FileExplorer: React.FC = () => {
     const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
 
     // Context Menu state
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, path: string } | null>(null);
+    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, path: string, isDirectory: boolean } | null>(null);
 
     const loadFiles = async (dirPath: string): Promise<FileEntry[]> => {
         if (!window.electronAPI) return [];
@@ -227,12 +227,28 @@ export const FileExplorer: React.FC = () => {
         }
     };
 
-    const handleMenuAction = (type: 'file' | 'folder' | 'delete', ext?: string) => {
+    const handleMenuAction = async (type: 'file' | 'folder' | 'delete', ext?: string) => {
         if (!contextMenu) return;
 
         if (type === 'delete') {
-            // Implementation for delete would go here
-            alert(t('app.errors.delete_soon'));
+            if (confirm(t('file_explorer.delete_confirm', { name: contextMenu.path.split(/[\\/]/).pop() }))) {
+                try {
+                    if (!window.electronAPI) return;
+                    if (contextMenu.isDirectory) {
+                        await window.electronAPI.deleteDirectory(contextMenu.path);
+                    } else {
+                        await window.electronAPI.deleteFile(contextMenu.path);
+                    }
+
+                    // Refresh
+                    if (openedFolder) {
+                        const updated = await refreshFiles(openedFolder);
+                        setFiles(updated);
+                    }
+                } catch (err) {
+                    alert(t('app.errors.delete', { error: err }));
+                }
+            }
         } else {
             setIsCreating({ type, ext, parentPath: contextMenu.path });
         }
@@ -250,6 +266,16 @@ export const FileExplorer: React.FC = () => {
             >
                 <div
                     onClick={() => node.isDirectory ? (() => { void handleFolderClick(node.path); })() : handleFileClick(node.path)}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setContextMenu({
+                            x: e.clientX,
+                            y: e.clientY,
+                            path: node.path,
+                            isDirectory: node.isDirectory
+                        });
+                    }}
                     draggable
                     onDragStart={(e) => onDragStart(e, node.path)}
                     style={{
@@ -316,7 +342,8 @@ export const FileExplorer: React.FC = () => {
                                     setContextMenu({
                                         x: rect.left,
                                         y: rect.bottom + 4,
-                                        path: node.path
+                                        path: node.path,
+                                        isDirectory: true
                                     });
                                 }}
                                 style={{
@@ -394,7 +421,7 @@ export const FileExplorer: React.FC = () => {
                     isDark={isDark}
                     t={t}
                     onClose={() => setContextMenu(null)}
-                    onAction={handleMenuAction}
+                    onAction={(type, ext) => { void handleMenuAction(type, ext); }}
                 />
             )}
 

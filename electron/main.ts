@@ -248,6 +248,26 @@ ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => 
     }
 });
 
+ipcMain.handle('delete-file', async (_event, filePath: string) => {
+    try {
+        await fs.promises.unlink(filePath);
+        return true;
+    } catch (err) {
+        console.error('Error deleting file:', err);
+        throw err;
+    }
+});
+
+ipcMain.handle('delete-directory', async (_event, dirPath: string) => {
+    try {
+        await fs.promises.rm(dirPath, { recursive: true, force: true });
+        return true;
+    } catch (err) {
+        console.error('Error deleting directory:', err);
+        throw err;
+    }
+});
+
 ipcMain.handle('open-system-terminal', (_event, dirPath: string) => {
     try {
         if (process.platform === 'linux') {

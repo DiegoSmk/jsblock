@@ -36,9 +36,17 @@ export const PanelSectionHeader: React.FC<PanelSectionHeaderProps> = ({
                 }
             `}</style>
 
-            <button
+            <div
                 className="section-header"
                 onClick={onToggle}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onToggle?.();
+                    }
+                }}
                 style={{
                     width: '100%',
                     display: 'flex',
@@ -51,7 +59,8 @@ export const PanelSectionHeader: React.FC<PanelSectionHeaderProps> = ({
                     transition: 'all 0.2s ease',
                     textAlign: 'left',
                     outline: 'none',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    boxSizing: 'border-box'
                 }}
             >
                 {Icon && (
@@ -96,7 +105,7 @@ export const PanelSectionHeader: React.FC<PanelSectionHeaderProps> = ({
                     )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
                     {actions}
                     {onToggle && (
                         <ChevronDown
@@ -110,7 +119,7 @@ export const PanelSectionHeader: React.FC<PanelSectionHeaderProps> = ({
                         />
                     )}
                 </div>
-            </button>
+            </div>
         </>
     );
 };

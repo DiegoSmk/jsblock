@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileCode, FolderPlus, Trash2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 type TranslationFunction = (key: string) => string;
 
@@ -27,11 +28,13 @@ const menuButtonStyle = (isDark: boolean): React.CSSProperties => ({
     transition: 'background 0.2s'
 });
 
+
+
 export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({ x, y, onClose, onAction, isDark, t }) => {
-    return (
+    return createPortal(
         <>
             <div
-                style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}
+                style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}
                 onClick={onClose}
                 onContextMenu={(e) => { e.preventDefault(); onClose(); }}
             />
@@ -46,7 +49,7 @@ export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({ x, y, onCl
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '2px',
-                zIndex: 1001,
+                zIndex: 10000,
                 boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                 minWidth: '160px'
             }}>
@@ -80,6 +83,7 @@ export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({ x, y, onCl
                     <span>{t('file_explorer.delete') ?? 'Delete'}</span>
                 </button>
             </div>
-        </>
+        </>,
+        document.body
     );
 };
