@@ -114,7 +114,7 @@ export const SettingsView: React.FC = () => {
         setConfirmationModal
     } = useStore();
 
-    const [activeCategory, setActiveCategory] = useState<'general' | 'terminal' | 'appearance' | 'json'>('general');
+    const [activeCategory, setActiveCategory] = useState<'general' | 'terminal' | 'appearance' | 'json' | 'developer'>('general');
     const [localJson, setLocalJson] = useState(settingsConfig);
     const [lastSettingsConfig, setLastSettingsConfig] = useState(settingsConfig);
     const [isModified, setIsModified] = useState(false);
@@ -130,6 +130,7 @@ export const SettingsView: React.FC = () => {
         { id: 'general', label: t('app.settings.categories.general'), icon: SettingsIcon },
         { id: 'terminal', label: t('app.settings.categories.terminal'), icon: Terminal },
         { id: 'appearance', label: t('app.settings.categories.appearance'), icon: Monitor },
+        { id: 'developer', label: 'Desenvolvedor', icon: Layers },
         { id: 'json', label: 'JSON Configuration', icon: FileJson }
     ];
 
@@ -276,6 +277,23 @@ export const SettingsView: React.FC = () => {
                                     onChange={(val: number) => updateSettings({ fontSize: val })}
                                     width="100px"
                                     isDark={isDark}
+                                />
+                            </SettingRow>
+                        </SettingGroup>
+                    </>
+                );
+            case 'developer':
+                return (
+                    <>
+                        <SettingGroup title="Debug Visual">
+                            <SettingRow
+                                label="Mostrar Áreas de Conexão"
+                                description="Exibe uma caixa vermelha ao redor dos conectores para facilitar a visualização da área de clique."
+                                icon={Layers}
+                            >
+                                <Switch
+                                    checked={settings.showDebugHandles ?? false}
+                                    onChange={() => updateSettings({ showDebugHandles: !settings.showDebugHandles })}
                                 />
                             </SettingRow>
                         </SettingGroup>
@@ -456,7 +474,7 @@ export const SettingsView: React.FC = () => {
                     return (
                         <button
                             key={cat.id}
-                            onClick={() => setActiveCategory(cat.id as 'general' | 'terminal' | 'appearance' | 'json')}
+                            onClick={() => setActiveCategory(cat.id as 'general' | 'terminal' | 'appearance' | 'json' | 'developer')}
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
