@@ -31,11 +31,43 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
         onNodesChange,
         setConfirmationModal,
         borderStyle,
-        customStyle
+        customStyle,
+        detectedTask,
+        confirmTaskConversion
     } = useNoteLogic(id, data, isDark);
 
     return (
         <div className={`note-node-wrapper note-node-${id}`} style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {/* Smart Task Indicator */}
+            {detectedTask && (
+                <div
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        confirmTaskConversion();
+                    }}
+                    style={{
+                        position: 'absolute',
+                        bottom: 10,
+                        right: 10,
+                        zIndex: 100,
+                        background: '#4caf50',
+                        color: '#fff',
+                        borderRadius: '12px',
+                        padding: '4px 8px',
+                        fontSize: '10px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                    }}
+                >
+                    <StickyNote size={10} />
+                    <span>Criar Task</span>
+                </div>
+            )}
+
             {/* Move Handle */}
             <div
                 style={{

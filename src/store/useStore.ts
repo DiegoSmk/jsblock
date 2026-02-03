@@ -865,6 +865,8 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     addNoteNode: () => {
+        if (!get().isBlockFile) return;
+
         const id = `note-${Date.now()}`;
         const activeScopeId = get().activeScopeId;
         const newNode: AppNode = {
@@ -991,6 +993,8 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     addUtilityNode: (type: UtilityType) => {
+        if (!get().isBlockFile) return;
+
         const { nodes } = get();
         // Use registry for default data
         const def = getUtilityDefinition(type);

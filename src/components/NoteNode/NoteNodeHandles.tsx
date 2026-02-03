@@ -13,14 +13,32 @@ export const NoteNodeHandles: React.FC<NoteNodeHandlesProps> = ({
     edges,
     effectiveBorderColor
 }) => {
-    const getHandleColors = (baseHandleId: string) => {
-        const sourceHandleId = baseHandleId.endsWith('-s') ? baseHandleId : (['top', 'left'].includes(baseHandleId) ? `${baseHandleId}-s` : baseHandleId);
-        const targetHandleId = baseHandleId.endsWith('-t') ? baseHandleId : (['right', 'bottom'].includes(baseHandleId) ? `${baseHandleId}-t` : baseHandleId);
+    // Helper to determine if a handle (visual location) has active connections
+    const getHandleColors = (location: 'top' | 'bottom' | 'left' | 'right') => {
+        // We need to check all physical handles at this location
+        // Top: 'top' (source), 'top-t' (target)
+        // Bottom: 'bottom' (source), 'bottom-t' (target)
+        // Left: 'left' (target), 'left-s' (source)
+        // Right: 'right' (source), 'right-t' (target)
 
-        const connectedEdges = edges.filter(edge =>
-            (edge.source === id && (edge.sourceHandle === sourceHandleId || edge.sourceHandle === baseHandleId)) ||
-            (edge.target === id && (edge.targetHandle === targetHandleId || edge.targetHandle === baseHandleId))
-        );
+        const possibleHandleIds = [location, `${location}-s`, `${location}-t`];
+
+        const connectedEdges = edges.filter(edge => {
+            const isSource = edge.source === id;
+            const isTarget = edge.target === id;
+
+            if (isSource) {
+                // If sourceHandle is null, it connects to "default" handle (top?)
+                // But for NoteNode we usually set IDs. If null, maybe ignore or assume top?
+                // Let's assume strict ID match or null matches "top" if location is top?
+                // To be safe, we check if edge.sourceHandle is in possibleHandleIds.
+                return possibleHandleIds.includes(edge.sourceHandle || '');
+            }
+            if (isTarget) {
+                return possibleHandleIds.includes(edge.targetHandle || '');
+            }
+            return false;
+        });
 
         const colors = new Set<string>();
         connectedEdges.forEach(edge => {
@@ -31,10 +49,10 @@ export const NoteNodeHandles: React.FC<NoteNodeHandlesProps> = ({
         return Array.from(colors);
     };
 
-    const renderHandleVisual = (baseHandleId: string) => {
-        const colors = getHandleColors(baseHandleId);
+    const renderHandleVisual = (location: 'top' | 'bottom' | 'left' | 'right') => {
+        const colors = getHandleColors(location);
         const hasConnection = colors.length > 0;
-        const animationName = `blink-${id}-${baseHandleId}`;
+        const animationName = `blink-${id}-${location}`;
 
         const keyframes = colors.length > 1
             ? `@keyframes ${animationName} {
@@ -44,14 +62,17 @@ export const NoteNodeHandles: React.FC<NoteNodeHandlesProps> = ({
             : '';
 
         const style: React.CSSProperties = {
-            backgroundColor: effectiveBorderColor
+            backgroundColor: effectiveBorderColor,
+            opacity: hasConnection ? 1 : undefined // Enforce visibility if connected
         };
+
         if (colors.length === 1) {
             style.borderColor = colors[0];
         } else if (colors.length > 1) {
             style.animation = `${animationName} ${colors.length * 2}s infinite linear`;
         }
 
+        // Add class 'connected' if it has connections, which CSS might use to force opacity: 1
         return (
             <>
                 {colors.length > 1 && <style>{keyframes}</style>}
@@ -71,82 +92,40 @@ export const NoteNodeHandles: React.FC<NoteNodeHandlesProps> = ({
         pointerEvents: 'all',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        width: 20, // Increase hit area
+        height: 20
     };
 
     return (
         <>
             {/* Top Side */}
-            <Handle
-                id="top"
-                type="source"
-                position={Position.Top}
-                className="note-handle"
-                style={{ ...handleStyle, top: -20 }}
-            >
+            <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', zIndex: 51 }}>
                 {renderHandleVisual('top')}
-            </Handle>
-            <Handle
-                id="top-t"
-                type="target"
-                position={Position.Top}
-                className="note-handle"
-                style={{ ...handleStyle, top: -20, opacity: 0 }}
-            />
+            </div>
+            <Handle id="top" type="source" position={Position.Top} style={{ ...handleStyle, top: -10 }} />
+            <Handle id="top-t" type="target" position={Position.Top} style={{ ...handleStyle, top: -10, opacity: 0 }} />
 
             {/* Right Side */}
-            <Handle
-                id="right"
-                type="source"
-                position={Position.Right}
-                className="note-handle"
-                style={{ ...handleStyle, right: -20 }}
-            >
-                {renderHandleVisual('right')}
-            </Handle>
-            <Handle
-                id="right-t"
-                type="target"
-                position={Position.Right}
-                className="note-handle"
-                style={{ ...handleStyle, right: -20, opacity: 0 }}
-            />
+            <div style={{ position: 'absolute', right: -10, top: '50%', transform: 'translateY(-50%)', zIndex: 51 }}>
+                 {renderHandleVisual('right')}
+            </div>
+            <Handle id="right" type="source" position={Position.Right} style={{ ...handleStyle, right: -10 }} />
+            <Handle id="right-t" type="target" position={Position.Right} style={{ ...handleStyle, right: -10, opacity: 0 }} />
 
             {/* Bottom Side */}
-            <Handle
-                id="bottom"
-                type="source"
-                position={Position.Bottom}
-                className="note-handle"
-                style={{ ...handleStyle, bottom: -20 }}
-            >
+            <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', zIndex: 51 }}>
                 {renderHandleVisual('bottom')}
-            </Handle>
-            <Handle
-                id="bottom-t"
-                type="target"
-                position={Position.Bottom}
-                className="note-handle"
-                style={{ ...handleStyle, bottom: -20, opacity: 0 }}
-            />
+            </div>
+            <Handle id="bottom" type="source" position={Position.Bottom} style={{ ...handleStyle, bottom: -10 }} />
+            <Handle id="bottom-t" type="target" position={Position.Bottom} style={{ ...handleStyle, bottom: -10, opacity: 0 }} />
 
             {/* Left Side */}
-            <Handle
-                id="left"
-                type="target"
-                position={Position.Left}
-                className="note-handle"
-                style={{ ...handleStyle, left: -20 }}
-            >
+            <div style={{ position: 'absolute', left: -10, top: '50%', transform: 'translateY(-50%)', zIndex: 51 }}>
                 {renderHandleVisual('left')}
-            </Handle>
-            <Handle
-                id="left-s"
-                type="source"
-                position={Position.Left}
-                className="note-handle"
-                style={{ ...handleStyle, left: -20, opacity: 0 }}
-            />
+            </div>
+            <Handle id="left" type="target" position={Position.Left} style={{ ...handleStyle, left: -10 }} />
+            <Handle id="left-s" type="source" position={Position.Left} style={{ ...handleStyle, left: -10, opacity: 0 }} />
         </>
     );
 };

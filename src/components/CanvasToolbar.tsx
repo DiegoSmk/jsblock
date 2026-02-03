@@ -13,7 +13,10 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
     const { t } = useTranslation();
     const addNoteNode = useStore(state => state.addNoteNode);
     const addUtilityNode = useStore(state => state.addUtilityNode);
+    const isBlockFile = useStore(state => state.isBlockFile);
     const [showUtilityMenu, setShowUtilityMenu] = React.useState(false);
+
+    if (!isBlockFile) return null;
 
     const buttonStyle = {
         background: 'transparent',

@@ -136,38 +136,10 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
 
     // Connection checks
     const leftId = 'left';
-    const rightId = 'right'; // If we use ids, we should check them.
-    // However, previously handles might not have had IDs (default).
-    // If I add IDs now, old edges might break if they rely on handleId?
-    // Edges store sourceHandle and targetHandle. If they were null/undefined, and now I set them, connections might visually detach?
-    // "Transition ... to Utility Nodes". If these are new nodes, it's fine.
-    // If existing nodes, we might need to handle migration or use default handle (no ID) for one of them?
-    // But we have TWO positions. Left and Right.
-    // The previous implementation had:
-    // Left: type="target" (no id implies null)
-    // Right: type="source" (no id implies null) (Only if isTask)
-    // If I now use `id="left"` and `id="right"`, existing edges will look for handle=null and won't find it.
-    // But since I am using "Hybrid", maybe I should support both?
-    // Or maybe I just assume new nodes? The user said "Padronizar a experiência visual".
-    // I will use IDs 'left' and 'right'. If this breaks existing edges on dev branch, the user might need to reconnect or migration.
-    // Given "feature/utility-nodes-refactor", breaking changes might be acceptable or expected, but let's try to be safe.
-    // If I don't provide ID, it defaults to null. I can't have two handles with null ID.
-    // So I MUST provide IDs if I have multiple.
-    // The previous code had `Position.Left` and `Position.Right`. React Flow distinguishes by position? No, by ID. If ID is missing, it assumes single handle?
-    // Wait, if I have multiple handles, I MUST provide IDs.
-    // The previous code:
-    // <Handle type="target" ... position={Position.Left} />
-    // <Handle type="source" ... position={Position.Right} />
-    // These are different types. React Flow allows one source and one target without IDs (I think).
-    // But if I have "Hybrid", I have source AND target at Left.
-    // So I definitely need IDs now.
+    const rightId = 'right';
 
     const isConnectedLeft = edges.some(e => (e.source === id && e.sourceHandle === leftId) || (e.target === id && e.targetHandle === leftId));
     const isConnectedRight = edges.some(e => (e.source === id && e.sourceHandle === rightId) || (e.target === id && e.targetHandle === rightId));
-
-    // Also check for legacy connections (handleId is null)
-    const isConnectedLegacyLeft = edges.some(e => e.target === id && !e.targetHandle);
-    const isConnectedLegacyRight = edges.some(e => e.source === id && !e.sourceHandle);
 
     return (
         <motion.div
@@ -270,7 +242,7 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
             <HybridHandle
                 id={leftId}
                 position={Position.Left}
-                isConnected={isConnectedLeft || isConnectedLegacyLeft}
+                isConnected={isConnectedLeft}
                 isHovered={isHovered}
                 showDebug={settings.showDebugHandles}
             />
@@ -279,7 +251,7 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
                 <HybridHandle
                     id={rightId}
                     position={Position.Right}
-                    isConnected={isConnectedRight || isConnectedLegacyRight}
+                    isConnected={isConnectedRight}
                     isHovered={isHovered}
                     showDebug={settings.showDebugHandles}
                 />

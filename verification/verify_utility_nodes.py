@@ -1,5 +1,6 @@
 from playwright.sync_api import Page, expect, sync_playwright
 import time
+import json
 
 def verify_utility_nodes(page: Page):
     # Mock electronAPI
@@ -7,7 +8,12 @@ def verify_utility_nodes(page: Page):
         window.electronAPI = {
             checkPathExists: async () => true,
             ensureProjectConfig: async () => {},
-            readFile: async () => 'console.log("hello")',
+            readFile: async (path) => {
+                if (path.endsWith('.block')) {
+                    return JSON.stringify({ nodes: [], edges: [] });
+                }
+                return 'console.log("hello")';
+            },
             writeFile: async () => {},
             discoverPlugins: async () => [],
             togglePlugin: async () => {},
@@ -16,72 +22,79 @@ def verify_utility_nodes(page: Page):
         };
     """)
 
-    # Try multiple times to connect to localhost
-    for i in range(10):
-        try:
-            page.goto("http://localhost:5173")
-            break
-        except:
-            time.sleep(1)
+    page.goto("http://localhost:5173")
 
     # Wait for store to be exposed
     page.wait_for_function("() => window.useStore !== undefined")
 
-    # Open a dummy file to enable FlowContent
-    page.evaluate("window.useStore.getState().setSelectedFile('test.js')")
-
-    # Wait for app to load
+    # 2. Verify Toolbar VISIBLE in Note Mode
+    page.evaluate("window.useStore.getState().setSelectedFile('notes.block')")
     page.wait_for_selector(".canvas-toolbar", timeout=10000)
 
-    # Click utility menu
+    # Add nodes
     buttons = page.locator(".canvas-toolbar button")
     utility_btn = buttons.nth(1)
     utility_btn.click()
-
-    # Click "Tarefa"
     page.get_by_text("Tarefa").click()
-
-    # Add another one
     utility_btn.click()
     page.get_by_text("Tarefa").click()
 
-    # Wait for nodes
     expect(page.locator(".react-flow__node-utilityNode")).to_have_count(2)
 
-    nodes = page.locator(".react-flow__node-utilityNode")
-    node1 = nodes.nth(0)
-    node2 = nodes.nth(1)
+    # Get handles of first node
+    # Since there are multiple nodes, we scope to first one.
+    node1 = page.locator(".react-flow__node-utilityNode").nth(0)
+    node2 = page.locator(".react-flow__node-utilityNode").nth(1)
 
-    # Move nodes apart
+    # Move node2 away
     node2_box = node2.bounding_box()
-    if node2_box:
-        page.mouse.move(node2_box["x"] + 10, node2_box["y"] + 10)
-        page.mouse.down()
-        page.mouse.move(node2_box["x"] + 300, node2_box["y"] + 100)
-        page.mouse.up()
-        time.sleep(0.5)
-
-    # Re-acquire boxes
-    node1_box = node1.bounding_box()
-    node2_box = node2.bounding_box()
-
-    # Drag from node1 right to node2 left
-    page.mouse.move(node1_box["x"] + node1_box["width"], node1_box["y"] + node1_box["height"] / 2)
+    page.mouse.move(node2_box["x"] + 10, node2_box["y"] + 10)
     page.mouse.down()
-    page.mouse.move(node2_box["x"], node2_box["y"] + node2_box["height"] / 2)
+    page.mouse.move(node2_box["x"] + 300, node2_box["y"] + 100)
+    page.mouse.up()
+    time.sleep(0.5)
+
+    # Find right handle of node 1
+    # Note: UtilityNode uses Position.Right for the right handle.
+    # React Flow renders it with class 'react-flow__handle-right'.
+    handle1 = node1.locator(".react-flow__handle-right").nth(0)
+    # Use nth(0) because there are Source and Target at same position (Hybrid).
+    # Source handle is draggable. Target is connectable (receiving).
+    # Actually, both are connectable=true.
+    # But to start a connection, we usually drag from Source.
+    # I have two handles at Right: Source and Target.
+    # Which one is on top? They have same zIndex. DOM order matters.
+    # In UtilityNode:
+    # <Handle type="target" ... />
+    # <Handle type="source" ... />
+    # Source is rendered second, so it is on top. Good.
+
+    # Ensure handle is visible/interactive.
+    # It might be opacity 0.
+    # Playwright can force hover on node to make it visible.
+    node1.hover()
+    time.sleep(0.2)
+
+    handle1_box = handle1.bounding_box()
+    if not handle1_box:
+        raise Exception("Handle 1 not found")
+
+    # Drag from handle 1 center
+    page.mouse.move(handle1_box["x"] + handle1_box["width"] / 2, handle1_box["y"] + handle1_box["height"] / 2)
+    page.mouse.down()
+
+    # Move to handle 2 (Left of node 2)
+    handle2 = node2.locator(".react-flow__handle-left").nth(0) # Target or Source, doesn't matter for target
+    node2.hover() # Make handle visible
+    handle2_box = handle2.bounding_box()
+
+    page.mouse.move(handle2_box["x"] + handle2_box["width"] / 2, handle2_box["y"] + handle2_box["height"] / 2)
     page.mouse.up()
 
     time.sleep(1)
 
-    # Screenshot normal
+    # Screenshot
     page.screenshot(path="verification/verification.png")
-
-    # Enable Debug Mode
-    page.evaluate("window.useStore.getState().updateSettings({ showDebugHandles: true })")
-    time.sleep(0.5)
-
-    # Screenshot debug
-    page.screenshot(path="verification/debug.png")
 
     count = page.locator(".react-flow__edge").count()
     print(f"Edges found: {count}")

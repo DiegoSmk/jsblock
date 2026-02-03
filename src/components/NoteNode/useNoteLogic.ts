@@ -9,6 +9,7 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
     const setConfirmationModal = useStore(state => state.setConfirmationModal);
     const onNodesChange = useStore(state => state.onNodesChange);
     const spawnConnectedUtility = useStore(state => state.spawnConnectedUtility);
+    const openModal = useStore(state => state.openModal);
 
     // Use store directly for spawn logic if needed, but we rely on spawnConnectedUtility action.
 
@@ -64,48 +65,59 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
         return customStyle.backgroundColor ?? (isDark ? '#1a1a1a' : '#fff');
     }, [taskStatus, customStyle.backgroundColor, isDark]);
 
+    const [detectedTask, setDetectedTask] = useState<{ label: string, checked: boolean, fullMatch: string } | null>(null);
+
     const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const visualText = e.target.value;
-
-        // Regex to detect "- [ ] task content" or "- [x] task content"
-        // We only trigger on newline or specific event? 
-        // User says "transformando... em blocos". Usually happens when user types the pattern and hits enter or space.
-        // Let's try simple line-based check. if a line starts with - [ ] it extracts it.
-
-        // const lines = visualText.split('\n'); // Unused
-        let hasChanges = false;
-        let newText = visualText;
-
         const taskMatch = /^- \[(x| )\] (.*)$/m;
         const match = visualText.match(taskMatch);
 
         if (match) {
             const [fullMatch, checkedStr, taskLabel] = match;
             const isChecked = checkedStr === 'x';
-
-            // Remove the line from text
-            newText = visualText.replace(fullMatch, '').trim();
-            if (newText.startsWith('\n')) newText = newText.substring(1);
-
-            // Spawn Task Node
-            if (spawnConnectedUtility) {
-                const currentNode = nodes.find(n => n.id === id);
-                const position = {
-                    x: (currentNode?.position.x ?? 0) + 300,
-                    y: (currentNode?.position.y ?? 0)
-                };
-
-                spawnConnectedUtility(id, 'task', taskLabel, position, isChecked);
-                hasChanges = true;
-            }
-        }
-
-        if (hasChanges) {
-            updateNodeData(id, { ...data, text: newText });
+            setDetectedTask({ label: taskLabel, checked: isChecked, fullMatch });
         } else {
-            updateNodeData(id, { ...data, text: visualText });
+            setDetectedTask(null);
         }
-    }, [id, data, updateNodeData, nodes, spawnConnectedUtility]);
+
+        updateNodeData(id, { ...data, text: visualText });
+    }, [id, data, updateNodeData]);
+
+    const confirmTaskConversion = useCallback(() => {
+        if (!detectedTask) return;
+
+        setConfirmationModal({
+            isOpen: true,
+            title: 'Converter para Tarefa?',
+            message: `Deseja converter "${detectedTask.label}" em um nó de tarefa conectado?`,
+            confirmLabel: 'Converter',
+            cancelLabel: 'Cancelar',
+            onConfirm: () => {
+                const currentText = data.text || '';
+                const newText = currentText.replace(detectedTask.fullMatch, '').trim();
+
+                updateNodeData(id, { ...data, text: newText });
+
+                if (spawnConnectedUtility) {
+                    const currentNode = nodes.find(n => n.id === id);
+                    const position = {
+                        x: (currentNode?.position.x ?? 0) + 300,
+                        y: (currentNode?.position.y ?? 0)
+                    };
+
+                    spawnConnectedUtility(id, 'task', detectedTask.label, position, detectedTask.checked);
+                }
+                setDetectedTask(null);
+                setConfirmationModal(null);
+            },
+            onCancel: () => {
+                setConfirmationModal(null);
+                setDetectedTask(null); // Ignore this match for now? Or just close modal.
+            }
+        });
+
+    }, [detectedTask, data, id, updateNodeData, nodes, spawnConnectedUtility, setConfirmationModal]);
+
 
     const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         updateNodeData(id, { ...data, label: e.target.value });
@@ -161,6 +173,8 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
         onNodesChange,
         setConfirmationModal,
         borderStyle,
-        customStyle
+        customStyle,
+        detectedTask,
+        confirmTaskConversion
     };
 };
