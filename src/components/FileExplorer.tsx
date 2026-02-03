@@ -227,7 +227,7 @@ export const FileExplorer: React.FC = () => {
         }
     };
 
-    const handleMenuAction = async (type: 'file' | 'folder' | 'delete', ext?: string) => {
+    const handleMenuAction = (type: 'file' | 'folder' | 'delete', ext?: string) => {
         if (!contextMenu) return;
 
         if (type === 'delete') {
