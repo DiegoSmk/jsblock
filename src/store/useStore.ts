@@ -30,6 +30,7 @@ import { generateCodeFromFlow } from '../logic/CodeGenerator';
 import { getLayoutedElements } from '../logic/layout';
 import i18n from '../i18n/config';
 import { createGitSlice } from './slices/git/slice';
+import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
 
 const initialCode = '';
 
@@ -58,6 +59,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     })(),
     toasts: [],
     runtimeValues: {},
+    connectionCache: new Map(), // Initialize cache
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
     plugins: [],
@@ -184,6 +186,7 @@ export const useStore = create<AppState>((set, get, api) => ({
             autoLayoutNodes: false,
             fontSize: 14,
             showAppBorder: false,
+            showDebugHandles: false
         };
         try {
             const saved = localStorage.getItem('settings.json');
@@ -450,7 +453,16 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     onNodesChange: (changes: NodeChange<AppNode>[]) => {
         const nextNodes = applyNodeChanges(changes, get().nodes);
-        set({ nodes: nextNodes });
+
+        // Optimistic update for connection cache if nodes are deleted
+        const deletions = changes.filter(c => c.type === 'remove');
+        if (deletions.length > 0) {
+            const newCache = new Map(get().connectionCache);
+            deletions.forEach(d => newCache.delete(d.id));
+            set({ nodes: nextNodes, connectionCache: newCache });
+        } else {
+            set({ nodes: nextNodes });
+        }
         if (get().isBlockFile) {
             if (get().autoSave) {
                 if (saveTimeout) clearTimeout(saveTimeout);
@@ -466,7 +478,20 @@ export const useStore = create<AppState>((set, get, api) => ({
     onEdgesChange: (changes: EdgeChange[]) => {
         const { nodes, edges, code, isBlockFile, autoSave } = get();
         const newEdges = applyEdgeChanges(changes, edges);
-        set({ edges: newEdges });
+
+        // Rebuild cache on edge changes (optimized for frequency)
+        const newCache = new Map<string, Edge[]>();
+        newEdges.forEach(edge => {
+            const source = newCache.get(edge.source) || [];
+            source.push(edge);
+            newCache.set(edge.source, source);
+
+            const target = newCache.get(edge.target) || [];
+            target.push(edge);
+            newCache.set(edge.target, target);
+        });
+
+        set({ edges: newEdges, connectionCache: newCache });
 
         if (isBlockFile) {
             if (autoSave) {
@@ -852,29 +877,7 @@ export const useStore = create<AppState>((set, get, api) => ({
         void get().saveFile();
     },
 
-    addUtilityNode: (type) => {
-        const id = `utility-${Date.now()}`;
-        const activeScopeId = get().activeScopeId;
-        const newNode: AppNode = {
-            id,
-            type: 'utilityNode',
-            position: { x: Math.random() * 400, y: Math.random() * 400 },
-            data: {
-                label: type === 'task' ? 'Tarefa' : 'Copiar',
-                utilityType: type,
-                checked: false,
-                scopeId: activeScopeId,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-            },
-        };
 
-        set({
-            nodes: [...get().nodes, newNode],
-            isDirty: true
-        });
-        void get().saveFile();
-    },
 
     checkTaskRecurse: (nodeId: string) => {
         const { nodes, edges } = get();
@@ -964,15 +967,39 @@ export const useStore = create<AppState>((set, get, api) => ({
             settings: {
                 terminalCopyOnSelect: true,
                 terminalRightClickPaste: true,
-                autoLayoutNodes: false,
                 fontSize: 14,
-                showAppBorder: false
-            },
-            layout: {
-                sidebar: { width: 260, isVisible: true }
+                showAppBorder: false,
+                autoLayoutNodes: false,
+                showDebugHandles: false
             }
         });
         get().addToast({ type: 'info', message: 'Configurações restauradas para o padrão.' });
+    },
+
+    getEdgesForNode: (nodeId: string) => {
+        return get().connectionCache.get(nodeId) || [];
+    },
+
+    addUtilityNode: (type: UtilityType) => {
+        const { nodes } = get();
+        // Use registry for default data
+        const def = getUtilityDefinition(type);
+        if (!def) return;
+
+        const newNode: AppNode = {
+            id: `util-${Date.now()}`,
+            type: 'utilityNode',
+            position: {
+                x: Math.random() * 500,
+                y: Math.random() * 400
+            },
+            data: {
+                ...def.defaultData,
+                label: def.label
+            }
+        };
+
+        set({ nodes: [...nodes, newNode] });
     },
 
     addToast: (toast) => {

@@ -26,6 +26,8 @@ export interface EdgeCustomStyle {
   animated?: boolean;
 }
 
+export type UtilityType = 'copy' | 'task' | 'collector' | 'portal';
+
 export interface AppNodeData {
   label?: string;
   expression?: string;
@@ -37,16 +39,18 @@ export interface AppNodeData {
   usageCount?: number;
   connectedValues?: Record<string | number, string>;
   type?: string;
-  name?: string;
   args?: string[];
   nestedArgsCall?: Record<string, { expression: string }>;
   nestedCall?: { name: string, args: string[] };
   scopes?: Record<string, { id: string; label: string }>;
   fallenIndex?: number;
+  // Utility Props
+  utilityType?: UtilityType;
+  checked?: boolean;
+  targetId?: string | null;
   text?: string;
   customStyle?: NodeCustomStyle;
-  utilityType?: 'copy' | 'task';
-  checked?: boolean;
+  // Metadata
   createdAt?: number;
   updatedAt?: number;
   [key: string]: unknown;
@@ -142,6 +146,7 @@ export interface Settings {
   autoLayoutNodes: boolean;
   fontSize: number;
   showAppBorder: boolean;
+  showDebugHandles: boolean;
 }
 
 export interface SettingsConfig {
@@ -161,6 +166,9 @@ export interface SettingsConfig {
   terminal?: {
     copyOnSelect?: boolean;
     rightClickPaste?: boolean;
+  };
+  developer?: {
+    showDebugHandles?: boolean;
   };
   files?: {
     autoSave?: boolean;
@@ -278,6 +286,7 @@ export interface AppState extends GitSlice {
   code: string;
   nodes: AppNode[];
   edges: Edge[];
+  connectionCache: Map<string, Edge[]>;
   theme: 'light' | 'dark';
   runtimeValues: Record<string, unknown>;
 
@@ -402,4 +411,6 @@ export interface AppState extends GitSlice {
   setSelectedPluginId: (id: string | null) => void;
 
   resetSettings: () => void;
+  getEdgesForNode: (nodeId: string) => Edge[];
+  spawnConnectedUtility: (sourceId: string, type: UtilityType, label: string, position: { x: number, y: number }, checked?: boolean) => void;
 }

@@ -281,6 +281,7 @@ export const SettingsView: React.FC = () => {
                         </SettingGroup>
                     </>
                 );
+
             case 'json':
                 return (
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>

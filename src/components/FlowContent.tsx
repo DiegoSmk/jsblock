@@ -237,7 +237,7 @@ export function FlowContent() {
   );
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <ReactFlow
         nodes={filteredNodes}
         edges={filteredEdges}
