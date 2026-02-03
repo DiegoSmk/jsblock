@@ -187,7 +187,7 @@ function App() {
             {activeSidebarTab === 'settings' ? (
               <SettingsView />
             ) : (
-              <>
+              <ReactFlowProvider>
                 <SidebarContainer />
                 <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
                   <Allotment>
@@ -257,15 +257,13 @@ function App() {
                             <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
                           </div>
                         ) : (
-                          <ReactFlowProvider>
-                            <FlowContent />
-                          </ReactFlowProvider>
+                          <FlowContent />
                         )}
                       </div>
                     </Allotment.Pane>
                   </Allotment>
                 </div>
-              </>
+              </ReactFlowProvider>
             )}
           </div>
           {

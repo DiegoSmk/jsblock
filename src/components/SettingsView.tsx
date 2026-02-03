@@ -110,7 +110,8 @@ export const SettingsView: React.FC = () => {
         updateSettingsConfig,
         autoSave,
         toggleAutoSave,
-        resetSettings
+        resetSettings,
+        setConfirmationModal
     } = useStore();
 
     const [activeCategory, setActiveCategory] = useState<'general' | 'terminal' | 'appearance' | 'json'>('general');
@@ -219,9 +220,19 @@ export const SettingsView: React.FC = () => {
                             <div style={{ padding: '8px 16px' }}>
                                 <button
                                     onClick={() => {
-                                        if (confirm(t('app.settings.reset_confirm', 'Tem certeza que deseja restaurar as configurações padrão?'))) {
-                                            resetSettings();
-                                        }
+                                        setConfirmationModal({
+                                            isOpen: true,
+                                            title: t('app.settings.reset_title') ?? 'Restaurar Configurações',
+                                            message: t('app.settings.reset_confirm') ?? 'Tem certeza que deseja restaurar as configurações padrão? Isso irá redefinir todos os ajustes de tema, editor e terminal.',
+                                            confirmLabel: t('app.settings.reset_button') ?? 'Restaurar Padrões',
+                                            cancelLabel: t('app.common.cancel') ?? 'Cancelar',
+                                            variant: 'danger',
+                                            onConfirm: () => {
+                                                resetSettings();
+                                                setConfirmationModal(null);
+                                            },
+                                            onCancel: () => setConfirmationModal(null)
+                                        });
                                     }}
                                     style={{
                                         display: 'flex',

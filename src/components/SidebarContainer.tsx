@@ -6,9 +6,9 @@ import {
     Network,
     Info,
     Files,
-    RefreshCw
+    RefreshCw,
+    StickyNote
 } from 'lucide-react';
-import { ReactFlowProvider } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
 
 // Components
@@ -19,6 +19,7 @@ import { ExtensionsView } from './ExtensionsView';
 import { CommitHistory } from './git/CommitHistory';
 import { GitGraphView } from './git/GitGraphView';
 import { GitInfoPanel } from './git/GitInfoPanel';
+import { NotesLibrary } from './NotesLibrary';
 
 export const SidebarContainer: React.FC = () => {
     const { t } = useTranslation();
@@ -28,14 +29,16 @@ export const SidebarContainer: React.FC = () => {
         git,
         theme,
         setSidebarWidth,
-        refreshGit
+        refreshGit,
+        isBlockFile
     } = useStore(useShallow(state => ({
         layout: state.layout,
         activeSidebarTab: state.activeSidebarTab,
         git: state.git,
         theme: state.theme,
         setSidebarWidth: state.setSidebarWidth,
-        refreshGit: state.refreshGit
+        refreshGit: state.refreshGit,
+        isBlockFile: state.isBlockFile
     })));
 
     const isDark = theme === 'dark';
@@ -55,20 +58,10 @@ export const SidebarContainer: React.FC = () => {
 
         const handleMouseMove = (e: MouseEvent) => {
             animationFrameId = requestAnimationFrame(() => {
-                // Calculate new width based on mouse position
-                // Assuming sidebar is on the left
-                // e.clientX is roughly the new width
-                // We subtract the ribbon width (approx 50px) if we want absolute precision relative to ribbon,
-                // but usually clientX includes the ribbon.
-                // However, the SidebarContainer is placed *after* the ribbon in flex.
-                // So width = clientX - ribbonWidth.
-                // Let's assume standard ribbon width from design constants or hardcoded approx.
-                // Better approach: Calculate relative to the sidebar's start position.
                 if (sidebarRef.current) {
-                   const rect = sidebarRef.current.getBoundingClientRect();
-                   // If the sash is at the right edge, the width is event.clientX - rect.left
-                   const newWidth = Math.round(e.clientX - rect.left);
-                   setSidebarWidth(newWidth);
+                    const rect = sidebarRef.current.getBoundingClientRect();
+                    const newWidth = Math.round(e.clientX - rect.left);
+                    setSidebarWidth(newWidth);
                 }
             });
         };
@@ -113,12 +106,14 @@ export const SidebarContainer: React.FC = () => {
                 return (
                     <SidebarPanel
                         isDark={isDark}
-                        title={t('app.function_library')}
-                        icon={Network}
+                        title={isBlockFile ? t('app.notes_library') : t('app.function_library')}
+                        icon={isBlockFile ? StickyNote : Network}
                     >
-                        <ReactFlowProvider>
+                        {isBlockFile ? (
+                            <NotesLibrary />
+                        ) : (
                             <FunctionLibrary />
-                        </ReactFlowProvider>
+                        )}
                     </SidebarPanel>
                 );
             case 'git':

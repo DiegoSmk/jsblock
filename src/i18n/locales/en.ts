@@ -9,6 +9,7 @@ export const en = {
             explorer: "Explorer",
             file_explorer: "File Explorer",
             function_library: "Function Library",
+            notes_library: "Notes Library",
             select_file: "Select a file to edit",
             open_folder_hint: "Open a folder or file to start",
             window_controls: {
@@ -22,6 +23,18 @@ export const en = {
                 save: "Save",
                 cancel: "Cancel",
                 discard: "Discard"
+            },
+            confirm_close_folder: {
+                title: "Close Project?",
+                message: "Are you sure you want to close the current folder? Any unsaved changes will be lost."
+            },
+            common: {
+                delete: "Delete",
+                cancel: "Cancel",
+                remove: "Remove",
+                save: "Save",
+                discard: "Discard",
+                confirm: "Confirm"
             },
             tooltips: {
                 blueprints: "Blueprints Environment",
@@ -77,7 +90,10 @@ export const en = {
                     }
                 },
                 terminal_info: "These options are enabled by default to emulate professional terminal behavior (like Putty/XShell) and bypass the use of Ctrl+C for process control.",
-                json_warning: "Edit settings.json manually. Changes apply after restart."
+                json_warning: "Edit settings.json manually. Changes apply after restart.",
+                reset_title: "Reset Settings",
+                reset_confirm: "Are you sure you want to reset all settings to defaults? This will revert theme, editor, and terminal adjustments.",
+                reset_button: "Reset to Defaults"
             },
             errors: {
                 generic: "Error: {{error}}",
@@ -88,7 +104,9 @@ export const en = {
         note: {
             title_placeholder: "Note Title",
             text_placeholder: "Type your notes...",
-            delete: "Delete"
+            delete: "Delete",
+            delete_title: "Delete Note",
+            delete_confirm: "Are you sure you want to delete the note \"{{label}}\"?"
         },
         edge: {
             add_comment: "Add Comment",
@@ -113,7 +131,10 @@ export const en = {
                 new_ts: "New TS",
                 new_md: "New MD Note",
                 new_block: "New Block (.block)"
-            }
+            },
+            delete_title: "Delete Item",
+            delete_confirm: "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+            delete_success: "Item deleted successfully"
         },
         library: {
             search_placeholder: "Search functions...",
@@ -126,6 +147,11 @@ export const en = {
                 loops: "Loops",
                 functions: "Functions",
                 native: "Native"
+            },
+            notes: {
+                title: "File Notes",
+                no_notes: "No notes found",
+                search_placeholder: "Search info in notes..."
             }
         },
         recent: {
@@ -140,6 +166,8 @@ export const en = {
             favorite: "Favorite",
             tag: "Tag",
             none: "None",
+            remove_title: "Remove from Recents",
+            remove_confirm: "Remove {{path}} from recent history?",
             labels: {
                 personal: "Personal",
                 work: "Work",
@@ -301,6 +329,7 @@ export const en = {
                 },
                 tags: {
                     empty: "No tags found in this repository.",
+                    delete_title: "Delete Tag",
                     delete_confirm: "Are you sure you want to delete tag {{tag}}?",
                     delete_tooltip: "Delete Tag"
                 },

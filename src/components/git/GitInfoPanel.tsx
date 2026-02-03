@@ -163,7 +163,7 @@ const Heatmap: React.FC<{ isDark: boolean; logs: GitLogEntry[] }> = ({ isDark, l
 };
 
 export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [], hideHeader = false }) => {
-    const { git, gitPanelConfig, gitDeleteTag } = useStore();
+    const { git, gitPanelConfig, gitDeleteTag, setConfirmationModal } = useStore();
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(600);
@@ -403,9 +403,19 @@ export const GitInfoPanel: React.FC<GitInfoPanelProps> = ({ isDark, logs = [], h
                                 </div>
                                 <button
                                     onClick={() => {
-                                        if (confirm(t('git.info.tags.delete_confirm', { tag: tag.name }))) {
-                                            void gitDeleteTag(tag.name);
-                                        }
+                                        setConfirmationModal({
+                                            isOpen: true,
+                                            title: t('git.info.tags.delete_title') ?? 'Excluir Tag',
+                                            message: t('git.info.tags.delete_confirm', { tag: tag.name }),
+                                            confirmLabel: t('app.common.delete') ?? 'Excluir',
+                                            cancelLabel: t('app.common.cancel') ?? 'Cancelar',
+                                            variant: 'danger',
+                                            onConfirm: () => {
+                                                void gitDeleteTag(tag.name);
+                                                setConfirmationModal(null);
+                                            },
+                                            onCancel: () => setConfirmationModal(null)
+                                        });
                                     }}
                                     style={{
                                         background: 'transparent',

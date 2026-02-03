@@ -105,8 +105,13 @@ export const PanelSectionHeader: React.FC<PanelSectionHeaderProps> = ({
                     )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
-                    {actions}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {actions}
+                    </div>
                     {onToggle && (
                         <ChevronDown
                             size={16}
@@ -114,7 +119,8 @@ export const PanelSectionHeader: React.FC<PanelSectionHeaderProps> = ({
                                 color: isDark ? '#444' : '#ccc',
                                 transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                                 transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                                opacity: 0.6
+                                opacity: 0.6,
+                                cursor: 'pointer'
                             }}
                         />
                     )}
