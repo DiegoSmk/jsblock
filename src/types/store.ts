@@ -13,6 +13,7 @@ export interface Scope {
 
 export interface NodeCustomStyle {
   borderColor?: string;
+  backgroundColor?: string;
   borderOpacity?: number;
   borderStyle?: 'solid' | 'dashed' | 'dotted';
 }
@@ -44,6 +45,8 @@ export interface AppNodeData {
   fallenIndex?: number;
   text?: string;
   customStyle?: NodeCustomStyle;
+  utilityType?: 'copy' | 'task';
+  checked?: boolean;
   createdAt?: number;
   updatedAt?: number;
   [key: string]: unknown;
@@ -362,6 +365,8 @@ export interface AppState extends GitSlice {
 
   // Block Note Actions
   addNoteNode: () => void;
+  addUtilityNode: (type: 'copy' | 'task') => void;
+  checkTaskRecurse: (nodeId: string) => void;
   isBlockFile: boolean;
 
   // File System Actions

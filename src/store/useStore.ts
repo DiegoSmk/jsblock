@@ -528,6 +528,11 @@ export const useStore = create<AppState>((set, get, api) => ({
         const updatedNodes = nodes.map((n: AppNode) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData, updatedAt: Date.now() } } : n);
         set({ nodes: updatedNodes });
 
+        // Recursive Check for Task Auto-completion
+        if (newData.checked !== undefined) {
+            get().checkTaskRecurse(nodeId);
+        }
+
         if (isBlockFile) {
             if (autoSave) {
                 if (saveTimeout) clearTimeout(saveTimeout);
@@ -828,20 +833,70 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     addNoteNode: () => {
-        const newNode: Node = {
-            id: `note-${Date.now()}`,
+        const id = `note-${Date.now()}`;
+        const activeScopeId = get().activeScopeId;
+        const newNode: AppNode = {
+            id,
             type: 'noteNode',
             position: { x: Math.random() * 400, y: Math.random() * 400 },
             data: {
                 label: 'Nova Nota',
                 text: '',
+                scopeId: activeScopeId,
                 createdAt: Date.now(),
                 updatedAt: Date.now()
             },
             style: { width: 250, height: 180 }
         };
-        set({ nodes: [...get().nodes, newNode] });
+        set({ nodes: [...get().nodes, newNode], isDirty: true });
         void get().saveFile();
+    },
+
+    addUtilityNode: (type) => {
+        const id = `utility-${Date.now()}`;
+        const activeScopeId = get().activeScopeId;
+        const newNode: AppNode = {
+            id,
+            type: 'utilityNode',
+            position: { x: Math.random() * 400, y: Math.random() * 400 },
+            data: {
+                label: type === 'task' ? 'Tarefa' : 'Copiar',
+                utilityType: type,
+                checked: false,
+                scopeId: activeScopeId,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            },
+        };
+
+        set({
+            nodes: [...get().nodes, newNode],
+            isDirty: true
+        });
+        void get().saveFile();
+    },
+
+    checkTaskRecurse: (nodeId: string) => {
+        const { nodes, edges } = get();
+        // A child changed (nodeId), check its parents
+        const parentEdges = edges.filter(e => e.target === nodeId);
+        parentEdges.forEach(edge => {
+            const parentId = edge.source;
+            const parentNode = nodes.find(n => n.id === parentId);
+
+            if (parentNode && parentNode.type === 'utilityNode' && parentNode.data.utilityType === 'task') {
+                // Check all children of this parent
+                const childEdges = edges.filter(e => e.source === parentId);
+                const childrenTasks = childEdges.map(e => nodes.find(n => n.id === e.target)).filter(n => n && n.type === 'utilityNode' && n.data.utilityType === 'task');
+
+                if (childrenTasks.length > 0) {
+                    const allDone = childrenTasks.every(n => n?.data.checked);
+                    if (parentNode.data.checked !== allDone) {
+                        get().updateNodeData(parentId, { checked: allDone });
+                    }
+                }
+            }
+        });
     },
 
     discoverPlugins: async () => {

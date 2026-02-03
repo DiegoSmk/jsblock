@@ -31,7 +31,8 @@ import { ForNode } from './ForNode';
 import { TryCatchNode } from './TryCatchNode';
 import { GroupNode } from './GroupNode';
 import { NativeApiNode } from './NativeApiNode';
-import { NoteNode } from './NoteNode';
+import { NoteNode } from './NoteNode/index';
+import { UtilityNode } from './UtilityNode';
 
 const nodeTypes: NodeTypes = {
   variableNode: VariableNode,
@@ -45,7 +46,8 @@ const nodeTypes: NodeTypes = {
   tryCatchNode: TryCatchNode,
   groupNode: GroupNode,
   nativeApiNode: NativeApiNode,
-  noteNode: NoteNode
+  noteNode: NoteNode,
+  utilityNode: UtilityNode
 };
 
 export function FlowContent() {

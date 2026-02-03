@@ -1,6 +1,6 @@
 import React from 'react';
 import { Panel } from '@xyflow/react';
-import { StickyNote, Plus } from 'lucide-react';
+import { StickyNote, Plus, Wrench, Copy, CheckSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store/useStore';
 
@@ -11,6 +11,8 @@ interface CanvasToolbarProps {
 export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
     const { t } = useTranslation();
     const addNoteNode = useStore(state => state.addNoteNode);
+    const addUtilityNode = useStore(state => state.addUtilityNode);
+    const [showUtilityMenu, setShowUtilityMenu] = React.useState(false);
 
     const buttonStyle = {
         background: 'transparent',
@@ -24,6 +26,22 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
         justifyContent: 'center',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative' as const
+    };
+
+    const dropdownActionStyle = {
+        padding: '8px 12px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        fontSize: '0.8rem',
+        color: isDark ? '#eee' : '#333',
+        transition: 'background 0.2s',
+        borderRadius: '4px',
+        width: '100%',
+        border: 'none',
+        background: 'transparent',
+        textAlign: 'left' as const
     };
 
     return (
@@ -64,6 +82,60 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
                     </div>
                 </button>
                 <div className="tooltip">{t('toolbar.add_note')}</div>
+            </div>
+
+            <div className="tooltip-container">
+                <button
+                    onClick={() => setShowUtilityMenu(!showUtilityMenu)}
+                    style={{
+                        ...buttonStyle,
+                        background: showUtilityMenu ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)') : 'transparent'
+                    }}
+                    className="toolbar-btn"
+                >
+                    <Wrench size={20} />
+                </button>
+                <div className="tooltip">Utilitários</div>
+
+                {showUtilityMenu && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '100%',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        marginBottom: '12px',
+                        background: isDark ? '#1e1e1e' : '#fff',
+                        border: `1px solid ${isDark ? '#333' : '#ddd'}`,
+                        borderRadius: '8px',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                        padding: '4px',
+                        minWidth: '150px',
+                        zIndex: 1000
+                    }}>
+                        <button
+                            style={dropdownActionStyle}
+                            className="menu-item"
+                            onClick={() => {
+                                addUtilityNode('copy');
+                                setShowUtilityMenu(false);
+                            }}
+                        >
+                            <Copy size={16} />
+                            <span>Copiar Texto</span>
+                        </button>
+                        <button
+                            style={dropdownActionStyle}
+                            className="menu-item"
+                            onClick={() => {
+                                addUtilityNode('task');
+                                setShowUtilityMenu(false);
+                            }}
+                        >
+                            <CheckSquare size={16} />
+                            <span>Criar Tarefa</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             <style>{`
