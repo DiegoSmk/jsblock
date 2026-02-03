@@ -42,10 +42,46 @@
     --block-bg-5: linear-gradient(135deg, #0288d1 0%, #01579b 100%);
     --block-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.1);
 
+    /* Handle Colors */
+    --handle-output: #94a3b8;
+    --handle-input: #f472b6;
+    --handle-logic: #f7df1e;
+
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+}
+
+/* React Flow Handle Overrides */
+.react-flow__handle {
+    transition: all 0.2s ease;
+}
+
+.handle-data {
+    width: 12px !important;
+    height: 12px !important;
+    border: 2px solid #fff !important;
+    border-radius: 3px !important;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    cursor: crosshair;
+}
+
+.handle-data.source {
+    background: var(--handle-output) !important;
+}
+
+.handle-data.target {
+    background: var(--handle-input) !important;
+}
+
+.handle-data.handle-logic {
+    background: var(--handle-logic) !important;
+}
+
+/* Note Specific Handles - Allow internal component styles to control color */
+.note-handle .visual-handle {
+    border-color: #fff;
 }
 
 body {
@@ -119,7 +155,7 @@ body {
     backdrop-filter: blur(12px);
     border: 1px solid var(--border-node);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.05);
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease;
     overflow: visible;
     user-select: none;
 }
@@ -147,13 +183,6 @@ body {
     padding: 16px;
 }
 
-/* React Flow Handle Overrides */
-.react-flow__handle {
-    width: 12px !important;
-    height: 12px !important;
-    border: 2px solid #fff !important;
-    transition: all 0.2s ease;
-}
 
 /* Flow Handle Types */
 .handle-flow {
@@ -170,13 +199,8 @@ body {
 }
 
 .handle-data {
-    width: 12px !important;
-    height: 12px !important;
     border-radius: 3px !important;
     /* Square with slight roundness */
-    background: var(--handle-output);
-    /* Standard grey by default */
-    border: 2px solid #fff !important;
     box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
     cursor: crosshair;
 }
@@ -274,4 +298,9 @@ body {
 
 .animate-entrance {
     animation: sectionSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Global Edge Animation Overrides */
+.react-flow__edge-path.animated {
+    animation-duration: 1.5s !important;
 }

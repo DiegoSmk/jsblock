@@ -11,6 +11,20 @@ export interface Scope {
   label: string;
 }
 
+export interface NodeCustomStyle {
+  borderColor?: string;
+  borderOpacity?: number;
+  borderStyle?: 'solid' | 'dashed' | 'dotted';
+}
+
+export interface EdgeCustomStyle {
+  type?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  strokeDasharray?: string;
+  animated?: boolean;
+}
+
 export interface AppNodeData {
   label?: string;
   expression?: string;
@@ -29,6 +43,9 @@ export interface AppNodeData {
   scopes?: Record<string, { id: string; label: string }>;
   fallenIndex?: number;
   text?: string;
+  customStyle?: NodeCustomStyle;
+  createdAt?: number;
+  updatedAt?: number;
   [key: string]: unknown;
 }
 
@@ -280,6 +297,7 @@ export interface AppState extends GitSlice {
   forceLayout: () => void;
   toggleTheme: () => void;
   updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => void;
+  updateEdge: (edgeId: string, updates: Partial<Edge>) => void;
   addFunctionCall: (funcName: string, args?: string[]) => void;
   addLogicNode: () => void;
   addIfNode: () => void;

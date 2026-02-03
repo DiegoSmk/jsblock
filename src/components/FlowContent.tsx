@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlow,
@@ -11,10 +12,13 @@ import {
   type Edge,
   type Connection
 } from '@xyflow/react';
-import { Edit2, Trash2 } from 'lucide-react';
+import type { EdgeCustomStyle } from '../types/store';
+import { Edit2, Trash2, Palette } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store/useStore';
 import { Tooltip } from './Tooltip';
+import { EdgeStylePopup } from './EdgeStylePopup';
+import { CanvasToolbar } from './CanvasToolbar';
 
 import { VariableNode } from './VariableNode';
 import { FunctionCallNode } from './FunctionCallNode';
@@ -64,8 +68,10 @@ export function FlowContent() {
     onConnect: state.onConnect,
     theme: state.theme,
     activeScopeId: state.activeScopeId,
-    openModal: state.openModal,
     saveFile: state.saveFile,
+    openModal: state.openModal,
+    updateNodeData: state.updateNodeData,
+    updateEdge: state.updateEdge
   })));
 
   useEffect(() => {
@@ -86,6 +92,7 @@ export function FlowContent() {
 
   // Edge Context Menu state
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [edgeStyleMenu, setEdgeStyleMenu] = useState<{ id: string; x: number; y: number } | null>(null);
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
@@ -95,17 +102,20 @@ export function FlowContent() {
       x: event.clientX,
       y: event.clientY
     });
+    setEdgeStyleMenu(null);
   }, []);
 
   const onPaneClick = useCallback(() => {
     setEdgeMenu(null);
+    setEdgeStyleMenu(null);
   }, []);
 
-  const handleEdgeAction = (action: 'comment' | 'delete') => {
+  const handleEdgeAction = (action: 'comment' | 'delete' | 'style') => {
     if (!edgeMenu) return;
 
     if (action === 'delete') {
       void deleteElements({ edges: [{ id: edgeMenu.id }] });
+      setEdgeMenu(null);
     } else if (action === 'comment') {
       const edge = getEdge(edgeMenu.id);
       if (edge) {
@@ -121,8 +131,65 @@ export function FlowContent() {
           }
         });
       }
+      setEdgeMenu(null);
+    } else if (action === 'style') {
+      setEdgeStyleMenu({
+        id: edgeMenu.id,
+        x: edgeMenu.x,
+        y: edgeMenu.y
+      });
+      setEdgeMenu(null);
     }
-    setEdgeMenu(null);
+  };
+
+  const handleStyleUpdate = (updates: EdgeCustomStyle) => {
+    if (!edgeStyleMenu) return;
+    const edge = edges.find(e => e.id === edgeStyleMenu.id);
+    if (!edge) return;
+
+    // Persist to data.customStyle for later use/serialization
+    const currentCustomStyle = (edge.data?.customStyle as EdgeCustomStyle) ?? {};
+    const newCustomStyle = { ...currentCustomStyle, ...updates };
+
+    const edgeUpdates: Partial<Edge> = {
+      data: { ...edge.data, customStyle: newCustomStyle }
+    };
+
+    if ('type' in updates) {
+      edgeUpdates.type = updates.type;
+    }
+
+    // Force fresh style object construction to ensure React Flow reactivity
+    if ('stroke' in updates || 'strokeWidth' in updates || 'strokeDasharray' in updates) {
+      const currentStyle = (edge.style ?? {});
+
+      // Construct new style object starting from current
+      const newStyle = { ...currentStyle };
+
+      // Apply updates or remove keys if undefined
+      if ('stroke' in updates) {
+        if (updates.stroke === undefined) delete newStyle.stroke;
+        else newStyle.stroke = updates.stroke;
+      }
+
+      if ('strokeWidth' in updates) {
+        if (updates.strokeWidth === undefined) delete newStyle.strokeWidth;
+        else newStyle.strokeWidth = updates.strokeWidth;
+      }
+
+      if ('strokeDasharray' in updates) {
+        if (updates.strokeDasharray === undefined) delete newStyle.strokeDasharray;
+        else newStyle.strokeDasharray = updates.strokeDasharray;
+      }
+
+      edgeUpdates.style = newStyle;
+    }
+
+    if ('animated' in updates) {
+      edgeUpdates.animated = updates.animated;
+    }
+
+    updateEdge(edgeStyleMenu.id, edgeUpdates);
   };
 
   const scopeNodes = nodes.filter((n: Node) =>
@@ -247,6 +314,36 @@ export function FlowContent() {
 
             <div style={{ width: '1px', height: '16px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
 
+            <Tooltip content="Estilo da Conexão" side="top">
+              <button
+                onClick={() => handleEdgeAction('style')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: isDark ? '#e0e0e0' : '#444',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '6px',
+                  borderRadius: '50%',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <Palette size={18} color={isDark ? '#4fc3f7' : '#0070f3'} />
+              </button>
+            </Tooltip>
+
+            <div style={{ width: '1px', height: '16px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+
             <Tooltip content={t('edge.delete_connection')} side="top">
               <button
                 onClick={() => handleEdgeAction('delete')}
@@ -276,7 +373,62 @@ export function FlowContent() {
             </Tooltip>
           </div>
         )}
+        {edgeStyleMenu && createPortal(
+          <>
+            {/* Backdrop Overlay to close menu on click outside */}
+            <div
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 1000,
+                cursor: 'default'
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setEdgeStyleMenu(null);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setEdgeStyleMenu(null);
+              }}
+            />
+            <div
+              style={{
+                position: 'fixed',
+                top: edgeStyleMenu.y + 10,
+                left: edgeStyleMenu.x - 120,
+                zIndex: 1001,
+              }}
+            >
+              {(() => {
+                const selectedEdge = edges.find(e => e.id === edgeStyleMenu.id);
+                if (!selectedEdge) return null;
+                return (
+                  <EdgeStylePopup
+                    isDark={isDark}
+                    onClose={() => setEdgeStyleMenu(null)}
+                    currentStyle={{
+                      type: selectedEdge.type ?? 'default',
+                      stroke: (selectedEdge.style?.stroke as string) ?? undefined,
+                      strokeWidth: Number(selectedEdge.style?.strokeWidth ?? 3),
+                      strokeDasharray: (selectedEdge.style?.strokeDasharray as string) ?? undefined,
+                      animated: selectedEdge.animated
+                    }}
+                    onUpdate={handleStyleUpdate}
+                  />
+                );
+              })()}
+            </div>
+          </>,
+          document.body
+        )}
       </ReactFlow>
+      <CanvasToolbar isDark={isDark} />
     </div>
   );
 }

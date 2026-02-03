@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { ExternalLink, Split } from 'lucide-react';
 
 import type { AppNodeData } from '../types/store';
 
-export const IfNode = ({ data }: { id: string, data: AppNodeData }) => {
+export const IfNode = memo(({ data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const navigateInto = useStore((state) => state.navigateInto);
     const isDark = theme === 'dark';
@@ -43,10 +44,9 @@ export const IfNode = ({ data }: { id: string, data: AppNodeData }) => {
                         type="target"
                         position={Position.Left}
                         id="condition"
-                        className="handle-data"
+                        className="handle-data target"
                         style={{
                             left: '-18px',
-                            background: '#f472b6' // Input
                         }}
                     />
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: isDark ? '#f48fb1' : '#ad1457', letterSpacing: '0.05em' }}>Condition</span>
@@ -100,4 +100,6 @@ export const IfNode = ({ data }: { id: string, data: AppNodeData }) => {
             </div>
         </div>
     );
-};
+});
+
+IfNode.displayName = 'IfNode';

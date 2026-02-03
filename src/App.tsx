@@ -8,14 +8,17 @@ import { Allotment } from 'allotment';
 import {
   Code,
   Box,
+  Layers,
+  Terminal
 } from 'lucide-react';
-import { GitPanel } from './components/GitPanel';
-import { CommitDetailModal } from './components/git/CommitDetailModal';
+import { useTranslation } from 'react-i18next';
+import { useStore } from './store/useStore';
 import { SideRibbon } from './components/SideRibbon';
 import { ContextRibbon } from './components/ui/ContextRibbon';
 import { SidebarContainer } from './components/SidebarContainer';
 import { MainWorkspace } from './components/ui/MainWorkspace';
-import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
+
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
 import type { ElectronAPI } from './types/electron';
@@ -27,15 +30,16 @@ loader.config({
   }
 });
 
-import { useStore } from './store/useStore';
 import { ScopeBreadcrumbs } from './components/ScopeBreadcrumbs';
 import { ModernModal } from './components/ModernModal';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { ToastContainer } from './components/ToastContainer';
 import { SettingsView } from './components/SettingsView';
+import { GitPanel } from './components/GitPanel';
 import { ExtensionDetailsView } from './components/ExtensionDetailsView';
 import { ExtensionLandingPage } from './components/ExtensionLandingPage';
 import { CommandPalette } from './components/CommandPalette';
+import { CommitDetailModal } from './components/git/CommitDetailModal';
 import { FlowContent } from './components/FlowContent';
 import { AppHeader } from './components/layout/AppHeader';
 
@@ -86,7 +90,6 @@ function App() {
   }, [saveFile]);
 
   useEffect(() => {
-    // Professional approach: Wait for the next tick to ensure DOM is rendered
     const timer = setTimeout(() => {
       const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
       if (electronAPI?.appReady) {
@@ -157,16 +160,7 @@ function App() {
       }}>
         <SideRibbon />
 
-        {/* Sidebar Context Ribbon */}
         {activeSidebarTab === 'git' && (
-          // ... ContextRibbon logic ...
-          // Extracted or kept? Kept inline for now as it's small,
-          // but could be extracted to reduce nesting.
-          // Let's keep it here for context awareness unless we move routing logic.
-          // For <300 lines goal, extracting MainLayout components helps.
-
-          // Actually, let's extract the Ribbon Logic or keep it simple.
-          // The issue is App.tsx size.
           <ContextRibbon
             activeId={git.activeView === 'terminal' ? 'terminal' : 'status'}
             onSelect={(id) => {
@@ -177,17 +171,11 @@ function App() {
               }
             }}
             items={[
-              // Icons need imports
-              // { id: 'status', icon: Layers, label: t('git.info.title') },
-              // { icon: Terminal, id: 'terminal', label: t('git.terminal.title') }
-              // Wait, I need to pass Lucide icons.
-              // I'll import them.
+              { id: 'status', icon: Layers, label: i18next.t('git.info.title') },
+              { icon: Terminal, id: 'terminal', label: i18next.t('git.terminal.title') }
             ]}
           />
         )}
-        {/* Wait, I broke the Context Ribbon in my thought process.
-            I need to import Layers and Terminal icons.
-        */}
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <ModernModal key={modal.isOpen ? 'open' : 'closed'} />
