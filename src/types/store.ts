@@ -22,6 +22,7 @@ export interface EdgeCustomStyle {
   stroke?: string;
   strokeWidth?: number;
   strokeDasharray?: string;
+  animated?: boolean;
 }
 
 export interface AppNodeData {
@@ -43,6 +44,8 @@ export interface AppNodeData {
   fallenIndex?: number;
   text?: string;
   customStyle?: NodeCustomStyle;
+  createdAt?: number;
+  updatedAt?: number;
   [key: string]: unknown;
 }
 
@@ -294,6 +297,7 @@ export interface AppState extends GitSlice {
   forceLayout: () => void;
   toggleTheme: () => void;
   updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => void;
+  updateEdge: (edgeId: string, updates: Partial<Edge>) => void;
   addFunctionCall: (funcName: string, args?: string[]) => void;
   addLogicNode: () => void;
   addIfNode: () => void;

@@ -87,7 +87,8 @@ export const en = {
         },
         note: {
             title_placeholder: "Note Title",
-            text_placeholder: "Type your notes..."
+            text_placeholder: "Type your notes...",
+            delete: "Delete"
         },
         edge: {
             add_comment: "Add Comment",

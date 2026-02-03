@@ -5,7 +5,8 @@ import {
     Activity,
     CornerDownRight,
     ArrowRight,
-    X
+    X,
+    RotateCcw
 } from 'lucide-react';
 
 import type { EdgeCustomStyle } from '../types/store';
@@ -89,12 +90,29 @@ export const EdgeStylePopup: React.FC<EdgeStylePopupProps> = ({ currentStyle, on
         <div style={styles.container}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                 <span style={{ fontWeight: 700, fontSize: '0.9rem', color: isDark ? '#fff' : '#000' }}>Estilo de Conexão</span>
-                <button
-                    onClick={onClose}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#aaa' : '#666', padding: 0 }}
-                >
-                    <X size={16} />
-                </button>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                        onClick={() => onUpdate({ type: undefined, stroke: undefined, strokeWidth: undefined, strokeDasharray: undefined })}
+                        title="Restaurar Padrão"
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: isDark ? '#aaa' : '#666',
+                            padding: '4px',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <RotateCcw size={14} />
+                    </button>
+                    <button
+                        onClick={onClose}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isDark ? '#aaa' : '#666', padding: 0 }}
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
             </div>
 
             {/* Curve Type */}
@@ -120,13 +138,31 @@ export const EdgeStylePopup: React.FC<EdgeStylePopupProps> = ({ currentStyle, on
             <div style={styles.section}>
                 <span style={styles.label}>Estilo de Linha</span>
                 <div style={styles.row}>
-                    <button title="Sólida" style={styles.iconBtn(activeStrokeStyle === 'solid')} onClick={() => onUpdate({ strokeDasharray: undefined })}>
+                    <button title="Animada (Padrão)" style={styles.iconBtn(currentStyle.animated !== false)} onClick={() => onUpdate({ strokeDasharray: undefined, animated: true })}>
+                        <style>
+                            {`
+                                @keyframes march-ants {
+                                    to {
+                                        background-position: 100% 0;
+                                    }
+                                }
+                            `}
+                        </style>
+                        <div style={{
+                            width: '100%',
+                            height: '2px',
+                            background: 'linear-gradient(90deg, currentColor 50%, transparent 50%)',
+                            backgroundSize: '8px 100%',
+                            animation: 'march-ants 1.5s infinite linear'
+                        }} />
+                    </button>
+                    <button title="Sólida" style={styles.iconBtn(activeStrokeStyle === 'solid' && currentStyle.animated === false)} onClick={() => onUpdate({ strokeDasharray: undefined, animated: false })}>
                         <div style={{ width: '100%', height: '2px', background: 'currentColor' }} />
                     </button>
-                    <button title="Tracejada" style={styles.iconBtn(activeStrokeStyle === 'dashed')} onClick={() => onUpdate({ strokeDasharray: '5 5' })}>
+                    <button title="Tracejada" style={styles.iconBtn(activeStrokeStyle === 'dashed' && currentStyle.animated === false)} onClick={() => onUpdate({ strokeDasharray: '5 5', animated: false })}>
                         <div style={{ width: '100%', height: '2px', background: 'linear-gradient(to right, currentColor 50%, transparent 50%)', backgroundSize: '10px 100%' }} />
                     </button>
-                    <button title="Pontilhada" style={styles.iconBtn(activeStrokeStyle === 'dotted')} onClick={() => onUpdate({ strokeDasharray: '1 5' })}>
+                    <button title="Pontilhada" style={styles.iconBtn(activeStrokeStyle === 'dotted' && currentStyle.animated === false)} onClick={() => onUpdate({ strokeDasharray: '1 5', animated: false })}>
                         <div style={{ width: '100%', height: '2px', background: 'linear-gradient(to right, currentColor 20%, transparent 20%)', backgroundSize: '6px 100%' }} />
                     </button>
                 </div>
@@ -136,7 +172,7 @@ export const EdgeStylePopup: React.FC<EdgeStylePopupProps> = ({ currentStyle, on
             <div style={styles.section}>
                 <span style={styles.label}>Espessura</span>
                 <div style={styles.row}>
-                    {[1, 2, 4].map(w => (
+                    {[1, 2, 3, 4, 6].map(w => (
                         <button
                             key={w}
                             style={styles.iconBtn(currentStyle.strokeWidth === w)}
@@ -152,6 +188,26 @@ export const EdgeStylePopup: React.FC<EdgeStylePopupProps> = ({ currentStyle, on
             <div style={styles.section}>
                 <span style={styles.label}>Cor</span>
                 <div style={styles.row}>
+                    <button
+                        title="Cor Padrão"
+                        style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: !currentStyle.stroke || currentStyle.stroke === (isDark ? '#4fc3f7' : '#0070f3') ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)') : 'transparent',
+                            border: !currentStyle.stroke || currentStyle.stroke === (isDark ? '#4fc3f7' : '#0070f3') ? `2px solid ${isDark ? '#fff' : '#000'}` : `1px dashed ${isDark ? '#aaa' : '#666'}`,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: isDark ? '#fff' : '#000',
+                            transition: 'all 0.1s',
+                            position: 'relative'
+                        }}
+                        onClick={() => onUpdate({ stroke: undefined })}
+                    >
+                        <div style={{ width: '12px', height: '2px', background: 'currentColor', transform: 'rotate(45deg)' }} />
+                    </button>
                     {Object.values(NOTE_PALETTE).map(color => (
                         <button
                             key={color}
