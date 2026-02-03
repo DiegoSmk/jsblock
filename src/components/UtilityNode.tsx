@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, useEffect } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import type { AppNode } from '../types/store';
@@ -11,53 +11,62 @@ import { getUtilityDefinition } from '../registry/utilities';
 const HybridHandle = ({
     id,
     position,
-    isConnected,
     isHovered,
     showDebug
 }: {
     id: string,
     position: Position,
-    isConnected: boolean,
     isHovered: boolean,
     showDebug: boolean
 }) => {
-    const opacity = isConnected || isHovered ? 1 : 0;
+    // Hidden unless hovered, regardless of connection status (as requested)
 
-    // Common styles for both source and target handles
-    const baseStyle: React.CSSProperties = {
+
+    // Style for the actual Handle (hit area)
+    const handleHitStyle: React.CSSProperties = {
+        width: 24,
+        height: 24,
+        background: 'transparent',
+        border: 'none',
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'opacity 0.2s',
+        opacity: isHovered ? 1 : 0,
+        top: 'auto', // Reset default top
+        bottom: 'auto' // Reset default bottom
+    };
+
+    // Style for the visible circle centered inside the Handle
+    const visualStyle: React.CSSProperties = {
         background: '#94a3b8',
         border: '2px solid #fff',
         width: 14,
         height: 14,
-        transition: 'opacity 0.2s',
-        opacity,
-        zIndex: 10,
+        borderRadius: '50%',
+        pointerEvents: 'none', // The visual part doesn't need to capture events
+        flexShrink: 0
     };
 
     const debugStyle: React.CSSProperties = showDebug ? {
-        outline: '2px solid red',
-        backgroundColor: 'rgba(255,0,0,0.2)'
+        outline: '1px solid red',
+        backgroundColor: 'rgba(255,0,0,0.1)'
     } : {};
 
-    const finalStyle = { ...baseStyle, ...debugStyle };
+    const offset = -24;
+    const sideProp = position === Position.Left ? 'left' : 'right';
 
     return (
-        <>
-            <Handle
-                type="target"
-                id={id}
-                position={position}
-                style={{ ...finalStyle, [position === Position.Left ? 'left' : 'right']: -7 }}
-                isConnectable={true}
-            />
-            <Handle
-                type="source"
-                id={id}
-                position={position}
-                style={{ ...finalStyle, [position === Position.Left ? 'left' : 'right']: -7 }}
-                isConnectable={true}
-            />
-        </>
+        <Handle
+            type="source" // In Loose mode, this acts as a universal port
+            id={id}
+            position={position}
+            style={{ ...handleHitStyle, [sideProp]: offset - 12, ...debugStyle }}
+            isConnectable={true}
+        >
+            <div style={visualStyle} />
+        </Handle>
     );
 };
 
@@ -77,7 +86,7 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
     const isDark = theme === 'dark';
     const [isHovered, setIsHovered] = useState(false);
 
-    const def = getUtilityDefinition(data.utilityType as any);
+    const def = getUtilityDefinition(data.utilityType!);
     const Icon = def?.icon ?? Copy;
     const color = isDark ? def?.color.dark : def?.color.light;
 
@@ -96,7 +105,7 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
 
         const sourceNode = nodes.find(n => n.id === connectedEdge.source);
         if (sourceNode && (sourceNode.data.text !== undefined || sourceNode.data.label !== undefined)) {
-            const textToCopy = (sourceNode.data.text! ?? sourceNode.data.label! ?? '');
+            const textToCopy = (sourceNode.data.text ?? sourceNode.data.label ?? '');
             navigator.clipboard.writeText(textToCopy)
                 .then(() => {
                     addToast({ type: 'success', message: 'Conteúdo copiado para a área de transferência!' });
@@ -113,11 +122,12 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
 
     // Local state for input to handle composition characters properly
     const [localLabel, setLocalLabel] = useState(data.label ?? '');
+    const [prevLabel, setPrevLabel] = useState(data.label);
 
-    // Sync local state when external data changes (e.g. undo/redo)
-    useEffect(() => {
+    if (data.label !== prevLabel) {
         setLocalLabel(data.label ?? '');
-    }, [data.label]);
+        setPrevLabel(data.label);
+    }
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -138,8 +148,7 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
     const leftId = 'left';
     const rightId = 'right';
 
-    const isConnectedLeft = edges.some(e => (e.source === id && e.sourceHandle === leftId) || (e.target === id && e.targetHandle === leftId));
-    const isConnectedRight = edges.some(e => (e.source === id && e.sourceHandle === rightId) || (e.target === id && e.targetHandle === rightId));
+
 
     return (
         <motion.div
@@ -242,7 +251,6 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
             <HybridHandle
                 id={leftId}
                 position={Position.Left}
-                isConnected={isConnectedLeft}
                 isHovered={isHovered}
                 showDebug={settings.showDebugHandles}
             />
@@ -251,7 +259,6 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
                 <HybridHandle
                     id={rightId}
                     position={Position.Right}
-                    isConnected={isConnectedRight}
                     isHovered={isHovered}
                     showDebug={settings.showDebugHandles}
                 />

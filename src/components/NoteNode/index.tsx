@@ -32,14 +32,17 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
         setConfirmationModal,
         borderStyle,
         customStyle,
-        detectedTask,
-        confirmTaskConversion
+        detectedTasks,
+        confirmTaskConversion,
+        localText,
+        handleTextBlur
     } = useNoteLogic(id, data, isDark);
 
     return (
         <div className={`note-node-wrapper note-node-${id}`} style={{ position: 'relative', width: '100%', height: '100%' }}>
             {/* Smart Task Indicator */}
-            {detectedTask && (
+            {/* Smart Task Indicator - Badge */}
+            {detectedTasks && detectedTasks.length > 0 && (
                 <div
                     onClick={(e) => {
                         e.stopPropagation();
@@ -47,24 +50,32 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                     }}
                     style={{
                         position: 'absolute',
-                        bottom: 10,
-                        right: 10,
+                        top: -12,
+                        left: 10,
                         zIndex: 100,
                         background: '#4caf50',
                         color: '#fff',
-                        borderRadius: '12px',
-                        padding: '4px 8px',
-                        fontSize: '10px',
-                        fontWeight: 'bold',
+                        borderRadius: '20px',
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        fontWeight: '600',
                         cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px'
+                        gap: '6px',
+                        border: '2px solid #fff', // Contrast border
+                        transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    <StickyNote size={10} />
-                    <span>Criar Task</span>
+                    <StickyNote size={12} fill="#fff" />
+                    <span>
+                        {detectedTasks.length > 1
+                            ? `Converter ${detectedTasks.length} Tasks`
+                            : 'Criar Task'}
+                    </span>
                 </div>
             )}
 
@@ -158,6 +169,8 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                             width: '100%',
                             padding: 0
                         }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                     />
 
                     {/* Style/Settings Button */}
@@ -193,8 +206,13 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                 {/* Editor Area */}
                 <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
                     <textarea
-                        value={data.text}
+                        value={localText}
                         onChange={handleTextChange}
+                        onBlur={handleTextBlur}
+                        autoCapitalize="off"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck={false}
                         placeholder="Comece a escrever aqui..."
                         className="note-node-textarea"
                         style={{
@@ -209,6 +227,8 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                             color: isDark ? '#ddd' : '#444',
                             fontFamily: 'inherit'
                         }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onKeyUp={(e) => e.stopPropagation()}
                     />
                 </div>
             </motion.div>

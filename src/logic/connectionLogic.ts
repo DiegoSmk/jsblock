@@ -1,4 +1,4 @@
-import type { Node, Connection, Edge } from '@xyflow/react';
+import type { Connection, Edge } from '@xyflow/react';
 import type { AppNode } from '../types/store';
 
 export const validateConnection = (connection: Connection | Edge, nodes: AppNode[]): boolean => {

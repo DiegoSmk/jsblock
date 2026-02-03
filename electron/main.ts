@@ -15,7 +15,7 @@ const execFileAsync = promisify(execFile);
 
 // Disable hardware acceleration to avoid some GPU-related errors and suppress autofill warnings
 app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-features', 'Autofill,AutofillAddressFormat,AutofillServerCommunication,PasswordManager,PasswordGeneration');
+app.commandLine.appendSwitch('disable-features', 'PasswordManager,PasswordGeneration');
 app.commandLine.appendSwitch('disable-autofill-keyboard-accessor-view', 'true');
 
 

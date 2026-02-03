@@ -8,38 +8,34 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
     const updateNodeData = useStore(state => state.updateNodeData);
     const setConfirmationModal = useStore(state => state.setConfirmationModal);
     const onNodesChange = useStore(state => state.onNodesChange);
-    const spawnConnectedUtility = useStore(state => state.spawnConnectedUtility);
-    const openModal = useStore(state => state.openModal);
+    const spawnMultipleConnectedUtilities = useStore(state => state.spawnMultipleConnectedUtilities);
+    // const openModal = useStore(state => state.openModal);
 
     // Use store directly for spawn logic if needed, but we rely on spawnConnectedUtility action.
 
-    const { allEdges, nodes } = useStore(useShallow(state => ({
-        allEdges: state.edges,
-        nodes: state.nodes
-    })));
+    // Optimized store usage to prevent re-renders on node move
+    const edges = useStore(useShallow(state =>
+        state.edges.filter(edge => edge.source === id || edge.target === id)
+    ));
 
-    // Filtered edges for handles
-    const edges = useMemo(() =>
-        allEdges.filter(edge => edge.source === id || edge.target === id),
-        [allEdges, id]
-    );
+    const taskStatus = useStore(useShallow(state => {
+        const connectedEdges = state.edges.filter(e => e.source === id || e.target === id);
+        const taskNodes = connectedEdges
+            .map(e => {
+                const otherId = e.source === id ? e.target : e.source;
+                return state.nodes.find(n => n.id === otherId);
+            })
+            .filter(n => n?.type === 'utilityNode' && n?.data.utilityType === 'task');
+
+        if (taskNodes.length === 0) return 'none';
+        const allChecked = taskNodes.every(n => n?.data.checked);
+        return allChecked ? 'completed' : 'active';
+    }));
 
     const [menuState, setMenuState] = useState<'closed' | 'menu' | 'style' | 'details'>('closed');
     const popoverRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
-
-    const taskStatus = useMemo(() => {
-        const taskNodes = edges
-            .filter(e => e.target === id)
-            .map(e => nodes.find(n => n.id === e.source))
-            .filter(n => n?.type === 'utilityNode' && n?.data.utilityType === 'task');
-
-        if (taskNodes.length === 0) return 'none';
-
-        const allChecked = taskNodes.every(n => n?.data.checked);
-        return allChecked ? 'completed' : 'active';
-    }, [edges, nodes, id]);
 
     const customStyle = data.customStyle ?? {};
     const borderOpacity = customStyle.borderOpacity ?? 1;
@@ -65,59 +61,43 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
         return customStyle.backgroundColor ?? (isDark ? '#1a1a1a' : '#fff');
     }, [taskStatus, customStyle.backgroundColor, isDark]);
 
-    const [detectedTask, setDetectedTask] = useState<{ label: string, checked: boolean, fullMatch: string } | null>(null);
+    const [detectedTasks, setDetectedTasks] = useState<{ label: string, checked: boolean, fullMatch: string }[] | null>(null);
+
+
+
+    // --- Local Text Buffer for Dead Key Support ---
+    const [localText, setLocalText] = useState(data.text ?? '');
+    const [prevDataText, setPrevDataText] = useState(data.text);
+
+    if (data.text !== prevDataText) {
+        setLocalText(data.text ?? '');
+        setPrevDataText(data.text);
+    }
 
     const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const visualText = e.target.value;
-        const taskMatch = /^- \[(x| )\] (.*)$/m;
-        const match = visualText.match(taskMatch);
+        setLocalText(visualText);
 
-        if (match) {
-            const [fullMatch, checkedStr, taskLabel] = match;
-            const isChecked = checkedStr === 'x';
-            setDetectedTask({ label: taskLabel, checked: isChecked, fullMatch });
+        const taskRegex = /^\s*- \[(x| )\] (.*)$/gm;
+        const matches = [...visualText.matchAll(taskRegex)];
+
+        if (matches.length > 0) {
+            const tasks = matches.map(match => ({
+                fullMatch: match[0],
+                checked: match[1] === 'x',
+                label: match[2]
+            }));
+            setDetectedTasks(tasks);
         } else {
-            setDetectedTask(null);
+            setDetectedTasks(null);
         }
+    }, []);
 
-        updateNodeData(id, { ...data, text: visualText });
-    }, [id, data, updateNodeData]);
 
-    const confirmTaskConversion = useCallback(() => {
-        if (!detectedTask) return;
 
-        setConfirmationModal({
-            isOpen: true,
-            title: 'Converter para Tarefa?',
-            message: `Deseja converter "${detectedTask.label}" em um nó de tarefa conectado?`,
-            confirmLabel: 'Converter',
-            cancelLabel: 'Cancelar',
-            onConfirm: () => {
-                const currentText = data.text || '';
-                const newText = currentText.replace(detectedTask.fullMatch, '').trim();
-
-                updateNodeData(id, { ...data, text: newText });
-
-                if (spawnConnectedUtility) {
-                    const currentNode = nodes.find(n => n.id === id);
-                    const position = {
-                        x: (currentNode?.position.x ?? 0) + 300,
-                        y: (currentNode?.position.y ?? 0)
-                    };
-
-                    spawnConnectedUtility(id, 'task', detectedTask.label, position, detectedTask.checked);
-                }
-                setDetectedTask(null);
-                setConfirmationModal(null);
-            },
-            onCancel: () => {
-                setConfirmationModal(null);
-                setDetectedTask(null); // Ignore this match for now? Or just close modal.
-            }
-        });
-
-    }, [detectedTask, data, id, updateNodeData, nodes, spawnConnectedUtility, setConfirmationModal]);
-
+    const handleTextBlur = useCallback(() => {
+        updateNodeData(id, { ...data, text: localText });
+    }, [id, data, localText, updateNodeData]);
 
     const handleTitleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         updateNodeData(id, { ...data, label: e.target.value });
@@ -131,6 +111,59 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
             }
         });
     };
+
+    const confirmTaskConversion = useCallback(() => {
+        if (!detectedTasks || detectedTasks.length === 0) return;
+
+        const count = detectedTasks.length;
+        const message = count === 1
+            ? `Deseja converter a tarefa "${detectedTasks[0].label}" em um nó de tarefa conectado?`
+            : `Deseja converter ${count} tarefas encontradas em nós de tarefa conectados?`;
+
+        setConfirmationModal({
+            isOpen: true,
+            title: 'Converter Tarefas',
+            message,
+            confirmLabel: 'Converter',
+            cancelLabel: 'Cancelar',
+            onConfirm: () => {
+                let currentText = localText || '';
+
+                detectedTasks.forEach(task => {
+                    currentText = currentText.replace(task.fullMatch, '');
+                });
+
+                currentText = currentText.replace(/\n\s*\n/g, '\n').trim();
+
+                // Update both local and global
+                setLocalText(currentText);
+                updateNodeData(id, { ...data, text: currentText });
+
+                if (spawnMultipleConnectedUtilities) {
+                    const currentNode = useStore.getState().nodes.find(n => n.id === id);
+                    const baseX = (currentNode?.position.x ?? 0) + 300;
+                    const baseY = (currentNode?.position.y ?? 0);
+
+                    const utilitiesToSpawn = detectedTasks.map((task, index) => ({
+                        type: 'task' as const,
+                        label: task.label,
+                        position: {
+                            x: baseX,
+                            y: baseY + (index * 60)
+                        },
+                        checked: task.checked
+                    }));
+
+                    spawnMultipleConnectedUtilities(id, utilitiesToSpawn);
+                }
+                setDetectedTasks(null);
+                setConfirmationModal(null);
+            },
+            onCancel: () => {
+                setConfirmationModal(null);
+            }
+        });
+    }, [detectedTasks, data, id, updateNodeData, spawnMultipleConnectedUtilities, setConfirmationModal, localText]);
 
     const toggleMenu = () => {
         if (menuState === 'closed') {
@@ -174,7 +207,9 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
         setConfirmationModal,
         borderStyle,
         customStyle,
-        detectedTask,
-        confirmTaskConversion
+        detectedTasks,
+        confirmTaskConversion,
+        localText,
+        handleTextBlur
     };
 };

@@ -10,7 +10,8 @@ import {
   type NodeTypes,
   type Node,
   type Edge,
-  type Connection
+  type Connection,
+  ConnectionMode
 } from '@xyflow/react';
 import type { EdgeCustomStyle } from '../types/store';
 import { Edit2, Trash2, Palette } from 'lucide-react';
@@ -256,6 +257,7 @@ export function FlowContent() {
         maxZoom={4}
         snapToGrid={true}
         snapGrid={[15, 15]}
+        connectionMode={ConnectionMode.Loose}
         connectionRadius={30}
         defaultEdgeOptions={{
           style: { strokeWidth: 3, stroke: isDark ? '#4fc3f7' : '#0070f3' },

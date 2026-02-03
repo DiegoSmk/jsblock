@@ -28,21 +28,28 @@ export const NoteNodeHandles: React.FC<NoteNodeHandlesProps> = ({
             const isTarget = edge.target === id;
 
             if (isSource) {
-                // If sourceHandle is null, it connects to "default" handle (top?)
-                // But for NoteNode we usually set IDs. If null, maybe ignore or assume top?
-                // Let's assume strict ID match or null matches "top" if location is top?
-                // To be safe, we check if edge.sourceHandle is in possibleHandleIds.
-                return possibleHandleIds.includes(edge.sourceHandle || '');
+                // If sourceHandle is null, it typically connects to the default handle.
+                // For NoteNode, let's assume 'top' is the default for Source if no ID is provided, 
+                // or if the ID matches 'top' variants.
+                const handleId = edge.sourceHandle;
+                if (!handleId && location === 'top') return true;
+                return possibleHandleIds.includes(handleId ?? '');
             }
             if (isTarget) {
-                return possibleHandleIds.includes(edge.targetHandle || '');
+                // If targetHandle is null, it typically connects to the default handle.
+                // For NoteNode, 'top' is not usually a target default (left is?), but let's be permissive.
+                // Actually, if a code node connects TO a note, it might not specify targetHandle if it thinks Note is a default node.
+                // If we assume 'top' is default for target too (to be safe and visible):
+                const handleId = edge.targetHandle;
+                if (!handleId && location === 'top') return true;
+                return possibleHandleIds.includes(handleId ?? '');
             }
             return false;
         });
 
         const colors = new Set<string>();
         connectedEdges.forEach(edge => {
-            const color = (edge.style?.stroke as string) || (isDark ? '#4fc3f7' : '#0070f3');
+            const color = (edge.style?.stroke as string) ?? (isDark ? '#4fc3f7' : '#0070f3');
             if (color) colors.add(color);
         });
 
@@ -97,35 +104,46 @@ export const NoteNodeHandles: React.FC<NoteNodeHandlesProps> = ({
         height: 20
     };
 
+    const renderHandleGroup = (
+        location: 'top' | 'bottom' | 'left' | 'right',
+        pos: Position,
+        offset: number
+    ) => {
+        const visual = renderHandleVisual(location);
+        const size = 20;
+        const centeredOffset = offset - (size / 2);
+
+        const baseStyle = {
+            ...handleStyle,
+            [location]: centeredOffset,
+            ...(location === 'left' || location === 'right' ? { top: '50%', transform: 'translateY(-50%)' } : { left: '50%', transform: 'translateX(-50%)' })
+        };
+
+        // In Loose mode, we can use a single handle ID for both source/target
+        // We use the primary ID (e.g., 'left', 'right', 'top', 'bottom')
+        const handleId = location;
+
+        return (
+            <Handle
+                key={location}
+                id={handleId}
+                type="source" // Acts as universal port
+                position={pos}
+                style={baseStyle}
+            >
+                {visual}
+            </Handle>
+        );
+    };
+
+    const offset = -18;
+
     return (
         <>
-            {/* Top Side */}
-            <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', zIndex: 51 }}>
-                {renderHandleVisual('top')}
-            </div>
-            <Handle id="top" type="source" position={Position.Top} style={{ ...handleStyle, top: -10 }} />
-            <Handle id="top-t" type="target" position={Position.Top} style={{ ...handleStyle, top: -10, opacity: 0 }} />
-
-            {/* Right Side */}
-            <div style={{ position: 'absolute', right: -10, top: '50%', transform: 'translateY(-50%)', zIndex: 51 }}>
-                 {renderHandleVisual('right')}
-            </div>
-            <Handle id="right" type="source" position={Position.Right} style={{ ...handleStyle, right: -10 }} />
-            <Handle id="right-t" type="target" position={Position.Right} style={{ ...handleStyle, right: -10, opacity: 0 }} />
-
-            {/* Bottom Side */}
-            <div style={{ position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)', zIndex: 51 }}>
-                {renderHandleVisual('bottom')}
-            </div>
-            <Handle id="bottom" type="source" position={Position.Bottom} style={{ ...handleStyle, bottom: -10 }} />
-            <Handle id="bottom-t" type="target" position={Position.Bottom} style={{ ...handleStyle, bottom: -10, opacity: 0 }} />
-
-            {/* Left Side */}
-            <div style={{ position: 'absolute', left: -10, top: '50%', transform: 'translateY(-50%)', zIndex: 51 }}>
-                {renderHandleVisual('left')}
-            </div>
-            <Handle id="left" type="target" position={Position.Left} style={{ ...handleStyle, left: -10 }} />
-            <Handle id="left-s" type="source" position={Position.Left} style={{ ...handleStyle, left: -10, opacity: 0 }} />
+            {renderHandleGroup('top', Position.Top, offset)}
+            {renderHandleGroup('right', Position.Right, offset)}
+            {renderHandleGroup('bottom', Position.Bottom, offset)}
+            {renderHandleGroup('left', Position.Left, offset)}
         </>
     );
 };
