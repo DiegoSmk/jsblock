@@ -9,6 +9,7 @@ export const en = {
             explorer: "Explorer",
             file_explorer: "File Explorer",
             function_library: "Function Library",
+            notes_library: "Notes Library",
             select_file: "Select a file to edit",
             open_folder_hint: "Open a folder or file to start",
             window_controls: {
@@ -126,6 +127,11 @@ export const en = {
                 loops: "Loops",
                 functions: "Functions",
                 native: "Native"
+            },
+            notes: {
+                title: "File Notes",
+                no_notes: "No notes found",
+                search_placeholder: "Search info in notes..."
             }
         },
         recent: {

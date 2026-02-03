@@ -9,6 +9,7 @@ export const pt = {
             explorer: "Explorador",
             file_explorer: "Explorador de Arquivos",
             function_library: "Biblioteca de Funções",
+            notes_library: "Biblioteca de Notas",
             select_file: "Selecione um arquivo para editar",
             open_folder_hint: "Abrir uma pasta ou arquivo para começar",
             window_controls: {
@@ -126,6 +127,11 @@ export const pt = {
                 loops: "Loops",
                 functions: "Funções",
                 native: "Nativo"
+            },
+            notes: {
+                title: "Notas do Arquivo",
+                no_notes: "Nenhuma nota encontrada",
+                search_placeholder: "Buscar informações nas notas..."
             }
         },
         recent: {
