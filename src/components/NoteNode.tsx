@@ -74,6 +74,11 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
         borderOpacity
     ), [customStyle.borderColor, borderOpacity, isDark]);
 
+    const scrollThumbColor = React.useMemo(() => hexToRgba(
+        customStyle.borderColor ?? (isDark ? '#444444' : '#e6c02a'),
+        Math.min(1, borderOpacity * 0.5)
+    ), [customStyle.borderColor, borderOpacity, isDark]);
+
     const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         updateNodeData(id, { ...data, text: e.target.value });
     }, [id, data, updateNodeData]);
@@ -536,7 +541,7 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
                 </div>
 
                 <textarea
-                    className="note-node-textarea"
+                    className="note-node-textarea nowheel nodrag"
                     value={data.text ?? ''}
                     onChange={handleTextChange}
                     placeholder={t('note.text_placeholder')}
@@ -651,19 +656,22 @@ export const NoteNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
 
                 .note-node-textarea::-webkit-scrollbar {
                     width: 10px;
+                    cursor: default;
                 }
                 .note-node-textarea::-webkit-scrollbar-track {
                     background: transparent;
+                    cursor: default;
                 }
                 .note-node-textarea::-webkit-scrollbar-thumb {
-                    background-color: ${effectiveBorderColor}; /* Sync with border color */
+                    background-color: ${scrollThumbColor}; 
                     border-radius: 6px;
                     border: 3px solid transparent;
                     background-clip: content-box;
-                    opacity: 0.5;
+                    cursor: pointer !important;
                 }
                 .note-node-textarea::-webkit-scrollbar-thumb:hover {
-                    background-color: ${customStyle.borderColor ?? (isDark ? '#666' : '#999')};
+                    background-color: ${effectiveBorderColor}; /* Full note opacity on hover */
+                    cursor: pointer !important;
                 }
             `}</style>
         </div >
