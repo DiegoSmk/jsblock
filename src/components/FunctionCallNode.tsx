@@ -1,13 +1,17 @@
+import { memo, useCallback } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Hash, Plus, ExternalLink, Activity } from 'lucide-react';
 import type { AppNode, AppNodeData } from '../types/store';
 import type { Edge } from '@xyflow/react';
 
-export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }) => {
+export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const runtimeValues = useStore((state) => state.runtimeValues);
-    const edges = useStore((state) => state.edges);
+    const edges = useStore(useShallow(useCallback(state =>
+        state.edges.filter(edge => edge.target === id),
+        [id])));
     const addFunctionCall = useStore((state) => state.addFunctionCall);
     const navigateInto = useStore((state) => state.navigateInto);
 
@@ -201,7 +205,7 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }
                             return (
                                 <div key={argKey} style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <Handle type="target" position={Position.Left} id={`arg-${i}`} className="handle-data" style={{ left: '-12px', background: '#f472b6' }} />
+                                        <Handle type="target" position={Position.Left} id={`arg-${i}`} className="handle-data target" style={{ left: '-12px' }} />
                                         <span style={{ fontSize: '0.75rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>{arg}</span>
                                     </div>
                                     {value !== null && (
@@ -263,4 +267,6 @@ export const FunctionCallNode = ({ id, data }: { id: string, data: AppNodeData }
             </div>
         </div>
     );
-};
+});
+
+FunctionCallNode.displayName = 'FunctionCallNode';

@@ -1,9 +1,9 @@
-
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Cpu } from 'lucide-react';
 
-export const NativeApiNode = () => {
+export const NativeApiNode = memo(() => {
     const theme = useStore((state) => state.theme);
     const isDark = theme === 'dark';
 
@@ -25,7 +25,7 @@ export const NativeApiNode = () => {
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Cpu size={18} />
-                <span style={{  letterSpacing: '0.05em' }}>JS Runtime API</span>
+                <span style={{ letterSpacing: '0.05em' }}>JS Runtime API</span>
             </div>
             <div style={{
                 fontSize: '0.7rem',
@@ -49,4 +49,6 @@ export const NativeApiNode = () => {
             />
         </div>
     );
-};
+});
+
+NativeApiNode.displayName = 'NativeApiNode';

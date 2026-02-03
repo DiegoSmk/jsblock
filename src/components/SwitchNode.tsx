@@ -1,12 +1,11 @@
-
+import { memo, useEffect } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Plus, Trash2, ExternalLink } from 'lucide-react';
-import { useEffect } from 'react';
 
 import type { AppNodeData } from '../types/store';
 
-export const SwitchNode = ({ id, data }: { id: string, data: AppNodeData }) => {
+export const SwitchNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const updateNodeData = useStore((state) => state.updateNodeData);
     const navigateInto = useStore((state) => state.navigateInto);
@@ -69,10 +68,9 @@ export const SwitchNode = ({ id, data }: { id: string, data: AppNodeData }) => {
                         type="target"
                         position={Position.Left}
                         id="discriminant"
-                        className="handle-data"
+                        className="handle-data target"
                         style={{
                             left: '-18px',
-                            background: '#9c27b0',
                         }}
                     />
                     <span style={{ fontSize: '0.8rem', fontWeight: 600, color: isDark ? '#ce93d8' : '#7b1fa2' }}>Value to Check</span>
@@ -183,4 +181,6 @@ export const SwitchNode = ({ id, data }: { id: string, data: AppNodeData }) => {
             </div>
         </div>
     );
-};
+});
+
+SwitchNode.displayName = 'SwitchNode';

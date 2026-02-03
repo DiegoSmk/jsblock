@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 import { Repeat, ExternalLink } from 'lucide-react';
 
 import type { AppNodeData } from '../types/store';
 
-export const ForNode = ({ data }: { id: string, data: AppNodeData }) => {
+export const ForNode = memo(({ data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const navigateInto = useStore((state) => state.navigateInto);
     const isDark = theme === 'dark';
@@ -43,7 +44,7 @@ export const ForNode = ({ data }: { id: string, data: AppNodeData }) => {
                         type="target"
                         position={Position.Left}
                         id="init"
-                        className="handle-data"
+                        className="handle-data target"
                         style={{
                             left: '-18px',
                         }}
@@ -57,7 +58,7 @@ export const ForNode = ({ data }: { id: string, data: AppNodeData }) => {
                         type="target"
                         position={Position.Left}
                         id="test"
-                        className="handle-data"
+                        className="handle-data target"
                         style={{
                             left: '-18px',
                         }}
@@ -71,7 +72,7 @@ export const ForNode = ({ data }: { id: string, data: AppNodeData }) => {
                         type="target"
                         position={Position.Left}
                         id="update"
-                        className="handle-data"
+                        className="handle-data target"
                         style={{
                             left: '-18px',
                         }}
@@ -141,4 +142,6 @@ export const ForNode = ({ data }: { id: string, data: AppNodeData }) => {
             </div>
         </div>
     );
-};
+});
+
+ForNode.displayName = 'ForNode';
