@@ -31,6 +31,7 @@ import { getLayoutedElements } from '../logic/layout';
 import i18n from '../i18n/config';
 import { createGitSlice } from './slices/git/slice';
 import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
+import { validateConnection } from '../logic/connectionLogic';
 
 const initialCode = '';
 
@@ -512,6 +513,12 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (connection.source === connection.target) return;
 
         const { nodes, edges, code, isBlockFile, autoSave } = get();
+
+        // Check Logic Domain
+        if (!validateConnection(connection, nodes)) {
+            return;
+        }
+
         const newEdges = addEdge(connection, edges);
         set({ edges: newEdges });
 
@@ -971,6 +978,9 @@ export const useStore = create<AppState>((set, get, api) => ({
                 showAppBorder: false,
                 autoLayoutNodes: false,
                 showDebugHandles: false
+            },
+            layout: {
+                sidebar: { width: 260, isVisible: true }
             }
         });
         get().addToast({ type: 'info', message: 'Configurações restauradas para o padrão.' });
@@ -1000,6 +1010,40 @@ export const useStore = create<AppState>((set, get, api) => ({
         };
 
         set({ nodes: [...nodes, newNode] });
+    },
+
+    spawnConnectedUtility: (sourceId, type, label, position, checked) => {
+        const { nodes, edges, isBlockFile, autoSave } = get();
+        const def = getUtilityDefinition(type);
+        if (!def) return;
+
+        const newId = `util-${Date.now()}`;
+        const newNode: AppNode = {
+            id: newId,
+            type: 'utilityNode',
+            position,
+            data: {
+                ...def.defaultData,
+                label: label || def.label,
+                checked: checked ?? false
+            }
+        };
+
+        const newEdge: Edge = {
+            id: `edge-${sourceId}-${newId}`,
+            source: sourceId,
+            target: newId,
+        };
+
+        set({
+            nodes: [...nodes, newNode],
+            edges: [...edges, newEdge]
+        });
+
+        if (isBlockFile) {
+            if (autoSave) void get().saveFile();
+            else set({ isDirty: true });
+        }
     },
 
     addToast: (toast) => {
