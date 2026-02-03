@@ -374,7 +374,7 @@ export interface AppState extends GitSlice {
 
   // Block Note Actions
   addNoteNode: () => void;
-  addUtilityNode: (type: 'copy' | 'task') => void;
+  addUtilityNode: (type: UtilityType) => void;
   checkTaskRecurse: (nodeId: string) => void;
   isBlockFile: boolean;
 
@@ -413,4 +413,5 @@ export interface AppState extends GitSlice {
   resetSettings: () => void;
   getEdgesForNode: (nodeId: string) => Edge[];
   spawnConnectedUtility: (sourceId: string, type: UtilityType, label: string, position: { x: number, y: number }, checked?: boolean) => void;
+  spawnMultipleConnectedUtilities: (sourceId: string, utilities: { type: UtilityType, label: string, position: { x: number, y: number }, checked?: boolean }[]) => void;
 }

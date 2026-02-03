@@ -23,7 +23,12 @@ import type {
 } from '../types/store';
 
 // import { v4 as uuidv4 } from 'uuid'; // Removed to avoid dependency check
-const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+const getUUID = (prefix = 'id') => {
+    const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2, 15);
+    return `${prefix}-${uuid}`;
+};
 
 import { parseCodeToFlow } from '../logic/CodeParser';
 import { generateCodeFromFlow } from '../logic/CodeGenerator';
@@ -31,6 +36,7 @@ import { getLayoutedElements } from '../logic/layout';
 import i18n from '../i18n/config';
 import { createGitSlice } from './slices/git/slice';
 import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
+import { validateConnection } from '../logic/connectionLogic';
 
 const initialCode = '';
 
@@ -198,6 +204,7 @@ export const useStore = create<AppState>((set, get, api) => ({
                     autoLayoutNodes: parsed.editor?.autoLayoutNodes ?? defaultSettings.autoLayoutNodes,
                     fontSize: parsed.editor?.fontSize ?? defaultSettings.fontSize,
                     showAppBorder: parsed.appearance?.showAppBorder ?? false,
+                    showDebugHandles: parsed.developer?.showDebugHandles ?? defaultSettings.showDebugHandles
                 };
             }
         } catch { /* Ignore missing or corrupt settings */ }
@@ -221,6 +228,10 @@ export const useStore = create<AppState>((set, get, api) => ({
             if (updates.terminalCopyOnSelect !== undefined) parsed.terminal.copyOnSelect = updates.terminalCopyOnSelect;
             if (updates.terminalRightClickPaste !== undefined) parsed.terminal.rightClickPaste = updates.terminalRightClickPaste;
             if (updates.showAppBorder !== undefined) parsed.appearance.showAppBorder = updates.showAppBorder;
+
+            // Developer Settings
+            parsed.developer ??= {};
+            if (updates.showDebugHandles !== undefined) parsed.developer.showDebugHandles = updates.showDebugHandles;
 
             const newJson = JSON.stringify(parsed, null, 2);
             localStorage.setItem('settings.json', newJson);
@@ -459,7 +470,12 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (deletions.length > 0) {
             const newCache = new Map(get().connectionCache);
             deletions.forEach(d => newCache.delete(d.id));
-            set({ nodes: nextNodes, connectionCache: newCache });
+
+            // Also cleanup connected edges
+            const deletedIds = new Set(deletions.map(d => d.id));
+            const activeEdges = get().edges.filter(edge => !deletedIds.has(edge.source) && !deletedIds.has(edge.target));
+
+            set({ nodes: nextNodes, edges: activeEdges, connectionCache: newCache });
         } else {
             set({ nodes: nextNodes });
         }
@@ -482,11 +498,11 @@ export const useStore = create<AppState>((set, get, api) => ({
         // Rebuild cache on edge changes (optimized for frequency)
         const newCache = new Map<string, Edge[]>();
         newEdges.forEach(edge => {
-            const source = newCache.get(edge.source) || [];
+            const source = newCache.get(edge.source) ?? [];
             source.push(edge);
             newCache.set(edge.source, source);
 
-            const target = newCache.get(edge.target) || [];
+            const target = newCache.get(edge.target) ?? [];
             target.push(edge);
             newCache.set(edge.target, target);
         });
@@ -512,6 +528,12 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (connection.source === connection.target) return;
 
         const { nodes, edges, code, isBlockFile, autoSave } = get();
+
+        // Check Logic Domain
+        if (!validateConnection(connection, nodes)) {
+            return;
+        }
+
         const newEdges = addEdge(connection, edges);
         set({ edges: newEdges });
 
@@ -549,45 +571,54 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => {
-        const { nodes, code, edges, isBlockFile, autoSave } = get();
-        const updatedNodes = nodes.map((n: AppNode) => n.id === nodeId ? { ...n, data: { ...n.data, ...newData, updatedAt: Date.now() } } : n);
-        set({ nodes: updatedNodes });
+        set(state => {
+            const { code, edges, isBlockFile, autoSave } = state;
+            const updatedNodes = state.nodes.map((n: AppNode) =>
+                n.id === nodeId ? { ...n, data: { ...n.data, ...newData, updatedAt: Date.now() } } : n
+            );
 
-        // Recursive Check for Task Auto-completion
+            // Regenerate code if not a block file
+            let finalCode = code;
+            if (!isBlockFile) {
+                finalCode = generateCodeFromFlow(code, updatedNodes, edges);
+            }
+
+            return {
+                nodes: updatedNodes,
+                code: finalCode,
+                isDirty: isBlockFile ? !autoSave : state.isDirty
+            };
+        });
+
+        // Side effects after state is updated
+        const { isBlockFile, autoSave } = get();
         if (newData.checked !== undefined) {
             get().checkTaskRecurse(nodeId);
         }
 
-        if (isBlockFile) {
-            if (autoSave) {
-                if (saveTimeout) clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(() => {
-                    void get().saveFile();
-                }, 1000);
-            } else {
-                set({ isDirty: true });
-            }
-        } else {
-            // Regenerate code based on the new data
-            const newCode = generateCodeFromFlow(code, updatedNodes, edges);
-            get().setCode(newCode);
+        if (isBlockFile && autoSave) {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                void get().saveFile();
+            }, 1000);
         }
     },
 
     updateEdge: (edgeId, updates) => {
-        const { edges, isBlockFile, autoSave } = get();
-        const updatedEdges = edges.map(e => e.id === edgeId ? { ...e, ...updates } : e);
-        set({ edges: updatedEdges });
+        set(state => {
+            const updatedEdges = state.edges.map(e => e.id === edgeId ? { ...e, ...updates } : e);
+            return {
+                edges: updatedEdges,
+                isDirty: state.isBlockFile ? !state.autoSave : state.isDirty
+            };
+        });
 
-        if (isBlockFile) {
-            if (autoSave) {
-                if (saveTimeout) clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(() => {
-                    void get().saveFile();
-                }, 1000);
-            } else {
-                set({ isDirty: true });
-            }
+        const { isBlockFile, autoSave } = get();
+        if (isBlockFile && autoSave) {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                void get().saveFile();
+            }, 1000);
         }
     },
 
@@ -858,7 +889,9 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     addNoteNode: () => {
-        const id = `note-${Date.now()}`;
+        if (!get().isBlockFile) return;
+
+        const id = getUUID('note');
         const activeScopeId = get().activeScopeId;
         const newNode: AppNode = {
             id,
@@ -873,7 +906,7 @@ export const useStore = create<AppState>((set, get, api) => ({
             },
             style: { width: 250, height: 180 }
         };
-        set({ nodes: [...get().nodes, newNode], isDirty: true });
+        set(state => ({ nodes: [...state.nodes, newNode], isDirty: true }));
         void get().saveFile();
     },
 
@@ -971,23 +1004,28 @@ export const useStore = create<AppState>((set, get, api) => ({
                 showAppBorder: false,
                 autoLayoutNodes: false,
                 showDebugHandles: false
+            },
+            layout: {
+                ...get().layout,
+                sidebar: { ...get().layout.sidebar, width: 260 }
             }
         });
         get().addToast({ type: 'info', message: 'Configurações restauradas para o padrão.' });
     },
 
+
     getEdgesForNode: (nodeId: string) => {
-        return get().connectionCache.get(nodeId) || [];
+        return get().connectionCache.get(nodeId) ?? [];
     },
 
     addUtilityNode: (type: UtilityType) => {
-        const { nodes } = get();
-        // Use registry for default data
+        if (!get().isBlockFile) return;
+
         const def = getUtilityDefinition(type);
         if (!def) return;
 
         const newNode: AppNode = {
-            id: `util-${Date.now()}`,
+            id: getUUID('util'),
             type: 'utilityNode',
             position: {
                 x: Math.random() * 500,
@@ -999,11 +1037,86 @@ export const useStore = create<AppState>((set, get, api) => ({
             }
         };
 
-        set({ nodes: [...nodes, newNode] });
+        set(state => ({ nodes: [...state.nodes, newNode] }));
+    },
+
+    spawnConnectedUtility: (sourceId, type, label, position, checked) => {
+        const { isBlockFile, autoSave } = get();
+        const def = getUtilityDefinition(type);
+        if (!def) return;
+
+        const newId = getUUID('util');
+        const newNode: AppNode = {
+            id: newId,
+            type: 'utilityNode',
+            position,
+            data: {
+                ...def.defaultData,
+                label: label ?? def.label,
+                checked: checked ?? false
+            }
+        };
+
+        const newEdge: Edge = {
+            id: `edge-${sourceId}-${newId}`,
+            source: sourceId,
+            target: newId,
+        };
+
+        set(state => ({
+            nodes: [...state.nodes, newNode],
+            edges: [...state.edges, newEdge]
+        }));
+
+        if (isBlockFile) {
+            if (autoSave) void get().saveFile();
+            else set({ isDirty: true });
+        }
+    },
+
+    spawnMultipleConnectedUtilities: (sourceId, utilities) => {
+        const { isBlockFile, autoSave } = get();
+        const newNodes: AppNode[] = [];
+        const newEdges: Edge[] = [];
+
+        utilities.forEach(util => {
+            const def = getUtilityDefinition(util.type);
+            if (!def) return;
+
+            const newId = getUUID('util');
+            newNodes.push({
+                id: newId,
+                type: 'utilityNode',
+                position: util.position,
+                data: {
+                    ...def.defaultData,
+                    label: util.label ?? def.label,
+                    checked: util.checked ?? false
+                }
+            });
+
+            newEdges.push({
+                id: `edge-${sourceId}-${newId}`,
+                source: sourceId,
+                target: newId,
+            });
+        });
+
+        if (newNodes.length === 0) return;
+
+        set(state => ({
+            nodes: [...state.nodes, ...newNodes],
+            edges: [...state.edges, ...newEdges]
+        }));
+
+        if (isBlockFile) {
+            if (autoSave) void get().saveFile();
+            else set({ isDirty: true });
+        }
     },
 
     addToast: (toast) => {
-        const id = generateId();
+        const id = getUUID('toast');
         const duration = toast.duration ?? 3000;
         set((state: AppState) => ({ toasts: [...state.toasts, { ...toast, id }] }));
 

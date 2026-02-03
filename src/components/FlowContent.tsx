@@ -10,7 +10,8 @@ import {
   type NodeTypes,
   type Node,
   type Edge,
-  type Connection
+  type Connection,
+  ConnectionMode
 } from '@xyflow/react';
 import type { EdgeCustomStyle } from '../types/store';
 import { Edit2, Trash2, Palette } from 'lucide-react';
@@ -33,6 +34,7 @@ import { GroupNode } from './GroupNode';
 import { NativeApiNode } from './NativeApiNode';
 import { NoteNode } from './NoteNode/index';
 import { UtilityNode } from './UtilityNode';
+import { validateConnection } from '../logic/connectionLogic';
 
 const nodeTypes: NodeTypes = {
   variableNode: VariableNode,
@@ -232,8 +234,8 @@ export function FlowContent() {
   const hasComment = !!currentEdgeLabel;
 
   const isValidConnection = useCallback(
-    (edge: Connection | Edge) => edge.source !== edge.target,
-    []
+    (edge: Connection | Edge) => validateConnection(edge, nodes),
+    [nodes]
   );
 
   return (
@@ -255,7 +257,8 @@ export function FlowContent() {
         maxZoom={4}
         snapToGrid={true}
         snapGrid={[15, 15]}
-        connectionRadius={50}
+        connectionMode={ConnectionMode.Loose}
+        connectionRadius={30}
         defaultEdgeOptions={{
           style: { strokeWidth: 3, stroke: isDark ? '#4fc3f7' : '#0070f3' },
           animated: true,

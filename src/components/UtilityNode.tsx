@@ -1,4 +1,4 @@
-import { memo, useCallback, useState, useEffect } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import type { AppNode } from '../types/store';
@@ -7,23 +7,86 @@ import { Copy, Check, Merge, ArrowUpRight, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { getUtilityDefinition } from '../registry/utilities';
 
+// Hybrid Handle Component
+const HybridHandle = ({
+    id,
+    position,
+    isHovered,
+    showDebug
+}: {
+    id: string,
+    position: Position,
+    isHovered: boolean,
+    showDebug: boolean
+}) => {
+    // Hidden unless hovered, regardless of connection status (as requested)
+
+
+    // Style for the actual Handle (hit area)
+    const handleHitStyle: React.CSSProperties = {
+        width: 24,
+        height: 24,
+        background: 'transparent',
+        border: 'none',
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'opacity 0.2s',
+        opacity: isHovered ? 1 : 0,
+        top: 'auto', // Reset default top
+        bottom: 'auto' // Reset default bottom
+    };
+
+    // Style for the visible circle centered inside the Handle
+    const visualStyle: React.CSSProperties = {
+        background: '#94a3b8',
+        border: '2px solid #fff',
+        width: 14,
+        height: 14,
+        borderRadius: '50%',
+        pointerEvents: 'none', // The visual part doesn't need to capture events
+        flexShrink: 0
+    };
+
+    const debugStyle: React.CSSProperties = showDebug ? {
+        outline: '1px solid red',
+        backgroundColor: 'rgba(255,0,0,0.1)'
+    } : {};
+
+    const offset = -24;
+    const sideProp = position === Position.Left ? 'left' : 'right';
+
+    return (
+        <Handle
+            type="source" // In Loose mode, this acts as a universal port
+            id={id}
+            position={position}
+            style={{ ...handleHitStyle, [sideProp]: offset - 12, ...debugStyle }}
+            isConnectable={true}
+        >
+            <div style={visualStyle} />
+        </Handle>
+    );
+};
+
 export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
-    const { updateNodeData, edges, nodes, addToast, theme, onNodesChange } = useStore(
+    const { updateNodeData, edges, nodes, addToast, theme, onNodesChange, settings } = useStore(
         useShallow((state) => ({
             updateNodeData: state.updateNodeData,
             edges: state.edges,
             nodes: state.nodes,
             addToast: state.addToast,
             theme: state.theme,
-            onNodesChange: state.onNodesChange
+            onNodesChange: state.onNodesChange,
+            settings: state.settings
         }))
     );
 
     const isDark = theme === 'dark';
+    const [isHovered, setIsHovered] = useState(false);
 
-
-
-    const def = getUtilityDefinition(data.utilityType as any);
+    const def = getUtilityDefinition(data.utilityType!);
     const Icon = def?.icon ?? Copy;
     const color = isDark ? def?.color.dark : def?.color.light;
 
@@ -42,7 +105,7 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
 
         const sourceNode = nodes.find(n => n.id === connectedEdge.source);
         if (sourceNode && (sourceNode.data.text !== undefined || sourceNode.data.label !== undefined)) {
-            const textToCopy = (sourceNode.data.text! ?? sourceNode.data.label! ?? '');
+            const textToCopy = (sourceNode.data.text ?? sourceNode.data.label ?? '');
             navigator.clipboard.writeText(textToCopy)
                 .then(() => {
                     addToast({ type: 'success', message: 'Conteúdo copiado para a área de transferência!' });
@@ -59,11 +122,12 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
 
     // Local state for input to handle composition characters properly
     const [localLabel, setLocalLabel] = useState(data.label ?? '');
+    const [prevLabel, setPrevLabel] = useState(data.label);
 
-    // Sync local state when external data changes (e.g. undo/redo)
-    useEffect(() => {
+    if (data.label !== prevLabel) {
         setLocalLabel(data.label ?? '');
-    }, [data.label]);
+        setPrevLabel(data.label);
+    }
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -80,11 +144,19 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
         }
     };
 
+    // Connection checks
+    const leftId = 'left';
+    const rightId = 'right';
+
+
+
     return (
         <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             style={{
                 width: isTask ? 'auto' : '40px',
                 height: '40px',
@@ -98,13 +170,16 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 cursor: 'pointer',
                 gap: '8px',
-                minWidth: isTask ? '100px' : '40px'
+                minWidth: isTask ? '100px' : '40px',
+                position: 'relative' // Ensure handles are positioned relative to this
             }}
             onClick={isCopy ? handleCopy : handleToggleTask}
         >
-            {isCollector && <Merge size={18} color={color} />}
-            {isPortal && <ArrowUpRight size={18} color={color} />}
-            {(!isTask && !isCollector && !isPortal) && <Icon size={18} color={color ?? (isDark ? '#ccc' : '#666')} />}
+            <div style={{ pointerEvents: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {isCollector && <Merge size={18} color={color} />}
+                {isPortal && <ArrowUpRight size={18} color={color} />}
+                {(!isTask && !isCollector && !isPortal) && <Icon size={18} color={color ?? (isDark ? '#ccc' : '#666')} />}
+            </div>
 
             {isTask && (
                 <>
@@ -119,10 +194,11 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
                             alignItems: 'center',
                             justifyContent: 'center',
                             transition: 'all 0.2s',
-                            flexShrink: 0
+                            flexShrink: 0,
+                            pointerEvents: 'auto' // Interactive
                         }}
                     >
-                        {data.checked && <Check size={14} color="#fff" />}
+                        {data.checked && <Check size={14} color="#fff" style={{ pointerEvents: 'none' }} />}
                     </div>
                     <input
                         type="text"
@@ -140,7 +216,8 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
                             outline: 'none',
                             textDecoration: data.checked ? 'line-through' : 'none',
                             opacity: data.checked ? 0.6 : 1,
-                            minWidth: 0
+                            minWidth: 0,
+                            pointerEvents: 'auto' // Interactive
                         }}
                     />
                 </>
@@ -170,37 +247,20 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
                 </div>
             )}
 
-            {/* Hybrid Handle: Acts as both source and target visually */}
-            <Handle
-                type="target"
-                style={{
-                    background: isDark ? '#4fc3f7' : '#0070f3',
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    zIndex: 10,
-                    left: -7,
-                    transition: 'all 0.2s',
-                    border: '2px solid #fff' // Adding border back as user mentioned "gray point with white border" they like/expect
-                }}
+            {/* Hybrid Handles */}
+            <HybridHandle
+                id={leftId}
                 position={Position.Left}
-                isConnectable={true}
+                isHovered={isHovered}
+                showDebug={settings.showDebugHandles}
             />
+
             {isTask && (
-                <Handle
-                    type="source"
-                    style={{
-                        background: '#4caf50',
-                        width: 14,
-                        height: 14,
-                        borderRadius: '50%',
-                        zIndex: 10,
-                        right: -7,
-                        transition: 'all 0.2s',
-                        border: '2px solid #fff'
-                    }}
+                <HybridHandle
+                    id={rightId}
                     position={Position.Right}
-                    isConnectable={true}
+                    isHovered={isHovered}
+                    showDebug={settings.showDebugHandles}
                 />
             )}
         </motion.div>

@@ -1,5 +1,5 @@
 import type { AppNode } from '../types/store';
-import { Copy, Check, Timer, ArrowUpRight, Merge } from 'lucide-react';
+import { Copy, Check, ArrowUpRight, Merge } from 'lucide-react';
 import React from 'react';
 
 export type UtilityType = 'copy' | 'task' | 'collector' | 'portal';
