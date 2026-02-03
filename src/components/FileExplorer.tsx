@@ -25,7 +25,7 @@ interface FileSystemEntry {
 
 export const FileExplorer: React.FC = () => {
     const { t } = useTranslation();
-    const { openedFolder, setOpenedFolder, selectedFile, setSelectedFile, theme, isDirty, setConfirmationModal, addToast } = useStore();
+    const { openedFolder, setOpenedFolder, selectedFile, setSelectedFile, theme, isDirty, setDirty, setConfirmationModal, addToast } = useStore();
     const [files, setFiles] = useState<FileEntry[]>([]);
     const [isCreating, setIsCreating] = useState<{ type: 'file' | 'folder', ext?: string, parentPath: string } | null>(null);
     const [selectedDirPath, setSelectedDirPath] = useState<string | null>(null);
@@ -244,8 +244,13 @@ export const FileExplorer: React.FC = () => {
                         if (!window.electronAPI) return;
 
                         // Check if we are deleting the currently open file
-                        const isDeletingActiveFile = !contextMenu.isDirectory && selectedFile === contextMenu.path;
-                        const isDeletingActiveFolder = contextMenu.isDirectory && selectedFile && selectedFile.startsWith(contextMenu.path);
+                        const normalize = (p: string) => p.replace(/\\/g, '/');
+                        const normalizedSelected = selectedFile ? normalize(selectedFile) : null;
+                        const normalizedContext = normalize(contextMenu.path);
+
+                        const isDeletingActiveFile = !contextMenu.isDirectory && normalizedSelected === normalizedContext;
+                        const isDeletingActiveFolder = contextMenu.isDirectory && normalizedSelected &&
+                            (normalizedSelected === normalizedContext || normalizedSelected.startsWith(normalizedContext + '/'));
 
                         if (contextMenu.isDirectory) {
                             await window.electronAPI.deleteDirectory(contextMenu.path);
@@ -255,7 +260,8 @@ export const FileExplorer: React.FC = () => {
 
                         // Close file if it's gone
                         if (isDeletingActiveFile || isDeletingActiveFolder) {
-                            void setSelectedFile(null);
+                            setDirty(false); // Bypasses the "Save changes?" modal since the file is being deleted
+                            await setSelectedFile(null);
                         }
 
                         // Refresh
