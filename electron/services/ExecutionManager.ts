@@ -13,9 +13,6 @@ export class ExecutionManager {
     }
 
     async startExecution(code: string, originalPath?: string) {
-        // Kill existing process to ensure clean state
-        this.stopExecution();
-
         let filePath: string;
 
         if (originalPath) {
@@ -37,6 +34,20 @@ export class ExecutionManager {
         // Instrument code before writing
         const instrumentedCode = Instrumenter.instrumentCode(code);
         await fs.promises.writeFile(filePath, instrumentedCode, 'utf-8');
+
+        // Reuse process if alive and connected
+        if (this.runnerProcess && !this.runnerProcess.killed && this.runnerProcess.connected) {
+            try {
+                this.runnerProcess.send({
+                    type: 'execution:start',
+                    filePath
+                });
+                return;
+            } catch (err) {
+                console.warn('Failed to send to existing runner, restarting...', err);
+                this.stopExecution();
+            }
+        }
 
         // Resolve runner path
         // In dev (electron .), __dirname might be 'electron' or 'dist/electron' depending on how it's launched.
@@ -75,6 +86,8 @@ export class ExecutionManager {
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     if (msg.type === 'execution:log' || msg.type === 'execution:value') {
                         this.mainWindow.webContents.send('execution:log', msg);
+                    } else if (msg.type === 'execution:error') {
+                        this.mainWindow.webContents.send('execution:error', msg);
                     }
                 }
             });

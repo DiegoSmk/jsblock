@@ -66,6 +66,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     toasts: [],
     runtimeValues: {},
     executionResults: new Map(),
+    executionErrors: new Map(),
     isSimulating: false,
     projectFiles: {},
     connectionCache: new Map(), // Initialize cache
@@ -357,7 +358,7 @@ export const useStore = create<AppState>((set, get, api) => ({
         const { code, selectedFile } = get();
 
         // Clear previous results on new run
-        set({ executionResults: new Map() });
+        set({ executionResults: new Map(), executionErrors: new Map() });
 
         if (window.electronAPI) {
             if (!listenersInitialized) {
@@ -374,16 +375,18 @@ export const useStore = create<AppState>((set, get, api) => ({
                         currentMap.set(line, existing);
                         set({ executionResults: currentMap });
                     } else if (data.type === 'execution:log') {
-                         // Fallback for explicitly logged console messages if instrumenter also wraps them
-                         // If instrumenter wraps console.log, we get 'execution:value' for the log call expression
-                         // But we also get the console output via the Runner's console interception which sends 'execution:log'
-                         // We might want to show this on the line too?
-                         // For now, let's rely on 'execution:value' for inline display.
                          console.log('[Backend Log]', data);
                     }
                 });
                 window.electronAPI.onExecutionError((err) => {
-                    console.error('[Backend Error]', err);
+                    if (typeof err === 'object' && (err as any).line) {
+                        const errorData = err as any;
+                        const currentMap = new Map(get().executionErrors);
+                        currentMap.set(errorData.line, errorData.message);
+                        set({ executionErrors: currentMap });
+                    } else {
+                        console.error('[Backend Error]', err);
+                    }
                 });
                 listenersInitialized = true;
             }

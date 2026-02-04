@@ -56,6 +56,43 @@ export class Instrumenter {
                              });
                          }
                     }
+                },
+                // Visit Expression Statements: 2 + 2 -> __spy(2 + 2, line)
+                ExpressionStatement(path: any) {
+                    const line = path.node.loc?.start.line;
+                    if (line && path.node.expression) {
+                        // Skip if it's already a console.log or assignment (handled elsewhere to avoid double wrapping)
+                        if (
+                            t.isAssignmentExpression(path.node.expression) ||
+                            (t.isCallExpression(path.node.expression) &&
+                             t.isMemberExpression(path.node.expression.callee) &&
+                             t.isIdentifier(path.node.expression.callee.object, { name: 'console' }))
+                        ) {
+                            return;
+                        }
+
+                        // Also skip 'use strict' directives
+                        if (t.isStringLiteral(path.node.expression) && path.node.expression.value === 'use strict') {
+                            return;
+                        }
+
+                        path.node.expression = t.callExpression(
+                            t.memberExpression(t.identifier('global'), t.identifier('__spy')),
+                            [path.node.expression, t.numericLiteral(line)]
+                        );
+                    }
+                },
+                // Visit Return Statements: return x -> return __spy(x, line)
+                ReturnStatement(path: any) {
+                    if (path.node.argument) {
+                        const line = path.node.loc?.start.line;
+                        if (line) {
+                            path.node.argument = t.callExpression(
+                                t.memberExpression(t.identifier('global'), t.identifier('__spy')),
+                                [path.node.argument, t.numericLiteral(line)]
+                            );
+                        }
+                    }
                 }
             });
 

@@ -6,10 +6,11 @@ describe('Quokka-like Execution Flow', () => {
     let mockOnExecutionLog: any;
     let mockOnExecutionError: any;
     let logCallback: (data: any) => void;
+    let errorCallback: (data: any) => void;
 
     beforeEach(() => {
         // Reset store
-        useStore.setState({ executionResults: new Map(), code: 'const a = 10;' });
+        useStore.setState({ executionResults: new Map(), executionErrors: new Map(), code: 'const a = 10;' });
 
         // Mock Electron API
         mockExecutionStart = vi.fn();
@@ -17,13 +18,15 @@ describe('Quokka-like Execution Flow', () => {
             logCallback = cb;
             return () => {};
         });
-        mockOnExecutionError = vi.fn();
+        mockOnExecutionError = vi.fn((cb) => {
+            errorCallback = cb;
+            return () => {};
+        });
 
         window.electronAPI = {
             executionStart: mockExecutionStart,
             onExecutionLog: mockOnExecutionLog,
             onExecutionError: mockOnExecutionError,
-            // ... mock other required methods if necessary for store init
             checkPathExists: vi.fn(),
             discoverPlugins: vi.fn(),
         } as any;
@@ -45,15 +48,12 @@ describe('Quokka-like Execution Flow', () => {
         const { runExecution } = useStore.getState();
         runExecution();
 
-        // Simulate backend sending an instrumented value
-        // Line 1, Value "10"
         const message = {
             type: 'execution:value',
             line: 1,
             value: '10'
         };
 
-        // Trigger the callback captured by the mock
         expect(logCallback).toBeDefined();
         logCallback(message);
 
@@ -62,13 +62,28 @@ describe('Quokka-like Execution Flow', () => {
         expect(results.get(1)).toEqual(['10']);
     });
 
-    it('should accumulate multiple values for the same line (e.g. loops)', () => {
+    it('should update executionErrors when receiving execution:error messages', () => {
         const { runExecution } = useStore.getState();
         runExecution();
 
-        expect(logCallback).toBeDefined();
+        const error = {
+            message: 'Something went wrong',
+            line: 5,
+            column: 10
+        };
 
-        // Simulate loop behavior: i=0, i=1
+        expect(errorCallback).toBeDefined();
+        errorCallback(error);
+
+        const errors = useStore.getState().executionErrors;
+        expect(errors.has(5)).toBe(true);
+        expect(errors.get(5)).toEqual('Something went wrong');
+    });
+
+    it('should accumulate multiple values for the same line', () => {
+        const { runExecution } = useStore.getState();
+        runExecution();
+
         logCallback({ type: 'execution:value', line: 2, value: '0' });
         logCallback({ type: 'execution:value', line: 2, value: '1' });
 
@@ -79,13 +94,12 @@ describe('Quokka-like Execution Flow', () => {
     it('should clear previous results on new execution', () => {
         const { runExecution } = useStore.getState();
 
-        // First run
         runExecution();
         logCallback({ type: 'execution:value', line: 1, value: 'old' });
         expect(useStore.getState().executionResults.get(1)).toEqual(['old']);
 
-        // Second run
         runExecution();
         expect(useStore.getState().executionResults.size).toBe(0);
+        expect(useStore.getState().executionErrors.size).toBe(0);
     });
 });

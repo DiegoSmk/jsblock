@@ -96,7 +96,35 @@ process.on('message', (msg) => {
                 });
             }
         } catch (err) {
-            console.error(err);
+            // Error handling with line detection
+            if (process.send) {
+                let line = 0;
+                let column = 0;
+
+                if (err.stack) {
+                    // Try to find the line in the instrumented file
+                    const stackLines = err.stack.split('\n');
+                    // Look for the user script path in the stack
+                    const fileLine = stackLines.find(l => l.includes(msg.filePath));
+                    if (fileLine) {
+                        // Format is usually: at Object.<anonymous> (/path/to/file.ts:line:column)
+                        const match = fileLine.match(/:(\d+):(\d+)\)/) || fileLine.match(/:(\d+):(\d+)/);
+                        if (match) {
+                            line = parseInt(match[1], 10);
+                            column = parseInt(match[2], 10);
+                        }
+                    }
+                }
+
+                process.send({
+                    type: 'execution:error',
+                    message: err.message,
+                    line,
+                    column
+                });
+            } else {
+                console.error(err);
+            }
         }
     }
 });

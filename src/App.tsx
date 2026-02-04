@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlowProvider,
@@ -55,7 +55,8 @@ function App() {
     selectedPluginId,
     settings,
     projectFiles,
-    executionResults
+    executionResults,
+    executionErrors
   } = useStore(useShallow(state => ({
     code: state.code,
     setCode: state.setCode,
@@ -72,7 +73,8 @@ function App() {
     selectedPluginId: state.selectedPluginId,
     settings: state.settings,
     projectFiles: state.projectFiles,
-    executionResults: state.executionResults
+    executionResults: state.executionResults,
+    executionErrors: state.executionErrors
   })));
 
   const isDark = theme === 'dark';
@@ -138,58 +140,68 @@ function App() {
 
   }, [monaco, projectFiles, selectedFile]);
 
+  const [editorInstance, setEditorInstance] = useState<any>(null);
+  const decorationIdsRef = useRef<string[]>([]);
+
   const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
+    setEditorInstance(editor);
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       saveFile().catch(console.error);
     });
-
-    // Store editor instance reference if needed, but we can access it via closure if we use ref,
-    // or we can just rely on re-renders if we put this logic in a separate effect that has access to editor instance.
-    // However, Monaco React's `onMount` doesn't expose the editor instance to the outside easily unless we use a ref.
-    // A better way is to use a separate useEffect dependent on executionResults and a ref to the editor.
-    (window as any).__monacoEditor = editor;
   }, [saveFile]);
 
   // Quokka-like decorations
   useEffect(() => {
-    const editor = (window as any).__monacoEditor;
-    if (!editor || !executionResults) return;
+    if (!editorInstance || !monaco) return;
 
-    // Clear previous decorations
-    const model = editor.getModel();
+    const model = editorInstance.getModel();
     if (!model) return;
 
-    // Use a robust way to manage decorations.
-    // Monaco < 0.21 used deltaDecorations. Newer uses createDecorationsCollection.
-    // @monaco-editor/react wraps a version. Let's assume standard API.
-
     const decorations: any[] = [];
-    executionResults.forEach((values, line) => {
-        // Line is 1-based from babel loc
-        if (line < 1 || line > model.getLineCount()) return;
 
-        const text = values.join(' | ');
-        const content = `  ${text}`;
+    // Success Values
+    if (executionResults && executionResults.size > 0) {
+        executionResults.forEach((values, line) => {
+            if (line < 1 || line > model.getLineCount()) return;
 
-        decorations.push({
-            range: new monaco.Range(line, 1, line, 1),
-            options: {
-                isWholeLine: true,
-                after: {
-                    content: content,
-                    inlineClassName: 'inline-execution-result'
+            const text = values.map(v => v.length > 50 ? v.substring(0, 47) + '...' : v).join(' | ');
+            const content = `  ${text}`;
+
+            decorations.push({
+                range: new monaco.Range(line, 1, line, 1),
+                options: {
+                    isWholeLine: true,
+                    after: {
+                        content: content,
+                        inlineClassName: 'inline-execution-result'
+                    }
                 }
-            }
+            });
         });
-    });
+    }
 
-    // We need to store decoration IDs to remove them later,
-    // but simplified approach: clear all valid decorations created by us?
-    // Better: store previous decorations in a ref.
-    const prevDecorations = (window as any).__decorationIds || [];
-    (window as any).__decorationIds = editor.deltaDecorations(prevDecorations, decorations);
+    // Errors
+    if (executionErrors && executionErrors.size > 0) {
+        executionErrors.forEach((msg, line) => {
+            if (line < 1 || line > model.getLineCount()) return;
 
-  }, [executionResults, monaco]);
+            decorations.push({
+                range: new monaco.Range(line, 1, line, 1),
+                options: {
+                    isWholeLine: true,
+                    after: {
+                        content: `  ⛔ ${msg}`,
+                        inlineClassName: 'inline-execution-error'
+                    }
+                }
+            });
+        });
+    }
+
+    // Apply decorations using the ref to track previous IDs
+    decorationIdsRef.current = editorInstance.deltaDecorations(decorationIdsRef.current, decorations);
+
+  }, [executionResults, executionErrors, editorInstance, monaco]);
 
   // Add CSS for decorations
   useEffect(() => {
@@ -199,8 +211,10 @@ function App() {
       style.id = styleId;
       style.textContent = `
         .inline-execution-result {
-            opacity: 0.5;
+            opacity: 0.7;
             font-style: italic;
+            margin-left: 10px;
+            pointer-events: none;
             color: ${isDark ? '#4ec9b0' : '#0000ff'};
         }
       `;

@@ -292,6 +292,7 @@ export interface AppState extends GitSlice {
   theme: 'light' | 'dark';
   runtimeValues: Record<string, unknown>;
   executionResults: Map<number, string[]>;
+  executionErrors: Map<number, string>;
 
   navigationStack: { id: string, label: string }[];
   activeScopeId: string; // 'root' by default
