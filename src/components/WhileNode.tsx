@@ -108,15 +108,6 @@ export const WhileNode = memo(({ data }: { id: string, data: AppNodeData }) => {
                     </div>
                 </div>
             </div>
-
-            {/* Main Flow Continuation */}
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="flow-next"
-                className="handle-flow"
-                style={{ right: '-6px', bottom: '12px' }}
-            />
         </div>
     );
 });

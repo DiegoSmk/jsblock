@@ -40,11 +40,10 @@ import { validateConnection } from '../logic/connectionLogic';
 
 const initialCode = '';
 
-let saveTimeout: NodeJS.Timeout | null = null;
+let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
-let executionTimeout: NodeJS.Timeout | null = null;
 
-let simulationInterval: NodeJS.Timeout | null = null;
+let simulationInterval: any = null;
 let listenersInitialized = false;
 
 export const useStore = create<AppState>((set, get, api) => ({
@@ -66,6 +65,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     })(),
     toasts: [],
     runtimeValues: {},
+    executionResults: new Map(),
     isSimulating: false,
     projectFiles: {},
     connectionCache: new Map(), // Initialize cache
@@ -356,60 +356,38 @@ export const useStore = create<AppState>((set, get, api) => ({
     runExecution: () => {
         const { code, selectedFile } = get();
 
+        // Clear previous results on new run
+        set({ executionResults: new Map() });
+
         if (window.electronAPI) {
             if (!listenersInitialized) {
                 window.electronAPI.onExecutionLog((data) => {
-                    console.log('[Backend Log]', data);
-                    // Optional: If you want logs to show up as toasts or specific UI elements
-                });
-
-                window.electronAPI.onExecutionResult((data) => {
-                    // Update runtime values for "Quokka" effect
-                    const newValues = { ...data.variables };
-                    if (data.canvasData) {
-                        newValues['canvasData'] = data.canvasData;
+                    if (data.level === 'data' && data.args && data.args[0] === 'canvasData') {
+                        set({ runtimeValues: { canvasData: data.args[1] } });
+                    } else if (data.type === 'execution:value') {
+                        // Handle instrumented value
+                        // data: { type: 'execution:value', line: number, value: string }
+                        const { line, value } = data as any;
+                        const currentMap = new Map(get().executionResults);
+                        const existing = currentMap.get(line) ?? [];
+                        existing.push(value);
+                        currentMap.set(line, existing);
+                        set({ executionResults: currentMap });
+                    } else if (data.type === 'execution:log') {
+                         // Fallback for explicitly logged console messages if instrumenter also wraps them
+                         // If instrumenter wraps console.log, we get 'execution:value' for the log call expression
+                         // But we also get the console output via the Runner's console interception which sends 'execution:log'
+                         // We might want to show this on the line too?
+                         // For now, let's rely on 'execution:value' for inline display.
+                         console.log('[Backend Log]', data);
                     }
-                    set({ runtimeValues: newValues });
                 });
-
                 window.electronAPI.onExecutionError((err) => {
-                    // Suppress common intermediate errors during typing
-                    if (err.includes("is not defined") || err.includes("SyntaxError")) return;
                     console.error('[Backend Error]', err);
                 });
                 listenersInitialized = true;
             }
-
-            // Auto-export known variables to enable Quokka-like visualization
-            const currentNodes = get().nodes;
-            const variableNames = currentNodes
-                .filter(n => n.type === 'variableNode')
-                .map(n => n.data.label)
-                .filter(name => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)); // Basic validation
-
-            let codeToRun = code;
-            if (variableNames.length > 0) {
-                // Remove duplicates and create export statement
-                const uniqueVars = [...new Set(variableNames)];
-                // Append a safe export block that doesn't break if already exported
-                const exportBlock = `\n
-try {
-    const __captured = { ${uniqueVars.join(', ')} };
-    if (typeof global !== 'undefined') {
-        global.__exports = __captured;
-    }
-    if (typeof module !== 'undefined' && module.exports) {
-        Object.assign(module.exports, __captured);
-    }
-} catch(e) {}
-`;
-                codeToRun += exportBlock;
-            }
-
-            window.electronAPI.executionStart(codeToRun, selectedFile ?? undefined);
-        } else {
-            // Fallback for web version (if any) or dev issues
-            console.warn("Electron API not available for execution.");
+            window.electronAPI.executionStart(code, selectedFile ?? undefined);
         }
     },
     addCanvasNode: () => {
@@ -462,11 +440,7 @@ try {
     },
 
     setCode: (code: string, shouldSetDirty = true) => {
-        // Optimistic parsing: try to parse, but if it fails fundamentally (0 nodes but there is code), ignore
         const { nodes, edges } = parseCodeToFlow(code);
-        const hasNodes = nodes.length > 0;
-        const isCodeEmpty = code.trim().length === 0;
-        const isValidParse = hasNodes || isCodeEmpty;
 
         if (saveTimeout) clearTimeout(saveTimeout);
 
@@ -474,65 +448,44 @@ try {
             if (get().autoSave) {
                 saveTimeout = setTimeout(() => {
                     void get().saveFile();
-                }, 2000); // 2s delay for autosave
+                }, 1000);
             } else {
                 set({ isDirty: true });
             }
         }
 
-        // Debounce execution to prevent syntax error spam
-        if (executionTimeout) clearTimeout(executionTimeout);
-
-        executionTimeout = setTimeout(() => {
-            // Only run if nodes were successfully parsed OR if code is empty (clear)
-            if (isValidParse) {
-                get().runExecution();
-            }
-        }, 800); // 800ms debounce for execution
-
-        if (isValidParse) {
-            // Only update the graph if the parse was valid
-            // This prevents the graph from disappearing while typing a syntax error
-            set({ code, nodes, edges });
-        } else {
-            // Just update the code text but keep old graph? 
-            // Better behavior: update code, but maybe don't wipe nodes?
-            // For now, we update code so editor works, but nodes might desync slightly until syntax is fixed.
-            set({ code });
-        }
+        get().runExecution();
 
         const currentStack = get().navigationStack;
         const currentScopeId = get().activeScopeId;
 
-        if (isValidParse) {
-            const layouted = getLayoutedElements(nodes, edges);
-            const activeNodeExists = currentScopeId === 'root' || layouted.nodes.some(n => n.id === currentScopeId);
+        const layouted = getLayoutedElements(nodes, edges);
+        const activeNodeExists = currentScopeId === 'root' || layouted.nodes.some(n => n.id === currentScopeId);
 
-            // Pattern-based CanvasNode appearance: Check if canvasData is present in code
-            const hasCanvasPattern = code.includes('canvasData');
-            const hasCanvasNode = layouted.nodes.some(n => n.type === 'canvasNode');
+        // Pattern-based CanvasNode appearance: Check if canvasData is present in code
+        const hasCanvasPattern = code.includes('canvasData');
+        const hasCanvasNode = layouted.nodes.some(n => n.type === 'canvasNode');
 
-            let finalNodes = layouted.nodes;
-            if (hasCanvasPattern && !hasCanvasNode) {
-                finalNodes = [
-                    ...layouted.nodes,
-                    {
-                        id: 'pattern-canvas-node',
-                        type: 'canvasNode',
-                        position: { x: 500, y: 100 },
-                        data: { label: 'Canvas Viewer', scopeId: 'root' }
-                    }
-                ];
-            }
-
-            set({
-                nodes: finalNodes,
-                edges: layouted.edges,
-                // If the current scope was deleted, go back to root
-                activeScopeId: activeNodeExists ? currentScopeId : 'root',
-                navigationStack: activeNodeExists ? currentStack : []
-            });
+        let finalNodes = layouted.nodes;
+        if (hasCanvasPattern && !hasCanvasNode) {
+            finalNodes = [
+                ...layouted.nodes,
+                {
+                    id: 'pattern-canvas-node',
+                    type: 'canvasNode',
+                    position: { x: 500, y: 100 },
+                    data: { label: 'Canvas Viewer', scopeId: 'root' }
+                }
+            ];
         }
+
+        set({
+            code,
+            nodes: finalNodes,
+            edges: layouted.edges,
+            navigationStack: activeNodeExists ? currentStack : [{ id: 'root', label: 'Main' }],
+            activeScopeId: activeNodeExists ? currentScopeId : 'root'
+        });
     },
 
     onNodesChange: (changes: NodeChange<AppNode>[]) => {

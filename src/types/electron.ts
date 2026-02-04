@@ -54,7 +54,6 @@ export interface ElectronAPI {
   executionStop: () => void;
   onExecutionLog: (callback: (data: { type: string, level: string, args: unknown[] }) => void) => () => void;
   onExecutionError: (callback: (error: string) => void) => () => void;
-  onExecutionResult: (callback: (data: { type: string, variables: Record<string, unknown>, canvasData?: any }) => void) => () => void;
 
   // Environment (if needed, but not in preload.ts currently)
   getEnvironmentInfo?: () => Promise<{

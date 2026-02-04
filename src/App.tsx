@@ -1,5 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
-import { useMonacoDecorations } from './hooks/useMonacoDecorations';
+import { useEffect, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlowProvider,
@@ -55,7 +54,8 @@ function App() {
     modal,
     selectedPluginId,
     settings,
-    projectFiles
+    projectFiles,
+    executionResults
   } = useStore(useShallow(state => ({
     code: state.code,
     setCode: state.setCode,
@@ -71,16 +71,11 @@ function App() {
     modal: state.modal,
     selectedPluginId: state.selectedPluginId,
     settings: state.settings,
-    projectFiles: state.projectFiles
+    projectFiles: state.projectFiles,
+    executionResults: state.executionResults
   })));
 
   const isDark = theme === 'dark';
-
-  const editorRef = useRef<any>(null);
-  const monaco = useMonaco();
-
-  // Use the new hook for Quokka-like decorations
-  useMonacoDecorations(editorRef.current, monaco);
 
   useEffect(() => {
     document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
@@ -112,7 +107,7 @@ function App() {
     if (value !== undefined) setCode(value);
   }, [setCode]);
 
-  /* Removed duplicate monaco declaration */
+  const monaco = useMonaco();
 
   useEffect(() => {
     if (!monaco || Object.keys(projectFiles).length === 0) return;
@@ -144,11 +139,86 @@ function App() {
   }, [monaco, projectFiles, selectedFile]);
 
   const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
-    editorRef.current = editor;
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       saveFile().catch(console.error);
     });
+
+    // Store editor instance reference if needed, but we can access it via closure if we use ref,
+    // or we can just rely on re-renders if we put this logic in a separate effect that has access to editor instance.
+    // However, Monaco React's `onMount` doesn't expose the editor instance to the outside easily unless we use a ref.
+    // A better way is to use a separate useEffect dependent on executionResults and a ref to the editor.
+    (window as any).__monacoEditor = editor;
   }, [saveFile]);
+
+  // Quokka-like decorations
+  useEffect(() => {
+    const editor = (window as any).__monacoEditor;
+    if (!editor || !executionResults) return;
+
+    // Clear previous decorations
+    const model = editor.getModel();
+    if (!model) return;
+
+    // Use a robust way to manage decorations.
+    // Monaco < 0.21 used deltaDecorations. Newer uses createDecorationsCollection.
+    // @monaco-editor/react wraps a version. Let's assume standard API.
+
+    const decorations: any[] = [];
+    executionResults.forEach((values, line) => {
+        // Line is 1-based from babel loc
+        if (line < 1 || line > model.getLineCount()) return;
+
+        const text = values.join(' | ');
+        const content = `  ${text}`;
+
+        decorations.push({
+            range: new monaco.Range(line, 1, line, 1),
+            options: {
+                isWholeLine: true,
+                after: {
+                    content: content,
+                    inlineClassName: 'inline-execution-result'
+                }
+            }
+        });
+    });
+
+    // We need to store decoration IDs to remove them later,
+    // but simplified approach: clear all valid decorations created by us?
+    // Better: store previous decorations in a ref.
+    const prevDecorations = (window as any).__decorationIds || [];
+    (window as any).__decorationIds = editor.deltaDecorations(prevDecorations, decorations);
+
+  }, [executionResults, monaco]);
+
+  // Add CSS for decorations
+  useEffect(() => {
+    const styleId = 'execution-decorations-style';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        .inline-execution-result {
+            opacity: 0.5;
+            font-style: italic;
+            color: ${isDark ? '#4ec9b0' : '#0000ff'};
+        }
+      `;
+      document.head.appendChild(style);
+    } else {
+        // Update color based on theme
+        const style = document.getElementById(styleId);
+        if (style) {
+             style.textContent = `
+                .inline-execution-result {
+                    opacity: 0.5;
+                    font-style: italic;
+                    color: ${isDark ? '#4ec9b0' : '#0000ff'};
+                }
+            `;
+        }
+    }
+  }, [isDark]);
 
   const showAppBorder = settings.showAppBorder;
 

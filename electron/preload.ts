@@ -53,10 +53,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const subscription = (_event: unknown, error: string) => callback(error);
         ipcRenderer.on('execution:error', subscription);
         return () => ipcRenderer.removeListener('execution:error', subscription);
-    },
-    onExecutionResult: (callback: (data: { type: string, variables: Record<string, unknown>, canvasData?: any }) => void) => {
-        const subscription = (_event: unknown, data: { type: string, variables: Record<string, unknown>, canvasData?: any }) => callback(data);
-        ipcRenderer.on('execution:result', subscription);
-        return () => ipcRenderer.removeListener('execution:result', subscription);
     }
 });

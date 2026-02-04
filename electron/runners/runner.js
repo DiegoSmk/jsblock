@@ -1,21 +1,52 @@
-global.self = global;
+const { register } = require('esbuild-register/dist/node');
 
-try {
-    require('esbuild-register');
-} catch (e) {
-    console.error('Failed to load esbuild-register. Please ensure it is installed: npm install esbuild-register');
-    process.exit(1);
+// Register esbuild to handle .ts files
+register({
+  target: 'node18'
+});
+
+// Safe stringify to handle circular refs and basic types
+function safeStringify(obj) {
+    if (obj === undefined) return 'undefined';
+    if (obj === null) return 'null';
+    if (typeof obj === 'function') return '[Function]';
+    if (obj instanceof Promise) return '[Promise]';
+    if (obj instanceof Error) return obj.message;
+
+    try {
+        return JSON.stringify(obj, (key, value) => {
+            if (typeof value === 'function') return '[Function]';
+            if (value instanceof Promise) return '[Promise]';
+            return value;
+        });
+    } catch (e) {
+        return String(obj);
+    }
 }
 
+// Global Spy Function (injected by Instrumenter)
+global.__spy = (val, line) => {
+    if (process.send) {
+        process.send({
+            type: 'execution:value',
+            line,
+            value: safeStringify(val)
+        });
+    }
+    return val;
+};
+
+
 // Intercept console
+const originalLog = console.log;
+const originalError = console.error;
+
 function sendLog(level, ...args) {
     if (process.send) {
         const safeArgs = args.map(arg => {
-            if (typeof arg === 'object' && arg !== null) {
-                try {
-                    return JSON.parse(JSON.stringify(arg));
-                } catch (e) { return '[Object]'; }
-            }
+            if (typeof arg === 'function') return '[Function]';
+            if (arg instanceof Promise) return '[Promise]';
+            if (arg instanceof Error) return { message: arg.message, stack: arg.stack, name: arg.name };
             return arg;
         });
 
@@ -25,84 +56,47 @@ function sendLog(level, ...args) {
                 level,
                 args: safeArgs
             });
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            process.send({
+                type: 'execution:log',
+                level: 'error',
+                args: ['[IPC Error: Could not serialize log message]']
+            });
+        }
     }
 }
 
 console.log = (...args) => sendLog('log', ...args);
+console.info = (...args) => sendLog('info', ...args);
+console.warn = (...args) => sendLog('warn', ...args);
 console.error = (...args) => sendLog('error', ...args);
-
-let activeFilePath = null;
-
-// Helper to send the current state (Variable values + Canvas)
-// Helper to send the current state (Variable values + Canvas)
-const sendUpdate = (moduleExports) => {
-    if (!process.send) return;
-
-    let variables = {};
-
-    // 1. Try to get variables from module.exports
-    if (moduleExports && typeof moduleExports === 'object') {
-        Object.keys(moduleExports).forEach(key => {
-            variables[key] = moduleExports[key];
-        });
-    }
-
-    // 2. Fallback: check global.__exports if our injection used it
-    if (global.__exports && typeof global.__exports === 'object') {
-        Object.assign(variables, global.__exports);
-    }
-
-    const canvasData = global.canvasData || (moduleExports && moduleExports.canvasData);
-
-    try {
-        process.send({
-            type: 'execution:result',
-            variables,
-            canvasData: canvasData || null
-        });
-    } catch (e) { /* Serialization error */ }
-};
 
 // Listen for execution request
 process.on('message', (msg) => {
     if (msg && msg.type === 'execution:start' && msg.filePath) {
-        activeFilePath = msg.filePath;
         try {
-            // Clear cache to allow re-running the file
+            // Clear cache to allow re-running
             try {
+                // We resolve relative to cwd? Or absolute path provided?
+                // The manager should provide absolute path.
                 const resolved = require.resolve(msg.filePath);
                 delete require.cache[resolved];
-            } catch (e) { }
-
-            // Clear previous global exports capture to avoid stale data
-            global.__exports = {};
-            global.canvasData = null; // Optional: reset canvas on new run? Maybe not if simulating.
-
-            // Execute
+            } catch (e) {
+                // ignore if not found
+            }
             const moduleExports = require(msg.filePath);
-            sendUpdate(moduleExports);
-        } catch (err) {
-            console.error('[Runner Error]', err);
-            // Send full error object details
-            if (process.send) {
+
+            // Check for canvasData to support visualization (UI Regression Mitigation)
+            const canvasData = global.canvasData || (moduleExports && moduleExports.canvasData);
+            if (canvasData) {
                 process.send({
-                    type: 'execution:error',
-                    message: err.message,
-                    stack: err.stack
+                    type: 'execution:log',
+                    level: 'data',
+                    args: ['canvasData', canvasData]
                 });
             }
+        } catch (err) {
+            console.error(err);
         }
     }
 });
-
-// Support dynamic simulations: poll for changes
-setInterval(() => {
-    if (!activeFilePath) return;
-    try {
-        // We need to re-read the exports from the cache or global state
-        const resolved = require.resolve(activeFilePath);
-        const moduleExports = require.cache[resolved]?.exports;
-        sendUpdate(moduleExports);
-    } catch (e) { }
-}, 100);
