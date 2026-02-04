@@ -9,12 +9,18 @@ import { LogicHandler } from './handlers/LogicHandler';
 import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
+import { ImportHandler } from './handlers/ImportHandler';
 import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
 import type { AppNode } from '../../types/store';
 
 export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
     const idSuffix = index !== undefined ? `${index}` : undefined;
+
+    if (ImportHandler.canHandle(stmt)) {
+        ImportHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        return undefined;
+    }
 
     if (VariableHandler.canHandle(stmt)) {
         VariableHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
@@ -56,6 +62,27 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
 
     if (ReturnHandler.canHandle(stmt)) {
         return ReturnHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (stmt.type === 'ExportNamedDeclaration') {
+        const namedExport = stmt as any;
+        if (namedExport.declaration) {
+            // Unwrap and mark as exported
+            ctx.isExporting = true;
+            const result = parseStatement(namedExport.declaration, ctx, parentId, handleName, index);
+            ctx.isExporting = false;
+            return result;
+        }
+    }
+
+    if (stmt.type === 'ExportDefaultDeclaration') {
+        const defaultExport = stmt as any;
+        if (defaultExport.declaration) {
+            ctx.isExportingDefault = true;
+            const result = parseStatement(defaultExport.declaration, ctx, parentId, handleName, index);
+            ctx.isExportingDefault = false;
+            return result;
+        }
     }
 
 

@@ -34,11 +34,13 @@ export interface AppNodeData {
   value?: unknown;
   scopeId?: string;
   isDecl?: boolean;
+  isExported?: boolean;
   isStandalone?: boolean;
   hasReturn?: boolean;
   usageCount?: number;
   connectedValues?: Record<string | number, string>;
   type?: string;
+  typeAnnotation?: string;
   args?: string[];
   nestedArgsCall?: Record<string, { expression: string }>;
   nestedCall?: { name: string, args: string[] };
@@ -298,13 +300,20 @@ export interface AppState extends GitSlice {
   selectedFile: string | null;
   autoSave: boolean;
   isDirty: boolean;
+  isSimulating: boolean;
+  projectFiles: Record<string, string>;
+
 
   toggleAutoSave: () => void;
+  toggleSimulation: () => void;
   setDirty: (dirty: boolean) => void;
 
+  addCanvasNode: () => void;
+  runExecution: () => void;
   setCode: (code: string, shouldSetDirty?: boolean) => void;
   onNodesChange: (changes: NodeChange<AppNode>[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
+  removeEdges: (edgeIds: string[]) => void;
   onConnect: (connection: Connection) => void;
   forceLayout: () => void;
   toggleTheme: () => void;
@@ -380,6 +389,7 @@ export interface AppState extends GitSlice {
 
   // File System Actions
   setOpenedFolder: (path: string | null) => void;
+  syncProjectFiles: () => Promise<void>;
   setSelectedFile: (path: string | null) => Promise<void>;
   loadContentForFile: (path: string | null) => Promise<void>;
   saveFile: () => Promise<void>;

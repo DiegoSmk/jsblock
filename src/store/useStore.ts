@@ -37,6 +37,7 @@ import i18n from '../i18n/config';
 import { createGitSlice } from './slices/git/slice';
 import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
 import { validateConnection } from '../logic/connectionLogic';
+import { bundleCode } from '../logic/SimpleBundler';
 
 const initialCode = '';
 
@@ -45,6 +46,8 @@ let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Worker instance
 let runtimeWorker: Worker | null = null;
+let simulationInterval: any = null;
+let activeBlobs: string[] = [];
 
 export const useStore = create<AppState>((set, get, api) => ({
     ...createGitSlice(set, get, api),
@@ -65,6 +68,8 @@ export const useStore = create<AppState>((set, get, api) => ({
     })(),
     toasts: [],
     runtimeValues: {},
+    isSimulating: false,
+    projectFiles: {},
     connectionCache: new Map(), // Initialize cache
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
@@ -337,6 +342,95 @@ export const useStore = create<AppState>((set, get, api) => ({
             set({ recentEnvironments: validRecents });
         }
     },
+    toggleSimulation: () => {
+        const { isSimulating } = get();
+        if (isSimulating) {
+            if (simulationInterval) clearInterval(simulationInterval);
+            simulationInterval = null;
+            set({ isSimulating: false });
+        } else {
+            set({ isSimulating: true });
+            simulationInterval = setInterval(() => {
+                get().runExecution();
+            }, 100);
+        }
+    },
+    runExecution: () => {
+        const { code, nodes, projectFiles, selectedFile } = get();
+
+        // Cleanup old blobs
+        activeBlobs.forEach(url => URL.revokeObjectURL(url));
+        activeBlobs = [];
+
+
+        try {
+            // ... (node extraction logic remains)
+            const varNames = nodes
+                .filter(n => n.id.startsWith('var-'))
+                .map(n => ({ id: n.data.label!, expr: n.data.label! }));
+
+            const callExpressions = nodes
+                .filter(n => n.type === 'functionCallNode' && !n.data.isDecl && n.data.expression)
+                .map(n => ({ id: n.id, expr: n.data.expression! }));
+
+            const nestedExpressions: { id: string, expr: string }[] = [];
+            nodes.forEach(n => {
+                const nac = n.data.nestedArgsCall;
+                if (nac) {
+                    Object.keys(nac).forEach(key => {
+                        const call = nac[key];
+                        if (call.expression) {
+                            nestedExpressions.push({
+                                id: `${n.id}-arg-${key}-expr`,
+                                expr: call.expression
+                            });
+                        }
+                    });
+                }
+            });
+
+            const allItems = [
+                ...varNames,
+                ...callExpressions,
+                ...nestedExpressions,
+                { id: 'canvasData', expr: 'canvasData' }
+            ];
+
+            if (allItems.length > 0) {
+                // Bundle the code to resolve imports
+                // We use selectedFile as entry point, or fallback to a dummy root path
+                const entryPath = selectedFile || '/root/entry.ts';
+                const { code: bundledCode, blobs } = bundleCode(code, entryPath, projectFiles);
+                activeBlobs = blobs;
+
+                if (!runtimeWorker) {
+                    runtimeWorker = new Worker(new URL('../workers/runtime.worker.ts', import.meta.url), { type: 'module' });
+                    runtimeWorker.onmessage = (e) => {
+                        const runtimeValues = e.data as Record<string, unknown>;
+                        set({ runtimeValues });
+                    };
+                }
+                runtimeWorker.postMessage({ code: bundledCode, items: allItems });
+            } else {
+                set({ runtimeValues: {} });
+            }
+        } catch (err) {
+            console.warn("Runtime evaluation failed:", err);
+        }
+    },
+    addCanvasNode: () => {
+        const { nodes, activeScopeId } = get();
+        const newNode: AppNode = {
+            id: getUUID('canvas'),
+            type: 'canvasNode',
+            position: { x: 100, y: 100 },
+            data: {
+                label: 'Canvas Viewer',
+                scopeId: activeScopeId
+            }
+        };
+        set({ nodes: [...nodes, newNode] });
+    },
     toggleSidebar: (show?: boolean) => set((state) => ({
         layout: {
             ...state.layout,
@@ -374,7 +468,6 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     setCode: (code: string, shouldSetDirty = true) => {
-        // Existing logic for parsing and evaluation
         const { nodes, edges } = parseCodeToFlow(code);
 
         if (saveTimeout) clearTimeout(saveTimeout);
@@ -389,74 +482,35 @@ export const useStore = create<AppState>((set, get, api) => ({
             }
         }
 
-        // Advanced Sandbox Evaluation
-        // SECURITY: Replaced eval with Web Worker
-        try {
-            // 1. Identify items to capture
-            const varNames = nodes
-                .filter(n => n.id.startsWith('var-'))
-                .map(n => ({ id: n.data.label!, expr: n.data.label! }));
-
-            const callExpressions = nodes
-                .filter(n => n.type === 'functionCallNode' && !n.data.isDecl && n.data.expression)
-                .map(n => ({ id: n.id, expr: n.data.expression! }));
-
-            const nestedExpressions: { id: string, expr: string }[] = [];
-            nodes.forEach(n => {
-                const nac = n.data.nestedArgsCall;
-                if (nac) {
-                    Object.keys(nac).forEach(key => {
-                        const call = nac[key];
-                        if (call.expression) {
-                            nestedExpressions.push({
-                                id: `${n.id}-arg-${key}-expr`,
-                                expr: call.expression
-                            });
-                        }
-                    });
-                }
-            });
-
-            const allItems = [...varNames, ...callExpressions, ...nestedExpressions];
-
-            if (allItems.length > 0) {
-                // Initialize worker if needed
-                if (!runtimeWorker) {
-                    runtimeWorker = new Worker(new URL('../workers/runtime.worker.ts', import.meta.url), { type: 'module' });
-                    runtimeWorker.onmessage = (e) => {
-                        const runtimeValues = e.data as Record<string, unknown>;
-                        set({ runtimeValues });
-                    };
-                }
-
-                // Send code to worker
-                runtimeWorker.postMessage({ code, items: allItems });
-            } else {
-                set({ runtimeValues: {} });
-            }
-        } catch (err) {
-            console.warn("Runtime evaluation failed:", err);
-        }
-
-        const nodesWithValues = nodes.map(node => {
-            if (node.id.startsWith('var-')) {
-                return node;
-            }
-            return node;
-        });
+        get().runExecution();
 
         const currentStack = get().navigationStack;
         const currentScopeId = get().activeScopeId;
 
-        const layouted = getLayoutedElements(nodesWithValues, edges);
-
+        const layouted = getLayoutedElements(nodes, edges);
         const activeNodeExists = currentScopeId === 'root' || layouted.nodes.some(n => n.id === currentScopeId);
+
+        // Pattern-based CanvasNode appearance: Check if canvasData is present in code
+        const hasCanvasPattern = code.includes('canvasData');
+        const hasCanvasNode = layouted.nodes.some(n => n.type === 'canvasNode');
+
+        let finalNodes = layouted.nodes;
+        if (hasCanvasPattern && !hasCanvasNode) {
+            finalNodes = [
+                ...layouted.nodes,
+                {
+                    id: 'pattern-canvas-node',
+                    type: 'canvasNode',
+                    position: { x: 500, y: 100 },
+                    data: { label: 'Canvas Viewer', scopeId: 'root' }
+                }
+            ];
+        }
 
         set({
             code,
-            nodes: layouted.nodes,
+            nodes: finalNodes,
             edges: layouted.edges,
-            // runtimeValues is updated asynchronously via worker callback
             navigationStack: activeNodeExists ? currentStack : [{ id: 'root', label: 'Main' }],
             activeScopeId: activeNodeExists ? currentScopeId : 'root'
         });
@@ -496,6 +550,38 @@ export const useStore = create<AppState>((set, get, api) => ({
         const newEdges = applyEdgeChanges(changes, edges);
 
         // Rebuild cache on edge changes (optimized for frequency)
+        const newCache = new Map<string, Edge[]>();
+        newEdges.forEach(edge => {
+            const source = newCache.get(edge.source) ?? [];
+            source.push(edge);
+            newCache.set(edge.source, source);
+
+            const target = newCache.get(edge.target) ?? [];
+            target.push(edge);
+            newCache.set(edge.target, target);
+        });
+
+        set({ edges: newEdges, connectionCache: newCache });
+
+        if (isBlockFile) {
+            if (autoSave) {
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    void get().saveFile();
+                }, 1000);
+            } else {
+                set({ isDirty: true });
+            }
+        } else {
+            const newCode = generateCodeFromFlow(code, nodes, newEdges);
+            get().setCode(newCode);
+        }
+    },
+    removeEdges: (edgeIds: string[]) => {
+        const { nodes, edges, code, isBlockFile, autoSave } = get();
+        const newEdges = edges.filter(e => !edgeIds.includes(e.id));
+
+        // Rebuild cache
         const newCache = new Map<string, Edge[]>();
         newEdges.forEach(edge => {
             const source = newCache.get(edge.source) ?? [];
@@ -768,10 +854,32 @@ export const useStore = create<AppState>((set, get, api) => ({
         }
     },
 
+    syncProjectFiles: async () => {
+        const { openedFolder } = get();
+        if (!openedFolder || !window.electronAPI) return;
+
+        try {
+            const files = await window.electronAPI.readDir(openedFolder) as { name: string, isDirectory: boolean }[];
+            const tsFiles = files.filter(f => !f.isDirectory && (f.name.endsWith('.ts') || f.name.endsWith('.js')));
+
+            const contents: Record<string, string> = {};
+            for (const file of tsFiles) {
+                const fullPath = `${openedFolder}/${file.name}`;
+                const content = await window.electronAPI.readFile(fullPath);
+                contents[fullPath] = content;
+            }
+
+            set({ projectFiles: contents });
+        } catch (err) {
+            console.error('Failed to sync project files:', err);
+        }
+    },
+
     setOpenedFolder: (path) => {
         set({ openedFolder: path });
         if (path) {
             void get().addRecent(path); // Add to recents when opened
+            void get().syncProjectFiles(); // Sync files when folder is opened
             if (window.electronAPI) {
                 void window.electronAPI.ensureProjectConfig(path);
             }

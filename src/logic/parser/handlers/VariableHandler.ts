@@ -27,12 +27,26 @@ const getExpressionCode = (node: BabelNode | null | undefined): string => {
 
 export const VariableHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'VariableDeclaration',
-    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
         const stmt = node as VariableDeclaration;
         stmt.declarations.forEach((decl: VariableDeclarator) => {
             if (decl.id.type === 'Identifier') {
                 const varName = (decl.id).name;
                 const nodeId = idSuffix ? `var-${varName}-${idSuffix}` : `var-${varName}`;
+
+                let typeAnnotation: string | undefined = undefined;
+                if ((decl.id as t.Identifier).typeAnnotation) {
+                    const ta = (decl.id as t.Identifier).typeAnnotation as t.TSTypeAnnotation;
+                    if (ta.typeAnnotation.type === 'TSBooleanKeyword') typeAnnotation = 'boolean';
+                    else if (ta.typeAnnotation.type === 'TSNumberKeyword') typeAnnotation = 'number';
+                    else if (ta.typeAnnotation.type === 'TSStringKeyword') typeAnnotation = 'string';
+                    else if (ta.typeAnnotation.type === 'TSAnyKeyword') typeAnnotation = 'any';
+                    else if (ta.typeAnnotation.type === 'TSUnknownKeyword') typeAnnotation = 'unknown';
+                    else if (ta.typeAnnotation.type === 'TSVoidKeyword') typeAnnotation = 'void';
+                    else if (ta.typeAnnotation.type === 'TSTypeReference' && ta.typeAnnotation.typeName.type === 'Identifier') {
+                        typeAnnotation = ta.typeAnnotation.typeName.name;
+                    }
+                }
 
                 let value = '';
                 let nestedCall: { name: string, args: string[] } | undefined = undefined;
@@ -136,6 +150,8 @@ export const VariableHandler: ParserHandler = {
                     data: {
                         label: varName,
                         value,
+                        typeAnnotation,
+                        isExported: !!ctx.isExporting || !!ctx.isExportingDefault,
                         expression: value === '(computed)' || value.includes(' ') ? value : undefined,
                         nestedCall: nestedCall as { name: string, args: string[] } | undefined,
                         scopeId: ctx.currentScopeId
@@ -150,6 +166,26 @@ export const VariableHandler: ParserHandler = {
                 }
             }
         });
+        if (parentId && handleName) {
+            try {
+                ctx.edges.push({
+                    id: `flow-${parentId}-${stmt.declarations[0].id.type === 'Identifier' ? stmt.declarations[0].id.name : 'var'}-${ctx.edges.length}`,
+                    source: parentId,
+                    sourceHandle: handleName,
+                    target: ctx.variableNodes[(stmt.declarations[0].id as any).name] || 'unknown',
+                    targetHandle: 'flow-in',
+                    animated: false,
+                    type: 'step',
+                    style: { stroke: '#555', strokeWidth: 2, strokeDasharray: '4,4' }
+                });
+            } catch (e) { /* ignore */ }
+        }
+
+        // Return the first declaration's ID as the "node" for this statement's flow
+        // In case of multiple declarations, we might ideally return the last one, but usually it's one.
+        if (stmt.declarations.length > 0 && stmt.declarations[0].id.type === 'Identifier') {
+            return ctx.variableNodes[(stmt.declarations[0].id as any).name];
+        }
         return undefined;
     }
 };

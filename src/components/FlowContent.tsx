@@ -34,6 +34,8 @@ import { GroupNode } from './GroupNode';
 import { NativeApiNode } from './NativeApiNode';
 import { NoteNode } from './NoteNode/index';
 import { UtilityNode } from './UtilityNode';
+import { ImportNode } from './ImportNode';
+import { CanvasNode } from './CanvasNode';
 import { validateConnection } from '../logic/connectionLogic';
 
 const nodeTypes: NodeTypes = {
@@ -49,7 +51,9 @@ const nodeTypes: NodeTypes = {
   groupNode: GroupNode,
   nativeApiNode: NativeApiNode,
   noteNode: NoteNode,
-  utilityNode: UtilityNode
+  utilityNode: UtilityNode,
+  importNode: ImportNode,
+  canvasNode: CanvasNode
 };
 
 export function FlowContent() {
@@ -64,6 +68,8 @@ export function FlowContent() {
     activeScopeId,
     openModal,
     saveFile,
+    removeEdges,
+    updateEdge
   } = useStore(useShallow(state => ({
     nodes: state.nodes,
     edges: state.edges,
@@ -75,7 +81,8 @@ export function FlowContent() {
     saveFile: state.saveFile,
     openModal: state.openModal,
     updateNodeData: state.updateNodeData,
-    updateEdge: state.updateEdge
+    updateEdge: state.updateEdge,
+    removeEdges: state.removeEdges
   })));
 
   useEffect(() => {
@@ -91,7 +98,7 @@ export function FlowContent() {
   }, [saveFile]);
 
 
-  const { fitView, deleteElements, getEdge, updateEdge } = useReactFlow();
+  const { fitView } = useReactFlow();
   const isDark = theme === 'dark';
 
   // Edge Context Menu state
@@ -118,10 +125,10 @@ export function FlowContent() {
     if (!edgeMenu) return;
 
     if (action === 'delete') {
-      void deleteElements({ edges: [{ id: edgeMenu.id }] });
+      removeEdges([edgeMenu.id]);
       setEdgeMenu(null);
     } else if (action === 'comment') {
-      const edge = getEdge(edgeMenu.id);
+      const edge = edges.find(e => e.id === edgeMenu.id);
       if (edge) {
         const currentLabel = (edge.label as string) ?? '';
         openModal({
@@ -230,7 +237,7 @@ export function FlowContent() {
   }, [activeScopeId, fitView, filteredNodes.length]);
 
   // Determine if the currently selected edge (in context menu) has a label/comment
-  const currentEdgeLabel = edgeMenu ? getEdge(edgeMenu.id)?.label : null;
+  const currentEdgeLabel = edgeMenu ? edges.find(e => e.id === edgeMenu.id)?.label : null;
   const hasComment = !!currentEdgeLabel;
 
   const isValidConnection = useCallback(

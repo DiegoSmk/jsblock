@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlowProvider,
 } from '@xyflow/react';
-import Editor, { loader } from '@monaco-editor/react';
+import Editor, { loader, useMonaco } from '@monaco-editor/react';
 import { Allotment } from 'allotment';
 import {
   Code,
@@ -53,7 +53,8 @@ function App() {
     confirmationModal, git,
     modal,
     selectedPluginId,
-    settings
+    settings,
+    projectFiles
   } = useStore(useShallow(state => ({
     code: state.code,
     setCode: state.setCode,
@@ -68,7 +69,8 @@ function App() {
     git: state.git,
     modal: state.modal,
     selectedPluginId: state.selectedPluginId,
-    settings: state.settings
+    settings: state.settings,
+    projectFiles: state.projectFiles
   })));
 
   const isDark = theme === 'dark';
@@ -103,11 +105,39 @@ function App() {
     if (value !== undefined) setCode(value);
   }, [setCode]);
 
-  const handleEditorDidMount = useCallback((editor: unknown, monaco: unknown) => {
-    const editorInstance = editor as { addCommand: (keyMod: number, callback: () => void) => void };
-    const monacoInstance = monaco as { KeyMod: { CtrlCmd: number }; KeyCode: { KeyS: number } };
+  const monaco = useMonaco();
 
-    editorInstance.addCommand(monacoInstance.KeyMod.CtrlCmd | monacoInstance.KeyCode.KeyS, () => {
+  useEffect(() => {
+    if (!monaco || Object.keys(projectFiles).length === 0) return;
+
+    const m = monaco as any;
+
+    // TypeScript compiler options
+    m.languages.typescript.typescriptDefaults.setCompilerOptions({
+      target: m.languages.typescript.ScriptTarget.ESNext,
+      allowNonTsExtensions: true,
+      moduleResolution: m.languages.typescript.ModuleResolutionKind.NodeJs,
+      module: m.languages.typescript.ModuleKind.ESNext,
+      noEmit: true,
+      esModuleInterop: true,
+      jsx: m.languages.typescript.JsxEmit.React,
+      allowJs: true,
+    });
+
+    Object.entries(projectFiles).forEach(([filePath, content]) => {
+      const uri = m.Uri.file(filePath);
+      const model = m.editor.getModel(uri);
+      if (!model) {
+        m.editor.createModel(content, 'typescript', uri);
+      } else if (filePath !== selectedFile) {
+        model.setValue(content);
+      }
+    });
+
+  }, [monaco, projectFiles, selectedFile]);
+
+  const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       saveFile().catch(console.error);
     });
   }, [saveFile]);
@@ -233,11 +263,18 @@ function App() {
                             <Editor
                               height="100%"
                               defaultLanguage="typescript"
+                              path={selectedFile || undefined}
                               value={code}
                               onChange={handleEditorChange}
                               onMount={handleEditorDidMount}
                               theme={isDark ? "vs-dark" : "light"}
-                              options={{ minimap: { enabled: false }, fontSize: 13, padding: { top: 10 }, scrollBeyondLastLine: false }}
+                              options={{
+                                minimap: { enabled: false },
+                                fontSize: 13,
+                                padding: { top: 10 },
+                                scrollBeyondLastLine: false,
+                                automaticLayout: true
+                              }}
                             />
                           )}
                         </div>

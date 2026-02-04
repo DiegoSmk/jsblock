@@ -31,7 +31,26 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
             }}>
                 <Box size={14} strokeWidth={2.5} />
                 <span>Variable</span>
-                <span style={{ marginLeft: 'auto', color: '#38bdf8' }}>{data.label}</span>
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                        value={data.typeAnnotation || ''}
+                        onChange={(e) => updateNodeData(id, { typeAnnotation: e.target.value })}
+                        placeholder="Type"
+                        onKeyDown={(e) => e.stopPropagation()}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: `1px solid ${isDark ? 'rgba(56, 189, 248, 0.5)' : 'rgba(2, 132, 199, 0.3)'}`,
+                            color: '#38bdf8',
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            width: '60px',
+                            textAlign: 'right',
+                            outline: 'none',
+                        }}
+                    />
+                    <span style={{ color: '#38bdf8' }}>{data.label}</span>
+                </div>
             </div>
 
             <div className="node-content">

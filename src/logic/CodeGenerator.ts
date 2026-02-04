@@ -275,11 +275,15 @@ export const generateCodeFromFlow = (
                                 const leftSource = connections[logicNode.id]?.['input-a'];
                                 const rightSource = connections[logicNode.id]?.['input-b'];
 
-                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
-                                if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                                if (leftSource) {
+                                    if (varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
+                                    else if (varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                                }
 
-                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
-                                if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                                if (rightSource) {
+                                    if (varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
+                                    else if (varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                                }
 
                                 ifStmt.test = createExpression(op, left, right);
                                 nodesToPrune.add(conditionSourceId);
@@ -333,11 +337,15 @@ export const generateCodeFromFlow = (
                                 const leftSource = connections[logicNode.id]?.['input-a'];
                                 const rightSource = connections[logicNode.id]?.['input-b'];
 
-                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
-                                if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                                if (leftSource) {
+                                    if (varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
+                                    else if (varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                                }
 
-                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
-                                if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                                if (rightSource) {
+                                    if (varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
+                                    else if (varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                                }
 
                                 whileStmt.test = createExpression(op, left, right);
                                 nodesToPrune.add(conditionSourceId);
@@ -387,11 +395,15 @@ export const generateCodeFromFlow = (
                                 const leftSource = connections[logicNode.id]?.['input-a'];
                                 const rightSource = connections[logicNode.id]?.['input-b'];
 
-                                if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
-                                if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                                if (leftSource) {
+                                    if (varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
+                                    else if (varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                                }
 
-                                if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
-                                if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                                if (rightSource) {
+                                    if (varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
+                                    else if (varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                                }
 
                                 forStmt.test = createExpression(op, left, right);
                                 nodesToPrune.add(testSourceId);
@@ -413,6 +425,30 @@ export const generateCodeFromFlow = (
 
                 if (!nodeId) return false;
 
+                const node = nodes.find(n => n.id === nodeId);
+                if (node && node.data.typeAnnotation) {
+                    const typeStr = node.data.typeAnnotation;
+                    let typeNode;
+                    if (typeStr === 'string') typeNode = b.tsStringKeyword();
+                    else if (typeStr === 'number') typeNode = b.tsNumberKeyword();
+                    else if (typeStr === 'boolean') typeNode = b.tsBooleanKeyword();
+                    else if (typeStr === 'any') typeNode = b.tsAnyKeyword();
+                    else if (typeStr === 'unknown') typeNode = b.tsUnknownKeyword();
+                    else if (typeStr === 'void') typeNode = b.tsVoidKeyword();
+                    else typeNode = b.tsTypeReference(b.identifier(typeStr));
+
+                    (decl.id as any).typeAnnotation = b.tsTypeAnnotation(typeNode);
+                }
+
+                if (node && node.data.isExported) {
+                    // Check if parent is already an export declaration
+                    if (path.parentPath.node.type !== 'ExportNamedDeclaration') {
+                        // This might be tricky because visitVariableDeclaration visits the Declaration, 
+                        // and we want to wrap it.
+                        // However, we should only do this if we are at the top level or within a module.
+                    }
+                }
+
                 const nodeConns = connections[nodeId] ?? {};
                 const logicSourceId = Object.values(nodeConns).find(source => source?.startsWith('logic-'));
 
@@ -426,11 +462,15 @@ export const generateCodeFromFlow = (
                         const leftSource = connections[logicNode.id]?.['input-a'];
                         const rightSource = connections[logicNode.id]?.['input-b'];
 
-                        if (leftSource && varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
-                        if (leftSource && varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                        if (leftSource) {
+                            if (varNodeMap[leftSource]) left = b.identifier(varNodeMap[leftSource]) as any;
+                            else if (varValueMap[leftSource] !== undefined) left = createLiteral(varValueMap[leftSource]);
+                        }
 
-                        if (rightSource && varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
-                        if (rightSource && varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                        if (rightSource) {
+                            if (varNodeMap[rightSource]) right = b.identifier(varNodeMap[rightSource]) as any;
+                            else if (varValueMap[rightSource] !== undefined) right = createLiteral(varValueMap[rightSource]);
+                        }
 
                         decl.init = createExpression(op, left, right);
                     }
@@ -445,8 +485,14 @@ export const generateCodeFromFlow = (
                 return false;
             },
 
-            visitExpressionStatement(path: { node: Statement }) {
-                const exprStmt = path.node;
+            visitImportDeclaration(path: any) {
+                // For now just keep them, but we could sync specifiers from nodes here
+                this.traverse(path);
+                return false;
+            },
+
+            visitExpressionStatement(path: any) {
+                const exprStmt = path.node as any;
                 const index = body.indexOf(path.node);
                 if (exprStmt.expression.type === 'CallExpression') {
                     const callNodeId = `call-exec-${index}`;

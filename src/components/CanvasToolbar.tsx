@@ -88,6 +88,8 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
                 <div className="tooltip">{t('toolbar.add_note')}</div>
             </div>
 
+            <div style={{ width: '1px', height: '20px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', margin: '0 4px' }} />
+
             <div className="tooltip-container">
                 <button
                     onClick={() => setShowUtilityMenu(!showUtilityMenu)}
