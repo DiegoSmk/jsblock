@@ -1,5 +1,5 @@
 import { useMemo, memo } from 'react';
-import { Handle, Position, useHandleConnections } from '@xyflow/react';
+import { Handle, Position, useNodeConnections } from '@xyflow/react';
 import { useStore } from '../store/useStore';
 
 import type { AppNodeData } from '../types/store';
@@ -9,9 +9,9 @@ export const LogicNode = memo(({ id, data }: { id: string, data: AppNodeData }) 
     const updateNodeData = useStore((state) => state.updateNodeData);
     const isDark = theme === 'dark';
 
-    const connections = useHandleConnections({
-        type: 'source',
-        id: 'result'
+    const connections = useNodeConnections({
+        handleType: 'source',
+        handleId: 'result'
     });
 
     const targetNodeId = connections[0]?.target;

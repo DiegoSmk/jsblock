@@ -57,7 +57,6 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
     };
 
     const args = data.args ?? [];
-    const isStandalone = data.isStandalone;
     const connectedValues = data.connectedValues ?? {};
 
     const getArgValue = (argIndex: number): string | null => {
@@ -117,14 +116,24 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
                 <Activity size={14} strokeWidth={2.5} />
                 <span>{isBuiltin ? '' : getHeaderLabel()}</span>
 
-                {!isDecl && isStandalone && (
-                    <Handle
-                        type="target"
-                        position={Position.Left}
-                        id="flow-in"
-                        className="handle-flow"
-                        style={{ left: '-6px', top: '24px' }}
-                    />
+                {/* Flow Handles */}
+                {!isDecl && (
+                    <>
+                        <Handle
+                            type="target"
+                            position={Position.Left}
+                            id="flow-in"
+                            className="handle-flow"
+                            style={{ left: '-6px', top: '24px' }}
+                        />
+                        <Handle
+                            type="source"
+                            position={Position.Right}
+                            id="flow-next"
+                            className="handle-flow"
+                            style={{ right: '-6px', top: '24px' }}
+                        />
+                    </>
                 )}
 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginLeft: 'auto' }}>

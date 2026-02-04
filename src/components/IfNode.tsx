@@ -98,6 +98,15 @@ export const IfNode = memo(({ data }: { id: string, data: AppNodeData }) => {
                     })}
                 </div>
             </div>
+
+            {/* Main Flow Continuation (for after the IF statement) */}
+            <Handle
+                type="source"
+                position={Position.Right}
+                id="flow-next"
+                className="handle-flow"
+                style={{ right: '-6px', bottom: '12px' }}
+            />
         </div>
     );
 });

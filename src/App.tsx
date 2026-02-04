@@ -1,4 +1,5 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
+import { useMonacoDecorations } from './hooks/useMonacoDecorations';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlowProvider,
@@ -75,6 +76,12 @@ function App() {
 
   const isDark = theme === 'dark';
 
+  const editorRef = useRef<any>(null);
+  const monaco = useMonaco();
+
+  // Use the new hook for Quokka-like decorations
+  useMonacoDecorations(editorRef.current, monaco);
+
   useEffect(() => {
     document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
     document.body.setAttribute('data-theme', theme);
@@ -105,7 +112,7 @@ function App() {
     if (value !== undefined) setCode(value);
   }, [setCode]);
 
-  const monaco = useMonaco();
+  /* Removed duplicate monaco declaration */
 
   useEffect(() => {
     if (!monaco || Object.keys(projectFiles).length === 0) return;
@@ -137,6 +144,7 @@ function App() {
   }, [monaco, projectFiles, selectedFile]);
 
   const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
+    editorRef.current = editor;
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       saveFile().catch(console.error);
     });

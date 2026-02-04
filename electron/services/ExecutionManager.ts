@@ -12,9 +12,6 @@ export class ExecutionManager {
     }
 
     async startExecution(code: string, originalPath?: string) {
-        // Kill existing process to ensure clean state
-        this.stopExecution();
-
         let filePath: string;
 
         if (originalPath) {
@@ -35,6 +32,19 @@ export class ExecutionManager {
 
         await fs.promises.writeFile(filePath, code, 'utf-8');
 
+        // Reuse existing process if possible (to maintain state like 'dogs' array)
+        if (this.runnerProcess && this.runnerProcess.connected) {
+            this.runnerProcess.send({
+                type: 'execution:start',
+                filePath
+            });
+            return;
+        }
+
+        // Otherwise start new process
+        // Kill existing process to ensure clean state
+        this.stopExecution();
+
         // Resolve runner path
         // In dev (electron .), __dirname might be 'electron' or 'dist/electron' depending on how it's launched.
         // But usually we run from 'dist/electron' after tsc.
@@ -44,15 +54,12 @@ export class ExecutionManager {
         if (!fs.existsSync(runnerPath)) {
             // Fallback: assume we are in project root/electron/services and want ../runners/runner.js
             // But __dirname is where this file is compiled to.
-            // Let's log it if it fails.
-            console.warn(`Runner not found at ${runnerPath}, trying development path...`);
             runnerPath = path.resolve(process.cwd(), 'electron/runners/runner.js');
         }
 
         if (!fs.existsSync(runnerPath)) {
-            console.error(`Runner script not found at ${runnerPath}`);
             if (this.mainWindow) {
-                this.mainWindow.webContents.send('execution:error', `Runner script not found. Internal Error.`);
+                this.mainWindow.webContents.send('execution:error', `Runner script not found.`);
             }
             return;
         }
@@ -72,13 +79,17 @@ export class ExecutionManager {
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     if (msg.type === 'execution:log') {
                         this.mainWindow.webContents.send('execution:log', msg);
+                    } else if (msg.type === 'execution:result') {
+                        this.mainWindow.webContents.send('execution:result', msg);
+                    } else if (msg.type === 'execution:error') {
+                        this.mainWindow.webContents.send('execution:error', msg.message);
                     }
                 }
             });
 
             this.runnerProcess.on('error', (err) => {
-                 console.error('Runner process error:', err);
-                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+                console.error('Runner process error:', err);
+                if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     this.mainWindow.webContents.send('execution:error', err.message);
                 }
             });

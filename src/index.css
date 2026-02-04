@@ -306,3 +306,17 @@ body {
 .react-flow__edge-path.animated {
     animation-duration: 1.5s !important;
 }
+
+/* Quokka-like Inline Decorations */
+.quokka-inline-value {
+    color: #4fc3f7;
+    font-style: italic;
+    font-family: monospace;
+    opacity: 0.8;
+    margin-left: 10px;
+    background: rgba(79, 195, 247, 0.1);
+    padding: 0 4px;
+    border-radius: 4px;
+    border-left: 2px solid #4fc3f7;
+    pointer-events: none;
+}

@@ -44,6 +44,22 @@ export const ImportNode = memo(({ data, id }: { id: string, data: AppNodeData })
                     ))}
                 </div>
             </div>
+
+            {/* Flow Handles */}
+            <Handle
+                type="target"
+                position={Position.Left}
+                id="flow-in"
+                className="handle-flow"
+                style={{ left: '-6px', top: '24px' }}
+            />
+            <Handle
+                type="source"
+                position={Position.Right}
+                id="flow-next"
+                className="handle-flow"
+                style={{ right: '-6px', top: '24px' }}
+            />
         </div>
     );
 });
