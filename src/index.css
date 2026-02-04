@@ -306,3 +306,154 @@ body {
 .react-flow__edge-path.animated {
     animation-duration: 1.5s !important;
 }
+
+/* Global Monaco Editor Execution Decorations */
+
+/* Result Values (e.g. 5, "hello") */
+.inline-execution-result {
+    display: inline-block !important;
+    /* Ensure visibility */
+    opacity: 0.7;
+    font-style: italic;
+    margin-left: 12px;
+    font-size: 0.9em;
+    pointer-events: none;
+    white-space: pre;
+    z-index: 10;
+}
+
+[data-theme='dark'] .inline-execution-result {
+    color: #4ec9b0;
+}
+
+[data-theme='light'] .inline-execution-result {
+    color: #008080;
+}
+
+/* Log Values (console.log) */
+.inline-execution-log {
+    display: inline-block !important;
+    opacity: 0.9;
+    font-weight: bold;
+    margin-left: 12px;
+    font-size: 0.9em;
+    pointer-events: none;
+    white-space: pre;
+    z-index: 10;
+}
+
+[data-theme='dark'] .inline-execution-log {
+    color: #9cdcfe;
+}
+
+[data-theme='light'] .inline-execution-log {
+    color: #0000ff;
+}
+
+/* Error Messages */
+.inline-execution-error {
+    display: inline-block !important;
+    font-weight: bold;
+    color: #f44336 !important;
+    margin-left: 12px;
+    z-index: 10;
+}
+
+/* Gutter (Green bar) */
+.execution-coverage-gutter {
+    width: 5px !important;
+    height: 100%;
+}
+
+[data-theme='dark'] .execution-coverage-gutter {
+    background: #2ea043;
+}
+
+[data-theme='light'] .execution-coverage-gutter {
+    background: #28a745;
+}
+
+/* Test class for CSS-based decoration injection */
+.test-css-injection::after {
+    content: ' [CSS-INJECTED] ';
+    color: #ff00ff !important;
+    font-weight: bold;
+    margin-left: 20px;
+}
+
+/* Base styles for Dynamic CSS Injection */
+.execution-decoration-base {
+    display: inline-block !important;
+    height: 100% !important;
+}
+
+.execution-decoration-base::after {
+    margin-left: 15px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.85em;
+    white-space: pre;
+    z-index: 20;
+    pointer-events: none;
+    padding: 2px 8px 2px 22px;
+    /* Top, Right, Bottom, Left (more for icon) */
+    border-radius: 4px;
+    background-repeat: no-repeat;
+    background-position: 6px center;
+    /* Icon position inside padding */
+    background-size: 12px 12px;
+}
+
+/* Value variant (Teal) */
+.execution-decoration-val::after {
+    font-style: normal;
+    font-weight: bold;
+    opacity: 1;
+}
+
+[data-theme='dark'] .execution-decoration-val::after {
+    color: #4ec9b0;
+    background-color: rgba(78, 201, 176, 0.1);
+    border: 1px solid rgba(78, 201, 176, 0.2);
+    /* Chevron Right Icon (Teal) */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%234ec9b0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>');
+}
+
+[data-theme='light'] .execution-decoration-val::after {
+    color: #008080;
+    background-color: rgba(0, 128, 128, 0.05);
+    border: 1px solid rgba(0, 128, 128, 0.2);
+    /* Chevron Right Icon (Teal) */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23008080" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>');
+}
+
+/* Log variant (Blue) */
+.execution-decoration-log::after {
+    font-weight: bold;
+    opacity: 1;
+}
+
+[data-theme='dark'] .execution-decoration-log::after {
+    color: #569cd6;
+    background-color: rgba(86, 156, 214, 0.1);
+    border: 1px solid rgba(86, 156, 214, 0.2);
+    /* Terminal Icon (Blue) - Increased stroke-width to 3 */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23569cd6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>');
+}
+
+[data-theme='light'] .execution-decoration-log::after {
+    color: #0000ff;
+    background-color: rgba(0, 0, 255, 0.05);
+    border: 1px solid rgba(0, 0, 255, 0.2);
+    /* Terminal Icon (Blue) - Increased stroke-width to 3 */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%230000ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>');
+}
+
+/* Error variant (Red) */
+.execution-decoration-error::after {
+    font-weight: bold;
+    color: #f44336 !important;
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    /* Alert Triangle Icon (Red) */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23f44336" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>');
+}

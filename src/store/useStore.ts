@@ -67,7 +67,9 @@ export const useStore = create<AppState>((set, get, api) => ({
     runtimeValues: {},
     executionResults: new Map(),
     executionErrors: new Map(),
+    executionCoverage: new Set(),
     isSimulating: false,
+    livePreviewEnabled: true,
     projectFiles: {},
     connectionCache: new Map(), // Initialize cache
     navigationStack: [{ id: 'root', label: 'Main' }],
@@ -358,7 +360,11 @@ export const useStore = create<AppState>((set, get, api) => ({
         const { code, selectedFile } = get();
 
         // Clear previous results on new run
-        set({ executionResults: new Map(), executionErrors: new Map() });
+        set({
+            executionResults: new Map(),
+            executionErrors: new Map(),
+            executionCoverage: new Set()
+        });
 
         if (window.electronAPI) {
             if (!listenersInitialized) {
@@ -367,15 +373,24 @@ export const useStore = create<AppState>((set, get, api) => ({
                         set({ runtimeValues: { canvasData: data.args[1] } });
                     } else if (data.type === 'execution:value') {
                         // Handle instrumented value
-                        // data: { type: 'execution:value', line: number, value: string }
-                        const { line, value } = data as any;
+                        // data: { type: 'execution:value', line: number, value: string, valueType: 'spy' | 'log' }
+                        const { line, value, valueType } = data as any;
+                        const lineNum = Number(line);
+                        const targetLine = lineNum === 0 ? 0 : lineNum; // 0 for floating logs
+
                         const currentMap = new Map(get().executionResults);
-                        const existing = currentMap.get(line) ?? [];
-                        existing.push(value);
-                        currentMap.set(line, existing);
+                        const existing = currentMap.get(targetLine) ?? [];
+                        existing.push({ value, type: valueType || 'spy' });
+                        currentMap.set(targetLine, existing);
                         set({ executionResults: currentMap });
+                    } else if (data.type === 'execution:coverage') {
+                        const { line } = data as any;
+                        const lineNum = Number(line);
+                        const currentCoverage = new Set(get().executionCoverage);
+                        currentCoverage.add(lineNum);
+                        set({ executionCoverage: currentCoverage });
                     } else if (data.type === 'execution:log') {
-                         console.log('[Backend Log]', data);
+                        console.log('[Backend Log]', data);
                     }
                 });
                 window.electronAPI.onExecutionError((err) => {
@@ -440,6 +455,10 @@ export const useStore = create<AppState>((set, get, api) => ({
         type: '',
         payload: null,
         onSubmit: () => { /* no-op */ }
+    },
+
+    setLivePreviewEnabled: (enabled: boolean) => {
+        set({ livePreviewEnabled: enabled });
     },
 
     setCode: (code: string, shouldSetDirty = true) => {

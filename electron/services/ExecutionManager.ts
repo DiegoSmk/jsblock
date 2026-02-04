@@ -33,6 +33,11 @@ export class ExecutionManager {
 
         // Instrument code before writing
         const instrumentedCode = Instrumenter.instrumentCode(code);
+        if (instrumentedCode === code) {
+            console.warn('[DEBUG] Instrumentation returned original code (possibly failed)');
+        } else {
+            console.log('[DEBUG] Instrumentation successful. Snippet:', instrumentedCode.substring(0, 500));
+        }
         await fs.promises.writeFile(filePath, instrumentedCode, 'utf-8');
 
         // Reuse process if alive and connected
@@ -83,8 +88,9 @@ export class ExecutionManager {
             });
 
             this.runnerProcess.on('message', (msg: any) => {
+                console.log('[DEBUG] Received message from runner:', msg.type, msg.line);
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-                    if (msg.type === 'execution:log' || msg.type === 'execution:value') {
+                    if (msg.type === 'execution:log' || msg.type === 'execution:value' || msg.type === 'execution:coverage') {
                         this.mainWindow.webContents.send('execution:log', msg);
                     } else if (msg.type === 'execution:error') {
                         this.mainWindow.webContents.send('execution:error', msg);
@@ -93,8 +99,8 @@ export class ExecutionManager {
             });
 
             this.runnerProcess.on('error', (err) => {
-                 console.error('Runner process error:', err);
-                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+                console.error('Runner process error:', err);
+                if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     this.mainWindow.webContents.send('execution:error', err.message);
                 }
             });

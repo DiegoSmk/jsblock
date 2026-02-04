@@ -2,7 +2,7 @@ const { register } = require('esbuild-register/dist/node');
 
 // Register esbuild to handle .ts files
 register({
-  target: 'node18'
+    target: 'node18'
 });
 
 // Safe stringify to handle circular refs and basic types
@@ -25,15 +25,26 @@ function safeStringify(obj) {
 }
 
 // Global Spy Function (injected by Instrumenter)
-global.__spy = (val, line) => {
+global.__spy = (val, line, type = 'spy') => {
     if (process.send) {
         process.send({
             type: 'execution:value',
             line,
-            value: safeStringify(val)
+            value: safeStringify(val),
+            valueType: type
         });
     }
     return val;
+};
+
+// Global Coverage Function
+global.__coverage = (line) => {
+    if (process.send) {
+        process.send({
+            type: 'execution:coverage',
+            line
+        });
+    }
 };
 
 
@@ -66,7 +77,9 @@ function sendLog(level, ...args) {
     }
 }
 
-console.log = (...args) => sendLog('log', ...args);
+console.log = (...args) => {
+    sendLog('log', ...args);
+};
 console.info = (...args) => sendLog('info', ...args);
 console.warn = (...args) => sendLog('warn', ...args);
 console.error = (...args) => sendLog('error', ...args);
@@ -74,6 +87,7 @@ console.error = (...args) => sendLog('error', ...args);
 // Listen for execution request
 process.on('message', (msg) => {
     if (msg && msg.type === 'execution:start' && msg.filePath) {
+        console.log(`[RUNNER] Starting execution of: ${msg.filePath}`);
         try {
             // Clear cache to allow re-running
             try {
@@ -118,7 +132,7 @@ process.on('message', (msg) => {
 
                 process.send({
                     type: 'execution:error',
-                    message: err.message,
+                    message: err.message.replace(/^Transform failed with \d+ error:\s*/, '').replace(new RegExp(msg.filePath + ':(\\d+):(\\d+):\\s*'), ''),
                     line,
                     column
                 });

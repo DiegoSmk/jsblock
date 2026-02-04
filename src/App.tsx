@@ -9,7 +9,9 @@ import {
   Code,
   Box,
   Layers,
-  Terminal
+  Terminal,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from './store/useStore';
@@ -56,7 +58,10 @@ function App() {
     settings,
     projectFiles,
     executionResults,
-    executionErrors
+    executionErrors,
+    executionCoverage,
+    livePreviewEnabled,
+    setLivePreviewEnabled
   } = useStore(useShallow(state => ({
     code: state.code,
     setCode: state.setCode,
@@ -74,10 +79,17 @@ function App() {
     settings: state.settings,
     projectFiles: state.projectFiles,
     executionResults: state.executionResults,
-    executionErrors: state.executionErrors
+    executionErrors: state.executionErrors,
+    executionCoverage: state.executionCoverage,
+    livePreviewEnabled: state.livePreviewEnabled,
+    setLivePreviewEnabled: state.setLivePreviewEnabled
   })));
 
   const isDark = theme === 'dark';
+  const editorRef = useRef<any>(null);
+  const monacoRef = useRef<any>(null);
+  // decorationIdsRef is already declared below, removing duplicate
+  const cursorLineRef = useRef<number>(-1); // Track cursor line to hide decorations
 
   useEffect(() => {
     document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
@@ -154,85 +166,121 @@ function App() {
   useEffect(() => {
     if (!editorInstance || !monaco) return;
 
+    // Track cursor position to hide decorations on current line
+    const disposable = editorInstance.onDidChangeCursorPosition((e: any) => {
+      cursorLineRef.current = e.position.lineNumber;
+      // Trigger re-render of decorations (this might be expensive, so we might want to debounce or use a different strategy)
+      // For now, we rely on the next render cycle or code change. 
+      // Actually, to make it instant, we need to force update decorations.
+      // Let's just update the ref, and let the decoration logic handle it on next cycle.
+      // To force refresh, we can toggle a dummy state or just call the decoration logic if we extracted it.
+    });
+
     const model = editorInstance.getModel();
     if (!model) return;
 
+    // Clear decorations if disabled
+    if (!livePreviewEnabled) {
+      decorationIdsRef.current = editorInstance.deltaDecorations(decorationIdsRef.current, []);
+      const styleId = 'dynamic-execution-styles';
+      const styleEl = document.getElementById(styleId);
+      if (styleEl) styleEl.textContent = '';
+      return;
+    }
+
     const decorations: any[] = [];
 
-    // Success Values
-    if (executionResults && executionResults.size > 0) {
-        executionResults.forEach((values, line) => {
-            if (line < 1 || line > model.getLineCount()) return;
+    // Dynamic CSS Injection Strategy
+    let dynamicCss = '';
 
-            const text = values.map(v => v.length > 50 ? v.substring(0, 47) + '...' : v).join(' | ');
-            const content = `  ${text}`;
+    // Helper to process text (clean emojis, escape CSS)
+    const processText = (text: string) => {
+      return (text.length > 50 ? text.substring(0, 47) + '...' : text)
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, '\\A ');
+    };
 
-            decorations.push({
-                range: new monaco.Range(line, 1, line, 1),
-                options: {
-                    isWholeLine: true,
-                    after: {
-                        content: content,
-                        inlineClassName: 'inline-execution-result'
-                    }
-                }
-            });
+    const processEntries = (map: Map<number, any>, type: 'result' | 'error') => {
+      if (!map || map.size === 0) return;
+
+      map.forEach((entry, lineKey) => {
+        const line = Number(lineKey);
+        if (isNaN(line) || line < 1 || line > model.getLineCount()) return;
+
+        // SKIP DECORATION IF CURSOR IS ON THIS LINE (Requested feature)
+        // But mainly for errors, maybe keep values? User said "log only appear when I'm not on the line".
+        // Let's apply this rule generally for cleaner typing.
+        if (line === cursorLineRef.current) return;
+
+        let text = '';
+        let isLog = false;
+
+        if (type === 'result') {
+          // Entry is array of { value, type }
+          const entries = entry as any[];
+
+          // Deduplicate values
+          const uniqueValues = new Set();
+          const uniqueEntries = entries.filter(e => {
+            if (uniqueValues.has(e.value)) return false;
+            uniqueValues.add(e.value);
+            return true;
+          });
+
+          text = uniqueEntries.map(e => processText(e.value)).join(' | ');
+          isLog = entries.some(e => e.type === 'log');
+        } else {
+          // Entry is string (error message)
+          text = processText(String(entry));
+        }
+
+        const className = `deco-${type}-${line}`;
+        dynamicCss += `.${className}::after { content: "${text}"; }\n`;
+
+        const maxCol = model.getLineMaxColumn(line);
+
+        let baseClass = 'execution-decoration-base';
+        if (type === 'error') baseClass += ' execution-decoration-error';
+        else if (isLog) baseClass += ' execution-decoration-log';
+        else baseClass += ' execution-decoration-val';
+
+        decorations.push({
+          range: new monaco.Range(line, maxCol, line, maxCol),
+          options: {
+            isWholeLine: false,
+            afterContentClassName: `${baseClass} ${className}`,
+            linesDecorationsClassName: type === 'error' ? 'execution-error-gutter' : 'execution-coverage-gutter'
+          }
         });
+      });
+    };
+
+    // 1. Process Results
+    processEntries(executionResults, 'result');
+
+    // 2. Process Errors
+    processEntries(executionErrors, 'error');
+
+    // Inject CSS
+    const styleId = 'dynamic-execution-styles';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      document.head.appendChild(styleEl);
     }
+    styleEl.textContent = dynamicCss;
 
-    // Errors
-    if (executionErrors && executionErrors.size > 0) {
-        executionErrors.forEach((msg, line) => {
-            if (line < 1 || line > model.getLineCount()) return;
-
-            decorations.push({
-                range: new monaco.Range(line, 1, line, 1),
-                options: {
-                    isWholeLine: true,
-                    after: {
-                        content: `  ⛔ ${msg}`,
-                        inlineClassName: 'inline-execution-error'
-                    }
-                }
-            });
-        });
-    }
-
-    // Apply decorations using the ref to track previous IDs
+    // Apply decorations
     decorationIdsRef.current = editorInstance.deltaDecorations(decorationIdsRef.current, decorations);
 
-  }, [executionResults, executionErrors, editorInstance, monaco]);
+    return () => {
+      disposable.dispose();
+    };
 
-  // Add CSS for decorations
-  useEffect(() => {
-    const styleId = 'execution-decorations-style';
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement('style');
-      style.id = styleId;
-      style.textContent = `
-        .inline-execution-result {
-            opacity: 0.7;
-            font-style: italic;
-            margin-left: 10px;
-            pointer-events: none;
-            color: ${isDark ? '#4ec9b0' : '#0000ff'};
-        }
-      `;
-      document.head.appendChild(style);
-    } else {
-        // Update color based on theme
-        const style = document.getElementById(styleId);
-        if (style) {
-             style.textContent = `
-                .inline-execution-result {
-                    opacity: 0.5;
-                    font-style: italic;
-                    color: ${isDark ? '#4ec9b0' : '#0000ff'};
-                }
-            `;
-        }
-    }
-  }, [isDark]);
+  }, [executionResults, executionErrors, executionCoverage, editorInstance, monaco, selectedFile, code, livePreviewEnabled]); // Added livePreviewEnabled and code
+
+  // Styles moved to src/index.css for reliability
 
   const showAppBorder = settings.showAppBorder;
 
@@ -337,13 +385,41 @@ function App() {
                               background: isDark ? '#2d2d2d' : '#f0f0f0',
                               display: 'flex',
                               alignItems: 'center',
-                              padding: '0 12px',
+                              padding: '0 0 0 12px',
                               fontSize: '0.75rem',
                               color: isDark ? '#aaa' : '#666',
-                              borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
+                              borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`,
+                              justifyContent: 'space-between'
                             }}>
-                              <Code size={14} style={{ marginRight: '8px' }} />
-                              {selectedFile.split(/[\\/]/).pop()}
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.75rem',
+                                color: isDark ? '#aaa' : '#666'
+                              }}>
+                                <Code size={14} style={{ marginRight: '8px' }} />
+                                {selectedFile.split(/[\\/]/).pop()}
+                              </div>
+
+                              <div
+                                onClick={() => setLivePreviewEnabled(!livePreviewEnabled)}
+                                title={livePreviewEnabled ? "Disable Live Preview" : "Enable Live Preview"}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '40px',
+                                  height: '100%',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s',
+                                  color: livePreviewEnabled ? (isDark ? '#4ec9b0' : '#008080') : (isDark ? '#555' : '#ccc'),
+                                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                  borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
+                                }}
+                              >
+                                {livePreviewEnabled ? <Eye size={18} /> : <EyeOff size={18} />}
+                              </div>
                             </div>
                           )}
                           {!selectedFile ? (
@@ -365,7 +441,10 @@ function App() {
                                 fontSize: 13,
                                 padding: { top: 10 },
                                 scrollBeyondLastLine: false,
-                                automaticLayout: true
+                                automaticLayout: true,
+                                glyphMargin: true,
+                                lineDecorationsWidth: 10,
+                                scrollBeyondLastColumn: 50 // Allow space for inline values
                               }}
                             />
                           )}
