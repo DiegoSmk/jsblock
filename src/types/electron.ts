@@ -49,6 +49,12 @@ export interface ElectronAPI {
   uninstallPlugin: (id: string) => Promise<boolean>;
   onPluginNotification: (callback: (data: { message: string }) => void) => () => void;
 
+  // Execution
+  executionStart: (code: string, filePath?: string) => void;
+  executionStop: () => void;
+  onExecutionLog: (callback: (data: { type: string, level: string, args: unknown[] }) => void) => () => void;
+  onExecutionError: (callback: (error: string) => void) => () => void;
+
   // Environment (if needed, but not in preload.ts currently)
   getEnvironmentInfo?: () => Promise<{
     platform: string;

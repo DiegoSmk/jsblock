@@ -9,6 +9,7 @@ import { promisify } from 'util';
 import * as pty from 'node-pty';
 import os from 'os';
 import { PluginManager } from './services/PluginManager';
+import { ExecutionManager } from './services/ExecutionManager';
 
 const execFileAsync = promisify(execFile);
 // const execAsync = promisify(exec); // unused
@@ -112,11 +113,15 @@ function createWindow() {
 }
 
 const pluginManager = new PluginManager();
+const executionManager = new ExecutionManager();
 
 void app.whenReady().then(() => {
     createSplashWindow();
     createWindow();
-    if (mainWindow) pluginManager.setMainWindow(mainWindow);
+    if (mainWindow) {
+        pluginManager.setMainWindow(mainWindow);
+        executionManager.setMainWindow(mainWindow);
+    }
 
     // Initial discovery and host start
     pluginManager.discoverPlugins();
@@ -331,6 +336,15 @@ ipcMain.handle('plugins:install', async () => {
 ipcMain.handle('plugins:uninstall', (_event, id: string) => {
     pluginManager.uninstallPlugin(id);
     return true;
+});
+
+// Execution Manager Handlers
+ipcMain.on('execution:start', (_event, code: string, filePath?: string) => {
+    void executionManager.startExecution(code, filePath);
+});
+
+ipcMain.on('execution:stop', () => {
+    executionManager.stopExecution();
 });
 
 

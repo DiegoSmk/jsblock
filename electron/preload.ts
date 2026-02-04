@@ -39,5 +39,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const subscription = (_event: unknown, data: { message: string }) => callback(data);
         ipcRenderer.on('plugin:notification', subscription);
         return () => ipcRenderer.removeListener('plugin:notification', subscription);
+    },
+
+    // Execution
+    executionStart: (code: string, filePath?: string) => ipcRenderer.send('execution:start', code, filePath),
+    executionStop: () => ipcRenderer.send('execution:stop'),
+    onExecutionLog: (callback: (data: { type: string, level: string, args: unknown[] }) => void) => {
+        const subscription = (_event: unknown, data: { type: string, level: string, args: unknown[] }) => callback(data);
+        ipcRenderer.on('execution:log', subscription);
+        return () => ipcRenderer.removeListener('execution:log', subscription);
+    },
+    onExecutionError: (callback: (error: string) => void) => {
+        const subscription = (_event: unknown, error: string) => callback(error);
+        ipcRenderer.on('execution:error', subscription);
+        return () => ipcRenderer.removeListener('execution:error', subscription);
     }
 });

@@ -37,17 +37,14 @@ import i18n from '../i18n/config';
 import { createGitSlice } from './slices/git/slice';
 import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
 import { validateConnection } from '../logic/connectionLogic';
-import { bundleCode } from '../logic/SimpleBundler';
 
 const initialCode = '';
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 
-// Worker instance
-let runtimeWorker: Worker | null = null;
 let simulationInterval: any = null;
-let activeBlobs: string[] = [];
+let listenersInitialized = false;
 
 export const useStore = create<AppState>((set, get, api) => ({
     ...createGitSlice(set, get, api),
@@ -356,66 +353,22 @@ export const useStore = create<AppState>((set, get, api) => ({
         }
     },
     runExecution: () => {
-        const { code, nodes, projectFiles, selectedFile } = get();
+        const { code, selectedFile } = get();
 
-        // Cleanup old blobs
-        activeBlobs.forEach(url => URL.revokeObjectURL(url));
-        activeBlobs = [];
-
-
-        try {
-            // ... (node extraction logic remains)
-            const varNames = nodes
-                .filter(n => n.id.startsWith('var-'))
-                .map(n => ({ id: n.data.label!, expr: n.data.label! }));
-
-            const callExpressions = nodes
-                .filter(n => n.type === 'functionCallNode' && !n.data.isDecl && n.data.expression)
-                .map(n => ({ id: n.id, expr: n.data.expression! }));
-
-            const nestedExpressions: { id: string, expr: string }[] = [];
-            nodes.forEach(n => {
-                const nac = n.data.nestedArgsCall;
-                if (nac) {
-                    Object.keys(nac).forEach(key => {
-                        const call = nac[key];
-                        if (call.expression) {
-                            nestedExpressions.push({
-                                id: `${n.id}-arg-${key}-expr`,
-                                expr: call.expression
-                            });
-                        }
-                    });
-                }
-            });
-
-            const allItems = [
-                ...varNames,
-                ...callExpressions,
-                ...nestedExpressions,
-                { id: 'canvasData', expr: 'canvasData' }
-            ];
-
-            if (allItems.length > 0) {
-                // Bundle the code to resolve imports
-                // We use selectedFile as entry point, or fallback to a dummy root path
-                const entryPath = selectedFile || '/root/entry.ts';
-                const { code: bundledCode, blobs } = bundleCode(code, entryPath, projectFiles);
-                activeBlobs = blobs;
-
-                if (!runtimeWorker) {
-                    runtimeWorker = new Worker(new URL('../workers/runtime.worker.ts', import.meta.url), { type: 'module' });
-                    runtimeWorker.onmessage = (e) => {
-                        const runtimeValues = e.data as Record<string, unknown>;
-                        set({ runtimeValues });
-                    };
-                }
-                runtimeWorker.postMessage({ code: bundledCode, items: allItems });
-            } else {
-                set({ runtimeValues: {} });
+        if (window.electronAPI) {
+            if (!listenersInitialized) {
+                window.electronAPI.onExecutionLog((data) => {
+                    console.log('[Backend Log]', data);
+                    if (data.level === 'data' && data.args && data.args[0] === 'canvasData') {
+                        set({ runtimeValues: { canvasData: data.args[1] } });
+                    }
+                });
+                window.electronAPI.onExecutionError((err) => {
+                    console.error('[Backend Error]', err);
+                });
+                listenersInitialized = true;
             }
-        } catch (err) {
-            console.warn("Runtime evaluation failed:", err);
+            window.electronAPI.executionStart(code, selectedFile ?? undefined);
         }
     },
     addCanvasNode: () => {
