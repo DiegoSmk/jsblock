@@ -70,3 +70,9 @@ dist
 dist-ssr
 *.pyc
 __pycache__
+
+# MCP & Agent
+state.json
+**/node_modules/
+.agent/state/
+.agent/logs/
