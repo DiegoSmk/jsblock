@@ -24,6 +24,7 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
     const isSimulating = useStore((state) => state.isSimulating);
     const toggleSimulation = useStore((state) => state.toggleSimulation);
     const runExecution = useStore((state) => state.runExecution);
+    const code = useStore((state) => state.code);
 
     const isDark = theme === 'dark';
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -89,7 +90,7 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
                 <span>{data.label ?? 'Canvas Viewer'}</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
                     <button
-                        onClick={(e) => { e.stopPropagation(); runExecution(); }}
+                        onClick={(e) => { e.stopPropagation(); runExecution(code); }}
                         style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px', display: 'flex', opacity: 0.7 }}
                         title="Reset/Step"
                     >

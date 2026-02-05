@@ -386,7 +386,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
 
-    setCode: (code: string, shouldSetDirty = true) => {
+    setCode: (code: string, shouldSetDirty = true, debounce = true) => {
         const { nodes, edges } = parseCodeToFlow(code);
 
         if (saveTimeout) clearTimeout(saveTimeout);
@@ -401,7 +401,7 @@ export const useStore = create<AppState>((set, get, api) => ({
             }
         }
 
-        get().runExecution();
+
 
         const currentStack = get().navigationStack;
         const currentScopeId = get().activeScopeId;
@@ -433,6 +433,12 @@ export const useStore = create<AppState>((set, get, api) => ({
             navigationStack: activeNodeExists ? currentStack : [{ id: 'root', label: 'Main' }],
             activeScopeId: activeNodeExists ? currentScopeId : 'root'
         });
+
+        if (debounce) {
+            get().runExecutionDebounced(code);
+        } else {
+            get().runExecution(code);
+        }
     },
 
     onNodesChange: (changes: NodeChange<AppNode>[]) => {
@@ -889,7 +895,7 @@ export const useStore = create<AppState>((set, get, api) => ({
                         });
                     }
                 } else {
-                    get().setCode(content, false);
+                    get().setCode(content, false, false);
                     // For code files, we usually want both visible by default or stick to current
                     set({ showCode: true, showCanvas: true });
                 }

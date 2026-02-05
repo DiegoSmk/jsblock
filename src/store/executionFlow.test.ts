@@ -12,7 +12,12 @@ describe('Quokka-like Execution Flow', () => {
 
     beforeEach(() => {
         // Reset store
-        useStore.setState({ executionResults: new Map(), executionErrors: new Map(), code: 'const a = 10;' });
+        useStore.setState({
+            executionResults: new Map(),
+            executionErrors: new Map(),
+            code: 'const a = 10;',
+            livePreviewEnabled: true // Enable for tests
+        });
 
         // Mock Electron API
         mockExecutionStart = vi.fn();
@@ -45,13 +50,13 @@ describe('Quokka-like Execution Flow', () => {
 
     it('should send execution request to backend', () => {
         const { runExecution } = useStore.getState();
-        runExecution();
+        runExecution('const a = 10;');
         expect(mockExecutionStart).toHaveBeenCalledWith('const a = 10;', undefined);
     });
 
     it('should update executionResults when receiving execution:value messages', () => {
         const { runExecution } = useStore.getState();
-        runExecution();
+        runExecution('const a = 10;');
 
         const message = {
             type: 'execution:value' as const,
@@ -69,7 +74,7 @@ describe('Quokka-like Execution Flow', () => {
 
     it('should update executionErrors when receiving execution:error messages', () => {
         const { runExecution } = useStore.getState();
-        runExecution();
+        runExecution('const a = 10;');
 
         const error = {
             message: 'Something went wrong',
@@ -87,7 +92,7 @@ describe('Quokka-like Execution Flow', () => {
 
     it('should accumulate multiple values for the same line', () => {
         const { runExecution } = useStore.getState();
-        runExecution();
+        runExecution('const a = 10;');
 
         logCallback({ type: 'execution:value', line: 2, value: '0' });
         logCallback({ type: 'execution:value', line: 2, value: '1' });
@@ -99,11 +104,11 @@ describe('Quokka-like Execution Flow', () => {
     it('should clear previous results on new execution', () => {
         const { runExecution } = useStore.getState();
 
-        runExecution();
+        runExecution('const a = 10;');
         logCallback({ type: 'execution:value', line: 1, value: 'old' });
         expect(useStore.getState().executionResults.get(1)).toEqual([{ value: 'old', type: 'spy' }]);
 
-        runExecution();
+        runExecution('const a = 10;');
         expect(useStore.getState().executionResults.size).toBe(0);
         expect(useStore.getState().executionErrors.size).toBe(0);
     });

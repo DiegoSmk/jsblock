@@ -3,6 +3,7 @@ import type { AppState } from '../../../types/store';
 import type { ExecutionSlice } from '../types';
 
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
+let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let listenersInitialized = false;
 
 export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => ({
@@ -10,7 +11,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
     executionErrors: new Map(),
     executionCoverage: new Set(),
     isSimulating: false,
-    livePreviewEnabled: true,
+    livePreviewEnabled: false,
     runtimeValues: {},
 
     toggleSimulation: () => {
@@ -31,8 +32,22 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         set({ livePreviewEnabled: enabled });
     },
 
-    runExecution: () => {
-        const { code, selectedFile } = get();
+    runExecutionDebounced: (customCode?: string, customPath?: string) => {
+        if (executionDebounceTimeout) clearTimeout(executionDebounceTimeout);
+        executionDebounceTimeout = setTimeout(() => {
+            get().runExecution(customCode, customPath);
+            executionDebounceTimeout = null;
+        }, 300);
+    },
+
+    runExecution: (customCode?: string, customPath?: string) => {
+        const { code, selectedFile, livePreviewEnabled } = get();
+        const codeToRun = customCode ?? code;
+        const pathToRun = customPath ?? selectedFile;
+
+        // Force execution if it's NOT a custom (internal/typing) trigger, 
+        // OR if live preview is explicitly enabled.
+        const shouldExecute = (customCode === undefined) || livePreviewEnabled;
 
         // Clear previous results on new run
         set({
@@ -41,7 +56,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
             executionCoverage: new Set()
         });
 
-        if (window.electron) {
+        if (window.electron && shouldExecute) {
             if (!listenersInitialized) {
                 window.electron.onExecutionLog((data) => {
                     // Check for Canvas Data (discriminated by 'level' and absence of 'type' in definition, but existence in runtime)
@@ -94,7 +109,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
                 listenersInitialized = true;
             }
-            window.electron.executionStart(code, selectedFile ?? undefined);
+            window.electron.executionStart(codeToRun, pathToRun ?? undefined);
         }
     },
 });

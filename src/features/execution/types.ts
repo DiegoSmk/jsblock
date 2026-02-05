@@ -7,6 +7,7 @@ export interface ExecutionSlice {
     runtimeValues: Record<string, unknown>;
 
     toggleSimulation: () => void;
-    runExecution: () => void;
+    runExecution: (customCode?: string, customPath?: string) => void;
+    runExecutionDebounced: (customCode?: string, customPath?: string) => void;
     setLivePreviewEnabled: (enabled: boolean) => void;
 }

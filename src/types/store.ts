@@ -91,7 +91,7 @@ export interface AppState extends GitSlice, ExecutionSlice {
   setDirty: (dirty: boolean) => void;
 
   addCanvasNode: () => void;
-  setCode: (code: string, shouldSetDirty?: boolean) => void;
+  setCode: (code: string, shouldSetDirty?: boolean, debounce?: boolean) => void;
   onNodesChange: (changes: NodeChange<AppNode>[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   removeEdges: (edgeIds: string[]) => void;
