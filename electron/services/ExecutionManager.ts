@@ -57,24 +57,34 @@ export class ExecutionManager {
                 const error = (e.errors as Message[])?.[0];
                 const originalMessage = error?.text ?? e.message ?? 'Transpilation failed';
                 let message = originalMessage;
-                let errorData: ExecutionError = {
+                const errorData: ExecutionError = {
                     message,
                     line: error?.location?.line ?? 0,
                     column: error?.location?.column ?? 0
                 };
 
-                // ELITE FIX: Structured Suggestion for typos
-                if (originalMessage.includes('Expected ";" but found')) {
-                    const lines = code.split('\n');
-                    const lineIdx = (error?.location?.line ?? 1) - 1;
-                    const codeLine = lines[lineIdx];
+                const lines = code.split('\n');
+                const lineIdx = (error?.location?.line ?? 1) - 1;
+                const codeLine = lines[lineIdx] ?? '';
 
-                    if (codeLine?.includes('cont ')) {
-                        errorData.message = "Syntax Error: Did you mean 'const'?";
+                // --- UNIVERSAL TYPO DETECTOR ---
+                const keywords = [
+                    { typo: /\bcont\b/, correct: 'const' },
+                    { typo: /\bfunctio\b|\bfuntion\b|\bfunc\b/, correct: 'function' },
+                    { typo: /\bretun\b|\bretunr\b/, correct: 'return' },
+                    { typo: /\bimpor\b|\bimportt\b/, correct: 'import' },
+                    { typo: /\bexpor\b/, correct: 'export' },
+                    { typo: /\basyn\b|\basny\b/, correct: 'async' }
+                ];
+
+                for (const item of keywords) {
+                    if (item.typo.test(codeLine)) {
+                        errorData.message = `Syntax Error: Did you mean '${item.correct}'?`;
                         errorData.suggestion = {
-                            text: 'Change to const',
-                            replace: codeLine.replace(/\bcont\b/, 'const')
+                            text: `Change to ${item.correct}`,
+                            replace: codeLine.replace(item.typo, item.correct)
                         };
+                        break; // Capture only the first match per line
                     }
                 }
 
@@ -106,7 +116,8 @@ export class ExecutionManager {
                     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                         this.mainWindow.webContents.send('execution:error', {
                             message: 'Execution Timed Out (Possible Infinite Loop)',
-                            line: 0
+                            line: 1,
+                            column: 1
                         });
                     }
                 }
