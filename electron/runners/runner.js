@@ -105,6 +105,10 @@ process.on('message', (msg) => {
                     args: ['canvasData', canvasData]
                 });
             }
+            // Signal that main execution (synchronous part) is finished
+            if (process.send) {
+                process.send({ type: 'execution:done' });
+            }
         } catch (err) {
             // Error handling with line detection
             if (process.send) {

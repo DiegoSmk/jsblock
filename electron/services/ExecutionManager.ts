@@ -98,6 +98,9 @@ export class ExecutionManager {
                         this.mainWindow.webContents.send('execution:log', msg);
                     } else if (msg.type === 'execution:error') {
                         this.mainWindow.webContents.send('execution:error', msg);
+                    } else if (msg.type === 'execution:done') {
+                        // Main execution finished, clear the timeout!
+                        this.stopCleanup();
                     }
                 }
             });
