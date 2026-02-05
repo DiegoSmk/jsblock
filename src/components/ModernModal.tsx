@@ -152,9 +152,9 @@ export const ModernModal = () => {
                             gap: '12px',
                             padding: '24px 0 16px'
                         }}>
-                            <span className="logo-js" style={{ fontSize: '36px' }}>JS</span>
+                            <span className="logo-js" style={{ fontSize: '36px', textTransform: 'uppercase' }}>Js</span>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                                {['B', 'L', 'O', 'C', 'K'].map((letter, i) => {
+                                {['B', 'l', 'o', 'c', 'k'].map((letter, i) => {
                                     const isFallen = (modal.payload as { fallenIndex?: number })?.fallenIndex === i;
                                     const rotation = isFallen ? (i % 2 === 0 ? -15 : 15) + (i * 2) : 0;
                                     const translateY = isFallen ? 8 : 0;
@@ -163,8 +163,8 @@ export const ModernModal = () => {
                                         <div
                                             key={letter}
                                             style={{
-                                                width: '36px',
-                                                height: '36px',
+                                                width: '38px',
+                                                height: '38px',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
@@ -179,7 +179,7 @@ export const ModernModal = () => {
                                                 zIndex: isFallen ? 10 : 1
                                             }}
                                         >
-                                            {letter}
+                                            {letter.toUpperCase()}
                                         </div>
                                     );
                                 })}

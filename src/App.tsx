@@ -24,6 +24,7 @@ import i18next from 'i18next';
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
 import type { ElectronAPI } from './types/electron';
+import type * as Monaco from 'monaco-editor';
 
 // Configure Monaco loader to use local files copied to public/monaco-editor
 loader.config({
@@ -86,9 +87,6 @@ function App() {
   })));
 
   const isDark = theme === 'dark';
-  const editorRef = useRef<any>(null);
-  const monacoRef = useRef<any>(null);
-  // decorationIdsRef is already declared below, removing duplicate
   const cursorLineRef = useRef<number>(-1); // Track cursor line to hide decorations
 
   useEffect(() => {
@@ -126,6 +124,7 @@ function App() {
   useEffect(() => {
     if (!monaco || Object.keys(projectFiles).length === 0) return;
 
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
     const m = monaco as any;
 
     // TypeScript compiler options
@@ -149,15 +148,16 @@ function App() {
         model.setValue(content);
       }
     });
+    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 
   }, [monaco, projectFiles, selectedFile]);
 
-  const [editorInstance, setEditorInstance] = useState<any>(null);
+  const [editorInstance, setEditorInstance] = useState<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const decorationIdsRef = useRef<string[]>([]);
 
-  const handleEditorDidMount = useCallback((editor: any, monaco: any) => {
+  const handleEditorDidMount = useCallback((editor: Monaco.editor.IStandaloneCodeEditor, m: typeof Monaco) => {
     setEditorInstance(editor);
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+    editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.KeyS, () => {
       saveFile().catch(console.error);
     });
   }, [saveFile]);
@@ -167,7 +167,7 @@ function App() {
     if (!editorInstance || !monaco) return;
 
     // Track cursor position to hide decorations on current line
-    const disposable = editorInstance.onDidChangeCursorPosition((e: any) => {
+    const disposable = editorInstance.onDidChangeCursorPosition((e) => {
       cursorLineRef.current = e.position.lineNumber;
       // Trigger re-render of decorations (this might be expensive, so we might want to debounce or use a different strategy)
       // For now, we rely on the next render cycle or code change. 
@@ -188,7 +188,7 @@ function App() {
       return;
     }
 
-    const decorations: any[] = [];
+    const decorations: Monaco.editor.IModelDeltaDecoration[] = [];
 
     // Dynamic CSS Injection Strategy
     let dynamicCss = '';
@@ -200,7 +200,12 @@ function App() {
         .replace(/\n/g, '\\A ');
     };
 
-    const processEntries = (map: Map<number, any>, type: 'result' | 'error') => {
+    interface ExecutionEntry {
+      value: string;
+      type: string;
+    }
+
+    const processEntries = (map: Map<number, ExecutionEntry[] | string>, type: 'result' | 'error') => {
       if (!map || map.size === 0) return;
 
       map.forEach((entry, lineKey) => {
@@ -217,7 +222,7 @@ function App() {
 
         if (type === 'result') {
           // Entry is array of { value, type }
-          const entries = entry as any[];
+          const entries = entry as ExecutionEntry[];
 
           // Deduplicate values
           const uniqueValues = new Set();
@@ -231,7 +236,7 @@ function App() {
           isLog = entries.some(e => e.type === 'log');
         } else {
           // Entry is string (error message)
-          text = processText(String(entry));
+          text = processText(typeof entry === 'string' ? entry : entry.map(e => e.value).join(' | '));
         }
 
         const className = `deco-${type}-${line}`;
@@ -245,7 +250,8 @@ function App() {
         else baseClass += ' execution-decoration-val';
 
         decorations.push({
-          range: new monaco.Range(line, maxCol, line, maxCol),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
+          range: new (monaco as any).Range(line, maxCol, line, maxCol),
           options: {
             isWholeLine: false,
             afterContentClassName: `${baseClass} ${className}`,
@@ -256,10 +262,10 @@ function App() {
     };
 
     // 1. Process Results
-    processEntries(executionResults, 'result');
+    processEntries(executionResults as unknown as Map<number, ExecutionEntry[] | string>, 'result');
 
     // 2. Process Errors
-    processEntries(executionErrors, 'error');
+    processEntries(executionErrors as unknown as Map<number, ExecutionEntry[] | string>, 'error');
 
     // Inject CSS
     const styleId = 'dynamic-execution-styles';
@@ -409,7 +415,7 @@ function App() {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  width: '40px',
+                                  width: '38px',
                                   height: '100%',
                                   cursor: 'pointer',
                                   transition: 'all 0.2s',

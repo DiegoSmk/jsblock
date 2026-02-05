@@ -29,7 +29,7 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     // Look for data in runtimeValues. Priority: node-specific ID > generic 'canvasData'
-    const drawData = (runtimeValues[id] || runtimeValues['canvasData']) as CanvasShape[] | null;
+    const drawData = (runtimeValues[id] ?? runtimeValues.canvasData) as CanvasShape[] | null;
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -48,26 +48,26 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
         }
 
         drawData.forEach(shape => {
-            ctx.fillStyle = shape.color || (isDark ? '#fff' : '#000');
-            ctx.strokeStyle = shape.color || (isDark ? '#fff' : '#000');
+            ctx.fillStyle = shape.color ?? (isDark ? '#fff' : '#000');
+            ctx.strokeStyle = shape.color ?? (isDark ? '#fff' : '#000');
             ctx.lineWidth = 2;
             ctx.beginPath();
 
             switch (shape.type) {
                 case 'circle':
-                    ctx.arc(shape.x, shape.y, shape.radius || 5, 0, Math.PI * 2);
+                    ctx.arc(shape.x, shape.y, shape.radius ?? 5, 0, Math.PI * 2);
                     ctx.fill();
                     break;
                 case 'rect':
-                    ctx.fillRect(shape.x, shape.y, shape.width || 10, shape.height || 10);
+                    ctx.fillRect(shape.x, shape.y, shape.width ?? 10, shape.height ?? 10);
                     break;
                 case 'text':
                     ctx.font = '12px Inter';
-                    ctx.fillText(shape.text || '', shape.x, shape.y);
+                    ctx.fillText(shape.text ?? '', shape.x, shape.y);
                     break;
                 case 'line':
                     ctx.moveTo(shape.x, shape.y);
-                    ctx.lineTo(shape.x2 || shape.x, shape.y2 || shape.y);
+                    ctx.lineTo(shape.x2 ?? shape.x, shape.y2 ?? shape.y);
                     ctx.stroke();
                     break;
             }
@@ -86,7 +86,7 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
                 gap: '8px'
             }}>
                 <Presentation size={14} strokeWidth={2.5} />
-                <span>{data.label || 'Canvas Viewer'}</span>
+                <span>{data.label ?? 'Canvas Viewer'}</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px' }}>
                     <button
                         onClick={(e) => { e.stopPropagation(); runExecution(); }}
@@ -96,7 +96,7 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
                         <RotateCcw size={12} />
                     </button>
                     <span style={{ color: isSimulating ? '#10b981' : '#64748b', fontSize: '0.6rem', fontWeight: 700 }}>
-                        {isSimulating ? 'LIVE' : 'IDLE'}
+                        {isSimulating ? 'Live' : 'Idle'}
                     </span>
                 </div>
             </div>
@@ -121,8 +121,8 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
                         position: 'absolute',
                         bottom: '12px',
                         right: '12px',
-                        width: '40px',
-                        height: '40px',
+                        width: '38px',
+                        height: '38px',
                         borderRadius: '50%',
                         background: isSimulating ? '#ef4444' : '#10b981',
                         border: 'none',

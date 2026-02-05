@@ -9,7 +9,12 @@ export const ImportNode = memo(({ data, id }: { id: string, data: AppNodeData })
     const theme = useStore((state) => state.theme);
     const isDark = theme === 'dark';
 
-    const specifiers = data.specifiers as any[] || [];
+    interface Specifier {
+        type: 'named' | 'default' | 'namespace';
+        local: string;
+        imported?: string;
+    }
+    const specifiers = (data.specifiers as Specifier[]) ?? [];
 
     return (
         <div className="premium-node" style={{ minWidth: '300px' }}>
@@ -26,8 +31,8 @@ export const ImportNode = memo(({ data, id }: { id: string, data: AppNodeData })
 
             <div className="node-content">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {specifiers.map((s, i) => (
-                        <div key={`${id}-spec-${i}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+                    {specifiers.map((s) => (
+                        <div key={`${id}-spec-${s.local}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
                             <span style={{ fontSize: '0.9rem', color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 600 }}>
                                 {s.type === 'default' ? 'default' : (s.type === 'namespace' ? '*' : s.imported)}
                                 {s.local !== s.imported && s.local !== 'default' && ` as ${s.local}`}

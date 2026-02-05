@@ -118,13 +118,22 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
                 <span>{isBuiltin ? '' : getHeaderLabel()}</span>
 
                 {!isDecl && isStandalone && (
-                    <Handle
-                        type="target"
-                        position={Position.Left}
-                        id="flow-in"
-                        className="handle-flow"
-                        style={{ left: '-6px', top: '24px' }}
-                    />
+                    <>
+                        <Handle
+                            type="target"
+                            position={Position.Left}
+                            id="flow-in"
+                            className="handle-flow"
+                            style={{ left: '-6px', top: '24px' }}
+                        />
+                        <Handle
+                            type="source"
+                            position={Position.Right}
+                            id="flow-next"
+                            className="handle-flow"
+                            style={{ right: '-6px', top: '24px' }}
+                        />
+                    </>
                 )}
 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginLeft: 'auto' }}>
@@ -226,8 +235,8 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
                 flexDirection: 'column'
             }}>
                 {/* Return Value Section (if standalone call) */}
-                {!isDecl && data.hasReturn && !isConsoleLog && (
-                    <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {!isDecl && !isConsoleLog && (
+                    <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: data.hasReturn ? 1 : 0.5 }}>
                         <div style={{ fontSize: '0.65rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 800, textTransform: 'uppercase' }}>Return Value</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             {returnValue !== null && <span style={{ color: '#38bdf8', fontSize: '0.9rem', fontWeight: 800 }}>{returnValue}</span>}

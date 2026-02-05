@@ -33,7 +33,7 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
                 <span>Variable</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
-                        value={data.typeAnnotation || ''}
+                        value={data.typeAnnotation ?? ''}
                         onChange={(e) => updateNodeData(id, { typeAnnotation: e.target.value })}
                         placeholder="Type"
                         onKeyDown={(e) => e.stopPropagation()}
