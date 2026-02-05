@@ -5,9 +5,10 @@ import type { ExecutionSlice } from '../types';
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let listenersInitialized = false;
+let lastExecutedCode = ''; // Elite change detection
 
-// Buffered updates to prevent flickering
-let updateBuffer: {
+// Internal Buffer (not in state to avoid React overhead)
+let buffer: {
     results: Map<number, { value: string; type: 'spy' | 'log' }[]>;
     coverage: Set<number>;
     errors: Map<number, string>;
@@ -17,7 +18,8 @@ let updateBuffer: {
     errors: new Map()
 };
 
-let bufferTimeout: ReturnType<typeof setTimeout> | null = null;
+let rafId: number | null = null;
+let hasPendingUpdates = false;
 
 export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => ({
     executionResults: new Map(),
@@ -35,13 +37,10 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
             set({ isSimulating: false });
         } else {
             set({ isSimulating: true });
-            // Simulation should be less aggressive and REUSE the execution
-            // instead of spawning new processes constantly
             simulationInterval = setInterval(() => {
-                if (get().livePreviewEnabled) {
-                    get().runExecution();
-                }
-            }, 1000); // 1s is safer for full process re-runs
+                // Simulation is for animation-heavy flows (Canvas)
+                get().runExecution(undefined, undefined, true);
+            }, 1000);
         }
     },
 
@@ -50,7 +49,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         if (enabled) {
             get().runExecution();
         } else {
-            // Clean up when disabled
             set({
                 executionResults: new Map(),
                 executionErrors: new Map(),
@@ -67,50 +65,54 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         }, 300);
     },
 
-    runExecution: (customCode?: string, customPath?: string) => {
+    runExecution: (customCode?: string, customPath?: string, isSimulationTrigger = false) => {
         const { code, selectedFile, livePreviewEnabled } = get();
         const codeToRun = customCode ?? code;
         const pathToRun = customPath ?? selectedFile;
 
-        // Force execution if it's NOT a custom (internal/typing) trigger, 
-        // OR if live preview is explicitly enabled.
-        const shouldExecute = (customCode === undefined) || livePreviewEnabled;
-
-        if (!codeToRun || codeToRun.trim() === '') {
-            set({
-                executionResults: new Map(),
-                executionErrors: new Map(),
-                executionCoverage: new Set()
-            });
+        // ELITE CHANGE DETECTION: Don't run if code hasn't changed
+        // Unless it's a manual trigger (customCode === undefined) or a simulation pulse
+        if (!isSimulationTrigger && customCode !== undefined && codeToRun === lastExecutedCode) {
             return;
         }
 
+        // Safety: don't run empty code
+        if (!codeToRun || codeToRun.trim() === '') {
+            set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set() });
+            return;
+        }
+
+        const shouldExecute = (customCode === undefined) || livePreviewEnabled;
         if (window.electron && shouldExecute) {
-            // Reset buffer for new run but DON'T clear store yet to prevent flicker
-            updateBuffer = {
-                results: new Map(),
-                coverage: new Set(),
-                errors: new Map()
-            };
+            lastExecutedCode = codeToRun;
 
+            // Wipe buffer for new run
+            buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
+            hasPendingUpdates = false;
+
+            // Use requestAnimationFrame for smooth, flicker-free UI updates
             const flushBuffer = () => {
-                set({
-                    executionResults: new Map(updateBuffer.results),
-                    executionCoverage: new Set(updateBuffer.coverage),
-                    executionErrors: new Map(updateBuffer.errors)
-                });
-                bufferTimeout = null;
+                if (hasPendingUpdates) {
+                    set({
+                        executionResults: new Map(buffer.results),
+                        executionCoverage: new Set(buffer.coverage),
+                        executionErrors: new Map(buffer.errors)
+                    });
+                    hasPendingUpdates = false;
+                }
+                rafId = null;
             };
 
-            const scheduleFlush = () => {
-                if (!bufferTimeout) {
-                    bufferTimeout = setTimeout(flushBuffer, 50); // Batch updates every 50ms
+            const scheduleUpdate = () => {
+                hasPendingUpdates = true;
+                if (!rafId) {
+                    rafId = requestAnimationFrame(flushBuffer);
                 }
             };
 
             if (!listenersInitialized) {
                 window.electron.onExecutionLog((data) => {
-                    if ('level' in data && data.level === 'data') {
+                    if (data.level === 'data') {
                         const canvasData = data as { args: [string, unknown] };
                         if (canvasData.args?.[0] === 'canvasData') {
                             set({ runtimeValues: { canvasData: canvasData.args[1] } });
@@ -118,34 +120,31 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                         return;
                     }
 
-                    if ('type' in data) {
-                        if (data.type === 'execution:value') {
-                            const { line, value, valueType } = data;
-                            const lineNum = Number(line);
-                            const targetLine = lineNum === 0 ? 0 : lineNum;
+                    if (data.type === 'execution:value') {
+                        const { line, value, valueType } = data;
+                        const lineNum = Number(line);
+                        const existing = buffer.results.get(lineNum) ?? [];
 
-                            const existing = updateBuffer.results.get(targetLine) ?? [];
+                        // Prevent infinite duplication in buffer
+                        if (existing.length < 50) {
                             existing.push({ value, type: valueType ?? 'spy' });
-                            updateBuffer.results.set(targetLine, existing);
-                            scheduleFlush();
-                        } else if (data.type === 'execution:coverage') {
-                            const { line } = data;
-                            updateBuffer.coverage.add(Number(line));
-                            scheduleFlush();
-                        } else if (data.type === 'execution:log') {
-                            const args = data.args ?? [];
-                            const msg = args.map((a: unknown) =>
-                                (typeof a === 'object' && a !== null) ? JSON.stringify(a) : String(a)
-                            ).join(' ');
-                            // eslint-disable-next-line no-console
-                            console.log(`[Backend ${data.level ?? 'log'}] ${msg}`);
+                            buffer.results.set(lineNum, existing);
+                            scheduleUpdate();
                         }
+                    } else if (data.type === 'execution:coverage') {
+                        buffer.coverage.add(Number(data.line));
+                        scheduleUpdate();
+                    } else if (data.type === 'execution:log') {
+                        // Consoles logs are handled separately for stability
+                        // eslint-disable-next-line no-console
+                        console.log(`[JS-BLOCK]`, ... (data.args || []));
                     }
                 });
+
                 window.electron.onExecutionError((err) => {
                     if (typeof err === 'object' && err !== null) {
-                        updateBuffer.errors.set(err.line, err.message);
-                        scheduleFlush();
+                        buffer.errors.set(err.line, err.message);
+                        scheduleUpdate();
                     }
                 });
                 listenersInitialized = true;
