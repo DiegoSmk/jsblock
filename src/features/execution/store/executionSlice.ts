@@ -30,6 +30,9 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
 
     setLivePreviewEnabled: (enabled: boolean) => {
         set({ livePreviewEnabled: enabled });
+        if (enabled) {
+            get().runExecution();
+        }
     },
 
     runExecutionDebounced: (customCode?: string, customPath?: string) => {
@@ -48,6 +51,15 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         // Force execution if it's NOT a custom (internal/typing) trigger, 
         // OR if live preview is explicitly enabled.
         const shouldExecute = (customCode === undefined) || livePreviewEnabled;
+
+        if (!codeToRun || codeToRun.trim() === '') {
+            set({
+                executionResults: new Map(),
+                executionErrors: new Map(),
+                executionCoverage: new Set()
+            });
+            return;
+        }
 
         // Clear previous results on new run
         set({
