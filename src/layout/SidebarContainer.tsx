@@ -1,0 +1,203 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useStore } from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
+import {
+    History as HistoryIcon,
+    Network,
+    Info,
+    Files,
+    RefreshCw,
+    StickyNote
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+
+// Components
+import { SidebarPanel } from '../components/ui/SidebarPanel';
+import { FileExplorer } from '../features/explorer/FileExplorer';
+import { FunctionLibrary } from '../features/editor/components/FunctionLibrary';
+import { ExtensionsView } from '../features/extensions/ExtensionsView';
+import { CommitHistory } from '../features/git/components/CommitHistory';
+import { GitGraphView } from '../features/git/components/GitGraphView';
+import { GitInfoPanel } from '../features/git/components/GitInfoPanel';
+import { NotesLibrary } from '../features/editor/components/NotesLibrary';
+
+export const SidebarContainer: React.FC = () => {
+    const { t } = useTranslation();
+    const {
+        layout,
+        activeSidebarTab,
+        git,
+        theme,
+        setSidebarWidth,
+        refreshGit,
+        isBlockFile
+    } = useStore(useShallow(state => ({
+        layout: state.layout,
+        activeSidebarTab: state.activeSidebarTab,
+        git: state.git,
+        theme: state.theme,
+        setSidebarWidth: state.setSidebarWidth,
+        refreshGit: state.refreshGit,
+        isBlockFile: state.isBlockFile
+    })));
+
+    const isDark = theme === 'dark';
+    const sidebarRef = useRef<HTMLDivElement>(null);
+    const [isResizing, setIsResizing] = useState(false);
+
+    // Sash Drag Logic
+    const startResizing = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    }, []);
+
+    useEffect(() => {
+        if (!isResizing) return;
+
+        let animationFrameId: number;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            animationFrameId = requestAnimationFrame(() => {
+                if (sidebarRef.current) {
+                    const rect = sidebarRef.current.getBoundingClientRect();
+                    const newWidth = Math.round(e.clientX - rect.left);
+                    setSidebarWidth(newWidth);
+                }
+            });
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        // Add a class to body to force cursor everywhere
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing, setSidebarWidth]);
+
+    if (!layout.sidebar.isVisible) return null;
+
+    // Render Logic based on active tab
+    const renderContent = () => {
+        switch (activeSidebarTab) {
+            case 'explorer':
+                return (
+                    <SidebarPanel
+                        isDark={isDark}
+                        title={t('app.explorer')}
+                        icon={Files}
+                    >
+                        <FileExplorer />
+                    </SidebarPanel>
+                );
+            case 'library':
+                return (
+                    <SidebarPanel
+                        isDark={isDark}
+                        title={isBlockFile ? t('app.notes_library') : t('app.function_library')}
+                        icon={isBlockFile ? StickyNote : Network}
+                    >
+                        {isBlockFile ? (
+                            <NotesLibrary />
+                        ) : (
+                            <FunctionLibrary />
+                        )}
+                    </SidebarPanel>
+                );
+            case 'git':
+                return (
+                    <SidebarPanel
+                        isDark={isDark}
+                        title={
+                            git.sidebarView === 'graph' ? t('git.graph.title')
+                                : git.sidebarView === 'info' ? t('git.info.title')
+                                    : t('git.status.history_list')
+                        }
+                        icon={
+                            git.sidebarView === 'graph' ? Network
+                                : git.sidebarView === 'info' ? Info
+                                    : HistoryIcon
+                        }
+                        headerActions={
+                            <button
+                                onClick={(e) => { e.stopPropagation(); void refreshGit(); }}
+                                title={t('git.common.refresh')}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: '4px',
+                                    cursor: 'pointer',
+                                    color: isDark ? '#888' : '#777',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    borderRadius: '4px'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <RefreshCw size={14} />
+                            </button>
+                        }
+                    >
+                        {git.sidebarView === 'graph' ? <GitGraphView hideHeader />
+                            : git.sidebarView === 'info' ? <GitInfoPanel isDark={isDark} logs={git.log} hideHeader />
+                                : <CommitHistory isDark={isDark} logs={git.log} isOpen={true} hideHeader />}
+                    </SidebarPanel>
+                );
+            case 'extensions':
+                return <ExtensionsView />;
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div
+            ref={sidebarRef}
+            style={{
+                width: layout.sidebar.width,
+                height: '100%',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                flexShrink: 0,
+                backgroundColor: isDark ? '#121212' : '#fafafa', // Match previous design
+                borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,
+            }}
+        >
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {renderContent()}
+            </div>
+
+            {/* Sash */}
+            <div
+                onMouseDown={startResizing}
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: -2, // Overlap border slightly
+                    width: '4px',
+                    height: '100%',
+                    cursor: 'col-resize',
+                    zIndex: 100,
+                    backgroundColor: isResizing ? (isDark ? '#007fd4' : '#007fd4') : 'transparent',
+                    transition: 'background-color 0.1s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isResizing ? (isDark ? '#007fd4' : '#007fd4') : (isDark ? '#007fd4' : '#007fd4')}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isResizing ? (isDark ? '#007fd4' : '#007fd4') : 'transparent'}
+            />
+        </div>
+    );
+};

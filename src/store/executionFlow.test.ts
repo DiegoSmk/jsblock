@@ -64,7 +64,7 @@ describe('Quokka-like Execution Flow', () => {
 
         const results = useStore.getState().executionResults;
         expect(results.has(1)).toBe(true);
-        expect(results.get(1)).toEqual(['10']);
+        expect(results.get(1)).toEqual([{ value: '10', type: 'spy' }]);
     });
 
     it('should update executionErrors when receiving execution:error messages', () => {
@@ -93,7 +93,7 @@ describe('Quokka-like Execution Flow', () => {
         logCallback({ type: 'execution:value', line: 2, value: '1' });
 
         const results = useStore.getState().executionResults;
-        expect(results.get(2)).toEqual(['0', '1']);
+        expect(results.get(2)).toEqual([{ value: '0', type: 'spy' }, { value: '1', type: 'spy' }]);
     });
 
     it('should clear previous results on new execution', () => {
@@ -101,7 +101,7 @@ describe('Quokka-like Execution Flow', () => {
 
         runExecution();
         logCallback({ type: 'execution:value', line: 1, value: 'old' });
-        expect(useStore.getState().executionResults.get(1)).toEqual(['old']);
+        expect(useStore.getState().executionResults.get(1)).toEqual([{ value: 'old', type: 'spy' }]);
 
         runExecution();
         expect(useStore.getState().executionResults.size).toBe(0);

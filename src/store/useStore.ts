@@ -30,24 +30,23 @@ const getUUID = (prefix = 'id') => {
     return `${prefix}-${uuid}`;
 };
 
-import { parseCodeToFlow } from '../logic/CodeParser';
-import { generateCodeFromFlow } from '../logic/CodeGenerator';
-import { getLayoutedElements } from '../logic/layout';
+import { parseCodeToFlow } from '../features/editor/logic/CodeParser';
+import { generateCodeFromFlow } from '../features/editor/logic/CodeGenerator';
+import { getLayoutedElements } from '../features/editor/logic/layout';
 import i18n from '../i18n/config';
-import { createGitSlice } from './slices/git/slice';
+import { createGitSlice } from '../features/git/store/slice';
+import { createExecutionSlice } from '../features/execution/store/executionSlice';
 import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
-import { validateConnection } from '../logic/connectionLogic';
+import { validateConnection } from '../features/editor/logic/connectionLogic';
 
 const initialCode = '';
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 
-let simulationInterval: ReturnType<typeof setInterval> | null = null;
-let listenersInitialized = false;
-
 export const useStore = create<AppState>((set, get, api) => ({
     ...createGitSlice(set, get, api),
+    ...createExecutionSlice(set, get, api),
 
     code: initialCode,
     nodes: [],
@@ -64,12 +63,6 @@ export const useStore = create<AppState>((set, get, api) => ({
         return 'dark' as 'dark' | 'light';
     })(),
     toasts: [],
-    runtimeValues: {},
-    executionResults: new Map(),
-    executionErrors: new Map(),
-    executionCoverage: new Set(),
-    isSimulating: false,
-    livePreviewEnabled: true,
     projectFiles: {},
     connectionCache: new Map(), // Initialize cache
     navigationStack: [{ id: 'root', label: 'Main' }],
@@ -343,85 +336,6 @@ export const useStore = create<AppState>((set, get, api) => ({
             set({ recentEnvironments: validRecents });
         }
     },
-    toggleSimulation: () => {
-        const { isSimulating } = get();
-        if (isSimulating) {
-            if (simulationInterval !== null) clearInterval(simulationInterval);
-            simulationInterval = null;
-            set({ isSimulating: false });
-        } else {
-            set({ isSimulating: true });
-            simulationInterval = setInterval(() => {
-                get().runExecution();
-            }, 100);
-        }
-    },
-    runExecution: () => {
-        const { code, selectedFile } = get();
-
-        // Clear previous results on new run
-        set({
-            executionResults: new Map(),
-            executionErrors: new Map(),
-            executionCoverage: new Set()
-        });
-
-        if (window.electronAPI) {
-            if (!listenersInitialized) {
-                window.electronAPI.onExecutionLog((data) => {
-                    // Check for Canvas Data (discriminated by 'level' and absence of 'type' in definition, but existence in runtime)
-                    if ('level' in data && data.level === 'data') {
-                        // Narrowing to CanvasDataPayload
-                        const canvasData = data as { args: [string, unknown] };
-                        if (canvasData.args?.[0] === 'canvasData') {
-                            set({ runtimeValues: { canvasData: canvasData.args[1] } });
-                        }
-                        return;
-                    }
-
-                    // Handle types that look like standard execution messages
-                    if ('type' in data) {
-                        if (data.type === 'execution:value') {
-                            const { line, value, valueType } = data;
-                            const lineNum = Number(line);
-                            const targetLine = lineNum === 0 ? 0 : lineNum; // 0 for floating logs
-
-                            const currentMap = new Map(get().executionResults);
-                            const existing = currentMap.get(targetLine) ?? [];
-                            existing.push({ value, type: valueType ?? 'spy' });
-                            currentMap.set(targetLine, existing);
-                            set({ executionResults: currentMap });
-                        } else if (data.type === 'execution:coverage') {
-                            const { line } = data;
-                            const lineNum = Number(line);
-                            const currentCoverage = new Set(get().executionCoverage);
-                            currentCoverage.add(lineNum);
-                            set({ executionCoverage: currentCoverage });
-                        } else if (data.type === 'execution:log') {
-                            const args = data.args ?? [];
-                            const msg = args.map((a: unknown) =>
-                                (typeof a === 'object' && a !== null) ? JSON.stringify(a) : String(a)
-                            ).join(' ');
-                            const level = data.level ?? 'log';
-                            // eslint-disable-next-line no-console
-                            console.log(`[Backend ${level}] ${msg}`);
-                        }
-                    }
-                });
-                window.electronAPI.onExecutionError((err) => {
-                    if (typeof err === 'object' && err !== null) {
-                        const currentMap = new Map(get().executionErrors);
-                        currentMap.set(err.line, err.message);
-                        set({ executionErrors: currentMap });
-                    } else {
-                        console.error(`[Backend Error] ${typeof err === 'object' ? JSON.stringify(err) : String(err)}`);
-                    }
-                });
-                listenersInitialized = true;
-            }
-            window.electronAPI.executionStart(code, selectedFile ?? undefined);
-        }
-    },
     addCanvasNode: () => {
         const { nodes, activeScopeId } = get();
         const newNode: AppNode = {
@@ -471,9 +385,6 @@ export const useStore = create<AppState>((set, get, api) => ({
         onSubmit: () => { /* no-op */ }
     },
 
-    setLivePreviewEnabled: (enabled: boolean) => {
-        set({ livePreviewEnabled: enabled });
-    },
 
     setCode: (code: string, shouldSetDirty = true) => {
         const { nodes, edges } = parseCodeToFlow(code);
