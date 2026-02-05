@@ -458,6 +458,17 @@ body {
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23f44336" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>');
 }
 
+/* Monaco caret: clean & professional */
+.monaco-editor .cursors-layer>.cursor {
+    background-color: #4fc3f7 !important;
+    width: 3px !important;
+    border-radius: 2px !important;
+}
+
+[data-theme='light'] .monaco-editor .cursors-layer>.cursor {
+    background-color: #0070f3 !important;
+}
+
 /* Suggestion variant (Yellow/Gold) */
 .execution-decoration-suggestion {
     cursor: pointer !important;
@@ -466,17 +477,18 @@ body {
 
 .execution-decoration-suggestion::after {
     font-weight: bold;
-    color: #ffd700 !important; /* Gold/Yellow */
-    background-color: rgba(255, 215, 0, 0.15);
-    border: 1px solid rgba(255, 215, 0, 0.4);
-    /* Lightbulb Icon (Yellow) */
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23ffd700" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>');
+    color: #d4af37 !important;
+    /* Less vibrant Gold */
+    background-color: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    /* Lightbulb Icon (Gold) */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23d4af37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>');
     transition: all 0.2s ease;
 }
 
 .execution-decoration-suggestion:hover::after {
-    background-color: rgba(255, 215, 0, 0.25);
-    border-color: #ffd700;
+    background-color: rgba(212, 175, 55, 0.25);
+    border-color: #d4af37;
     transform: scale(1.05);
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
 }

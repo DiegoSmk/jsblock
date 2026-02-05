@@ -433,7 +433,9 @@ function App() {
                                 automaticLayout: true,
                                 glyphMargin: true,
                                 lineDecorationsWidth: 10,
-                                scrollBeyondLastColumn: 50 // Allow space for inline values
+                                scrollBeyondLastColumn: 50, // Allow space for inline values
+                                cursorStyle: 'line',
+                                cursorBlinking: 'smooth'
                               }}
                             />
                           )}

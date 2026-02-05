@@ -5,6 +5,15 @@ import { app, BrowserWindow } from 'electron';
 import { Instrumenter } from './Instrumenter';
 import { transform, Message } from 'esbuild';
 
+interface RunnerMessage {
+    type: string;
+    line?: number;
+    value?: string;
+    valueType?: 'spy' | 'log';
+    message?: string;
+    column?: number;
+}
+
 export interface ExecutionError {
     message: string;
     line: number;
@@ -22,6 +31,62 @@ export class ExecutionManager {
 
     setMainWindow(window: BrowserWindow) {
         this.mainWindow = window;
+    }
+
+    private enhanceErrorWithSuggestion(code: string, errorData: ExecutionError): ExecutionError {
+        const lines = code.split('\n');
+        const lineIdx = (errorData.line || 1) - 1;
+        const codeLine = lines[lineIdx] ?? '';
+
+        // --- UNIVERSAL TYPO DETECTOR ---
+        const keywords = [
+            // Variable Declarations
+            { typo: /\bcont\b/, correct: 'const' },
+
+            // Functions & Flow Control
+            { typo: /\bfunctio\b|\bfuntion\b|\bfunc\b/, correct: 'function' },
+            { typo: /\bretun\b|\bretunr\b/, correct: 'return' },
+            { typo: /\bswich\b|\bswtch\b/, correct: 'switch' },
+            { typo: /\bcsoe\b|\bcaes\b/, correct: 'case' },
+            { typo: /\bbraek\b|\bbreek\b/, correct: 'break' },
+            { typo: /\bwihle\b|\bwhie\b/, correct: 'while' },
+            { typo: /\bdefualt\b/, correct: 'default' },
+            { typo: /\bcacth\b/, correct: 'catch' },
+            { typo: /\bfinalyl\b|\bfinaly\b/, correct: 'finally' },
+            { typo: /\bthow\b|\btrhow\b/, correct: 'throw' },
+
+            // Async/Await
+            { typo: /\basyn\b|\basny\b/, correct: 'async' },
+            { typo: /\bawiat\b|\bauait\b/, correct: 'await' },
+
+            // Modules
+            { typo: /\bimpor\b|\bimportt\b/, correct: 'import' },
+            { typo: /\bexpor\b/, correct: 'export' },
+
+            // OO & Types
+            { typo: /\bclas\b|\bcalss\b|\bclss\b/, correct: 'class' },
+            { typo: /\biterface\b|\binterfce\b|\binteface\b/, correct: 'interface' },
+            { typo: /\btypeoff\b|\btypeo\b|\btypof\b/, correct: 'typeof' },
+            { typo: /\bintanceof\b|\binstancof\b/, correct: 'instanceof' },
+
+            // Globals & Primitives
+            { typo: /\bconsoel\b|\bconsol\b|\bcnsole\b/, correct: 'console' },
+            { typo: /\blenght\b|\blengh\b/, correct: 'length' },
+            { typo: /\bundefind\b|\bundifined\b/, correct: 'undefined' },
+            { typo: /\bdebuger\b/, correct: 'debugger' }
+        ];
+
+        for (const item of keywords) {
+            if (item.typo.test(codeLine)) {
+                errorData.message = `Syntax Error: Did you mean '${item.correct}'?`;
+                errorData.suggestion = {
+                    text: `Change to ${item.correct}`,
+                    replace: codeLine.replace(item.typo, item.correct)
+                };
+                break;
+            }
+        }
+        return errorData;
     }
 
     async startExecution(code: string, originalPath?: string) {
@@ -52,13 +117,13 @@ export class ExecutionManager {
                 target: 'node18'
             });
             instrumentedCode = result.code;
-        } catch (e: any) {
+        } catch (e: unknown) {
             if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-                const error = (e.errors as Message[])?.[0];
-                const originalMessage = error?.text ?? e.message ?? 'Transpilation failed';
-                let message = originalMessage;
+                const err = e as { errors?: Message[]; message?: string };
+                const error = err.errors?.[0];
+                const originalMessage = error?.text ?? err.message ?? 'Transpilation failed';
                 const errorData: ExecutionError = {
-                    message,
+                    message: originalMessage,
                     line: error?.location?.line ?? 0,
                     column: error?.location?.column ?? 0
                 };
@@ -67,12 +132,9 @@ export class ExecutionManager {
                 const lineIdx = (error?.location?.line ?? 1) - 1;
                 const codeLine = lines[lineIdx] ?? '';
 
-                // --- UNIVERSAL TYPO DETECTOR ---
+                // --- UNIVERSAL TYPO DETECTOR (Inline for transpilation error) ---
                 const keywords = [
-                    // Variable Declarations
                     { typo: /\bcont\b/, correct: 'const' },
-
-                    // Functions & Flow Control
                     { typo: /\bfunctio\b|\bfuntion\b|\bfunc\b/, correct: 'function' },
                     { typo: /\bretun\b|\bretunr\b/, correct: 'return' },
                     { typo: /\bswich\b|\bswtch\b/, correct: 'switch' },
@@ -81,28 +143,8 @@ export class ExecutionManager {
                     { typo: /\bwihle\b|\bwhie\b/, correct: 'while' },
                     { typo: /\bdefualt\b/, correct: 'default' },
                     { typo: /\bcacth\b/, correct: 'catch' },
-                    { typo: /\bfinalyl\b|\bfinaly\b/, correct: 'finally' },
-                    { typo: /\bthow\b|\btrhow\b/, correct: 'throw' },
-
-                    // Async/Await
                     { typo: /\basyn\b|\basny\b/, correct: 'async' },
-                    { typo: /\bawiat\b|\bauait\b/, correct: 'await' },
-
-                    // Modules
-                    { typo: /\bimpor\b|\bimportt\b/, correct: 'import' },
-                    { typo: /\bexpor\b/, correct: 'export' },
-
-                    // OO & Types
-                    { typo: /\bclas\b|\bcalss\b|\bclss\b/, correct: 'class' },
-                    { typo: /\biterface\b|\binterfce\b|\binteface\b/, correct: 'interface' },
-                    { typo: /\btypeoff\b|\btypeo\b|\btypof\b/, correct: 'typeof' },
-                    { typo: /\bintanceof\b|\binstancof\b/, correct: 'instanceof' },
-
-                    // Globals & Primitives
-                    { typo: /\bconsoel\b|\bconsol\b|\bcnsole\b/, correct: 'console' },
-                    { typo: /\blenght\b|\blengh\b/, correct: 'length' },
-                    { typo: /\bundefind\b|\bundifined\b/, correct: 'undefined' },
-                    { typo: /\bdebuger\b/, correct: 'debugger' }
+                    { typo: /\bawiat\b|\bauait\b/, correct: 'await' }
                 ];
 
                 for (const item of keywords) {
@@ -112,7 +154,7 @@ export class ExecutionManager {
                             text: `Change to ${item.correct}`,
                             replace: codeLine.replace(item.typo, item.correct)
                         };
-                        break; // Capture only the first match per line
+                        break;
                     }
                 }
 
@@ -151,12 +193,18 @@ export class ExecutionManager {
                 }
             }, 5000);
 
-            this.runnerProcess.on('message', (msg: any) => {
+            this.runnerProcess.on('message', (msg: RunnerMessage) => {
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     if (msg.type === 'execution:log' || msg.type === 'execution:value' || msg.type === 'execution:coverage') {
                         this.mainWindow.webContents.send('execution:log', msg);
                     } else if (msg.type === 'execution:error') {
-                        this.mainWindow.webContents.send('execution:error', msg);
+                        const errorData: ExecutionError = {
+                            message: msg.message ?? 'Unknown error',
+                            line: msg.line ?? 1,
+                            column: msg.column ?? 1
+                        };
+                        const enhancedError = this.enhanceErrorWithSuggestion(code, errorData);
+                        this.mainWindow.webContents.send('execution:error', enhancedError);
                     } else if (msg.type === 'execution:done') {
                         this.stopCleanup();
                     }

@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import type { ExecutionPayload, ExecutionError } from './types';
 
 contextBridge.exposeInMainWorld('electron', {
     // Dialogs & Window
@@ -51,15 +52,25 @@ contextBridge.exposeInMainWorld('electron', {
     // Execution
     executionStart: (code: string, filePath?: string) => ipcRenderer.send('execution:start', code, filePath),
     executionStop: () => ipcRenderer.send('execution:stop'),
-    onExecutionLog: (callback: (data: { type: string, level: string, args: unknown[] }) => void) => {
-        const subscription = (_event: unknown, data: { type: string, level: string, args: unknown[] }) => callback(data);
+    onExecutionLog: (callback: (data: ExecutionPayload) => void) => {
+        const subscription = (_event: unknown, data: ExecutionPayload) => callback(data);
         ipcRenderer.on('execution:log', subscription);
         return () => ipcRenderer.removeListener('execution:log', subscription);
     },
-    onExecutionError: (callback: (error: string) => void) => {
-        const subscription = (_event: unknown, error: string) => callback(error);
+    onExecutionError: (callback: (error: ExecutionError | string) => void) => {
+        const subscription = (_event: unknown, error: ExecutionError | string) => callback(error);
         ipcRenderer.on('execution:error', subscription);
         return () => ipcRenderer.removeListener('execution:error', subscription);
+    },
+    onExecutionClear: (callback: () => void) => {
+        const subscription = () => callback();
+        ipcRenderer.on('execution:clear', subscription);
+        return () => ipcRenderer.removeListener('execution:clear', subscription);
+    },
+    onExecutionStarted: (callback: () => void) => {
+        const subscription = () => callback();
+        ipcRenderer.on('execution:started', subscription);
+        return () => ipcRenderer.removeListener('execution:started', subscription);
     },
     // MCP Sync
     mcpSyncState: (state: unknown) => ipcRenderer.send('mcp:sync-state', state)

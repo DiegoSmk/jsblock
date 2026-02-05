@@ -1,0 +1,16 @@
+export type ExecutionPayload =
+    | { type: 'execution:log'; level: string; args: unknown[] }
+    | { type: 'execution:value'; line: number; value: string; valueType?: 'spy' | 'log' }
+    | { type: 'execution:coverage'; line: number }
+    | { type: 'execution:started' }
+    | { level: 'data'; args: ['canvasData', unknown] };
+
+export interface ExecutionError {
+    message: string;
+    line: number;
+    column?: number;
+    suggestion?: {
+        text: string;
+        replace: string;
+    };
+}

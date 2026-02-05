@@ -1,9 +1,21 @@
 // Electron API types
+// Electron API types
 export type ExecutionPayload =
   | { type: 'execution:log'; level: string; args: unknown[] }
   | { type: 'execution:value'; line: number; value: string; valueType?: 'spy' | 'log' }
   | { type: 'execution:coverage'; line: number }
+  | { type: 'execution:started' }
   | { level: 'data'; args: ['canvasData', unknown] };
+
+export interface ExecutionError {
+  message: string;
+  line: number;
+  column?: number;
+  suggestion?: {
+    text: string;
+    replace: string;
+  };
+}
 
 export interface ElectronAPI {
   // Dialogs & Window
@@ -51,7 +63,9 @@ export interface ElectronAPI {
   executionStart: (code: string, filePath?: string) => void;
   executionStop: () => void;
   onExecutionLog: (callback: (data: ExecutionPayload) => void) => () => void;
-  onExecutionError: (callback: (error: string | { line: number; message: string; column?: number; suggestion?: { text: string; replace: string } }) => void) => () => void;
+  onExecutionError: (callback: (error: ExecutionError | string) => void) => () => void;
+  onExecutionClear: (callback: () => void) => () => void;
+  onExecutionStarted: (callback: () => void) => () => void;
   mcpSyncState: (state: unknown) => void;
 }
 

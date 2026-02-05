@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useMonaco } from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
 import { useStore } from '../../../store/useStore';
@@ -22,32 +22,33 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
 
     const monaco = useMonaco();
     const [cursorLine, setCursorLine] = useState<number>(-1);
+    const decorationIdsRef = useRef<string[]>([]);
 
     // 1. Quick Fix Logic (Shortcut & Click)
-    const applyFix = (line: number, error: ExecutionError) => {
-        if (!editorInstance || !error.suggestion) return;
+    const applyFix = useCallback((line: number, error: ExecutionError) => {
+        if (!editorInstance || !monaco || !error.suggestion) return;
         const model = editorInstance.getModel();
         if (!model) return;
 
         editorInstance.executeEdits('execution-fix', [
             {
-                range: new monaco!.Range(line, 1, line, model.getLineMaxColumn(line)),
+                range: new monaco.Range(line, 1, line, model.getLineMaxColumn(line)),
                 text: error.suggestion.replace
             }
         ]);
         editorInstance.focus();
-    };
+    }, [editorInstance, monaco]);
 
     useEffect(() => {
         if (!monaco || !editorInstance) return;
 
         // Command for CTRL+ENTER Fix
-        const commandId = editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+        editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
             const selection = editorInstance.getSelection();
             if (!selection) return;
             const line = selection.startLineNumber;
             const error = executionErrors.get(line);
-            if (error && error.suggestion) {
+            if (error?.suggestion) {
                 applyFix(line, error);
             }
         });
@@ -58,7 +59,7 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
                 const line = e.target.range?.startLineNumber;
                 if (line) {
                     const error = executionErrors.get(line);
-                    if (error && error.suggestion) {
+                    if (error?.suggestion) {
                         applyFix(line, error);
                     }
                 }
@@ -70,10 +71,10 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
             provideCodeActions: (model, range) => {
                 const line = range.startLineNumber;
                 const error = executionErrors.get(line);
-                if (error && error.suggestion) {
+                if (error?.suggestion) {
                     return {
                         actions: [{
-                            title: `✨ ${error.suggestion.text}`,
+                            title: error.suggestion.text,
                             kind: 'quickfix',
                             diagnostics: [],
                             edit: {
@@ -88,10 +89,10 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
                             },
                             isPreferred: true
                         }],
-                        dispose: () => { }
+                        dispose: () => { /* no-op */ }
                     };
                 }
-                return { actions: [], dispose: () => { } };
+                return { actions: [], dispose: () => { /* no-op */ } };
             }
         });
 
@@ -99,7 +100,7 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
             mouseDownListener.dispose();
             provider.dispose();
         };
-    }, [monaco, editorInstance, executionErrors]);
+    }, [monaco, editorInstance, executionErrors, applyFix]);
 
     // 2. Decorations and Cursor Isolation
     useEffect(() => {
@@ -113,7 +114,7 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
         if (!model) return;
 
         if (!livePreviewEnabled) {
-            (editorInstance as any)._executionDecorations = editorInstance.deltaDecorations((editorInstance as any)._executionDecorations || [], []);
+            decorationIdsRef.current = editorInstance.deltaDecorations(decorationIdsRef.current, []);
             return;
         }
 
@@ -161,7 +162,7 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
                     const err = entry as ExecutionError;
                     text = processText(err.message);
                     if (err.suggestion) {
-                        text = `✨ SUGGESTION: ${err.suggestion.text} (CTRL + ENTER to apply) | ${text}`;
+                        text = `SUGGESTION: ${err.suggestion.text} (CTRL + ENTER to apply) | ${text}`;
                         hasSuggestion = true;
                     }
                 }
@@ -200,7 +201,7 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
         }
         styleEl.textContent = dynamicCss;
 
-        (editorInstance as any)._executionDecorations = editorInstance.deltaDecorations((editorInstance as any)._executionDecorations || [], decorations);
+        decorationIdsRef.current = editorInstance.deltaDecorations(decorationIdsRef.current, decorations);
 
         return () => {
             disposable.dispose();

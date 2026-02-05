@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { AppState } from '../../../types/store';
 import type { ExecutionSlice, ExecutionError } from '../types';
+import type { ExecutionPayload } from '../../../types/electron';
 
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -100,49 +101,39 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
 
             const scheduleUpdate = () => {
                 hasPendingUpdates = true;
-                if (!rafId) {
-                    rafId = requestAnimationFrame(flushBuffer);
-                }
+                rafId ??= requestAnimationFrame(flushBuffer);
             };
 
             // Fast safety flush for silent code (400ms)
             setTimeout(() => {
                 if (buffer.results.size === 0 && buffer.errors.size === 0) {
-                    set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set() });
+                    set({ executionResults: new Map(), executionCoverage: new Set(), executionErrors: new Map() });
                 }
             }, 400);
 
             if (!listenersInitialized) {
                 // Main thread messages
-                window.electron.onExecutionLog((data: any) => {
-                    // Success signal from backend (Transpilation passed)
-                    if (data === 'execution:started' || data?.type === 'execution:started') {
-                        set({ executionErrors: new Map() });
-                        return;
-                    }
-
-                    if (data.level === 'data') {
-                        interface DataMsg { args: [string, unknown] }
-                        const canvasData = data as DataMsg;
-                        if (canvasData.args?.[0] === 'canvasData') {
-                            set({ runtimeValues: { canvasData: canvasData.args[1] } });
+                window.electron.onExecutionLog((data: ExecutionPayload) => {
+                    if ('level' in data && data.level === 'data') {
+                        if ('args' in data && data.args?.[0] === 'canvasData') {
+                            set({ runtimeValues: { canvasData: data.args[1] } });
                         }
                         return;
                     }
 
-                    if (data.type === 'execution:value') {
-                        interface ValueMsg { line: number; value: string; valueType?: 'spy' | 'log' }
-                        const vData = data as ValueMsg;
-                        const lineNum = Number(vData.line);
-                        const existing = buffer.results.get(lineNum) ?? [];
-                        if (existing.length < 50) {
-                            existing.push({ value: vData.value, type: vData.valueType ?? 'spy' });
-                            buffer.results.set(lineNum, existing);
+                    if ('type' in data) {
+                        if (data.type === 'execution:value') {
+                            const lineNum = Number(data.line);
+                            const existing = buffer.results.get(lineNum) ?? [];
+                            if (existing.length < 50) {
+                                existing.push({ value: data.value, type: data.valueType ?? 'spy' });
+                                buffer.results.set(lineNum, existing);
+                                scheduleUpdate();
+                            }
+                        } else if (data.type === 'execution:coverage') {
+                            buffer.coverage.add(Number(data.line));
                             scheduleUpdate();
                         }
-                    } else if (data.type === 'execution:coverage') {
-                        buffer.coverage.add(Number(data.line));
-                        scheduleUpdate();
                     }
                 });
 
@@ -156,6 +147,19 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                         scheduleUpdate();
                     }
                 });
+
+                window.electron.onExecutionStarted(() => {
+                    set({ executionErrors: new Map() });
+                });
+
+                window.electron.onExecutionClear(() => {
+                    set({
+                        executionResults: new Map(),
+                        executionErrors: new Map(),
+                        executionCoverage: new Set()
+                    });
+                });
+
                 listenersInitialized = true;
             }
             window.electron.executionStart(codeToRun, pathToRun ?? undefined);
