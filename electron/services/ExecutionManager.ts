@@ -3,22 +3,28 @@ import path from 'path';
 import fs from 'fs';
 import { app, BrowserWindow } from 'electron';
 import { Instrumenter } from './Instrumenter';
+import { transform } from 'esbuild';
 
 export class ExecutionManager {
     private runnerProcess: ChildProcess | null = null;
     private mainWindow: BrowserWindow | null = null;
+    private executionTimeout: NodeJS.Timeout | null = null;
 
     setMainWindow(window: BrowserWindow) {
         this.mainWindow = window;
     }
 
     async startExecution(code: string, originalPath?: string) {
+        // 1. FORCE KILL previous process to prevent infinite loops
+        this.stopExecution();
+
         let filePath: string;
 
         if (originalPath) {
             const tempDir = path.dirname(originalPath);
             const fileName = path.basename(originalPath);
-            filePath = path.join(tempDir, `.exec.${fileName}`);
+            // Always use .js extension for the execution file to avoid loader issues
+            filePath = path.join(tempDir, `.exec.${fileName.replace(/\.(ts|tsx|js|jsx)$/, '')}.js`);
         } else {
             // Write code to temp file
             const userDataPath = app.getPath('userData');
@@ -28,42 +34,34 @@ export class ExecutionManager {
                 await fs.promises.mkdir(tempDir, { recursive: true });
             }
 
-            filePath = path.join(tempDir, 'user_script.ts');
+            filePath = path.join(tempDir, 'user_script.js');
         }
 
         // Instrument code before writing
-        const instrumentedCode = Instrumenter.instrumentCode(code);
-        if (instrumentedCode === code) {
-            console.warn('[DEBUG] Instrumentation returned original code (possibly failed)');
-        } else {
-            console.log('[DEBUG] Instrumentation successful. Snippet:', instrumentedCode.substring(0, 500));
+        let instrumentedCode = Instrumenter.instrumentCode(code);
+
+        // Transpile to JS using esbuild
+        try {
+            const result = await transform(instrumentedCode, {
+                loader: 'tsx',
+                format: 'cjs',
+                target: 'node18'
+            });
+            instrumentedCode = result.code;
+        } catch (e: unknown) {
+            const err = e as Error;
+            console.error('[ExecutionManager] Transpilation failed:', err);
+            if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+                this.mainWindow.webContents.send('execution:error', `Transpilation failed: ${err.message}`);
+            }
+            return;
         }
+
         await fs.promises.writeFile(filePath, instrumentedCode, 'utf-8');
 
-        // Reuse process if alive and connected
-        if (this.runnerProcess && !this.runnerProcess.killed && this.runnerProcess.connected) {
-            try {
-                this.runnerProcess.send({
-                    type: 'execution:start',
-                    filePath
-                });
-                return;
-            } catch (err) {
-                console.warn('Failed to send to existing runner, restarting...', err);
-                this.stopExecution();
-            }
-        }
-
         // Resolve runner path
-        // In dev (electron .), __dirname might be 'electron' or 'dist/electron' depending on how it's launched.
-        // But usually we run from 'dist/electron' after tsc.
         let runnerPath = path.join(__dirname, '../runners/runner.js');
-
-        // Check if file exists, if not try to resolve relative to source if we are in dev and it wasn't copied
         if (!fs.existsSync(runnerPath)) {
-            // Fallback: assume we are in project root/electron/services and want ../runners/runner.js
-            // But __dirname is where this file is compiled to.
-            // Let's log it if it fails.
             console.warn(`Runner not found at ${runnerPath}, trying development path...`);
             runnerPath = path.resolve(process.cwd(), 'electron/runners/runner.js');
         }
@@ -81,14 +79,26 @@ export class ExecutionManager {
                 stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
                 env: {
                     ...process.env,
-                    // We need to ensure the child process can find node_modules for esbuild-register
-                    // It should inherit by default.
                     ELECTRON_RUN_AS_NODE: '1'
                 }
             });
 
-            this.runnerProcess.on('message', (msg: any) => {
-                console.log('[DEBUG] Received message from runner:', msg.type, msg.line);
+            // 2. SET TIMEOUT (5 seconds failsafe)
+            this.executionTimeout = setTimeout(() => {
+                const isAlive = this.runnerProcess && !this.runnerProcess.killed;
+                if (isAlive) {
+                    console.warn('[ExecutionManager] Execution timed out (5s). Killing process.');
+                    this.stopExecution();
+                    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+                        this.mainWindow.webContents.send('execution:error', {
+                            message: 'Execution Timed Out (Infinite Loop Detected?)',
+                            line: 0
+                        });
+                    }
+                }
+            }, 5000);
+
+            this.runnerProcess.on('message', (msg: { type: string, [key: string]: unknown }) => {
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     if (msg.type === 'execution:log' || msg.type === 'execution:value' || msg.type === 'execution:coverage') {
                         this.mainWindow.webContents.send('execution:log', msg);
@@ -119,8 +129,15 @@ export class ExecutionManager {
     }
 
     stopExecution() {
+        if (this.executionTimeout) {
+            clearTimeout(this.executionTimeout);
+            this.executionTimeout = null;
+        }
+
         if (this.runnerProcess) {
-            this.runnerProcess.kill();
+            try {
+                this.runnerProcess.kill();
+            } catch { /* ignore */ }
             this.runnerProcess = null;
         }
     }

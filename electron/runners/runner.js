@@ -1,9 +1,5 @@
-const { register } = require('esbuild-register/dist/node');
-
-// Register esbuild to handle .ts files
-register({
-    target: 'node18'
-});
+// Runner script for executing instrumented code
+// The code is now pre-transpiled by esbuild in the ExecutionManager
 
 // Safe stringify to handle circular refs and basic types
 function safeStringify(obj) {
