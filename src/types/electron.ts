@@ -6,24 +6,29 @@ export type ExecutionPayload =
   | { level: 'data'; args: ['canvasData', unknown] };
 
 export interface ElectronAPI {
-  // File operations
-  openFile: () => Promise<{ filePath: string; content: string } | null>;
-  saveFile: (filePath: string, content: string) => Promise<void>;
-  saveFileAs: (content: string) => Promise<string | null>;
-  readFile: (path: string) => Promise<string>;
-  writeFile: (path: string, content: string) => Promise<void>;
-  createFile: (path: string, content?: string) => Promise<void>;
-
-  // Directory operations
-  openDirectory: () => Promise<string | null>;
+  // Dialogs & Window
   selectFolder: () => Promise<string | null>;
-  readDir: (dirPath: string) => Promise<unknown[]>;
-  createDirectory: (dirPath: string) => Promise<void>;
-  deleteFile: (filePath: string) => Promise<void>;
-  deleteDirectory: (dirPath: string) => Promise<void>;
-  checkPathExists: (path: string) => Promise<boolean>;
-  moveFile: (sourcePath: string, targetPath: string) => Promise<void>;
-  ensureProjectConfig: (path: string) => Promise<void>;
+  openSystemTerminal: (path: string) => Promise<void>;
+
+  // Window operations
+  windowMinimize: () => void;
+  windowMaximize: () => void;
+  windowClose: () => void;
+  appReady: () => void;
+
+  // File System API (Unified)
+  fileSystem: {
+    readDir: (path: string) => Promise<{ name: string; isDirectory: boolean; path: string }[]>;
+    readFile: (path: string) => Promise<string>;
+    writeFile: (path: string, content: string) => Promise<void>;
+    createFile: (path: string, content?: string) => Promise<void>;
+    createDirectory: (path: string) => Promise<boolean>;
+    delete: (path: string) => Promise<boolean>;
+    move: (source: string, target: string) => Promise<boolean>; // ensure target includes filename if needed, or update consumers
+    checkExists: (path: string) => Promise<boolean>;
+    getStats: (path: string) => Promise<{ size: number; mtime: number; isDirectory: boolean }>;
+    ensureProjectConfig: (path: string) => Promise<void>;
+  };
 
   // Git operations
   gitCommand: (dirPath: string, args: string[]) => Promise<{ stdout: string; stderr: string }>;
@@ -34,19 +39,6 @@ export interface ElectronAPI {
   terminalOnData: (callback: (data: string) => void) => () => void;
   terminalResize: (cols: number, rows: number) => void;
   terminalKill: () => void;
-  openSystemTerminal: (path: string) => Promise<void>;
-
-  // System operations
-  showItemInFolder: (filePath: string) => Promise<void>;
-  openExternal: (url: string) => Promise<void>;
-
-  // Window operations
-  windowMinimize: () => void;
-  windowMaximize: () => void;
-  windowClose: () => void;
-
-  // App lifecycle
-  appReady: () => void;
 
   // Plugins
   discoverPlugins: () => Promise<PluginManifest[]>;
@@ -61,21 +53,13 @@ export interface ElectronAPI {
   onExecutionLog: (callback: (data: ExecutionPayload) => void) => () => void;
   onExecutionError: (callback: (error: string | { line: number; message: string }) => void) => () => void;
   mcpSyncState: (state: unknown) => void;
-
-  // Environment (if needed, but not in preload.ts currently)
-  getEnvironmentInfo?: () => Promise<{
-    platform: string;
-    arch: string;
-    nodeVersion: string;
-    electronVersion: string;
-  }>;
 }
 
 import type { PluginManifest } from '../features/extensions/types';
 
 declare global {
   interface Window {
-    electronAPI: ElectronAPI;
+    electron: ElectronAPI;
   }
 }
 

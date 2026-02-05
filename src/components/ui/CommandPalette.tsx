@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Command, RefreshCw, Search, Settings, Files, GitBranch } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 
 export const CommandPalette: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);

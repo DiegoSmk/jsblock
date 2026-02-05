@@ -6,9 +6,8 @@ import { RecentEnvironments } from './RecentEnvironments';
 import { FolderContextMenu } from './FolderContextMenu';
 import 'allotment/dist/style.css';
 import { useStore } from '../../store/useStore';
-import { DESIGN_TOKENS } from '../constants/design';
-import type { ElectronAPI } from '../types/electron';
-import { PanelSection } from './git/PanelSection';
+import { DESIGN_TOKENS } from '../../constants/design';
+import { PanelSection } from '../git/components/PanelSection';
 
 interface FileEntry {
     name: string;
@@ -41,8 +40,8 @@ export const FileExplorer: React.FC = () => {
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, path: string, isDirectory: boolean } | null>(null);
 
     const loadFiles = async (dirPath: string): Promise<FileEntry[]> => {
-        if (!window.electronAPI) return [];
-        const result = (await window.electronAPI.readDir(dirPath)) as FileSystemEntry[];
+        if (!window.electron?.fileSystem) return [];
+        const result = (await window.electron.fileSystem.readDir(dirPath)) as FileSystemEntry[];
         const ignored = ['.git', '.vscode', 'node_modules', '.block'];
         return result
             .filter((file: FileSystemEntry) => !ignored.includes(file.name))
@@ -113,11 +112,11 @@ export const FileExplorer: React.FC = () => {
         const parentPath = isCreating.parentPath;
 
         try {
-            if (!window.electronAPI) return;
+            if (!window.electron?.fileSystem) return;
 
             if (isCreating.type === 'folder') {
                 const dirPath = `${parentPath}/${newName}`;
-                await window.electronAPI.createDirectory(dirPath);
+                await window.electron.fileSystem.createDirectory(dirPath);
             } else {
                 const ext = isCreating.ext ?? '';
                 const fileName = newName.endsWith(ext) ? newName : `${newName}${ext}`;
@@ -125,7 +124,7 @@ export const FileExplorer: React.FC = () => {
                 let initialContent = '';
                 if (ext === '.block') initialContent = `// JS Block - New code note\n\n`;
                 if (ext === '.md') initialContent = `# ${newName}\n\n`;
-                await window.electronAPI.createFile(filePath, initialContent);
+                await window.electron.fileSystem.createFile(filePath, initialContent);
                 void setSelectedFile(filePath);
             }
 
@@ -189,8 +188,7 @@ export const FileExplorer: React.FC = () => {
         }
 
         try {
-            const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-            if (!electronAPI) return;
+            if (!window.electron?.fileSystem) return;
 
             const fileName = sourcePath.split(/[\\/]/).pop();
             const newPath = `${targetPath}/${fileName}`;
@@ -200,12 +198,12 @@ export const FileExplorer: React.FC = () => {
                 return;
             }
 
-            if (await electronAPI.checkPathExists(newPath)) {
+            if (await window.electron.fileSystem.checkExists(newPath)) {
                 addToast({ type: 'warning', message: t('file_explorer.already_exists') ?? 'An item with this name already exists at the destination.' });
                 return;
             }
 
-            await electronAPI.moveFile(sourcePath, newPath);
+            await window.electron.fileSystem.move(sourcePath, newPath);
 
             // Refresh tree
             if (openedFolder) {
@@ -219,9 +217,8 @@ export const FileExplorer: React.FC = () => {
     };
 
     const openFolderDialog = async () => {
-        const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-        if (!electronAPI) return;
-        const path = await electronAPI.selectFolder();
+        if (!window.electron) return;
+        const path = await window.electron.selectFolder();
         if (path) {
             setOpenedFolder(path);
         }
@@ -241,7 +238,7 @@ export const FileExplorer: React.FC = () => {
                 variant: 'danger',
                 onConfirm: async () => {
                     try {
-                        if (!window.electronAPI) return;
+                        if (!window.electron?.fileSystem) return;
 
                         // Check if we are deleting the currently open file
                         const normalize = (p: string) => p.replace(/\\/g, '/');
@@ -253,9 +250,9 @@ export const FileExplorer: React.FC = () => {
                             (normalizedSelected === normalizedContext || normalizedSelected.startsWith(normalizedContext + '/'));
 
                         if (contextMenu.isDirectory) {
-                            await window.electronAPI.deleteDirectory(contextMenu.path);
+                            await window.electron.fileSystem.delete(contextMenu.path);
                         } else {
-                            await window.electronAPI.deleteFile(contextMenu.path);
+                            await window.electron.fileSystem.delete(contextMenu.path);
                         }
 
                         // Close file if it's gone

@@ -34,7 +34,7 @@ export const GitIgnoreModal: React.FC<GitIgnoreModalProps> = ({
         setIsLoading(true);
         const path = getGitIgnorePath();
         try {
-            const fileContent = await window.electronAPI.readFile(path);
+            const fileContent = await window.electron.fileSystem.readFile(path);
             setContent(fileContent);
             setOriginalContent(fileContent);
         } catch {
@@ -58,7 +58,7 @@ export const GitIgnoreModal: React.FC<GitIgnoreModalProps> = ({
         setIsLoading(true);
         void (async () => {
             try {
-                await window.electronAPI.writeFile(path, content);
+                await window.electron.fileSystem.writeFile(path, content);
                 addToast({ type: 'success', message: t('git.modals.ignore.success_toast') });
                 await refreshGit();
                 onClose();

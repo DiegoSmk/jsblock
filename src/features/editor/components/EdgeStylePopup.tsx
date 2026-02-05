@@ -1,5 +1,5 @@
 import React from 'react';
-import { NOTE_PALETTE } from '../constants/design';
+import { NOTE_PALETTE } from '../../../constants/design';
 import {
     Spline,
     Activity,

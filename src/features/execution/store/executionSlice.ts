@@ -41,9 +41,9 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
             executionCoverage: new Set()
         });
 
-        if (window.electronAPI) {
+        if (window.electron) {
             if (!listenersInitialized) {
-                window.electronAPI.onExecutionLog((data) => {
+                window.electron.onExecutionLog((data) => {
                     // Check for Canvas Data (discriminated by 'level' and absence of 'type' in definition, but existence in runtime)
                     if ('level' in data && data.level === 'data') {
                         // Narrowing to CanvasDataPayload
@@ -83,7 +83,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                         }
                     }
                 });
-                window.electronAPI.onExecutionError((err) => {
+                window.electron.onExecutionError((err) => {
                     if (typeof err === 'object' && err !== null) {
                         const currentMap = new Map(get().executionErrors);
                         currentMap.set(err.line, err.message);
@@ -94,7 +94,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
                 listenersInitialized = true;
             }
-            window.electronAPI.executionStart(code, selectedFile ?? undefined);
+            window.electron.executionStart(code, selectedFile ?? undefined);
         }
     },
 });

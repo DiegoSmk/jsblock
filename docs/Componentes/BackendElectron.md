@@ -5,7 +5,7 @@ O backend da aplicação é responsável por gerenciar a janela nativa, interagi
 ## Arquivos Principais
 
 - `electron/main.ts`: Ponto de entrada. Configura janelas, IPC e PTY.
-- `electron/preload.ts`: Script de "ponte" que expõe a API `window.electronAPI` de forma segura.
+- `electron/preload.ts`: Script de "ponte" que expõe a API `window.electron` de forma segura.
 - `electron/services/PluginManager.ts`: Gerencia a descoberta e carregamento de plugins.
 
 ## Inicialização (`main.ts`)
@@ -24,14 +24,15 @@ O Renderer solicita ações via `ipcRenderer.invoke`, e o Main responde.
 | Canal | Propósito | Retorno |
 |-------|-----------|---------|
 | `read-file` | Lê conteúdo de arquivo | `Promise<string>` |
-| `write-file` | Escreve conteúdo em arquivo | `Promise<boolean>` |
+| `write-file` | Escreve conteúdo em arquivo | `Promise<void>` |
 | `read-dir` | Lista arquivos de diretório | `Promise<FileEntry[]>` |
 | `select-folder` | Abre diálogo nativo de seleção | `Promise<path>` |
-| `create-file` | Cria novo arquivo vazio | `Promise<boolean>` |
-| `delete-file` | Remove arquivo | `Promise<boolean>` |
+| `create-file` | Cria novo arquivo vazio | `Promise<void>` |
+| `delete-file-or-folder` | Remove arquivo ou pasta | `Promise<boolean>` |
 | `check-path-exists` | Verifica existência de caminho | `boolean` |
-| `ensure-project-config` | Cria pasta `.block` se não existir | `Promise<boolean>` |
-| `open-system-terminal` | Abre terminal do OS (gnome, cmd, etc) | `boolean` |
+| `get-file-stats` | Obtém estatísticas do arquivo | `{ size: number, mtime: number, isDirectory: boolean }` |
+| `ensure-project-config` | Cria pasta `.block` se não existir | `Promise<void>` |
+| `open-system-terminal` | Abre terminal do OS (gnome, cmd, etc) | `void` |
 | `git-command` | Executa comandos git via `execFile` | `{ stdout, stderr }` |
 
 ## Terminal Integrado (PTY)

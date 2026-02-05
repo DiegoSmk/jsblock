@@ -12,7 +12,7 @@ export const createStashActions = (set: (nextState: Partial<AppState> | ((state:
             } else {
                 args.push('-m', `Rascunho: ${new Date().toLocaleTimeString()} em ${get().git.currentBranch}`);
             }
-            await window.electronAPI.gitCommand(openedFolder, args);
+            await window.electron.gitCommand(openedFolder, args);
             await refreshGit();
             addToast({ type: 'success', message: 'Alterações salvas na gaveta (Stash).' });
         } catch (e: unknown) {
@@ -31,7 +31,7 @@ export const createStashActions = (set: (nextState: Partial<AppState> | ((state:
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['stash', 'pop', `stash@{${index}}`]);
+            await window.electron.gitCommand(openedFolder, ['stash', 'pop', `stash@{${index}}`]);
             await refreshGit();
             addToast({ type: 'success', message: 'Gaveta recuperada com sucesso.' });
         } catch {
@@ -43,7 +43,7 @@ export const createStashActions = (set: (nextState: Partial<AppState> | ((state:
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['stash', 'apply', `stash@{${index}}`]);
+            await window.electron.gitCommand(openedFolder, ['stash', 'apply', `stash@{${index}}`]);
             await refreshGit();
             addToast({ type: 'success', message: 'Alterações aplicadas com sucesso.' });
         } catch {
@@ -55,7 +55,7 @@ export const createStashActions = (set: (nextState: Partial<AppState> | ((state:
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['stash', 'drop', `stash@{${index}}`]);
+            await window.electron.gitCommand(openedFolder, ['stash', 'drop', `stash@{${index}}`]);
             await refreshGit();
             addToast({ type: 'success', message: 'Gaveta removida.' });
         } catch {
@@ -67,7 +67,7 @@ export const createStashActions = (set: (nextState: Partial<AppState> | ((state:
         const { openedFolder } = get();
         if (!openedFolder) return;
         try {
-            const res = await window.electronAPI.gitCommand(openedFolder, ['stash', 'list']);
+            const res = await window.electron.gitCommand(openedFolder, ['stash', 'list']);
             const output = res.stdout || '';
             const stashes: GitStashEntry[] = output.split('\n')
                 .filter((l: string) => l.trim())

@@ -100,8 +100,12 @@ export function useGitTerminal() {
             if (terminalRef.current && terminalRef.current.offsetWidth > 0 && terminalRef.current.offsetHeight > 0) {
                 try {
                     fitAddon.fit();
-                    if (window.electronAPI) {
-                        window.electronAPI.terminalResize(term.cols, term.rows);
+                    if (window.electron) {
+                        try {
+                            window.electron.terminalResize(term.cols, term.rows);
+                        } catch (err) {
+                            console.warn('Failed to resize terminal:', err);
+                        }
                     }
                     return true;
                 } catch {
@@ -128,10 +132,10 @@ export function useGitTerminal() {
 
         xtermRef.current = term;
 
-        if (window.electronAPI) {
-            window.electronAPI.terminalCreate({ cwd: openedFolder ?? '' });
+        if (window.electron) {
+            window.electron.terminalCreate({ cwd: openedFolder ?? '' });
 
-            const unsubscribe = window.electronAPI.terminalOnData((data: string) => {
+            const unsubscribe = window.electron.terminalOnData((data: string) => {
                 term.write(data);
 
                 // Progress
@@ -180,14 +184,14 @@ export function useGitTerminal() {
             });
 
             term.onData((data) => {
-                window.electronAPI.terminalSendInput(data);
+                window.electron.terminalSendInput(data);
             });
 
             const handleContextMenu = (e: MouseEvent) => {
                 if (!settings.terminalRightClickPaste) return;
                 e.preventDefault();
                 void navigator.clipboard.readText().then(text => {
-                    window.electronAPI.terminalSendInput(text);
+                    window.electron.terminalSendInput(text);
                 });
             };
 
@@ -208,14 +212,14 @@ export function useGitTerminal() {
                 }
                 unsubscribe();
                 term.dispose();
-                window.electronAPI.terminalKill();
+                window.electron.terminalKill();
             };
         }
     }, [isDark, openedFolder, settings.terminalCopyOnSelect, settings.terminalRightClickPaste, t]);
 
     const sendCommand = (cmd: string) => {
-        if (window.electronAPI) {
-            window.electronAPI.terminalSendInput(cmd);
+        if (window.electron) {
+            window.electron.terminalSendInput(cmd);
         }
     };
 

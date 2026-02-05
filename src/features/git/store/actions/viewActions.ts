@@ -16,16 +16,16 @@ export const createViewActions = (set: (nextState: Partial<AppState> | ((state: 
 
     openCommitDetail: async (commit: GitLogEntry) => {
         const { openedFolder, getCommitFiles } = get();
-        if (!openedFolder || !window.electronAPI) return;
+        if (!openedFolder || !window.electron) return;
 
         try {
-            const res = await window.electronAPI.gitCommand(openedFolder, ['show', '--pretty=format:%B', '-s', commit.hash]);
+            const res = await window.electron.gitCommand(openedFolder, ['show', '--pretty=format:%B', '-s', commit.hash]);
             const fullMessage = res.stdout.trim();
             const files = await getCommitFiles(commit.hash);
 
             let stats = { insertions: 0, deletions: 0, filesChanged: 0 };
             try {
-                const statRes = await window.electronAPI.gitCommand(openedFolder, ['show', '--shortstat', '--format=', commit.hash]);
+                const statRes = await window.electron.gitCommand(openedFolder, ['show', '--shortstat', '--format=', commit.hash]);
                 const statLine = statRes.stdout.trim();
                 if (statLine) {
                     const filesMatch = /(\d+) files? changed/.exec(statLine);

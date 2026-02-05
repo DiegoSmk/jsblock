@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { RecentEnvironment } from './types';
+import type { AppState } from '../../types/store';
 
 import {
     Clock,
@@ -63,8 +64,8 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
     }, [validateRecents]);
 
     const handleOpen = async (path: string) => {
-        if (window.electronAPI) {
-            const exists = await window.electronAPI.checkPathExists(path);
+        if (window.electron) {
+            const exists = await window.electron.fileSystem.checkExists(path);
             if (exists) {
                 setOpenedFolder(path);
             } else {
@@ -198,8 +199,8 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                     <button
                         onClick={() => {
                             void (async () => {
-                                if (window.electronAPI) {
-                                    const path = await window.electronAPI.selectFolder();
+                                if (window.electron) {
+                                    const path = await window.electron.selectFolder();
                                     if (path) setOpenedFolder(path);
                                 }
                             })();

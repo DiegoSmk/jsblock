@@ -5,16 +5,18 @@ import json
 def verify_utility_nodes(page: Page):
     # Mock electronAPI
     page.add_init_script("""
-        window.electronAPI = {
-            checkPathExists: async () => true,
-            ensureProjectConfig: async () => {},
-            readFile: async (path) => {
-                if (path.endsWith('.block')) {
-                    return JSON.stringify({ nodes: [], edges: [] });
-                }
-                return 'console.log("hello")';
+        window.electron = {
+            fileSystem: {
+                checkExists: async () => true,
+                ensureProjectConfig: async () => {},
+                readFile: async (path) => {
+                    if (path.endsWith('.block')) {
+                        return JSON.stringify({ nodes: [], edges: [] });
+                    }
+                    return 'console.log("hello")';
+                },
+                writeFile: async () => {},
             },
-            writeFile: async () => {},
             discoverPlugins: async () => [],
             togglePlugin: async () => {},
             installPlugin: async () => {},

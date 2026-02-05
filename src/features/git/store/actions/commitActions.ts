@@ -12,7 +12,7 @@ export const createCommitActions = (set: (nextState: Partial<AppState> | ((state
         if (isAmend) {
             args.push('--amend');
         }
-        await window.electronAPI.gitCommand(openedFolder, args);
+        await window.electron.gitCommand(openedFolder, args);
         await refreshGit();
     },
 
@@ -20,7 +20,7 @@ export const createCommitActions = (set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['reset', '--soft', `${gitHead}~1`]);
+            await window.electron.gitCommand(openedFolder, ['reset', '--soft', `${gitHead}~1`]);
             await refreshGit();
             addToast({ type: 'success', message: 'Último commit desfeito (Soft Reset).' });
         } catch {
@@ -30,10 +30,10 @@ export const createCommitActions = (set: (nextState: Partial<AppState> | ((state
 
     getCommitFiles: async (hash: string) => {
         const { openedFolder } = get();
-        if (!openedFolder || !window.electronAPI) return [];
+        if (!openedFolder || !window.electron) return [];
 
         try {
-            const res = await window.electronAPI.gitCommand(openedFolder, ['show', '--name-status', '--pretty=format:', hash]);
+            const res = await window.electron.gitCommand(openedFolder, ['show', '--name-status', '--pretty=format:', hash]);
             return res.stdout.split('\n')
                 .filter((line: string) => line.trim() !== '')
                 .map((line: string) => {

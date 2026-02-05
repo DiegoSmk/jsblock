@@ -41,7 +41,7 @@ export const GitStatusView: React.FC = () => {
             : `${folder}/.gitignore`;
 
         try {
-            const content = await window.electronAPI.readFile(path);
+            const content = await window.electron.fileSystem.readFile(path);
             const lines = content.split('\n')
                 .map((l: string) => l.trim())
                 .filter((l: string) => l && !l.startsWith('#'));

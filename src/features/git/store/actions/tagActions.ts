@@ -4,9 +4,9 @@ import type { GitSlice, GitTag } from '../../types';
 export const createTagActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     fetchTags: async () => {
         const { openedFolder } = get();
-        if (!openedFolder || !window.electronAPI) return;
+        if (!openedFolder || !window.electron) return;
         try {
-            const res = await window.electronAPI.gitCommand(openedFolder, [
+            const res = await window.electron.gitCommand(openedFolder, [
                 'for-each-ref',
                 '--sort=-creatordate',
                 '--format=%(refname:short)|||%(objectname)|||%(contents:subject)|||%(creatordate:iso8601)',
@@ -45,7 +45,7 @@ export const createTagActions = (set: (nextState: Partial<AppState> | ((state: A
             } else {
                 args.push(name, hash);
             }
-            await window.electronAPI.gitCommand(openedFolder, args);
+            await window.electron.gitCommand(openedFolder, args);
             await refreshGit();
             addToast({ type: 'success', message: `Tag ${name} criada com sucesso!` });
         } catch (err) {
@@ -58,7 +58,7 @@ export const createTagActions = (set: (nextState: Partial<AppState> | ((state: A
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['tag', '-d', name]);
+            await window.electron.gitCommand(openedFolder, ['tag', '-d', name]);
             await refreshGit();
             addToast({ type: 'success', message: `Tag ${name} deletada.` });
         } catch {

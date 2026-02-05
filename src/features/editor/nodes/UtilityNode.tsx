@@ -1,11 +1,12 @@
 import { memo, useCallback, useState } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, type NodeProps, type Edge } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import type { AppNode } from '../types';
+import type { AppState } from '../../../types/store';
 import { useStore } from '../../../store/useStore';
 import { Copy, Check, Merge, ArrowUpRight, X } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getUtilityDefinition } from '../registry/utilities';
+import { getUtilityDefinition } from '../../../registry/utilities';
 
 // Hybrid Handle Component
 const HybridHandle = ({
@@ -72,7 +73,7 @@ const HybridHandle = ({
 
 export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => {
     const { updateNodeData, edges, nodes, addToast, theme, onNodesChange, settings } = useStore(
-        useShallow((state) => ({
+        useShallow((state: AppState) => ({
             updateNodeData: state.updateNodeData,
             edges: state.edges,
             nodes: state.nodes,
@@ -88,7 +89,7 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
 
     const def = getUtilityDefinition(data.utilityType!);
     const Icon = def?.icon ?? Copy;
-    const color = isDark ? def?.color.dark : def?.color.light;
+    const color = isDark ? (def?.color?.dark) : (def?.color?.light);
 
     const isTask = data.utilityType === 'task';
     const isCopy = data.utilityType === 'copy';
@@ -97,13 +98,13 @@ export const UtilityNode = memo(({ id, data, selected }: NodeProps<AppNode>) => 
 
     const handleCopy = useCallback(() => {
         // Find connected source node
-        const connectedEdge = edges.find(e => e.target === id);
+        const connectedEdge = edges.find((e: Edge) => e.target === id);
         if (!connectedEdge) {
             addToast({ type: 'warning', message: 'Conecte uma nota para copiar seu conteúdo' });
             return;
         }
 
-        const sourceNode = nodes.find(n => n.id === connectedEdge.source);
+        const sourceNode = nodes.find((n: AppNode) => n.id === connectedEdge.source);
         if (sourceNode && (sourceNode.data.text !== undefined || sourceNode.data.label !== undefined)) {
             const textToCopy = (sourceNode.data.text ?? sourceNode.data.label ?? '');
             navigator.clipboard.writeText(textToCopy)

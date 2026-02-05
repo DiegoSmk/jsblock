@@ -74,8 +74,8 @@ export const GitTerminalView: React.FC = () => {
     };
 
     const handleOpenExternal = () => {
-        if (window.electronAPI?.openSystemTerminal && openedFolder) {
-            void window.electronAPI.openSystemTerminal(openedFolder);
+        if (window.electron?.openSystemTerminal && openedFolder) {
+            void window.electron.openSystemTerminal(openedFolder);
         }
     };
 
@@ -142,7 +142,7 @@ export const GitTerminalView: React.FC = () => {
             />
 
             <div className="terminal-viewport-container animate-entrance" style={{ animationDelay: '0.15s' }}>
-                 <style>{`
+                <style>{`
                     .xterm-viewport::-webkit-scrollbar {
                         width: 8px;
                     }
@@ -193,7 +193,7 @@ export const GitTerminalView: React.FC = () => {
 
                 {lastCommitHash && (
                     <div className="git-terminal-popup left-aligned">
-                         <div className="git-terminal-popup-icon success">
+                        <div className="git-terminal-popup-icon success">
                             <Check size={18} />
                         </div>
                         <div>
@@ -216,9 +216,9 @@ export const GitTerminalView: React.FC = () => {
                 />
 
                 {yesNoPrompt && (
-                     <div className="git-terminal-popup center-aligned">
+                    <div className="git-terminal-popup center-aligned">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                             <div className="git-terminal-popup-icon suggestion">
+                            <div className="git-terminal-popup-icon suggestion">
                                 <Zap size={18} />
                             </div>
                             <div>

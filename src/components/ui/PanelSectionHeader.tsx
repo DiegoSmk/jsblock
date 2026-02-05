@@ -1,6 +1,6 @@
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Tooltip } from '../Tooltip';
+import { Tooltip } from './Tooltip';
 import { ChevronDown } from 'lucide-react';
 
 interface PanelSectionHeaderProps {

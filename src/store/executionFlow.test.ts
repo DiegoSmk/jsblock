@@ -29,18 +29,18 @@ describe('Quokka-like Execution Flow', () => {
             executionStart: mockExecutionStart,
             onExecutionLog: mockOnExecutionLog,
             onExecutionError: mockOnExecutionError,
-            checkPathExists: vi.fn(),
+            checkExists: vi.fn(),
             discoverPlugins: vi.fn(),
         };
 
         // @ts-expect-error - Mocking global window property
-        window.electronAPI = mockApi;
+        window.electron = mockApi;
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
         // @ts-expect-error - Cleaning up mock
-        delete window.electronAPI;
+        delete window.electron;
     });
 
     it('should send execution request to backend', () => {
@@ -54,7 +54,7 @@ describe('Quokka-like Execution Flow', () => {
         runExecution();
 
         const message = {
-            type: 'execution:value',
+            type: 'execution:value' as const,
             line: 1,
             value: '10'
         };

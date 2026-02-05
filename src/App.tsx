@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useRef } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlowProvider,
@@ -28,7 +28,7 @@ import i18next from 'i18next';
 
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
-import type { ElectronAPI } from './types/electron';
+
 import type * as Monaco from 'monaco-editor';
 
 // Configure Monaco loader to use local files copied to public/monaco-editor
@@ -63,9 +63,7 @@ function App() {
     selectedPluginId,
     settings,
     projectFiles,
-    executionResults,
-    executionErrors,
-    executionCoverage,
+
     livePreviewEnabled,
     setLivePreviewEnabled,
     toggleCanvas,
@@ -87,9 +85,7 @@ function App() {
     selectedPluginId: state.selectedPluginId,
     settings: state.settings,
     projectFiles: state.projectFiles,
-    executionResults: state.executionResults,
-    executionErrors: state.executionErrors,
-    executionCoverage: state.executionCoverage,
+
     livePreviewEnabled: state.livePreviewEnabled,
     setLivePreviewEnabled: state.setLivePreviewEnabled,
     toggleCanvas: state.toggleCanvas,
@@ -98,7 +94,7 @@ function App() {
   })));
 
   const isDark = theme === 'dark';
-  const cursorLineRef = useRef<number>(-1); // Track cursor line to hide decorations
+
 
   useEffect(() => {
     document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
@@ -129,9 +125,9 @@ function App() {
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
     const timer = setTimeout(() => {
-      const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-      if (electronAPI?.appReady) {
-        void electronAPI.appReady();
+      // Use the new window.electron pattern
+      if (window.electron?.appReady) {
+        window.electron.appReady();
       }
     }, 200);
 

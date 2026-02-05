@@ -1,7 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { generateId } from '../utils';
 import type { Node as BabelNode, FunctionDeclaration } from '@babel/types';
-import type { AppNode } from '../types';
+import type { AppNode } from '../../../types';
 
 export const FunctionHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'FunctionDeclaration',

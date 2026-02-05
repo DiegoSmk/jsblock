@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal } from '../../../components/../ui/Modal';
-import { Radio } from '../../../components/../ui/Radio';
+import { Modal } from '../../../../components/ui/Modal';
+import { Radio } from '../../../../components/ui/Radio';
 import { Zap } from 'lucide-react';
 
 interface QuickCommandModalProps {

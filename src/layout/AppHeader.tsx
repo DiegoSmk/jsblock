@@ -7,7 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store/useStore';
 import { DESIGN_TOKENS } from '../constants/design';
-import type { ElectronAPI } from '../types/electron';
+
 
 interface AppHeaderProps {
     isDark: boolean;
@@ -290,9 +290,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                     onCancel: () => setConfirmationModal(null)
                                 });
                             } else {
-                                const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
-                                if (electronAPI) {
-                                    electronAPI.selectFolder()
+                                if (window.electron) {
+                                    window.electron.selectFolder()
                                         .then((path) => {
                                             if (path) setOpenedFolder(path);
                                         })
@@ -322,7 +321,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                     <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
                         <button
                             onClick={() => {
-                                void window.electronAPI.windowMinimize();
+                                void window.electron.windowMinimize();
                             }}
                             title={t('app.window_controls.minimize')}
                             style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
@@ -333,7 +332,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         </button>
                         <button
                             onClick={() => {
-                                void window.electronAPI.windowMaximize();
+                                void window.electron.windowMaximize();
                             }}
                             title={t('app.window_controls.maximize')}
                             style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
@@ -344,7 +343,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         </button>
                         <button
                             onClick={() => {
-                                void window.electronAPI.windowClose();
+                                void window.electron.windowClose();
                             }}
                             title={t('app.window_controls.close')}
                             style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}

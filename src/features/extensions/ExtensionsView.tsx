@@ -1,10 +1,10 @@
 import { useStore } from '../../store/useStore';
 import { Blocks, Trash2, Power, Download, Search, Info, Settings, RefreshCw } from 'lucide-react';
-import { PanelSection } from './git/PanelSection';
-import { Tooltip } from './Tooltip';
-import { SidebarPanel } from './ui/SidebarPanel';
+import { PanelSection } from '../git/components/PanelSection';
+import { Tooltip } from '../../components/ui/Tooltip';
+import { SidebarPanel } from '../../components/ui/SidebarPanel';
 import type { PluginManifest } from './types';
-import './git/GitPanel.css';
+import '../git/components/GitPanel.css';
 import React, { useEffect, useState } from 'react';
 
 export const ExtensionsView: React.FC = () => {

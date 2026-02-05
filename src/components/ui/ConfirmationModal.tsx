@@ -1,7 +1,7 @@
 import React from 'react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { AlertTriangle, RotateCcw, Trash2, Check } from 'lucide-react';
-import { Modal } from './ui/Modal';
+import { Modal } from './Modal';
 
 interface ConfirmationModalProps {
     isOpen: boolean;

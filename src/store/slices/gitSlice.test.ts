@@ -4,7 +4,7 @@ import { useStore } from '../useStore';
 
 interface MockElectronAPI {
   gitCommand: Mock;
-  checkPathExists: Mock;
+  checkExists: Mock;
   readFile: Mock;
   writeFile: Mock;
 }
@@ -15,11 +15,14 @@ describe('Git Slice', () => {
     // Mock Electron API
     const mockAPI: MockElectronAPI = {
       gitCommand: vi.fn(),
-      checkPathExists: vi.fn(),
+      checkExists: vi.fn(),
       readFile: vi.fn(),
       writeFile: vi.fn(),
     };
-    (window as unknown as { electronAPI: MockElectronAPI }).electronAPI = mockAPI;
+    (window as unknown as { electron: { fileSystem: MockElectronAPI, gitCommand: Mock } }).electron = {
+      fileSystem: mockAPI,
+      gitCommand: mockAPI.gitCommand
+    };
 
     useStore.setState({
       git: {
@@ -50,7 +53,7 @@ describe('Git Slice', () => {
 
   it('should initialize git if repo', async () => {
     const { refreshGit } = useStore.getState();
-    const mockAPI = (window as unknown as { electronAPI: MockElectronAPI }).electronAPI;
+    const mockAPI = (window as unknown as { electron: { gitCommand: Mock } }).electron;
 
     mockAPI.gitCommand.mockImplementation((_path: string, args: string[]) => {
       if (args[0] === 'rev-parse' && args[1] === '--is-inside-work-tree') return Promise.resolve({ stdout: 'true' });

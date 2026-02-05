@@ -8,7 +8,7 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['add', path]);
+            await window.electron.gitCommand(openedFolder, ['add', path]);
             await refreshGit();
         } catch {
             addToast({ type: 'error', message: 'Erro ao adicionar arquivo (stage).' });
@@ -19,13 +19,13 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', gitHead]);
+            const headRes = await window.electron.gitCommand(openedFolder, ['rev-parse', '--verify', gitHead]);
             const hasHead = !headRes.stderr && headRes.stdout.trim();
 
             if (hasHead) {
-                await window.electronAPI.gitCommand(openedFolder, ['reset', gitHead, path]);
+                await window.electron.gitCommand(openedFolder, ['reset', gitHead, path]);
             } else {
-                await window.electronAPI.gitCommand(openedFolder, ['rm', '--cached', path]);
+                await window.electron.gitCommand(openedFolder, ['rm', '--cached', path]);
             }
 
             await refreshGit();
@@ -38,7 +38,7 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['add', '.']);
+            await window.electron.gitCommand(openedFolder, ['add', '.']);
             await refreshGit();
         } catch {
             addToast({ type: 'error', message: 'Erro ao adicionar todos os arquivos.' });
@@ -49,12 +49,12 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            const headRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--verify', gitHead]);
+            const headRes = await window.electron.gitCommand(openedFolder, ['rev-parse', '--verify', gitHead]);
             const hasHead = !headRes.stderr && headRes.stdout.trim();
             if (hasHead) {
-                await window.electronAPI.gitCommand(openedFolder, ['reset', gitHead]);
+                await window.electron.gitCommand(openedFolder, ['reset', gitHead]);
             } else {
-                await window.electronAPI.gitCommand(openedFolder, ['rm', '--cached', '-r', '.']);
+                await window.electron.gitCommand(openedFolder, ['rm', '--cached', '-r', '.']);
             }
             await refreshGit();
         } catch {
@@ -66,7 +66,7 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['restore', path]);
+            await window.electron.gitCommand(openedFolder, ['restore', path]);
             await refreshGit();
         } catch {
             addToast({ type: 'error', message: 'Erro ao descartar alterações.' });
@@ -77,7 +77,7 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['restore', '.']);
+            await window.electron.gitCommand(openedFolder, ['restore', '.']);
             await refreshGit();
         } catch {
             addToast({ type: 'error', message: 'Erro ao descartar todas as alterações.' });
@@ -88,7 +88,7 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['clean', '-fd']);
+            await window.electron.gitCommand(openedFolder, ['clean', '-fd']);
             await refreshGit();
             addToast({ type: 'success', message: 'Diretório limpo com sucesso (arquivos untracked removidos).' });
         } catch (err) {
@@ -108,7 +108,7 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
         try {
             let content = '';
             try {
-                content = await window.electronAPI.readFile(gitignorePath);
+                content = await window.electron.fileSystem.readFile(gitignorePath);
             } catch {
                 // File likely doesn't exist, start empty
             }
@@ -118,7 +118,7 @@ export const createStageActions = (_set: (nextState: Partial<AppState> | ((state
                 const separator = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
                 const newContent = `${content}${separator}${pattern}\n`;
 
-                await window.electronAPI.writeFile(gitignorePath, newContent);
+                await window.electron.fileSystem.writeFile(gitignorePath, newContent);
                 await refreshGit();
                 addToast({ type: 'success', message: `"${pattern}" adicionado ao .gitignore` });
             } else {

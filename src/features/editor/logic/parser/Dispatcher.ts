@@ -12,7 +12,7 @@ import { ReturnHandler } from './handlers/ReturnHandler';
 import { ImportHandler } from './handlers/ImportHandler';
 import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
-import type { AppNode } from '../types';
+import type { AppNode } from '../../types';
 
 export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
     const idSuffix = index !== undefined ? `${index}` : undefined;
@@ -118,7 +118,7 @@ export const processBlockInScope = (
     ctx.currentParentId = undefined; // Reset logical parenting inside new scope
 
     // Add pre-nodes (parameters) to the new scope
-    preNodes.forEach(node => {
+    preNodes.forEach((node: AppNode) => {
         node.data = { ...node.data, scopeId: newScopeId };
         ctx.nodes.push(node);
         if (node.type === 'variableNode') {

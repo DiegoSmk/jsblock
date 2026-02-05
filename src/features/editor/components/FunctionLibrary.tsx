@@ -4,7 +4,7 @@ import { useStore } from '../../../store/useStore';
 import { useReactFlow } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
 import type { AppNode } from '../types';
-import { PanelSection } from './git/PanelSection';
+import { PanelSection } from '../../git/components/PanelSection';
 
 export const FunctionLibrary: React.FC = () => {
     const { t } = useTranslation();

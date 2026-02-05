@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../store/useStore';
 import { Check, AlertCircle } from 'lucide-react';
-import type { AppNode } from '../types/store';
-import { Modal } from './ui/Modal';
-import pkg from '../../package.json';
+import type { AppNode } from '../../types/store';
+import { Modal } from './Modal';
+import pkg from '../../../package.json';
 
 export const ModernModal = () => {
     const { modal, closeModal, theme, nodes } = useStore();

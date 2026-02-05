@@ -27,8 +27,11 @@ A fita auxiliar à direita da Side Ribbon. Usada para navegação **dentro** do 
 Adicione o identificador do seu módulo no tipo das abas laterais e crie os estados necessários para sua navegação interna.
 
 ### 2. Criação do Painel Central
-Desenvolva seu componente (ex: `MyModulePanel.tsx`) na pasta `src/components/`. 
-- **Dica**: Se o módulo for complexo, crie uma subpasta `src/components/myModule/`.
+Desenvolva seu componente na pasta `src/features/`.
+- **Padrão**: Crie `src/features/myModule/` contendo:
+  - `components/` (Painéis e UI)
+  - `store/` (Slices do Zustand)
+  - `types/` (Definições TS)
 
 ### 3. Integração no `App.tsx`
 Mapeie a renderização do seu componente baseado no valor de `activeSidebarTab`.

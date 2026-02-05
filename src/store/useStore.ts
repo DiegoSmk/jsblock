@@ -277,8 +277,8 @@ export const useStore = create<AppState>((set, get, api) => ({
     addRecent: async (path: string) => {
         const { recentEnvironments } = get();
         // Check if path exists using the new API
-        if (window.electronAPI) {
-            const exists = await window.electronAPI.checkPathExists(path);
+        if (window.electron) {
+            const exists = await window.electron.fileSystem.checkExists(path);
             if (!exists) return;
         }
 
@@ -319,13 +319,13 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     validateRecents: async () => {
-        if (!window.electronAPI) return;
+        if (!window.electron) return;
 
         const { recentEnvironments } = get();
         const validRecents = [];
 
         for (const recent of recentEnvironments) {
-            const exists = await window.electronAPI.checkPathExists(recent.path);
+            const exists = await window.electron.fileSystem.checkExists(recent.path);
             if (exists) {
                 validRecents.push(recent);
             }
@@ -775,16 +775,16 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     syncProjectFiles: async () => {
         const { openedFolder } = get();
-        if (!openedFolder || !window.electronAPI) return;
+        if (!openedFolder || !window.electron) return;
 
         try {
-            const files = await window.electronAPI.readDir(openedFolder) as { name: string, isDirectory: boolean }[];
+            const files = await window.electron.fileSystem.readDir(openedFolder) as { name: string, isDirectory: boolean }[];
             const tsFiles = files.filter(f => !f.isDirectory && (f.name.endsWith('.ts') || f.name.endsWith('.js')));
 
             const contents: Record<string, string> = {};
             for (const file of tsFiles) {
                 const fullPath = `${openedFolder}/${file.name}`;
-                const content = await window.electronAPI.readFile(fullPath);
+                const content = await window.electron.fileSystem.readFile(fullPath);
                 contents[fullPath] = content;
             }
 
@@ -799,8 +799,8 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (path) {
             void get().addRecent(path); // Add to recents when opened
             void get().syncProjectFiles(); // Sync files when folder is opened
-            if (window.electronAPI) {
-                void window.electronAPI.ensureProjectConfig(path);
+            if (window.electron) {
+                void window.electron.fileSystem.ensureProjectConfig(path);
             }
         } else if (get().activeSidebarTab === 'git') {
             // Reset to explorer if closing folder while in git tab
@@ -864,9 +864,9 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     loadContentForFile: async (path: string | null) => {
-        if (path && window.electronAPI) {
+        if (path && window.electron) {
             try {
-                const content = await window.electronAPI.readFile(path);
+                const content = await window.electron.fileSystem.readFile(path);
                 const isBlock = path.endsWith('.block');
                 set({ isBlockFile: isBlock });
 
@@ -901,13 +901,13 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     saveFile: async () => {
         const { selectedFile, code, nodes, edges, isBlockFile } = get();
-        if (selectedFile && window.electronAPI) {
+        if (selectedFile && window.electron) {
             try {
                 let contentToSave = code;
                 if (isBlockFile) {
                     contentToSave = JSON.stringify({ nodes, edges }, null, 2);
                 }
-                await window.electronAPI.writeFile(selectedFile, contentToSave);
+                await window.electron.fileSystem.writeFile(selectedFile, contentToSave);
                 set({ isDirty: false });
             } catch (err) {
                 console.error('Failed to save file:', err);
@@ -964,7 +964,7 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     discoverPlugins: async () => {
         try {
-            const plugins = await window.electronAPI.discoverPlugins();
+            const plugins = await window.electron.discoverPlugins();
             set({ plugins });
         } catch (err) {
             get().addToast({ type: 'error', message: `Erro ao descobrir plugins: ${String(err)}` });
@@ -973,7 +973,7 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     togglePlugin: async (id: string, enabled: boolean) => {
         try {
-            await window.electronAPI.togglePlugin(id, enabled);
+            await window.electron.togglePlugin(id, enabled);
             const plugins = get().plugins.map(p => p.id === id ? { ...p, enabled } : p);
             set({ plugins });
             get().addToast({
@@ -987,7 +987,7 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     installPlugin: async () => {
         try {
-            const manifest = await window.electronAPI.installPlugin();
+            const manifest = await window.electron.installPlugin();
             if (manifest) {
                 await get().discoverPlugins();
                 get().addToast({ type: 'success', message: `Plugin "${manifest.name}" instalado!` });
@@ -999,7 +999,7 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     uninstallPlugin: async (id: string) => {
         try {
-            await window.electronAPI.uninstallPlugin(id);
+            await window.electron.uninstallPlugin(id);
             set((state) => ({
                 plugins: state.plugins.filter(p => p.id !== id),
                 selectedPluginId: state.selectedPluginId === id ? null : state.selectedPluginId
@@ -1162,7 +1162,7 @@ let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 useStore.subscribe((state) => {
     if (syncTimeout) clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
-        if (window.electronAPI?.mcpSyncState) {
+        if (window.electron?.mcpSyncState) {
             // Snapshot for MCP Tooling
             const snapshot = {
                 selectedFile: state.selectedFile,
@@ -1176,7 +1176,7 @@ useStore.subscribe((state) => {
                 // For deep inspection, we can send simplified nodes
                 nodes: state.nodes.map(n => ({ id: n.id, type: n.type, label: n.data.label }))
             };
-            window.electronAPI.mcpSyncState(snapshot);
+            window.electron.mcpSyncState(snapshot);
         }
     }, 1000); // 1s debounce to prevent IPC congestion
 });

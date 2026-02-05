@@ -6,7 +6,7 @@ export const createBranchActions = (_set: (nextState: Partial<AppState> | ((stat
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['checkout', branch]);
+            await window.electron.gitCommand(openedFolder, ['checkout', branch]);
             await refreshGit();
             addToast({ type: 'success', message: `Mudou para o branch ${branch}` });
         } catch {
@@ -20,7 +20,7 @@ export const createBranchActions = (_set: (nextState: Partial<AppState> | ((stat
         try {
             const args = ['checkout', '-b', branch];
             if (startPoint) args.push(startPoint);
-            await window.electronAPI.gitCommand(openedFolder, args);
+            await window.electron.gitCommand(openedFolder, args);
             await refreshGit();
             addToast({ type: 'success', message: `Branch ${branch} criado com sucesso!` });
         } catch {
@@ -32,7 +32,7 @@ export const createBranchActions = (_set: (nextState: Partial<AppState> | ((stat
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['branch', '-D', branch]);
+            await window.electron.gitCommand(openedFolder, ['branch', '-D', branch]);
             await refreshGit();
             addToast({ type: 'success', message: `Branch ${branch} deletado.` });
         } catch {
@@ -44,7 +44,7 @@ export const createBranchActions = (_set: (nextState: Partial<AppState> | ((stat
         const { openedFolder, refreshGit, addToast } = get();
         if (!openedFolder) return;
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['checkout', hash]);
+            await window.electron.gitCommand(openedFolder, ['checkout', hash]);
             await refreshGit();
         } catch {
             addToast({ type: 'error', message: `Erro ao mudar para a versão ${hash}` });

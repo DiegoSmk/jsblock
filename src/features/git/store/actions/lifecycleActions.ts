@@ -6,10 +6,10 @@ const gitHead = 'Head';
 export const createLifecycleActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     refreshGit: async () => {
         const { openedFolder, fetchStashes, fetchTags } = get();
-        if (!openedFolder || !window.electronAPI) return;
+        if (!openedFolder || !window.electron) return;
 
         try {
-            const isRepoRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--is-inside-work-tree']);
+            const isRepoRes = await window.electron.gitCommand(openedFolder, ['rev-parse', '--is-inside-work-tree']);
             const isRepo = isRepoRes.stdout.trim() === 'true';
 
             if (!isRepo) {
@@ -19,13 +19,13 @@ export const createLifecycleActions = (set: (nextState: Partial<AppState> | ((st
                 return;
             }
 
-            const branchRes = await window.electronAPI.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', gitHead]);
+            const branchRes = await window.electron.gitCommand(openedFolder, ['rev-parse', '--abbrev-ref', gitHead]);
             const currentBranch = branchRes.stdout.trim();
 
-            const branchesRes = await window.electronAPI.gitCommand(openedFolder, ['branch', '--format=%(refname:short)']);
+            const branchesRes = await window.electron.gitCommand(openedFolder, ['branch', '--format=%(refname:short)']);
             const branches = branchesRes.stdout.split('\n').filter((b: string) => b.trim() !== '');
 
-            const statusRes = await window.electronAPI.gitCommand(openedFolder, ['status', '--porcelain', '-b', '-z']);
+            const statusRes = await window.electron.gitCommand(openedFolder, ['status', '--porcelain', '-b', '-z']);
             const rawStatus = statusRes.stdout;
             const tokens = rawStatus.split('\0');
             const changes: GitFileStatus[] = [];
@@ -66,7 +66,7 @@ export const createLifecycleActions = (set: (nextState: Partial<AppState> | ((st
             }
 
             const delimiter = '|||';
-            const logRes = await window.electronAPI.gitCommand(openedFolder, [
+            const logRes = await window.electron.gitCommand(openedFolder, [
                 'log', '--graph', '--all', '-n', '100', '--no-color',
                 `--pretty=format:%h${delimiter}%d${delimiter}%s${delimiter}%an${delimiter}%aI`
             ]);
@@ -117,10 +117,10 @@ export const createLifecycleActions = (set: (nextState: Partial<AppState> | ((st
             let projectSize = '0 B';
 
             try {
-                const filesRes = await window.electronAPI.gitCommand(openedFolder, ['ls-files']);
+                const filesRes = await window.electron.gitCommand(openedFolder, ['ls-files']);
                 fileCount = filesRes.stdout.split('\n').filter((l: string) => l.trim()).length;
 
-                const sizeRes = await window.electronAPI.gitCommand(openedFolder, ['count-objects', '-vH']);
+                const sizeRes = await window.electron.gitCommand(openedFolder, ['count-objects', '-vH']);
                 const sizeOutput = sizeRes.stdout;
                 const sizePackMatch = (/size-pack:\s*(.+)/).exec(sizeOutput);
                 const sizeMatch = (/^size:\s*(.+)/m).exec(sizeOutput);
@@ -134,7 +134,7 @@ export const createLifecycleActions = (set: (nextState: Partial<AppState> | ((st
                 }
 
                 try {
-                    const treeRes = await window.electronAPI.gitCommand(openedFolder, ['ls-tree', '-r', '-l', gitHead]);
+                    const treeRes = await window.electron.gitCommand(openedFolder, ['ls-tree', '-r', '-l', gitHead]);
                     const treeLines = treeRes.stdout.split('\n');
                     let totalBytes = 0;
                     for (const line of treeLines) {

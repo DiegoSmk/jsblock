@@ -3,7 +3,7 @@ import { Search, MapPin, StickyNote, Plus } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
 import { useReactFlow } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
-import { PanelSection } from './git/PanelSection';
+import { PanelSection } from '../../git/components/PanelSection';
 
 export const NotesLibrary: React.FC = () => {
     const { t } = useTranslation();

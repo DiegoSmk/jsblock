@@ -6,7 +6,7 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
         const { openedFolder, refreshGit, setGitConfig } = get();
         if (!openedFolder) return;
 
-        await window.electronAPI.gitCommand(openedFolder, ['init']);
+        await window.electron.gitCommand(openedFolder, ['init']);
 
         if (author) {
             await setGitConfig(author, isGlobal);
@@ -17,15 +17,15 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
 
     setGitConfig: async (author: GitAuthor, isGlobal: boolean) => {
         const { openedFolder, fetchGitConfig, addToast } = get();
-        if (!window.electronAPI) return;
+        if (!window.electron) return;
 
         const dir = openedFolder ?? '.';
 
         if (isGlobal) {
             const argsBase = ['config', '--global'];
             try {
-                if (author.name) await window.electronAPI.gitCommand(dir, [...argsBase, 'user.name', author.name]);
-                if (author.email) await window.electronAPI.gitCommand(dir, [...argsBase, 'user.email', author.email]);
+                if (author.name) await window.electron.gitCommand(dir, [...argsBase, 'user.name', author.name]);
+                if (author.email) await window.electron.gitCommand(dir, [...argsBase, 'user.email', author.email]);
 
                 addToast({
                     type: 'success',
@@ -40,10 +40,10 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
         } else {
             try {
                 if (author.name) {
-                    await window.electronAPI.gitCommand(dir, ['config', '--local', 'user.name', author.name]);
+                    await window.electron.gitCommand(dir, ['config', '--local', 'user.name', author.name]);
                 }
                 if (author.email) {
-                    await window.electronAPI.gitCommand(dir, ['config', '--local', 'user.email', author.email]);
+                    await window.electron.gitCommand(dir, ['config', '--local', 'user.email', author.email]);
                 }
 
                 addToast({
@@ -63,11 +63,11 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
 
     resetToGlobal: async () => {
         const { openedFolder, fetchGitConfig, addToast } = get();
-        if (!window.electronAPI || !openedFolder) return;
+        if (!window.electron || !openedFolder) return;
 
         try {
-            await window.electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.name']);
-            await window.electronAPI.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.email']);
+            await window.electron.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.name']);
+            await window.electron.gitCommand(openedFolder, ['config', '--local', '--unset', 'user.email']);
 
             addToast({
                 type: 'info',
@@ -84,13 +84,13 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
 
     fetchGitConfig: async () => {
         const { openedFolder } = get();
-        if (!window.electronAPI) return;
+        if (!window.electron) return;
 
         const baseDir = openedFolder ?? '.';
 
         try {
-            const gName = await window.electronAPI.gitCommand(baseDir, ['config', '--global', 'user.name']);
-            const gEmail = await window.electronAPI.gitCommand(baseDir, ['config', '--global', 'user.email']);
+            const gName = await window.electron.gitCommand(baseDir, ['config', '--global', 'user.name']);
+            const gEmail = await window.electron.gitCommand(baseDir, ['config', '--global', 'user.email']);
 
             const globalAuthor = {
                 name: gName.stdout.trim(),
@@ -99,8 +99,8 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
 
             let projectAuthor = null;
             if (openedFolder) {
-                const lName = await window.electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.name']);
-                const lEmail = await window.electronAPI.gitCommand(openedFolder, ['config', '--local', 'user.email']);
+                const lName = await window.electron.gitCommand(openedFolder, ['config', '--local', 'user.name']);
+                const lEmail = await window.electron.gitCommand(openedFolder, ['config', '--local', 'user.email']);
 
                 if (lName.stdout.trim() || lEmail.stdout.trim()) {
                     projectAuthor = {

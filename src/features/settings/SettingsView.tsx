@@ -16,8 +16,8 @@ import {
     RotateCcw
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { ScrollArea } from './ui/ScrollArea';
-import { Dropdown } from './ui/Dropdown';
+import { ScrollArea } from '../../components/ui/ScrollArea';
+import { Dropdown } from '../../components/ui/Dropdown';
 
 const SettingGroup = ({ title, children }: { title: string, children: React.ReactNode }) => {
     const isDark = useStore(state => state.theme === 'dark');

@@ -60,7 +60,7 @@ O arquivo `useStore.ts` é extremamente grande e contém lógica misturada de:
 - `createRuntimeSlice`: execução e workers.
 
 ### 2. Side-Effects dentro do Store
-Existem muitos `setTimeout` e chamadas `window.electronAPI` diretas dentro das actions do Zustand.
+Existem muitos `setTimeout` e chamadas `window.electron` diretas dentro das actions do Zustand.
 **Recomendação**: Mover lógica assíncrona pesada para "Services" ou Thunks, mantendo o store puro para atualização de estado.
 
 ### 3. Persistência Manual

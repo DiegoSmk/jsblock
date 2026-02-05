@@ -292,22 +292,27 @@ ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => 
     }
 });
 
-ipcMain.handle('delete-file', async (_event, filePath: string) => {
+// Generic delete for files or folders (New API)
+ipcMain.handle('delete-file-or-folder', async (_event, pathToDelete: string) => {
     try {
-        await fs.promises.unlink(filePath);
+        await fs.promises.rm(pathToDelete, { recursive: true, force: true });
         return true;
     } catch (err) {
-        console.error('Error deleting file:', err);
+        console.error('Error deleting item:', err);
         throw err;
     }
 });
 
-ipcMain.handle('delete-directory', async (_event, dirPath: string) => {
+ipcMain.handle('get-file-stats', async (_event, pathStr: string) => {
     try {
-        await fs.promises.rm(dirPath, { recursive: true, force: true });
-        return true;
+        const stats = await fs.promises.stat(pathStr);
+        return {
+            size: stats.size,
+            mtime: stats.mtime.getTime(),
+            isDirectory: stats.isDirectory()
+        };
     } catch (err) {
-        console.error('Error deleting directory:', err);
+        console.error('Error getting stats:', err);
         throw err;
     }
 });

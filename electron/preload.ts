@@ -1,20 +1,29 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-contextBridge.exposeInMainWorld('electronAPI', {
+contextBridge.exposeInMainWorld('electron', {
+    // Dialogs & Window
     selectFolder: () => ipcRenderer.invoke('select-folder'),
-    readDir: (path: string) => ipcRenderer.invoke('read-dir', path),
-    readFile: (path: string) => ipcRenderer.invoke('read-file', path),
-    writeFile: (path: string, content: string) => ipcRenderer.invoke('write-file', path, content),
-    ensureProjectConfig: (path: string) => ipcRenderer.invoke('ensure-project-config', path),
+    openSystemTerminal: (path: string) => ipcRenderer.invoke('open-system-terminal', path),
     windowMinimize: () => ipcRenderer.send('window-minimize'),
     windowMaximize: () => ipcRenderer.send('window-maximize'),
     windowClose: () => ipcRenderer.send('window-close'),
-    createFile: (path: string, content?: string) => ipcRenderer.invoke('create-file', path, content),
-    createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path),
-    deleteFile: (path: string) => ipcRenderer.invoke('delete-file', path),
-    deleteDirectory: (path: string) => ipcRenderer.invoke('delete-directory', path),
-    checkPathExists: (path: string) => ipcRenderer.invoke('check-path-exists', path),
-    moveFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('move-file', oldPath, newPath),
+    appReady: () => ipcRenderer.send('app-ready'),
+
+    // File System API (Unified)
+    fileSystem: {
+        readDir: (path: string) => ipcRenderer.invoke('read-dir', path),
+        readFile: (path: string) => ipcRenderer.invoke('read-file', path),
+        writeFile: (path: string, content: string) => ipcRenderer.invoke('write-file', path, content),
+        createFile: (path: string, content?: string) => ipcRenderer.invoke('create-file', path, content),
+        createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path),
+        delete: (path: string) => ipcRenderer.invoke('delete-file-or-folder', path),
+        move: (source: string, target: string) => ipcRenderer.invoke('move-file', source, target),
+        checkExists: (path: string) => ipcRenderer.invoke('check-path-exists', path),
+        getStats: (path: string) => ipcRenderer.invoke('get-file-stats', path),
+        ensureProjectConfig: (path: string) => ipcRenderer.invoke('ensure-project-config', path),
+    },
+
+    // Git
     gitCommand: (dirPath: string, args: string[]) => ipcRenderer.invoke('git-command', dirPath, args),
 
     // Terminal
@@ -27,8 +36,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     terminalResize: (cols: number, rows: number) => ipcRenderer.send('terminal-resize', { cols, rows }),
     terminalKill: () => ipcRenderer.send('terminal-kill'),
-    openSystemTerminal: (path: string) => ipcRenderer.invoke('open-system-terminal', path),
-    appReady: () => ipcRenderer.send('app-ready'),
 
     // Plugins
     discoverPlugins: () => ipcRenderer.invoke('plugins:discover'),

@@ -3,7 +3,7 @@ import { Panel } from '@xyflow/react';
 import { StickyNote, Plus, Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../../store/useStore';
-import { getAllUtilities } from '../registry/utilities';
+import { getAllUtilities } from '../../../registry/utilities';
 
 interface CanvasToolbarProps {
     isDark: boolean;
