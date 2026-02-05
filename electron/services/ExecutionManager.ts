@@ -48,11 +48,15 @@ export class ExecutionManager {
                 target: 'node18'
             });
             instrumentedCode = result.code;
-        } catch (e: unknown) {
-            const err = e as Error;
-            console.error('[ExecutionManager] Transpilation failed:', err);
+        } catch (e: any) {
+            console.error('[ExecutionManager] Transpilation failed:', e);
             if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-                this.mainWindow.webContents.send('execution:error', `Transpilation failed: ${err.message}`);
+                const error = e.errors?.[0];
+                this.mainWindow.webContents.send('execution:error', {
+                    message: error?.text || e.message || 'Transpilation failed',
+                    line: error?.location?.line || 0,
+                    column: error?.location?.column || 0
+                });
             }
             return;
         }

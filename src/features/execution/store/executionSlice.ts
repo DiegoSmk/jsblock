@@ -82,9 +82,9 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         if (window.electron && shouldExecute) {
             lastExecutedCode = codeToRun;
 
-            // PROFESSIONAL UX: Clear errors immediately when starting a new run.
-            // Errors are per-code-state. Keeping them is deceptive.
-            set({ executionErrors: new Map() });
+            // PROFESSIONAL UX: We don't clear errors IMMEDIATELY here anymore
+            // because we want to see the error as we type. Instead, we'll
+            // let the new execution results or errors replace the old ones.
 
             // Reset buffer
             buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
@@ -109,16 +109,15 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 }
             };
 
-            // Force a final flush even if no data arrives (e.g. silent but valid code)
-            // This ensures results from old code are eventually cleared.
+            // Force a cleanup if no data arrives after a while (successful silent code)
             setTimeout(() => {
-                if (buffer.results.size === 0 && get().executionResults.size > 0) {
-                    set({ executionResults: new Map(), executionCoverage: new Set() });
+                if (buffer.results.size === 0 && buffer.errors.size === 0 && get().executionResults.size > 0) {
+                    set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set() });
                 }
-            }, 500);
+            }, 1000);
 
             if (!listenersInitialized) {
-                window.electron.onExecutionLog((data) => {
+                window.electron.onExecutionLog((data: any) => {
                     if (data.level === 'data') {
                         const canvasData = data as { args: [string, unknown] };
                         if (canvasData.args?.[0] === 'canvasData') {
@@ -143,9 +142,11 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                     }
                 });
 
-                window.electron.onExecutionError((err) => {
+                window.electron.onExecutionError((err: any) => {
                     if (typeof err === 'object' && err !== null) {
-                        buffer.errors.set(err.line, err.message);
+                        const lineNum = Number(err.line);
+                        // esbuild lines are 1-based, we keep them that way or adjust if needed
+                        buffer.errors.set(lineNum || 1, err.message);
                         scheduleUpdate();
                     }
                 });
