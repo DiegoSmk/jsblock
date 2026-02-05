@@ -10,7 +10,7 @@ const getExpressionCode = (node: BabelNode | null | undefined): string => {
         const left = node.left;
         const right = node.right;
         const operator = t.isBinaryExpression(node) || t.isLogicalExpression(node) ? node.operator : '';
-        return `${getExpressionCode(left as BabelNode)} ${operator} ${getExpressionCode(right as BabelNode)}`;
+        return `${getExpressionCode(left)} ${operator} ${getExpressionCode(right)}`;
     }
     if (node.type === 'Identifier') return node.name;
     if (t.isNumericLiteral(node) || t.isStringLiteral(node) || t.isBooleanLiteral(node)) {
@@ -31,12 +31,12 @@ export const VariableHandler: ParserHandler = {
         const stmt = node as VariableDeclaration;
         stmt.declarations.forEach((decl: VariableDeclarator) => {
             if (decl.id.type === 'Identifier') {
-                const varName = (decl.id).name;
+                const varName = decl.id.name;
                 const nodeId = idSuffix ? `var-${varName}-${idSuffix}` : `var-${varName}`;
 
                 let typeAnnotation: string | undefined = undefined;
-                if ((decl.id as t.Identifier).typeAnnotation) {
-                    const ta = (decl.id as t.Identifier).typeAnnotation as t.TSTypeAnnotation;
+                if (t.isIdentifier(decl.id) && decl.id.typeAnnotation) {
+                    const ta = decl.id.typeAnnotation as t.TSTypeAnnotation;
                     if (ta.typeAnnotation.type === 'TSBooleanKeyword') typeAnnotation = 'boolean';
                     else if (ta.typeAnnotation.type === 'TSNumberKeyword') typeAnnotation = 'number';
                     else if (ta.typeAnnotation.type === 'TSStringKeyword') typeAnnotation = 'string';
@@ -172,19 +172,19 @@ export const VariableHandler: ParserHandler = {
                     id: `flow-${parentId}-${stmt.declarations[0].id.type === 'Identifier' ? stmt.declarations[0].id.name : 'var'}-${ctx.edges.length}`,
                     source: parentId,
                     sourceHandle: handleName,
-                    target: ctx.variableNodes[(stmt.declarations[0].id as any).name] || 'unknown',
+                    target: ctx.variableNodes[t.isIdentifier(stmt.declarations[0].id) ? stmt.declarations[0].id.name : ''] || 'unknown',
                     targetHandle: 'flow-in',
                     animated: false,
                     type: 'step',
                     style: { stroke: '#555', strokeWidth: 2, strokeDasharray: '4,4' }
                 });
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
         }
 
         // Return the first declaration's ID as the "node" for this statement's flow
         // In case of multiple declarations, we might ideally return the last one, but usually it's one.
-        if (stmt.declarations.length > 0 && stmt.declarations[0].id.type === 'Identifier') {
-            return ctx.variableNodes[(stmt.declarations[0].id as any).name];
+        if (stmt.declarations.length > 0 && t.isIdentifier(stmt.declarations[0].id)) {
+            return ctx.variableNodes[stmt.declarations[0].id.name];
         }
         return undefined;
     }

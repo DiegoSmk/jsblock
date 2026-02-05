@@ -11,19 +11,20 @@ export const ImportHandler: ParserHandler = {
 
         const specifiers = stmt.specifiers.map(s => {
             if (s.type === 'ImportSpecifier') {
+                const importedName = t.isIdentifier(s.imported) ? s.imported.name : (t.isStringLiteral(s.imported) ? s.imported.value : 'unknown');
                 return {
-                    local: (s.local as t.Identifier).name,
-                    imported: (s.imported as t.Identifier).name,
+                    local: s.local.name,
+                    imported: importedName,
                     type: 'named'
                 };
             } else if (s.type === 'ImportDefaultSpecifier') {
                 return {
-                    local: (s.local as t.Identifier).name,
+                    local: s.local.name,
                     type: 'default'
                 };
             } else if (s.type === 'ImportNamespaceSpecifier') {
                 return {
-                    local: (s.local as t.Identifier).name,
+                    local: s.local.name,
                     type: 'namespace'
                 };
             }
@@ -45,7 +46,7 @@ export const ImportHandler: ParserHandler = {
 
         // Register local names in variableNodes to allow connections
         specifiers.forEach(s => {
-            if (s && s.local) {
+            if (s?.local) {
                 ctx.variableNodes[s.local] = nodeId;
             }
         });

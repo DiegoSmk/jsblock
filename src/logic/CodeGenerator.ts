@@ -492,8 +492,8 @@ export const generateCodeFromFlow = (
             },
 
             visitExpressionStatement(path: any) {
-                const exprStmt = path.node as any;
-                const index = body.indexOf(path.node);
+                const exprStmt = path.node as t.ExpressionStatement;
+                const index = body.indexOf(exprStmt);
                 if (exprStmt.expression.type === 'CallExpression') {
                     const callNodeId = `call-exec-${index}`;
                     updateCallArguments(exprStmt.expression, callNodeId, connections, varNodeMap, varValueMap, callOverrideMap[callNodeId], standaloneCalls);

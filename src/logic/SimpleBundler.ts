@@ -36,7 +36,7 @@ export const bundleCode = (
             if (projectFiles[resolved + '.tsx']) return resolved + '.tsx';
 
             return null;
-        } catch (e) {
+        } catch {
             return null;
         }
     };
@@ -54,7 +54,7 @@ export const bundleCode = (
         // We only care about the source string in quotes
         // Handles: import X from "Y"; import {X} from "Y"; export {X} from "Y"; import "Y";
 
-        const result = content.replace(/((?:import|export)\s+(?:(?:[\w\s{},*]*)\s+from\s+)?['"])(.*?)(['"])/g, (match, prefix, importPath, suffix) => {
+        const result = content.replace(/((?:import|export)\s+(?:(?:[\w\s{},*]*)\s+from\s+)?['"])(.*?)(['"])/g, (match: string, prefix: string, importPath: string, suffix: string) => {
             if (!importPath.startsWith('.')) return match; // External import? Ignore or handle via CDN?
 
             const resolvedPath = resolvePath(path, importPath);

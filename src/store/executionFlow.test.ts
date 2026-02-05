@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useStore } from './useStore';
 
+import type { ExecutionPayload } from '../types/electron';
+
 describe('Quokka-like Execution Flow', () => {
-    let mockExecutionStart: any;
-    let mockOnExecutionLog: any;
-    let mockOnExecutionError: any;
-    let logCallback: (data: any) => void;
-    let errorCallback: (data: any) => void;
+    let mockExecutionStart: ReturnType<typeof vi.fn>;
+    let mockOnExecutionLog: ReturnType<typeof vi.fn>;
+    let mockOnExecutionError: ReturnType<typeof vi.fn>;
+    let logCallback: (data: ExecutionPayload) => void;
+    let errorCallback: (data: string | { line: number; message: string }) => void;
 
     beforeEach(() => {
         // Reset store
@@ -14,27 +16,30 @@ describe('Quokka-like Execution Flow', () => {
 
         // Mock Electron API
         mockExecutionStart = vi.fn();
-        mockOnExecutionLog = vi.fn((cb) => {
+        mockOnExecutionLog = vi.fn((cb: (data: ExecutionPayload) => void) => {
             logCallback = cb;
-            return () => {};
+            return () => { /* cleanup */ };
         });
-        mockOnExecutionError = vi.fn((cb) => {
+        mockOnExecutionError = vi.fn((cb: (err: string | { line: number; message: string }) => void) => {
             errorCallback = cb;
-            return () => {};
+            return () => { /* cleanup */ };
         });
 
-        window.electronAPI = {
+        const mockApi = {
             executionStart: mockExecutionStart,
             onExecutionLog: mockOnExecutionLog,
             onExecutionError: mockOnExecutionError,
             checkPathExists: vi.fn(),
             discoverPlugins: vi.fn(),
-        } as any;
+        };
+
+        // @ts-expect-error - Mocking global window property
+        window.electronAPI = mockApi;
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
-        // @ts-ignore
+        // @ts-expect-error - Cleaning up mock
         delete window.electronAPI;
     });
 

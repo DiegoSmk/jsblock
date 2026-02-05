@@ -43,7 +43,7 @@ const initialCode = '';
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 
-let simulationInterval: any = null;
+let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let listenersInitialized = false;
 
 export const useStore = create<AppState>((set, get, api) => ({
@@ -346,7 +346,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     toggleSimulation: () => {
         const { isSimulating } = get();
         if (isSimulating) {
-            if (simulationInterval) clearInterval(simulationInterval);
+            if (simulationInterval !== null) clearInterval(simulationInterval);
             simulationInterval = null;
             set({ isSimulating: false });
         } else {
@@ -369,38 +369,52 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (window.electronAPI) {
             if (!listenersInitialized) {
                 window.electronAPI.onExecutionLog((data) => {
-                    if (data.level === 'data' && data.args && data.args[0] === 'canvasData') {
-                        set({ runtimeValues: { canvasData: data.args[1] } });
-                    } else if (data.type === 'execution:value') {
-                        // Handle instrumented value
-                        // data: { type: 'execution:value', line: number, value: string, valueType: 'spy' | 'log' }
-                        const { line, value, valueType } = data as any;
-                        const lineNum = Number(line);
-                        const targetLine = lineNum === 0 ? 0 : lineNum; // 0 for floating logs
+                    // Check for Canvas Data (discriminated by 'level' and absence of 'type' in definition, but existence in runtime)
+                    if ('level' in data && data.level === 'data') {
+                        // Narrowing to CanvasDataPayload
+                        const canvasData = data as { args: [string, unknown] };
+                        if (canvasData.args?.[0] === 'canvasData') {
+                            set({ runtimeValues: { canvasData: canvasData.args[1] } });
+                        }
+                        return;
+                    }
 
-                        const currentMap = new Map(get().executionResults);
-                        const existing = currentMap.get(targetLine) ?? [];
-                        existing.push({ value, type: valueType || 'spy' });
-                        currentMap.set(targetLine, existing);
-                        set({ executionResults: currentMap });
-                    } else if (data.type === 'execution:coverage') {
-                        const { line } = data as any;
-                        const lineNum = Number(line);
-                        const currentCoverage = new Set(get().executionCoverage);
-                        currentCoverage.add(lineNum);
-                        set({ executionCoverage: currentCoverage });
-                    } else if (data.type === 'execution:log') {
-                        console.log('[Backend Log]', data);
+                    // Handle types that look like standard execution messages
+                    if ('type' in data) {
+                        if (data.type === 'execution:value') {
+                            const { line, value, valueType } = data;
+                            const lineNum = Number(line);
+                            const targetLine = lineNum === 0 ? 0 : lineNum; // 0 for floating logs
+
+                            const currentMap = new Map(get().executionResults);
+                            const existing = currentMap.get(targetLine) ?? [];
+                            existing.push({ value, type: valueType ?? 'spy' });
+                            currentMap.set(targetLine, existing);
+                            set({ executionResults: currentMap });
+                        } else if (data.type === 'execution:coverage') {
+                            const { line } = data;
+                            const lineNum = Number(line);
+                            const currentCoverage = new Set(get().executionCoverage);
+                            currentCoverage.add(lineNum);
+                            set({ executionCoverage: currentCoverage });
+                        } else if (data.type === 'execution:log') {
+                            const args = data.args ?? [];
+                            const msg = args.map((a: unknown) =>
+                                (typeof a === 'object' && a !== null) ? JSON.stringify(a) : String(a)
+                            ).join(' ');
+                            const level = data.level ?? 'log';
+                            // eslint-disable-next-line no-console
+                            console.log(`[Backend ${level}] ${msg}`);
+                        }
                     }
                 });
                 window.electronAPI.onExecutionError((err) => {
-                    if (typeof err === 'object' && (err as any).line) {
-                        const errorData = err as any;
+                    if (typeof err === 'object' && err !== null) {
                         const currentMap = new Map(get().executionErrors);
-                        currentMap.set(errorData.line, errorData.message);
+                        currentMap.set(err.line, err.message);
                         set({ executionErrors: currentMap });
                     } else {
-                        console.error('[Backend Error]', err);
+                        console.error(`[Backend Error] ${typeof err === 'object' ? JSON.stringify(err) : String(err)}`);
                     }
                 });
                 listenersInitialized = true;
@@ -1231,3 +1245,27 @@ export const useStore = create<AppState>((set, get, api) => ({
         set((state: AppState) => ({ toasts: state.toasts.filter((t: Toast) => t.id !== id) }));
     },
 }));
+
+// --- MCP State Synchronization ---
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+useStore.subscribe((state) => {
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => {
+        if (window.electronAPI?.mcpSyncState) {
+            // Snapshot for MCP Tooling
+            const snapshot = {
+                selectedFile: state.selectedFile,
+                isSimulating: state.isSimulating,
+                isBlockFile: state.isBlockFile,
+                activeSidebarTab: state.activeSidebarTab,
+                nodeCount: state.nodes.length,
+                edgeCount: state.edges.length,
+                theme: state.theme,
+                errors: Array.from(state.executionErrors.entries()),
+                // For deep inspection, we can send simplified nodes
+                nodes: state.nodes.map(n => ({ id: n.id, type: n.type, label: n.data.label }))
+            };
+            window.electronAPI.mcpSyncState(snapshot);
+        }
+    }, 1000); // 1s debounce to prevent IPC congestion
+});

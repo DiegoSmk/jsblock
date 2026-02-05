@@ -1,6 +1,5 @@
 import type { ParserContext, ParserHandler } from '../types';
 import type { Node as BabelNode, ExportNamedDeclaration } from '@babel/types';
-import * as t from '@babel/types';
 
 export const ExportHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration',

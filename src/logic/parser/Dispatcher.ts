@@ -65,7 +65,7 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
     }
 
     if (stmt.type === 'ExportNamedDeclaration') {
-        const namedExport = stmt as any;
+        const namedExport = stmt;
         if (namedExport.declaration) {
             // Unwrap and mark as exported
             ctx.isExporting = true;
@@ -76,10 +76,10 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
     }
 
     if (stmt.type === 'ExportDefaultDeclaration') {
-        const defaultExport = stmt as any;
+        const defaultExport = stmt;
         if (defaultExport.declaration) {
             ctx.isExportingDefault = true;
-            const result = parseStatement(defaultExport.declaration, ctx, parentId, handleName, index);
+            const result = parseStatement(defaultExport.declaration as BabelNode, ctx, parentId, handleName, index);
             ctx.isExportingDefault = false;
             return result;
         }
