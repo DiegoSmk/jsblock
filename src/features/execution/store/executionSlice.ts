@@ -5,7 +5,7 @@ import type { ExecutionSlice } from '../types';
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let listenersInitialized = false;
-let lastExecutedCode = ''; // Elite change detection
+let lastExecutedCode = '';
 
 // Internal Buffer (not in state to avoid React overhead)
 let buffer: {
@@ -38,7 +38,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         } else {
             set({ isSimulating: true });
             simulationInterval = setInterval(() => {
-                // Simulation is for animation-heavy flows (Canvas)
                 get().runExecution(undefined, undefined, true);
             }, 1000);
         }
@@ -70,13 +69,10 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         const codeToRun = customCode ?? code;
         const pathToRun = customPath ?? selectedFile;
 
-        // ELITE CHANGE DETECTION: Don't run if code hasn't changed
-        // Unless it's a manual trigger (customCode === undefined) or a simulation pulse
         if (!isSimulationTrigger && customCode !== undefined && codeToRun === lastExecutedCode) {
             return;
         }
 
-        // Safety: don't run empty code
         if (!codeToRun || codeToRun.trim() === '') {
             set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set() });
             return;
@@ -86,11 +82,14 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         if (window.electron && shouldExecute) {
             lastExecutedCode = codeToRun;
 
-            // Wipe buffer for new run
+            // PROFESSIONAL UX: Clear errors immediately when starting a new run.
+            // Errors are per-code-state. Keeping them is deceptive.
+            set({ executionErrors: new Map() });
+
+            // Reset buffer
             buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
             hasPendingUpdates = false;
 
-            // Use requestAnimationFrame for smooth, flicker-free UI updates
             const flushBuffer = () => {
                 if (hasPendingUpdates) {
                     set({
@@ -110,6 +109,14 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 }
             };
 
+            // Force a final flush even if no data arrives (e.g. silent but valid code)
+            // This ensures results from old code are eventually cleared.
+            setTimeout(() => {
+                if (buffer.results.size === 0 && get().executionResults.size > 0) {
+                    set({ executionResults: new Map(), executionCoverage: new Set() });
+                }
+            }, 500);
+
             if (!listenersInitialized) {
                 window.electron.onExecutionLog((data) => {
                     if (data.level === 'data') {
@@ -125,7 +132,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                         const lineNum = Number(line);
                         const existing = buffer.results.get(lineNum) ?? [];
 
-                        // Prevent infinite duplication in buffer
                         if (existing.length < 50) {
                             existing.push({ value, type: valueType ?? 'spy' });
                             buffer.results.set(lineNum, existing);
@@ -134,10 +140,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                     } else if (data.type === 'execution:coverage') {
                         buffer.coverage.add(Number(data.line));
                         scheduleUpdate();
-                    } else if (data.type === 'execution:log') {
-                        // Consoles logs are handled separately for stability
-                        // eslint-disable-next-line no-console
-                        console.log(`[JS-BLOCK]`, ... (data.args || []));
                     }
                 });
 
