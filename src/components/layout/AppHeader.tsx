@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
-import { FileControls } from '../FileControls';
 import { DESIGN_TOKENS } from '../../constants/design';
 import type { ElectronAPI } from '../../types/electron';
 
@@ -20,13 +19,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
         activeSidebarTab,
         toggleSidebar,
         setSidebarTab,
-        saveFile,
         setOpenedFolder,
         setSelectedFile,
         setConfirmationModal,
-        selectedFile,
         openedFolder,
-        isDirty,
         openModal,
         git,
         setGitSidebarView,
@@ -37,9 +33,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
     const showSidebar = layout.sidebar.isVisible;
     const folderName = openedFolder ? openedFolder.split(/[\\/]/).pop() : null;
 
-    const handleSaveFile = () => {
-        void saveFile();
-    };
 
     return (
         <header style={{
@@ -243,18 +236,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         <FolderOpen size={12} />
                         <span style={{ fontWeight: 500 }}>{folderName}</span>
                     </div>
-                )}
-
-                {/* Global Save Button - Only visible when a file is open */}
-                {selectedFile && (
-                    <FileControls
-                        isDark={isDark}
-                        isDirty={isDirty}
-                        onSave={handleSaveFile}
-                        onClose={() => {
-                            void setSelectedFile(null);
-                        }}
-                    />
                 )}
             </div>
 

@@ -10,8 +10,12 @@ import {
   Box,
   Layers,
   Terminal,
-  Eye,
-  EyeOff
+  Zap,
+  ZapOff,
+  SquareStack,
+  Save,
+  X,
+  Check
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from './store/useStore';
@@ -62,7 +66,10 @@ function App() {
     executionErrors,
     executionCoverage,
     livePreviewEnabled,
-    setLivePreviewEnabled
+    setLivePreviewEnabled,
+    toggleCanvas,
+    isDirty,
+    setSelectedFile
   } = useStore(useShallow(state => ({
     code: state.code,
     setCode: state.setCode,
@@ -83,7 +90,10 @@ function App() {
     executionErrors: state.executionErrors,
     executionCoverage: state.executionCoverage,
     livePreviewEnabled: state.livePreviewEnabled,
-    setLivePreviewEnabled: state.setLivePreviewEnabled
+    setLivePreviewEnabled: state.setLivePreviewEnabled,
+    toggleCanvas: state.toggleCanvas,
+    isDirty: state.isDirty,
+    setSelectedFile: state.setSelectedFile
   })));
 
   const isDark = theme === 'dark';
@@ -106,13 +116,28 @@ function App() {
   }, [saveFile]);
 
   useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      // Specifically catch and silence 'cancelation' errors from Monaco/Allotment
+      if (event.reason && typeof event.reason === 'object' && (event.reason as Record<string, unknown>).type === 'cancelation') {
+        event.preventDefault();
+        return;
+      }
+      console.warn('Unhandled Promise Rejection:', event.reason);
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
     const timer = setTimeout(() => {
       const electronAPI = (window as unknown as { electronAPI?: ElectronAPI }).electronAPI;
       if (electronAPI?.appReady) {
         void electronAPI.appReady();
       }
     }, 200);
-    return () => clearTimeout(timer);
+
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      clearTimeout(timer);
+    };
   }, []);
 
   const handleEditorChange = useCallback((value: string | undefined) => {
@@ -121,13 +146,12 @@ function App() {
 
   const monaco = useMonaco();
 
+  // 1. Configure Monaco once when it's ready
   useEffect(() => {
-    if (!monaco || Object.keys(projectFiles).length === 0) return;
+    if (!monaco) return;
 
     /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
     const m = monaco as any;
-
-    // TypeScript compiler options
     m.languages.typescript.typescriptDefaults.setCompilerOptions({
       target: m.languages.typescript.ScriptTarget.ESNext,
       allowNonTsExtensions: true,
@@ -138,6 +162,15 @@ function App() {
       jsx: m.languages.typescript.JsxEmit.React,
       allowJs: true,
     });
+    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
+  }, [monaco]);
+
+  // 2. Sync project files (cross-file support)
+  useEffect(() => {
+    if (!monaco || Object.keys(projectFiles).length === 0) return;
+
+    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
+    const m = monaco as any;
 
     Object.entries(projectFiles).forEach(([filePath, content]) => {
       const uri = m.Uri.file(filePath);
@@ -145,7 +178,10 @@ function App() {
       if (!model) {
         m.editor.createModel(content, 'typescript', uri);
       } else if (filePath !== selectedFile) {
-        model.setValue(content);
+        // Only update if content actually differs to avoid canceling internal monaco operations
+        if (model.getValue() !== content) {
+          model.setValue(content);
+        }
       }
     });
     /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
@@ -408,23 +444,96 @@ function App() {
                                 {selectedFile.split(/[\\/]/).pop()}
                               </div>
 
-                              <div
-                                onClick={() => setLivePreviewEnabled(!livePreviewEnabled)}
-                                title={livePreviewEnabled ? "Disable Live Preview" : "Enable Live Preview"}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: '38px',
-                                  height: '100%',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s',
-                                  color: livePreviewEnabled ? (isDark ? '#4ec9b0' : '#008080') : (isDark ? '#555' : '#ccc'),
-                                  background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                  borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
-                                }}
-                              >
-                                {livePreviewEnabled ? <Eye size={18} /> : <EyeOff size={18} />}
+                              <div style={{ display: 'flex', height: '100%' }}>
+                                <div
+                                  onClick={() => setLivePreviewEnabled(!livePreviewEnabled)}
+                                  title={livePreviewEnabled ? "Disable Live Execution (Zap)" : "Enable Live Execution (Zap)"}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '38px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    color: livePreviewEnabled ? (isDark ? '#4ec9b0' : '#008080') : (isDark ? '#555' : '#ccc'),
+                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
+                                  }}
+                                >
+                                  {livePreviewEnabled ? <Zap size={18} fill={livePreviewEnabled ? 'currentColor' : 'none'} fillOpacity={0.2} /> : <ZapOff size={18} />}
+                                </div>
+
+                                <div
+                                  onClick={() => toggleCanvas()}
+                                  title={showCanvas ? "Hide Blocks Workspace" : "Show Blocks Workspace"}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '38px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    color: showCanvas ? (isDark ? '#6366f1' : '#4f46e5') : (isDark ? '#555' : '#ccc'),
+                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
+                                  }}
+                                >
+                                  <SquareStack size={18} fill={showCanvas ? 'currentColor' : 'none'} fillOpacity={0.1} />
+                                </div>
+
+                                <div
+                                  onClick={() => { void saveFile(); }}
+                                  title={isDirty ? "Save changes (Ctrl+S)" : "No pending changes"}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '38px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    color: isDirty ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#555' : '#ccc'),
+                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`,
+                                    opacity: isDirty ? 1 : 0.8
+                                  }}
+                                >
+                                  {isDirty ? (
+                                    <Save size={16} strokeWidth={2.5} />
+                                  ) : (
+                                    <Check size={16} strokeWidth={2} style={{ color: isDark ? '#4ade80' : '#16a34a' }} />
+                                  )}
+                                </div>
+
+                                <div
+                                  onClick={() => void setSelectedFile(null)}
+                                  title="Close file"
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '38px',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    color: isDark ? '#555' : '#aaa',
+                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`,
+                                    opacity: 0.6
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.color = isDark ? '#fff' : '#ef4444';
+                                    e.currentTarget.style.opacity = '1';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.color = isDark ? '#555' : '#aaa';
+                                    e.currentTarget.style.opacity = '0.6';
+                                  }}
+                                >
+                                  <X size={16} />
+                                </div>
                               </div>
                             </div>
                           )}

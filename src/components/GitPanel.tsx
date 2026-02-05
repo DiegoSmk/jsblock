@@ -8,6 +8,7 @@ import { GitInitView } from './git/GitInitView';
 import { GitStatusView } from './git/GitStatusView';
 import { GitTerminalView } from './git/GitTerminalView';
 import { GitGraphView } from './git/GitGraphView';
+import type { GitProfile } from '../types/store';
 
 // Reusing some helper logic for InitView props from previous implementation (simplified)
 // Ideally GitInitView should also be connected to store to avoid prop drilling, 
@@ -57,6 +58,15 @@ export const GitPanel: React.FC = () => {
     const [showProfileManager, setShowProfileManager] = useState(false);
     const [newProfile, setNewProfile] = useState({ name: '', email: '', tag: 'personal' as 'work' | 'personal' | 'ai' | 'custom', customTagName: '' });
 
+    const handleSetNewProfile = (profile: GitProfile | Omit<GitProfile, 'id'>) => {
+        setNewProfile({
+            name: profile.name,
+            email: profile.email,
+            tag: profile.tag,
+            customTagName: profile.customTagName ?? ''
+        });
+    };
+
     useEffect(() => {
         const loadGitData = async () => {
             if (openedFolder) {
@@ -68,7 +78,11 @@ export const GitPanel: React.FC = () => {
                 }
             }
         };
-        void loadGitData();
+        loadGitData().catch((err: unknown) => {
+            if (err && typeof err === 'object' && (err as Record<string, unknown>).type !== 'cancelation') {
+                console.error('Git background refresh failed:', err);
+            }
+        });
     }, [openedFolder, refreshGit, fetchGitConfig]);
 
     const startInit = async () => {
@@ -131,7 +145,7 @@ export const GitPanel: React.FC = () => {
                 getTagIcon={getTagIcon}
                 getTagColor={(tag) => getTagColor(tag, isDark)}
                 newProfile={newProfile}
-                setNewProfile={setNewProfile}
+                setNewProfile={handleSetNewProfile}
             />
         );
     }
