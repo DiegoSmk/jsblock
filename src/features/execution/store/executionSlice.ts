@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { AppState } from '../../../types/store';
-import type { ExecutionSlice } from '../types';
+import type { ExecutionSlice, ExecutionError } from '../types';
 
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -11,7 +11,7 @@ let lastExecutedCode = '';
 let buffer: {
     results: Map<number, { value: string; type: 'spy' | 'log' }[]>;
     coverage: Set<number>;
-    errors: Map<number, string>;
+    errors: Map<number, ExecutionError>;
 } = {
     results: new Map(),
     coverage: new Set(),
@@ -122,7 +122,8 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                     }
 
                     if (data.level === 'data') {
-                        const canvasData = data as { args: [string, unknown] };
+                        interface DataMsg { args: [string, unknown] }
+                        const canvasData = data as DataMsg;
                         if (canvasData.args?.[0] === 'canvasData') {
                             set({ runtimeValues: { canvasData: canvasData.args[1] } });
                         }
@@ -145,15 +146,13 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                     }
                 });
 
-                window.electron.onExecutionError((err: any) => {
+                window.electron.onExecutionError((err: ExecutionError | string) => {
                     if (typeof err === 'object' && err !== null) {
-                        const eData = err as { line?: number; message?: string };
-                        const lineNum = Number(eData.line ?? 1);
-                        buffer.errors.set(lineNum || 1, eData.message ?? 'Unknown Error');
+                        const lineNum = Number(err.line || 1);
+                        buffer.errors.set(lineNum, err);
                         scheduleUpdate();
                     } else if (typeof err === 'string') {
-                        // Handle raw string errors
-                        buffer.errors.set(1, err);
+                        buffer.errors.set(1, { message: err, line: 1, column: 1 });
                         scheduleUpdate();
                     }
                 });

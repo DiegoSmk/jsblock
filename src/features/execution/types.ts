@@ -1,6 +1,16 @@
+export interface ExecutionError {
+    message: string;
+    line: number;
+    column: number;
+    suggestion?: {
+        text: string;
+        replace: string;
+    };
+}
+
 export interface ExecutionSlice {
     executionResults: Map<number, { value: string; type: 'spy' | 'log' }[]>;
-    executionErrors: Map<number, string>;
+    executionErrors: Map<number, ExecutionError>;
     executionCoverage: Set<number>;
     isSimulating: boolean;
     livePreviewEnabled: boolean;

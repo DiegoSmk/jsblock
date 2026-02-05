@@ -5,6 +5,16 @@ import { app, BrowserWindow } from 'electron';
 import { Instrumenter } from './Instrumenter';
 import { transform, Message } from 'esbuild';
 
+export interface ExecutionError {
+    message: string;
+    line: number;
+    column: number;
+    suggestion?: {
+        text: string;
+        replace: string;
+    };
+}
+
 export class ExecutionManager {
     private runnerProcess: ChildProcess | null = null;
     private mainWindow: BrowserWindow | null = null;
@@ -45,20 +55,30 @@ export class ExecutionManager {
         } catch (e: any) {
             if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                 const error = (e.errors as Message[])?.[0];
-                let message = error?.text ?? e.message ?? 'Transpilation failed';
-
-                if (message.includes('Expected ";" but found')) {
-                    const codeSnippet = code.split('\n')[(error?.location?.line ?? 1) - 1];
-                    if (codeSnippet?.includes('cont ')) {
-                        message = "Syntax Error: Did you mean 'const'? (Found 'cont')";
-                    }
-                }
-
-                this.mainWindow.webContents.send('execution:error', {
+                const originalMessage = error?.text ?? e.message ?? 'Transpilation failed';
+                let message = originalMessage;
+                let errorData: ExecutionError = {
                     message,
                     line: error?.location?.line ?? 0,
                     column: error?.location?.column ?? 0
-                });
+                };
+
+                // ELITE FIX: Structured Suggestion for typos
+                if (originalMessage.includes('Expected ";" but found')) {
+                    const lines = code.split('\n');
+                    const lineIdx = (error?.location?.line ?? 1) - 1;
+                    const codeLine = lines[lineIdx];
+
+                    if (codeLine?.includes('cont ')) {
+                        errorData.message = "Syntax Error: Did you mean 'const'?";
+                        errorData.suggestion = {
+                            text: 'Change to const',
+                            replace: codeLine.replace(/\bcont\b/, 'const')
+                        };
+                    }
+                }
+
+                this.mainWindow.webContents.send('execution:error', errorData);
             }
             return;
         }
@@ -99,7 +119,6 @@ export class ExecutionManager {
                     } else if (msg.type === 'execution:error') {
                         this.mainWindow.webContents.send('execution:error', msg);
                     } else if (msg.type === 'execution:done') {
-                        // Main execution finished, clear the timeout!
                         this.stopCleanup();
                     }
                 }
@@ -111,7 +130,7 @@ export class ExecutionManager {
 
             this.runnerProcess.on('error', (err: Error) => {
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-                    this.mainWindow.webContents.send('execution:error', err.message);
+                    this.mainWindow.webContents.send('execution:error', { message: err.message, line: 1, column: 1 });
                 }
             });
 
@@ -119,7 +138,7 @@ export class ExecutionManager {
         } catch (e) {
             if (this.mainWindow) {
                 const err = e as Error;
-                this.mainWindow.webContents.send('execution:error', `Failed to spawn runner: ${err.message}`);
+                this.mainWindow.webContents.send('execution:error', { message: `Failed to spawn runner: ${err.message}`, line: 1, column: 1 });
             }
         }
     }
