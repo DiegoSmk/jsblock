@@ -1,4 +1,5 @@
-import type { GitSlice, AppState, GitStashEntry } from '../../../../types/store';
+import type { AppState } from '../../../../types/store';
+import type { GitSlice, GitStashEntry } from '../../types';
 
 export const createStashActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     gitStash: async (message?: string) => {

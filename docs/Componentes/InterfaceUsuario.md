@@ -9,7 +9,7 @@ O layout utiliza um sistema de Sidebar redimensionável personalizado (migrado d
 - **Área Central**: Editor dividido (Canvas Visual e/ou Editor de Código Monaco).
 - **Sidebar Direita** (Opcional): Propriedades ou Assistente (não implementado totalmente).
 
-## Editor Visual (`src/components/FlowContent.tsx`)
+## Editor Visual (`src/features/editor/components/FlowContent.tsx`)
 
 Este é o wrapper do `@xyflow/react`.
 - Configura os tipos de nós (`nodeTypes`).
@@ -17,7 +17,7 @@ Este é o wrapper do `@xyflow/react`.
 - Gerencia callbacks de conexão (`onConnect`).
 
 ### Nós Customizados
-Os nós residem em `src/components/*.Node.tsx`.
+Os nós residem em `src/features/editor/nodes/*.tsx`.
 Cada nó segue o padrão:
 ```tsx
 export const FunctionCallNode = ({ data, id }: NodeProps<AppNodeData>) => {
@@ -34,7 +34,7 @@ export const FunctionCallNode = ({ data, id }: NodeProps<AppNodeData>) => {
 };
 ```
 
-## Sidebar (`src/components/SidebarContainer.tsx`)
+## Sidebar (`src/layout/SidebarContainer.tsx`)
 Gerencia a largura e visibilidade da barra lateral. Persiste a largura no `localStorage` via Zustand (`layoutStore`).
 
 ## Estilização

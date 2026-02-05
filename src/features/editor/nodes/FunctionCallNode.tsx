@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { Hash, Plus, ExternalLink, Activity } from 'lucide-react';
-import type { AppNode, AppNodeData } from '../../../types/store';
+import type { AppNode, AppNodeData } from '../types';
 import type { Edge } from '@xyflow/react';
 
 export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {

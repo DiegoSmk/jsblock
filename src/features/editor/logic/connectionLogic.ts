@@ -1,5 +1,5 @@
 import type { Connection, Edge } from '@xyflow/react';
-import type { AppNode } from '../../../types/store';
+import type { AppNode } from '../types';
 
 export const validateConnection = (connection: Connection | Edge, nodes: AppNode[]): boolean => {
     const sourceNode = nodes.find(n => n.id === connection.source);

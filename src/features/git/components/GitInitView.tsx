@@ -1,5 +1,5 @@
 import { GitBranch, AlertCircle, User, Settings, Check, Edit3, ShieldAlert, Plus, RefreshCw, ChevronDown, X } from 'lucide-react';
-import type { GitProfile } from '../../../components/../../types/store';
+import type { GitProfile } from '../types';
 
 interface GitInitViewProps {
     isDark: boolean;

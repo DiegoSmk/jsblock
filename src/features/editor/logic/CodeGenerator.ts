@@ -6,7 +6,7 @@
 import { parse, print, types } from 'recast';
 import * as parser from '@babel/parser';
 import type { Edge } from '@xyflow/react';
-import type { AppNode } from '../../../types/store';
+import type { AppNode } from '../types';
 import type { Expression, Statement, CallExpression, IfStatement, SwitchStatement, WhileStatement, ForStatement, VariableDeclaration, Pattern } from '@babel/types';
 
 const b = types.builders;

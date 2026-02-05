@@ -12,7 +12,7 @@ import { ReturnHandler } from './handlers/ReturnHandler';
 import { ImportHandler } from './handlers/ImportHandler';
 import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
-import type { AppNode } from '../../types/store';
+import type { AppNode } from '../types';
 
 export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
     const idSuffix = index !== undefined ? `${index}` : undefined;

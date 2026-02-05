@@ -9,6 +9,7 @@ O store contém tanto dados de UI (layout, tema) quanto dados lógicos (nós, ar
 ```typescript
 export const useStore = create<AppState>((set, get, api) => ({
     ...createGitSlice(set, get, api), // Slice modularizado
+    ...createExecutionSlice(set, get, api), // Slice de execução
 
     // Estado Principal
     code: '',             // Código fonte atual
@@ -20,7 +21,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     settingsConfig: '...', // JSON stringificado do settings.json
 
     // Runtime
-    runtimeValues: {},    // Valores capturados durante execução
+    // runtimeValues: {},    // Movido para executionSlice (ou mantido para compatibilidade)
 
     // Navegação
     navigationStack: [],  // Pilha de escopos (funções, loops)

@@ -8,7 +8,7 @@ import { GitInitView } from './GitInitView';
 import { GitStatusView } from './GitStatusView';
 import { GitTerminalView } from './GitTerminalView';
 import { GitGraphView } from './GitGraphView';
-import type { GitProfile } from '../../../types/store';
+import type { GitProfile } from '../types';
 
 // Reusing some helper logic for InitView props from previous implementation (simplified)
 // Ideally GitInitView should also be connected to store to avoid prop drilling, 

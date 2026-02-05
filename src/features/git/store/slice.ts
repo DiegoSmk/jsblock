@@ -1,5 +1,6 @@
+import type { AppState } from '../../../types/store';
 import type { StateCreator } from 'zustand';
-import type { AppState, GitSlice, QuickCommand, GitProfile, CommitTemplate } from '../../../types/store';
+import type { GitSlice, QuickCommand, GitProfile, CommitTemplate } from '../types';
 import { initialGitState } from './initialState';
 import { createBranchActions } from './actions/branchActions';
 import { createCommitActions } from './actions/commitActions';
@@ -13,13 +14,6 @@ import { createViewActions } from './actions/viewActions';
 
 export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, get) => ({
     git: initialGitState,
-
-    // Initial State for Panel Configs (loaded from localStorage in initializers usually, but here defined inline in original file)
-    // We need to move the initialization logic here or keep it.
-    // The original createGitSlice had inline initialization.
-    // I moved the logic to initialGitState for `git` object, but `gitPanelConfig` etc were computed.
-    // I should implement them here or in initialState if possible.
-    // `gitPanelConfig` relies on localStorage.
 
     gitPanelConfig: (() => {
         const saved = localStorage.getItem('gitPanelConfig');
@@ -73,4 +67,4 @@ export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, ge
     ...createStashActions(set, get),
     ...createTagActions(set, get),
     ...createViewActions(set, get),
-}) as GitSlice;
+});

@@ -1,21 +1,9 @@
 import type { StateCreator } from 'zustand';
 import type { AppState } from '../../../types/store';
+import type { ExecutionSlice } from '../types';
 
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let listenersInitialized = false;
-
-export interface ExecutionSlice {
-    executionResults: Map<number, { value: string; type: 'spy' | 'log' }[]>;
-    executionErrors: Map<number, string>;
-    executionCoverage: Set<number>;
-    isSimulating: boolean;
-    livePreviewEnabled: boolean;
-    runtimeValues: Record<string, unknown>;
-
-    toggleSimulation: () => void;
-    runExecution: () => void;
-    setLivePreviewEnabled: (enabled: boolean) => void;
-}
 
 export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => ({
     executionResults: new Map(),

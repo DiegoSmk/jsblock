@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Search, ChevronRight, Code2, StickyNote } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { useReactFlow } from '@xyflow/react';
 import { useTranslation } from 'react-i18next';
-import type { AppNode } from '../types/store';
+import type { AppNode } from '../types';
 import { PanelSection } from './git/PanelSection';
 
 export const FunctionLibrary: React.FC = () => {

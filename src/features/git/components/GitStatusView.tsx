@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { GitStatusGroups } from './GitStatusGroups';
 import { CommitSection } from './CommitSection';
 import { AuthorModal } from './AuthorModal';

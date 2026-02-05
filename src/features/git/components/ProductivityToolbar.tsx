@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { Archive, ArrowUpCircle, RotateCcw, Layers, Trash2, ChevronDown, Monitor, ChevronRight } from 'lucide-react';
 import { Tooltip } from '../../../components/ui/Tooltip';
 import { ScrollArea } from '../../../components/ui/ScrollArea';

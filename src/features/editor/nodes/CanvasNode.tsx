@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { Presentation, Play, Pause, RotateCcw } from 'lucide-react';
 
-import type { AppNodeData } from '../../../types/store';
+import type { AppNodeData } from '../types';
 
 interface CanvasShape {
     type: 'circle' | 'rect' | 'text' | 'line';

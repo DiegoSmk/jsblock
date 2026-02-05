@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Eye, EyeOff, RotateCcw, Layout, CheckCircle2 } from 'lucide-react';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { useTranslation } from 'react-i18next';
 
 interface GitPanelConfigProps {

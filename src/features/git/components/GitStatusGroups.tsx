@@ -1,3 +1,4 @@
+import type { AppState } from '../../../../types/store';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Minus, RotateCcw, Eraser } from 'lucide-react';
@@ -6,7 +7,7 @@ import { Tooltip } from '../../../components/ui/Tooltip';
 import { FileTreeView } from './FileTreeView';
 import { GitStatusList } from './GitStatusList';
 import { TreeToggle } from './TreeToggle';
-import type { AppState, GitFileStatus } from '../../../components/../../types/store';
+import type { GitFileStatus } from '../types';
 import './GitStatus.css';
 import './GitPanel.css';
 

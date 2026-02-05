@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { GitBranch, Plus, Trash2, Check, Search, X, CornerDownLeft } from 'lucide-react';
 import { Modal } from '../../../components/ui/Modal';
 

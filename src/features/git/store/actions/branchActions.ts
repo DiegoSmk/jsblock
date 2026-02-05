@@ -1,4 +1,5 @@
-import type { GitSlice, AppState } from '../../../../types/store';
+import type { AppState } from '../../../../types/store';
+import type { GitSlice } from '../../types';
 
 export const createBranchActions = (_set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     changeBranch: async (branch: string) => {

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Minus, RotateCcw, EyeOff } from 'lucide-react';
 import { Tooltip } from '../../../components/ui/Tooltip';
-import type { GitFileStatus } from '../../../components/../../types/store';
+import type { GitFileStatus } from '../types';
 import './GitStatus.css';
 import './GitPanel.css';
 

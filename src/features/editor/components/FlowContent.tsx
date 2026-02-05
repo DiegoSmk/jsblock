@@ -13,7 +13,7 @@ import {
   type Connection,
   ConnectionMode
 } from '@xyflow/react';
-import type { EdgeCustomStyle } from '../../../types/store';
+import type { EdgeCustomStyle } from '../types';
 import { Edit2, Trash2, Palette } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../../store/useStore';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import {
     Terminal as TerminalIcon,
     ExternalLink,

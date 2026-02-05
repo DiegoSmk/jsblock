@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStore } from '../../../components/../../store/useStore';
-import type { GitLogEntry } from '../../../components/../../types/store';
+import { useStore } from '../../../store/useStore';
+import type { GitLogEntry } from '../types';
 import { ScrollArea } from '../../../components/ui/ScrollArea';
 import { GitBranch, History, Tag, RefreshCw } from 'lucide-react';
 import { SectionHeader } from './SharedComponents';

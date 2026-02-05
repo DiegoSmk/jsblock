@@ -1,7 +1,7 @@
 import { memo, useCallback, useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
-import type { AppNode } from '../../../types/store';
+import type { AppNode } from '../types';
 import { useStore } from '../../../store/useStore';
 import { Copy, Check, Merge, ArrowUpRight, X } from 'lucide-react';
 import { motion } from 'framer-motion';

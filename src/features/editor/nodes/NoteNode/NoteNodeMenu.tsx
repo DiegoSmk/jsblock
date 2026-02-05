@@ -1,10 +1,11 @@
+import type { AppState } from '../../../../types/store';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, RotateCcw, Trash2, Palette, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NOTE_PALETTE, STROKE_OPACITY } from '../../constants/design';
 import { type NodeChange } from '@xyflow/react';
-import type { NodeCustomStyle, AppState } from '../../types/store';
+import type { NodeCustomStyle } from '../../types';
 import { MenuButton } from './MenuButton';
 
 interface NoteNodeMenuProps {

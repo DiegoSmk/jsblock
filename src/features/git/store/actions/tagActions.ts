@@ -1,4 +1,5 @@
-import type { GitSlice, AppState, GitTag } from '../../../../types/store';
+import type { AppState } from '../../../../types/store';
+import type { GitSlice, GitTag } from '../../types';
 
 export const createTagActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     fetchTags: async () => {

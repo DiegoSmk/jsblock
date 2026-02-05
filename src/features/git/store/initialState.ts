@@ -1,4 +1,4 @@
-import type { GitSlice } from '../../../types/store';
+import type { GitSlice } from '../types';
 
 export const initialGitState: GitSlice['git'] = {
     isRepo: false,

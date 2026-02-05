@@ -1,4 +1,5 @@
-import type { GitSlice, AppState, GitFileStatus, GitLogEntry } from '../../../../types/store';
+import type { AppState } from '../../../../types/store';
+import type { GitSlice, GitFileStatus, GitLogEntry } from '../../types';
 
 const gitHead = 'Head';
 

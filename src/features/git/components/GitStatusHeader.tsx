@@ -4,7 +4,7 @@ import { RefreshCw, User, Settings, Globe, FileText, ChevronDown, EyeOff, Folder
 import { Tooltip } from '../../../components/ui/Tooltip';
 import { BranchSwitcher } from './BranchSwitcher';
 import { ScrollArea } from '../../../components/ui/ScrollArea';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 
 interface GitStatusHeaderProps {
     isDark: boolean;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { Modal } from '../../../components/ui/Modal';
 import { FileText, User, Calendar, Hash, History as HistoryIcon, GitCommit, Copy, Check, GitBranch, Plus, Minus, Tag } from 'lucide-react';
 

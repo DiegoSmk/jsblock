@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useRef, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useStore } from '../../store/useStore';
+import { useStore } from '../../../../store/useStore';
 import type { AppNode, NodeCustomStyle } from '../../types/store';
 import { hexToRgba } from '../../utils/colors';
 

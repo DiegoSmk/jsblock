@@ -57,8 +57,7 @@ Melhorias focadas na experiência do desenvolvedor e fluidez do app.
 ## 📚 Documentation / Documentação
 *   [Plugin Development Guide (EN)](PLUGINS.md)
 *   [Guia de Desenvolvimento de Plugins (PT-BR)](PLUGINS_PT-BR.md)
-*   [UI Architecture (a.md)](a.md)
+*   [UI Architecture (UI_ARCHITECTURE.md)](UI_ARCHITECTURE.md)
 
 ---
 *Last Updated / Atualizado em: February 01, 2026*
-

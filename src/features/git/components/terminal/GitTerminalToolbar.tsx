@@ -1,6 +1,6 @@
 import React from 'react';
 import { Zap, X, Plus } from 'lucide-react';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../../store/useStore';
 
 interface GitTerminalToolbarProps {
     isDark: boolean;

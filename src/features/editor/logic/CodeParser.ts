@@ -2,7 +2,7 @@ import { parse } from '@babel/parser';
 import type { Edge } from '@xyflow/react';
 import { initializeContext, parseStatement } from './parser/Dispatcher';
 import type { Statement } from '@babel/types';
-import type { AppNode } from '../../../types/store';
+import type { AppNode } from '../types';
 
 
 export const parseCodeToFlow = (code: string): { nodes: AppNode[], edges: Edge[] } => {

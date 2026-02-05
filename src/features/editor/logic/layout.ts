@@ -1,7 +1,7 @@
 import * as dagre from 'dagre';
 import type { Edge } from '@xyflow/react';
 import { Position } from '@xyflow/react';
-import type { AppNode } from '../../../types/store';
+import type { AppNode } from '../types';
 
 export const getLayoutedElements = (nodes: AppNode[], edges: Edge[]) => {
     const scopes: Record<string, AppNode[]> = {};

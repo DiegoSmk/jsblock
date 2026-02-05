@@ -53,9 +53,13 @@ Existem dois modos de execução:
 │   ├── preload.ts     # Ponte de segurança (ContextBridge)
 │   └── services/      # Lógica de negócios do backend (ex: Plugins)
 ├── src/               # Código do Processo de Renderização (React)
-│   ├── components/    # Componentes UI (Nós, Sidebar, etc.)
-│   ├── logic/         # Lógica pura (Parser, Generator, Layout)
-│   ├── store/         # Gerenciamento de estado (Zustand)
-│   └── workers/       # Web Workers para tarefas pesadas
+│   ├── components/    # UI Kit Genérico (Button, Modal, Input)
+│   ├── features/      # Módulos de Domínio (Editor, Git, Execution, etc.)
+│   │   ├── editor/    # Nós, Lógica AST, Componentes Visuais
+│   │   ├── git/       # Controle de Versão e Terminal
+│   │   └── ...        # Outras features
+│   ├── layout/        # Componentes de Layout Macro (Header, Sidebar)
+│   ├── store/         # Configuração Root da Store (Zustand)
+│   └── workers/       # Web Workers
 └── docs/              # Esta documentação
 ```

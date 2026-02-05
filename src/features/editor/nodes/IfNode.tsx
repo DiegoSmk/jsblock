@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { ExternalLink, Split } from 'lucide-react';
 
-import type { AppNodeData } from '../../../types/store';
+import type { AppNodeData } from '../types';
 
 export const IfNode = memo(({ data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);

@@ -1,7 +1,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { generateCodeFromFlow } from './CodeGenerator';
-import type { AppNode } from '../types/store';
+import type { AppNode } from '../types';
 import type { Edge } from '@xyflow/react';
 
 describe('CodeGenerator', () => {

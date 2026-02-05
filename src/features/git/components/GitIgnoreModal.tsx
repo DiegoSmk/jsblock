@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { Save, EyeOff } from 'lucide-react';
 import { ScrollArea } from '../../../components/ui/ScrollArea';
 import { Modal } from '../../../components/ui/Modal';

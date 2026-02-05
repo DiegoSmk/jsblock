@@ -1,4 +1,5 @@
-import type { GitSlice, AppState, GitAuthor, GitProfile } from '../../../../types/store';
+import type { AppState } from '../../../../types/store';
+import type { GitSlice, GitAuthor, GitProfile } from '../../types';
 
 export const createConfigActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     gitInit: async (author?: GitAuthor, isGlobal = false) => {

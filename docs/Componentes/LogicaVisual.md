@@ -2,7 +2,7 @@
 
 Este módulo é o "cérebro" do JS Block, responsável por converter texto em diagrama e diagrama em texto.
 
-## Code Parser (`src/logic/CodeParser.ts`)
+## Code Parser (`src/features/editor/logic/CodeParser.ts`)
 
 O Parser transforma código JavaScript em nós do React Flow.
 
@@ -21,7 +21,7 @@ O parser mantém um `ParserContext` que rastreia:
 - `edges`: Lista acumulada de arestas.
 - `varMap`: Mapeamento de variáveis para conectar inputs automaticamente.
 
-## Code Generator (`src/logic/CodeGenerator.ts`)
+## Code Generator (`src/features/editor/logic/CodeGenerator.ts`)
 
 O Generator faz o caminho inverso: pega o grafo visual e atualiza o código. Ele usa a biblioteca `recast` para tentar manter a formatação original do código do usuário.
 

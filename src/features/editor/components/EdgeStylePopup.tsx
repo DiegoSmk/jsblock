@@ -9,7 +9,7 @@ import {
     RotateCcw
 } from 'lucide-react';
 
-import type { EdgeCustomStyle } from '../types/store';
+import type { EdgeCustomStyle } from '../types';
 
 interface EdgeStylePopupProps {
     currentStyle: EdgeCustomStyle;

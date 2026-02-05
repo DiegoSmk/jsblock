@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { useStore } from '../../../components/../../store/useStore';
-import type { GitLogEntry } from '../../../components/../../types/store';
+import { useStore } from '../../../store/useStore';
+import type { GitLogEntry } from '../types';
 import { useTranslation } from 'react-i18next';
 import { ScrollArea } from '../../../components/ui/ScrollArea';
 import { PanelSection } from './PanelSection';

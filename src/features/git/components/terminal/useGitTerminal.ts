@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStore } from '../../../store/useStore';
+import { useStore } from '../../../../store/useStore';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { parseProgress, parseSuggestion, parseCommitHash, parseYesNoPrompt } from './gitTerminalUtils';

@@ -1,4 +1,5 @@
-import type { GitSlice, AppState, CommitTemplate } from '../../../../types/store';
+import type { AppState } from '../../../../types/store';
+import type { GitSlice, CommitTemplate } from '../../types';
 
 const gitHead = 'Head';
 const generateId = () => `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

@@ -3,7 +3,7 @@ import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { Plus, Trash2, ExternalLink } from 'lucide-react';
 
-import type { AppNodeData } from '../../../types/store';
+import type { AppNodeData } from '../types';
 
 export const SwitchNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);

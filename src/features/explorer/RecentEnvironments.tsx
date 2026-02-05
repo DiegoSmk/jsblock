@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { RecentEnvironment } from '../../types/store';
+import type { RecentEnvironment } from './types';
 
 import {
     Clock,

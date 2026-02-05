@@ -1,4 +1,5 @@
-import type { AppState, GitSlice, GitLogEntry } from '../../../../types/store';
+import type { AppState } from '../../../../types/store';
+import type { GitSlice, GitLogEntry } from '../../types';
 
 export const createViewActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     setGitView: (view: 'status' | 'terminal' | 'graph') => {

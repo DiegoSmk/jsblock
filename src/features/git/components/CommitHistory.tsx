@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { SectionHeader } from './SharedComponents';
 import { Search, RefreshCw, ChevronRight } from 'lucide-react';
 import { Tooltip } from '../../../components/ui/Tooltip';
-import { useStore } from '../../../components/../../store/useStore';
+import { useStore } from '../../../store/useStore';
 import { List } from 'react-window';
 import type { RowComponentProps } from 'react-window';
 import { AutoSizer } from 'react-virtualized-auto-sizer';
 
-import type { GitLogEntry } from '../../../components/../../types/store';
+import type { GitLogEntry } from '../types';
 
 interface GitHistoryProps {
     isDark: boolean;

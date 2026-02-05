@@ -3,7 +3,7 @@ import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { Box } from 'lucide-react';
 
-import type { AppNodeData } from '../../../types/store';
+import type { AppNodeData } from '../types';
 
 export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);

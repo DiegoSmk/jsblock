@@ -71,7 +71,7 @@ export interface ElectronAPI {
   }>;
 }
 
-import type { PluginManifest } from './store';
+import type { PluginManifest } from '../features/extensions/types';
 
 declare global {
   interface Window {
