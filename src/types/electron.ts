@@ -1,4 +1,10 @@
 // Electron API types
+export type ExecutionPayload =
+  | { type: 'execution:log'; level: string; args: unknown[] }
+  | { type: 'execution:value'; line: number; value: string; valueType?: 'spy' | 'log' }
+  | { type: 'execution:coverage'; line: number }
+  | { level: 'data'; args: ['canvasData', unknown] };
+
 export interface ElectronAPI {
   // File operations
   openFile: () => Promise<{ filePath: string; content: string } | null>;
@@ -52,8 +58,9 @@ export interface ElectronAPI {
   // Execution
   executionStart: (code: string, filePath?: string) => void;
   executionStop: () => void;
-  onExecutionLog: (callback: (data: { type: string, level: string, args: unknown[] }) => void) => () => void;
-  onExecutionError: (callback: (error: string) => void) => () => void;
+  onExecutionLog: (callback: (data: ExecutionPayload) => void) => () => void;
+  onExecutionError: (callback: (error: string | { line: number; message: string }) => void) => () => void;
+  mcpSyncState: (state: unknown) => void;
 
   // Environment (if needed, but not in preload.ts currently)
   getEnvironmentInfo?: () => Promise<{

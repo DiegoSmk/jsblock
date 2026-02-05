@@ -53,5 +53,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         const subscription = (_event: unknown, error: string) => callback(error);
         ipcRenderer.on('execution:error', subscription);
         return () => ipcRenderer.removeListener('execution:error', subscription);
-    }
+    },
+    // MCP Sync
+    mcpSyncState: (state: unknown) => ipcRenderer.send('mcp:sync-state', state)
 });

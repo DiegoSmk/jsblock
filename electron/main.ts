@@ -110,6 +110,45 @@ function createWindow() {
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
+
+    // --- MCP LOG CAPTURE ---
+    const logPath = path.join(app.getAppPath(), 'app.log');
+    const logToFile = (msg: string) => {
+        const timestamp = new Date().toISOString();
+        try {
+            fs.appendFileSync(logPath, `[${timestamp}] ${msg}\n`);
+        } catch {
+            // Can't use console.error here if we're overriding it
+        }
+    };
+
+    // Override Main Process console
+    /* eslint-disable no-console */
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+
+    console.log = (...args: unknown[]) => {
+        originalLog(...args);
+        logToFile(`[MAIN][INFO] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+    };
+    console.warn = (...args: unknown[]) => {
+        originalWarn(...args);
+        logToFile(`[MAIN][WARN] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+    };
+    console.error = (...args: unknown[]) => {
+        originalError(...args);
+        logToFile(`[MAIN][ERROR] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+    };
+    /* eslint-enable no-console */
+
+    mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+        const levels = ['Debug', 'Info', 'Warn', 'Error'];
+        const lvlName = levels[level] || 'Log';
+        logToFile(`[RENDERER][${lvlName}] ${message} (at ${sourceId}:${line})`);
+    });
+
+    logToFile('--- NEW SESSION STARTED ---');
 }
 
 const pluginManager = new PluginManager();
@@ -345,6 +384,16 @@ ipcMain.on('execution:start', (_event, code: string, filePath?: string) => {
 
 ipcMain.on('execution:stop', () => {
     executionManager.stopExecution();
+});
+
+// MCP Sync State Handler
+ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
+    const statePath = path.join(app.getAppPath(), 'state.json');
+    try {
+        fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
+    } catch (err) {
+        console.error('Failed to sync state to file', err);
+    }
 });
 
 
