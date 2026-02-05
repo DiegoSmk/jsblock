@@ -61,6 +61,11 @@ export class ExecutionManager {
             return;
         }
 
+        // Success signal: Transpilation passed
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+            this.mainWindow.webContents.send('execution:started');
+        }
+
         await fs.promises.writeFile(filePath, instrumentedCode, 'utf-8');
 
         // Resolve runner path

@@ -38,7 +38,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         } else {
             set({ isSimulating: true });
             simulationInterval = setInterval(() => {
-                get().runExecution(undefined, undefined, true);
+                get().runExecution();
             }, 1000);
         }
     },
@@ -64,12 +64,13 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         }, 300);
     },
 
-    runExecution: (customCode?: string, customPath?: string, isSimulationTrigger = false) => {
+    runExecution: (customCode?: string, customPath?: string) => {
         const { code, selectedFile, livePreviewEnabled } = get();
         const codeToRun = customCode ?? code;
         const pathToRun = customPath ?? selectedFile;
 
-        if (!isSimulationTrigger && customCode !== undefined && codeToRun === lastExecutedCode) {
+        // Force execution check
+        if (customCode !== undefined && codeToRun === lastExecutedCode) {
             return;
         }
 
@@ -81,10 +82,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         const shouldExecute = (customCode === undefined) || livePreviewEnabled;
         if (window.electron && shouldExecute) {
             lastExecutedCode = codeToRun;
-
-            // PROFESSIONAL UX: We don't clear errors IMMEDIATELY here anymore
-            // because we want to see the error as we type. Instead, we'll
-            // let the new execution results or errors replace the old ones.
 
             // Reset buffer
             buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
@@ -109,15 +106,22 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 }
             };
 
-            // Force a cleanup if no data arrives after a while (successful silent code)
+            // Fast safety flush for silent code (400ms)
             setTimeout(() => {
-                if (buffer.results.size === 0 && buffer.errors.size === 0 && get().executionResults.size > 0) {
+                if (buffer.results.size === 0 && buffer.errors.size === 0) {
                     set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set() });
                 }
-            }, 1000);
+            }, 400);
 
             if (!listenersInitialized) {
+                // Main thread messages
                 window.electron.onExecutionLog((data: any) => {
+                    // Success signal from backend (Transpilation passed)
+                    if (data === 'execution:started' || data?.type === 'execution:started') {
+                        set({ executionErrors: new Map() });
+                        return;
+                    }
+
                     if (data.level === 'data') {
                         const canvasData = data as { args: [string, unknown] };
                         if (canvasData.args?.[0] === 'canvasData') {
@@ -130,7 +134,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                         const { line, value, valueType } = data;
                         const lineNum = Number(line);
                         const existing = buffer.results.get(lineNum) ?? [];
-
                         if (existing.length < 50) {
                             existing.push({ value, type: valueType ?? 'spy' });
                             buffer.results.set(lineNum, existing);
@@ -145,8 +148,11 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 window.electron.onExecutionError((err: any) => {
                     if (typeof err === 'object' && err !== null) {
                         const lineNum = Number(err.line);
-                        // esbuild lines are 1-based, we keep them that way or adjust if needed
                         buffer.errors.set(lineNum || 1, err.message);
+                        scheduleUpdate();
+                    } else if (typeof err === 'string') {
+                        // Handle raw string errors
+                        buffer.errors.set(1, err);
                         scheduleUpdate();
                     }
                 });
