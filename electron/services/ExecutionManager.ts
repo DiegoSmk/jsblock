@@ -69,12 +69,40 @@ export class ExecutionManager {
 
                 // --- UNIVERSAL TYPO DETECTOR ---
                 const keywords = [
+                    // Variable Declarations
                     { typo: /\bcont\b/, correct: 'const' },
+
+                    // Functions & Flow Control
                     { typo: /\bfunctio\b|\bfuntion\b|\bfunc\b/, correct: 'function' },
                     { typo: /\bretun\b|\bretunr\b/, correct: 'return' },
+                    { typo: /\bswich\b|\bswtch\b/, correct: 'switch' },
+                    { typo: /\bcsoe\b|\bcaes\b/, correct: 'case' },
+                    { typo: /\bbraek\b|\bbreek\b/, correct: 'break' },
+                    { typo: /\bwihle\b|\bwhie\b/, correct: 'while' },
+                    { typo: /\bdefualt\b/, correct: 'default' },
+                    { typo: /\bcacth\b/, correct: 'catch' },
+                    { typo: /\bfinalyl\b|\bfinaly\b/, correct: 'finally' },
+                    { typo: /\bthow\b|\btrhow\b/, correct: 'throw' },
+
+                    // Async/Await
+                    { typo: /\basyn\b|\basny\b/, correct: 'async' },
+                    { typo: /\bawiat\b|\bauait\b/, correct: 'await' },
+
+                    // Modules
                     { typo: /\bimpor\b|\bimportt\b/, correct: 'import' },
                     { typo: /\bexpor\b/, correct: 'export' },
-                    { typo: /\basyn\b|\basny\b/, correct: 'async' }
+
+                    // OO & Types
+                    { typo: /\bclas\b|\bcalss\b|\bclss\b/, correct: 'class' },
+                    { typo: /\biterface\b|\binterfce\b|\binteface\b/, correct: 'interface' },
+                    { typo: /\btypeoff\b|\btypeo\b|\btypof\b/, correct: 'typeof' },
+                    { typo: /\bintanceof\b|\binstancof\b/, correct: 'instanceof' },
+
+                    // Globals & Primitives
+                    { typo: /\bconsoel\b|\bconsol\b|\bcnsole\b/, correct: 'console' },
+                    { typo: /\blenght\b|\blengh\b/, correct: 'length' },
+                    { typo: /\bundefind\b|\bundifined\b/, correct: 'undefined' },
+                    { typo: /\bdebuger\b/, correct: 'debugger' }
                 ];
 
                 for (const item of keywords) {

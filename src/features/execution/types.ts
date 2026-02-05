@@ -1,7 +1,7 @@
 export interface ExecutionError {
     message: string;
     line: number;
-    column: number;
+    column?: number;
     suggestion?: {
         text: string;
         replace: string;

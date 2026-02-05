@@ -51,7 +51,7 @@ export interface ElectronAPI {
   executionStart: (code: string, filePath?: string) => void;
   executionStop: () => void;
   onExecutionLog: (callback: (data: ExecutionPayload) => void) => () => void;
-  onExecutionError: (callback: (error: string | { line: number; message: string }) => void) => () => void;
+  onExecutionError: (callback: (error: string | { line: number; message: string; column?: number; suggestion?: { text: string; replace: string } }) => void) => () => void;
   mcpSyncState: (state: unknown) => void;
 }
 
