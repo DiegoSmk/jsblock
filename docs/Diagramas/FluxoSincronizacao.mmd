@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor User
+    participant Editor as Monaco Editor
+    participant Visual as React Flow
+    participant Store as Zustand Store
+    participant Parser as CodeParser
+    participant Gen as CodeGenerator
+
+    %% Text to Visual
+    User->>Editor: Digita código
+    Editor->>Store: setCode(newCode)
+    Store->>Parser: parseCodeToFlow(newCode)
+    Parser-->>Store: { nodes, edges }
+    Store->>Visual: Renderiza novos nós
+
+    %% Visual to Text
+    User->>Visual: Conecta dois nós
+    Visual->>Store: onConnect(connection)
+    Store->>Store: Atualiza Edges State
+    Store->>Gen: generateCodeFromFlow(currentCode, nodes, edges)
+    Gen-->>Store: generatedCode
+    Store->>Editor: Atualiza texto

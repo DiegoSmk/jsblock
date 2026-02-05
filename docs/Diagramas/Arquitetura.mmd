@@ -1,0 +1,47 @@
+graph TD
+    subgraph "Main Process (Node.js)"
+        Main[Electron Main]
+        IPC_Main[IPC Handlers]
+        FS[File System]
+        PTY[Node PTY]
+        Plugins[Plugin Manager]
+    end
+
+    subgraph "Renderer Process (Chromium)"
+        UI[React UI]
+        Store[Zustand Store]
+        Visual[XYFlow Canvas]
+        Logic[AST Parser/Generator]
+        Monaco[Monaco Editor]
+        TermUI[Xterm.js]
+        Worker[Web Worker]
+    end
+
+    subgraph "External"
+        Shell[System Shell / Node]
+        Disk[(Disk Storage)]
+    end
+
+    %% Communication
+    UI --> Store
+    Store --> Visual
+    Store --> Logic
+    Visual -- "User Actions" --> Store
+    Logic -- "Sync" --> Store
+
+    %% IPC Bridge
+    Store -- "IPC Invoke" --> IPC_Main
+    IPC_Main -- "IPC Reply" --> Store
+    TermUI -- "Data/Resize" --> IPC_Main
+    IPC_Main -- "Term Data" --> TermUI
+
+    %% Main Logic
+    Main --> IPC_Main
+    IPC_Main --> FS
+    IPC_Main --> PTY
+    IPC_Main --> Plugins
+
+    %% External Interactions
+    FS --> Disk
+    PTY --> Shell
+    Worker -- "Sandboxed Eval" --> Store
