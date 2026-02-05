@@ -69,7 +69,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         const codeToRun = customCode ?? code;
         const pathToRun = customPath ?? selectedFile;
 
-        // Force execution check
         if (customCode !== undefined && codeToRun === lastExecutedCode) {
             return;
         }
@@ -131,11 +130,12 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                     }
 
                     if (data.type === 'execution:value') {
-                        const { line, value, valueType } = data;
-                        const lineNum = Number(line);
+                        interface ValueMsg { line: number; value: string; valueType?: 'spy' | 'log' }
+                        const vData = data as ValueMsg;
+                        const lineNum = Number(vData.line);
                         const existing = buffer.results.get(lineNum) ?? [];
                         if (existing.length < 50) {
-                            existing.push({ value, type: valueType ?? 'spy' });
+                            existing.push({ value: vData.value, type: vData.valueType ?? 'spy' });
                             buffer.results.set(lineNum, existing);
                             scheduleUpdate();
                         }
@@ -147,8 +147,9 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
 
                 window.electron.onExecutionError((err: any) => {
                     if (typeof err === 'object' && err !== null) {
-                        const lineNum = Number(err.line);
-                        buffer.errors.set(lineNum || 1, err.message);
+                        const eData = err as { line?: number; message?: string };
+                        const lineNum = Number(eData.line ?? 1);
+                        buffer.errors.set(lineNum || 1, eData.message ?? 'Unknown Error');
                         scheduleUpdate();
                     } else if (typeof err === 'string') {
                         // Handle raw string errors
