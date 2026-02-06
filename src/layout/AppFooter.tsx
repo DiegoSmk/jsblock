@@ -117,24 +117,32 @@ export const AppFooter: React.FC = () => {
             }}
         >
             <div className="footer-left" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                {isExecuting && (
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '0 12px',
-                        color: cyanColor,
-                        height: '100%',
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        borderRight: `1px solid ${borderColor}`,
-                        background: isDark ? 'rgba(79, 195, 247, 0.05)' : 'rgba(79, 195, 247, 0.02)'
-                    }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '0 12px',
+                    color: isExecuting ? cyanColor : 'inherit',
+                    height: '100%',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    borderRight: `1px solid ${borderColor}`,
+                    background: isExecuting
+                        ? (isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(79, 195, 247, 0.05)')
+                        : 'transparent',
+                    minWidth: '94px',
+                    opacity: isExecuting ? 1 : 0.4,
+                    transition: 'all 0.3s ease',
+                    userSelect: 'none'
+                }}>
+                    {isExecuting ? (
                         <RefreshCw size={12} style={{ animation: 'spin 2s linear infinite' }} />
-                        <span>RUNNING</span>
-                    </div>
-                )}
+                    ) : (
+                        <CheckCircle2 size={12} />
+                    )}
+                    <span>{isExecuting ? 'RUNNING' : 'READY'}</span>
+                </div>
 
                 <div
                     ref={runtimeRef}
