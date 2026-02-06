@@ -36,6 +36,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
     return (
         <header style={{
             height: DESIGN_TOKENS.RIBBON_WIDTH,
+            minHeight: DESIGN_TOKENS.RIBBON_WIDTH,
+            flexShrink: 0,
             padding: '0 8px',
             background: isDark ? '#1e1e1e' : '#f3f4f6',
             borderBottom: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`,

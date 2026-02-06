@@ -44,6 +44,7 @@ export const SidebarPanel: React.FC<SidebarPanelProps> = ({
                 style={{
                     height: '32px',
                     minHeight: '32px',
+                    flexShrink: 0,
                     padding: '0 12px',
                     display: 'flex',
                     alignItems: 'center',

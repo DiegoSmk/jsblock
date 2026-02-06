@@ -20,6 +20,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useStore } from './store/useStore';
 import { useMonacoDecorations } from './features/execution/hooks/useMonacoDecorations';
+import { useMonacoBenchmarks } from './features/execution/hooks/useMonacoBenchmarks';
 import { SideRibbon } from './layout/SideRibbon';
 import { ContextRibbon } from './components/ui/ContextRibbon';
 import { SidebarContainer } from './layout/SidebarContainer';
@@ -51,6 +52,7 @@ import { CommitDetailModal } from './features/git/components/CommitDetailModal';
 import { FlowContent } from './features/editor/components/FlowContent';
 import { AppHeader } from './layout/AppHeader';
 import { AppFooter } from './layout/AppFooter';
+import { BenchmarkPanel } from './features/execution/components/BenchmarkPanel';
 
 function App() {
   const { t } = useTranslation();
@@ -64,12 +66,11 @@ function App() {
     selectedPluginId,
     settings,
     projectFiles,
-
     livePreviewEnabled,
     setLivePreviewEnabled,
     toggleCanvas,
     isDirty,
-    setSelectedFile
+    setSelectedFile,
   } = useStore(useShallow(state => ({
     code: state.code,
     setCode: state.setCode,
@@ -86,12 +87,11 @@ function App() {
     selectedPluginId: state.selectedPluginId,
     settings: state.settings,
     projectFiles: state.projectFiles,
-
     livePreviewEnabled: state.livePreviewEnabled,
+    isDirty: state.isDirty,
+    setSelectedFile: state.setSelectedFile,
     setLivePreviewEnabled: state.setLivePreviewEnabled,
     toggleCanvas: state.toggleCanvas,
-    isDirty: state.isDirty,
-    setSelectedFile: state.setSelectedFile
   })));
 
   const isDark = theme === 'dark';
@@ -196,6 +196,7 @@ function App() {
   }, [saveFile]);
 
   useMonacoDecorations(editorInstance);
+  useMonacoBenchmarks(editorInstance);
 
   // Styles moved to src/index.css for reliability
 
@@ -299,6 +300,8 @@ function App() {
                           {selectedFile && (
                             <div style={{
                               height: '32px',
+                              minHeight: '32px',
+                              flexShrink: 0,
                               background: isDark ? '#2d2d2d' : '#f0f0f0',
                               display: 'flex',
                               alignItems: 'center',
@@ -412,34 +415,37 @@ function App() {
                               </div>
                             </div>
                           )}
-                          {!selectedFile ? (
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                              <Code size={48} opacity={0.3} />
-                              <p>{t('app.select_file')}</p>
-                            </div>
-                          ) : (
-                            <Editor
-                              height="100%"
-                              defaultLanguage="typescript"
-                              path={selectedFile || undefined}
-                              value={code}
-                              onChange={handleEditorChange}
-                              onMount={handleEditorDidMount}
-                              theme={isDark ? "vs-dark" : "light"}
-                              options={{
-                                minimap: { enabled: false },
-                                fontSize: 13,
-                                padding: { top: 10 },
-                                scrollBeyondLastLine: false,
-                                automaticLayout: true,
-                                glyphMargin: true,
-                                lineDecorationsWidth: 10,
-                                scrollBeyondLastColumn: 50, // Allow space for inline values
-                                cursorStyle: 'line',
-                                cursorBlinking: 'smooth'
-                              }}
-                            />
-                          )}
+                          <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                            {!selectedFile ? (
+                              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                                <Code size={48} opacity={0.3} />
+                                <p>{t('app.select_file')}</p>
+                              </div>
+                            ) : (
+                              <Editor
+                                height="100%"
+                                defaultLanguage="typescript"
+                                path={selectedFile || undefined}
+                                value={code}
+                                onChange={handleEditorChange}
+                                onMount={handleEditorDidMount}
+                                theme={isDark ? "vs-dark" : "light"}
+                                options={{
+                                  minimap: { enabled: false },
+                                  fontSize: 13,
+                                  padding: { top: 10 },
+                                  scrollBeyondLastLine: false,
+                                  automaticLayout: true,
+                                  glyphMargin: true,
+                                  lineDecorationsWidth: 10,
+                                  scrollBeyondLastColumn: 50, // Allow space for inline values
+                                  cursorStyle: 'line',
+                                  cursorBlinking: 'smooth'
+                                }}
+                              />
+                            )}
+                          </div>
+                          <BenchmarkPanel />
                         </div>
                       )}
                     </Allotment.Pane>

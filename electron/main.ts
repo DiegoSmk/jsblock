@@ -395,6 +395,10 @@ ipcMain.on('execution:set-runtime', (_event, runtime: 'node' | 'bun' | 'deno') =
     executionManager.setRuntime(runtime);
 });
 
+ipcMain.on('benchmark:start', (_event, code: string, line: number, filePath?: string) => {
+    void executionManager.startBenchmark(code, line, filePath);
+});
+
 ipcMain.handle('execution:check-availability', async () => {
     return await executionManager.checkAvailability();
 });

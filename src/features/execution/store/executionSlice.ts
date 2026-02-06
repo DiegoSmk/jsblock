@@ -28,9 +28,13 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
     executionCoverage: new Set(),
     isSimulating: false,
     isExecuting: false,
+    isBenchmarking: false,
+    benchmarkResults: null,
+    benchmarkHistory: JSON.parse(localStorage.getItem('benchmark_history') ?? '[]') as any[],
     livePreviewEnabled: false,
     runtimeValues: {},
     availableRuntimes: { node: false, bun: false, deno: false },
+    systemStats: { cpu: 0 },
 
     toggleSimulation: () => {
         const { isSimulating } = get();
@@ -66,7 +70,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         window.electron?.executionSetRuntime(runtime);
         // Re-run execution with new runtime if active
         if (get().livePreviewEnabled) {
-            get().runExecution();
+            void get().runExecution();
         }
     },
 
@@ -194,10 +198,54 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                     });
                 });
 
+                window.electron.onSystemStats((stats: { cpu: number }) => {
+                    set({ systemStats: stats });
+                });
+
+                window.electron.onBenchmarkResult((results) => {
+                    const { selectedFile, benchmarkHistory } = get();
+                    const newRecord = {
+                        id: Math.random().toString(36).substring(2, 9),
+                        timestamp: Date.now(),
+                        filePath: selectedFile ?? undefined,
+                        line: Number(localStorage.getItem('last_bench_line') || 0),
+                        results
+                    };
+                    const newHistory = [newRecord, ...benchmarkHistory].slice(0, 50);
+                    localStorage.setItem('benchmark_history', JSON.stringify(newHistory));
+                    set({
+                        benchmarkResults: results,
+                        isBenchmarking: false,
+                        benchmarkHistory: newHistory
+                    });
+                });
+
                 listenersInitialized = true;
             }
             set({ isExecuting: true });
             window.electron.executionStart(codeToRun, pathToRun ?? undefined);
         }
+    },
+
+    runBenchmark: async (code: string, line: number) => {
+        const { selectedFile } = get();
+        localStorage.setItem('last_bench_line', String(line));
+        if (window.electron) {
+            set({ isBenchmarking: true, benchmarkResults: null });
+            await window.electron.benchmarkStart(code, line, selectedFile ?? undefined);
+        }
+    },
+
+    setBenchmarkResults: (results) => set({ benchmarkResults: results }),
+
+    clearBenchmarkHistory: () => {
+        localStorage.removeItem('benchmark_history');
+        set({ benchmarkHistory: [] });
+    },
+
+    removeBenchmarkRecord: (id: string) => {
+        const newHistory = get().benchmarkHistory.filter(r => r.id !== id);
+        localStorage.setItem('benchmark_history', JSON.stringify(newHistory));
+        set({ benchmarkHistory: newHistory });
     },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Bell, BellOff, ListX, ChevronDown, Cpu, RefreshCw, CheckCircle2, Play, AlertCircle } from 'lucide-react';
+import { Bell, BellOff, ListX, ChevronDown, Cpu, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTranslation } from 'react-i18next';
 
@@ -18,7 +18,9 @@ export const AppFooter: React.FC = () => {
         availableRuntimes,
         checkAvailability,
         isExecuting,
-        forceLayout
+        isBenchmarking,
+        forceLayout,
+        systemStats
     } = useStore();
 
     const isDark = theme === 'dark';
@@ -136,13 +138,32 @@ export const AppFooter: React.FC = () => {
                     transition: 'all 0.3s ease',
                     userSelect: 'none'
                 }}>
-                    {isExecuting ? (
+                    {isExecuting || isBenchmarking ? (
                         <RefreshCw size={12} style={{ animation: 'spin 2s linear infinite' }} />
                     ) : (
                         <CheckCircle2 size={12} />
                     )}
-                    <span>{isExecuting ? 'RUNNING' : 'READY'}</span>
+                    <span>{isBenchmarking ? 'Benchmarking' : (isExecuting ? 'Running' : 'Ready')}</span>
                 </div>
+
+                {(isExecuting || isBenchmarking) && systemStats.cpu > 0 && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '0 10px',
+                        height: '100%',
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        borderRight: `1px solid ${borderColor}`,
+                        color: systemStats.cpu > 80 ? '#f87171' : (isDark ? '#cbd5e1' : '#475569'),
+                        transition: 'all 0.3s ease',
+                        background: systemStats.cpu > 80 ? 'rgba(248, 113, 113, 0.05)' : 'transparent'
+                    }}>
+                        <Cpu size={11} style={{ opacity: 0.7 }} />
+                        <span style={{ fontVariantNumeric: 'tabular-nums' }}>CPU {systemStats.cpu}%</span>
+                    </div>
+                )}
 
                 <div
                     ref={runtimeRef}
@@ -152,7 +173,7 @@ export const AppFooter: React.FC = () => {
                         height: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
+                        gap: '8px',
                         cursor: 'pointer',
                         borderRight: `1px solid ${borderColor}`,
                         background: showRuntimeSelector ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
@@ -162,9 +183,20 @@ export const AppFooter: React.FC = () => {
                     }}
                     className="footer-item"
                 >
-                    <Cpu size={12} style={{ opacity: 0.7 }} />
-                    <span style={{ opacity: 0.9 }}>{currentRuntime === 'node' ? 'Node.js' : currentRuntime.charAt(0).toUpperCase() + currentRuntime.slice(1)}</span>
-                    <ChevronDown size={10} style={{ opacity: 0.5, transform: showRuntimeSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', height: '12px' }}>
+                        <Cpu size={12} style={{ opacity: 0.7 }} />
+                    </div>
+                    <span style={{
+                        opacity: 0.9,
+                        lineHeight: '12px',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}>
+                        {currentRuntime === 'node' ? 'Node.js' : currentRuntime.charAt(0).toUpperCase() + currentRuntime.slice(1)}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', height: '10px' }}>
+                        <ChevronDown size={10} style={{ opacity: 0.5, transform: showRuntimeSelector ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                    </div>
 
                     {showRuntimeSelector && (
                         <div
@@ -196,7 +228,7 @@ export const AppFooter: React.FC = () => {
                                 borderBottom: `1px solid ${borderColor}`,
                                 background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'
                             }}>
-                                SELECT RUNTIME
+                                Select runtime
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 {renderRuntimeOption('node', 'Node.js', 'Stable, Standard')}
@@ -292,7 +324,7 @@ export const AppFooter: React.FC = () => {
                                 borderBottom: notifications.length > 0 ? `1px solid ${borderColor}` : 'none'
                             }}>
                                 <span style={{ fontSize: '10px', fontWeight: 700, opacity: 0.6, letterSpacing: '0.1em' }}>
-                                    {notifications.length > 0 ? 'NOTIFICATIONS' : 'NO NEW NOTIFICATIONS'}
+                                    {notifications.length > 0 ? 'Notifications' : 'No new notifications'}
                                 </span>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <ListX
@@ -361,7 +393,10 @@ export const AppFooter: React.FC = () => {
                                                     {notif.type.toUpperCase()}
                                                 </span>
                                                 <span style={{ fontSize: '9px', opacity: 0.4 }}>
-                                                    {new Date(notif.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {(() => {
+                                                        const timestamp = notif.timestamp ?? Date.now();
+                                                        return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                                    })()}
                                                 </span>
                                             </div>
                                             <div style={{ fontSize: '12px', opacity: 0.9, lineHeight: '1.5' }}>

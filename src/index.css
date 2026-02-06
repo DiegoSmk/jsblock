@@ -515,6 +515,59 @@ body {
     box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
 }
 
+/* Benchmark Styles */
+.benchmark-gutter-icon {
+    width: 14px !important;
+    height: 14px !important;
+    cursor: pointer !important;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="%234fc3f7" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>');
+    background-repeat: no-repeat;
+    background-size: contain;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    margin-left: 2px;
+}
+
+.benchmark-gutter-icon:hover {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 4px rgba(79, 195, 247, 0.6));
+}
+
+.benchmark-results-overlay {
+    width: 400px;
+    padding: 20px;
+    border-radius: 12px;
+    z-index: 100;
+    font-family: 'Inter', system-ui, sans-serif;
+    animation: fadeInScale 0.2s ease-out;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.benchmark-bar-container {
+    height: 6px;
+    min-height: 6px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+
+.benchmark-bar-fill {
+    height: 100%;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* App Footer (Status Bar) */
 .app-footer {
     height: 22px;

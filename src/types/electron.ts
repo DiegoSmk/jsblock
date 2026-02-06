@@ -65,15 +65,19 @@ export interface ElectronAPI {
   executionStop: () => void;
   executionCheckAvailability: () => Promise<Record<'node' | 'bun' | 'deno', boolean>>;
   executionSetRuntime: (runtime: 'node' | 'bun' | 'deno') => void;
+  benchmarkStart: (code: string, line: number, filePath?: string) => void;
+  onBenchmarkResult: (callback: (results: BenchmarkResult[]) => void) => () => void;
   onExecutionLog: (callback: (data: ExecutionPayload) => void) => () => void;
   onExecutionError: (callback: (error: ExecutionError | string) => void) => () => void;
   onExecutionClear: (callback: () => void) => () => void;
   onExecutionStarted: (callback: () => void) => () => void;
   onExecutionDone: (callback: () => void) => () => void;
+  onSystemStats: (callback: (data: { cpu: number }) => void) => () => void;
   mcpSyncState: (state: unknown) => void;
 }
 
 import type { PluginManifest } from '../features/extensions/types';
+import type { BenchmarkResult } from '../features/execution/types';
 
 declare global {
   interface Window {

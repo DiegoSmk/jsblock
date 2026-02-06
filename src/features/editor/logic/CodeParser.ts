@@ -8,7 +8,17 @@ import type { AppNode } from '../types';
 export const parseCodeToFlow = (code: string): { nodes: AppNode[], edges: Edge[] } => {
     let ast;
     try {
-        ast = parse(code, { sourceType: 'module', plugins: ['typescript'] });
+        ast = parse(code, {
+            sourceType: 'module',
+            plugins: [
+                'typescript',
+                'topLevelAwait',
+                'numericSeparator',
+                'classProperties',
+                'objectRestSpread',
+                'dynamicImport'
+            ]
+        });
     } catch (e) {
         console.error("Parse Error", e);
         return { nodes: [], edges: [] };
