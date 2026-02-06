@@ -27,8 +27,10 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
     executionErrors: new Map(),
     executionCoverage: new Set(),
     isSimulating: false,
+    isExecuting: false,
     livePreviewEnabled: false,
     runtimeValues: {},
+    availableRuntimes: { node: false, bun: false, deno: false },
 
     toggleSimulation: () => {
         const { isSimulating } = get();
@@ -57,6 +59,24 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         }
     },
 
+    currentRuntime: 'node',
+
+    setRuntime: (runtime: 'node' | 'bun' | 'deno') => {
+        set({ currentRuntime: runtime });
+        window.electron?.executionSetRuntime(runtime);
+        // Re-run execution with new runtime if active
+        if (get().livePreviewEnabled) {
+            get().runExecution();
+        }
+    },
+
+    checkAvailability: async () => {
+        if (window.electron?.executionCheckAvailability) {
+            const availability = await window.electron.executionCheckAvailability();
+            set({ availableRuntimes: availability });
+        }
+    },
+
     runExecutionDebounced: (customCode?: string, customPath?: string) => {
         if (executionDebounceTimeout) clearTimeout(executionDebounceTimeout);
         executionDebounceTimeout = setTimeout(() => {
@@ -75,7 +95,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
         }
 
         if (!codeToRun || codeToRun.trim() === '') {
-            set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set() });
+            set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set(), isExecuting: false });
             return;
         }
 
@@ -104,12 +124,6 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 rafId ??= requestAnimationFrame(flushBuffer);
             };
 
-            // Fast safety flush for silent code (400ms)
-            setTimeout(() => {
-                if (buffer.results.size === 0 && buffer.errors.size === 0) {
-                    set({ executionResults: new Map(), executionCoverage: new Set(), executionErrors: new Map() });
-                }
-            }, 400);
 
             if (!listenersInitialized) {
                 // Main thread messages
@@ -138,18 +152,38 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
 
                 window.electron.onExecutionError((err: ExecutionError | string) => {
+                    set({ isExecuting: false });
                     if (typeof err === 'object' && err !== null) {
                         const lineNum = Number(err.line || 1);
-                        buffer.errors.set(lineNum, err);
+                        let message = err.message;
+
+                        // Improve timeout message (check by errorCode or content)
+                        const isTimeout = err.errorCode === 'EXEC_TIMEOUT' || /execution timed out/i.test(message);
+                        if (isTimeout) {
+                            if (!message.includes('Tip:')) {
+                                message = 'Execution timed out. Tip: Click or CTRL+ENTER to increase limit';
+                            }
+                        }
+
+                        buffer.errors.set(lineNum, { ...err, message });
                         scheduleUpdate();
                     } else if (typeof err === 'string') {
-                        buffer.errors.set(1, { message: err, line: 1, column: 1 });
+                        let message = err;
+                        if (/execution timed out/i.test(message)) {
+                            message = 'Execution timed out. Tip: Click or CTRL+ENTER to increase limit';
+                        }
+                        buffer.errors.set(1, { message, line: 1, column: 1 });
                         scheduleUpdate();
                     }
                 });
 
                 window.electron.onExecutionStarted(() => {
-                    set({ executionErrors: new Map() });
+                    set({ executionErrors: new Map(), isExecuting: true });
+                });
+
+                window.electron.onExecutionDone(() => {
+                    set({ isExecuting: false });
+                    flushBuffer();
                 });
 
                 window.electron.onExecutionClear(() => {
@@ -162,6 +196,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
 
                 listenersInitialized = true;
             }
+            set({ isExecuting: true });
             window.electron.executionStart(codeToRun, pathToRun ?? undefined);
         }
     },

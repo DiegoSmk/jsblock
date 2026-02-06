@@ -9,6 +9,15 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist', 'node_modules', 'public', 'scripts']),
   {
+    files: ['electron/**/*.{ts,tsx,js}'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.mocha,
+      },
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,

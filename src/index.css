@@ -492,3 +492,69 @@ body {
     transform: scale(1.05);
     box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
 }
+
+/* Timeout Tip variant (Yellow/Gold - Clickable) */
+.execution-decoration-timeout-tip {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+.execution-decoration-timeout-tip::after {
+    font-weight: bold;
+    color: #d4af37 !important;
+    background-color: rgba(212, 175, 55, 0.15) !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23d4af37" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg>') !important;
+    transition: all 0.2s ease;
+}
+
+.execution-decoration-timeout-tip:hover::after {
+    background-color: rgba(212, 175, 55, 0.25) !important;
+    border-color: #d4af37 !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+}
+
+/* App Footer (Status Bar) */
+.app-footer {
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.app-footer.dark {
+    color: #969696;
+}
+
+.app-footer.light {
+    color: #616161;
+}
+
+.app-footer .footer-left,
+.app-footer .footer-right {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.notification-popover {
+    animation: popoverAppear 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform, opacity;
+    transform-origin: bottom right;
+}
+
+@keyframes popoverAppear {
+    from {
+        transform: translateY(10px) scale(0.98);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}

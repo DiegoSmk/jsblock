@@ -63,6 +63,9 @@ export const useStore = create<AppState>((set, get, api) => ({
         return 'dark' as 'dark' | 'light';
     })(),
     toasts: [],
+    notifications: [],
+    unreadNotificationsCount: 0,
+    doNotDisturb: false,
     projectFiles: {},
     connectionCache: new Map(), // Initialize cache
     navigationStack: [{ id: 'root', label: 'Main' }],
@@ -1151,15 +1154,50 @@ export const useStore = create<AppState>((set, get, api) => ({
     addToast: (toast) => {
         const id = getUUID('toast');
         const duration = toast.duration ?? 3000;
-        set((state: AppState) => ({ toasts: [...state.toasts, { ...toast, id }] }));
+        const timestamp = Date.now();
+        const newToast = { ...toast, id, timestamp };
 
-        setTimeout(() => {
-            get().removeToast(id);
-        }, duration);
+        set((state: AppState) => {
+            const updates: Partial<AppState> = {
+                notifications: [
+                    { ...newToast, read: false },
+                    ...state.notifications.slice(0, 49)
+                ],
+                unreadNotificationsCount: state.unreadNotificationsCount + 1
+            };
+
+            // Only show ephemeral toast if DND is OFF
+            if (!state.doNotDisturb) {
+                updates.toasts = [...state.toasts, newToast];
+            }
+
+            return updates;
+        });
+
+        if (!get().doNotDisturb) {
+            setTimeout(() => {
+                get().removeToast(id);
+            }, duration);
+        }
     },
 
     removeToast: (id) => {
         set((state: AppState) => ({ toasts: state.toasts.filter((t: Toast) => t.id !== id) }));
+    },
+
+    clearNotifications: () => {
+        set({ notifications: [], unreadNotificationsCount: 0 });
+    },
+
+    markNotificationsAsRead: () => {
+        set((state) => ({
+            unreadNotificationsCount: 0,
+            notifications: state.notifications.map(n => ({ ...n, read: true }))
+        }));
+    },
+
+    toggleDoNotDisturb: () => {
+        set((state) => ({ doNotDisturb: !state.doNotDisturb }));
     },
 }));
 

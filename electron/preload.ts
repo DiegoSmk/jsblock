@@ -52,6 +52,8 @@ contextBridge.exposeInMainWorld('electron', {
     // Execution
     executionStart: (code: string, filePath?: string) => ipcRenderer.send('execution:start', code, filePath),
     executionStop: () => ipcRenderer.send('execution:stop'),
+    executionCheckAvailability: () => ipcRenderer.invoke('execution:check-availability'),
+    executionSetRuntime: (runtime: 'node' | 'bun' | 'deno') => ipcRenderer.send('execution:set-runtime', runtime),
     onExecutionLog: (callback: (data: ExecutionPayload) => void) => {
         const subscription = (_event: unknown, data: ExecutionPayload) => callback(data);
         ipcRenderer.on('execution:log', subscription);
@@ -71,6 +73,11 @@ contextBridge.exposeInMainWorld('electron', {
         const subscription = () => callback();
         ipcRenderer.on('execution:started', subscription);
         return () => ipcRenderer.removeListener('execution:started', subscription);
+    },
+    onExecutionDone: (callback: () => void) => {
+        const subscription = () => callback();
+        ipcRenderer.on('execution:done', subscription);
+        return () => ipcRenderer.removeListener('execution:done', subscription);
     },
     // MCP Sync
     mcpSyncState: (state: unknown) => ipcRenderer.send('mcp:sync-state', state)

@@ -11,6 +11,7 @@ export interface ExecutionError {
   message: string;
   line: number;
   column?: number;
+  errorCode?: string;
   suggestion?: {
     text: string;
     replace: string;
@@ -62,10 +63,13 @@ export interface ElectronAPI {
   // Execution
   executionStart: (code: string, filePath?: string) => void;
   executionStop: () => void;
+  executionCheckAvailability: () => Promise<Record<'node' | 'bun' | 'deno', boolean>>;
+  executionSetRuntime: (runtime: 'node' | 'bun' | 'deno') => void;
   onExecutionLog: (callback: (data: ExecutionPayload) => void) => () => void;
   onExecutionError: (callback: (error: ExecutionError | string) => void) => () => void;
   onExecutionClear: (callback: () => void) => () => void;
   onExecutionStarted: (callback: () => void) => () => void;
+  onExecutionDone: (callback: () => void) => () => void;
   mcpSyncState: (state: unknown) => void;
 }
 

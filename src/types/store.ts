@@ -68,6 +68,11 @@ export interface Toast {
   type: ToastType;
   message: string;
   duration?: number;
+  timestamp?: number;
+}
+
+export interface Notification extends Toast {
+  read: boolean;
 }
 
 export interface AppState extends GitSlice, ExecutionSlice {
@@ -183,10 +188,16 @@ export interface AppState extends GitSlice, ExecutionSlice {
   setRecentLabel: (path: string, label: 'personal' | 'work' | 'fun' | 'other' | undefined) => void;
   validateRecents: () => Promise<void>;
 
-  // Toast Actions
+  // Toast & Notification Actions
   toasts: Toast[];
+  notifications: Notification[];
+  unreadNotificationsCount: number;
+  doNotDisturb: boolean;
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
+  clearNotifications: () => void;
+  markNotificationsAsRead: () => void;
+  toggleDoNotDisturb: () => void;
 
   // Settings
   settings: Settings;

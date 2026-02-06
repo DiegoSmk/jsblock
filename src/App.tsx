@@ -50,6 +50,7 @@ import { CommandPalette } from './components/ui/CommandPalette';
 import { CommitDetailModal } from './features/git/components/CommitDetailModal';
 import { FlowContent } from './features/editor/components/FlowContent';
 import { AppHeader } from './layout/AppHeader';
+import { AppFooter } from './layout/AppFooter';
 
 function App() {
   const { t } = useTranslation();
@@ -275,7 +276,7 @@ function App() {
             ) : (
               <ReactFlowProvider>
                 <SidebarContainer />
-                <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
+                <div style={{ flex: 1, minWidth: 0, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
                   <Allotment>
                     <Allotment.Pane
                       minSize={activeSidebarTab === 'git' || activeSidebarTab === 'extensions' || (!isBlockFile && showCode) ? 200 : 0}
@@ -484,6 +485,7 @@ function App() {
           }
           <ToastContainer />
           <CommandPalette />
+          <AppFooter />
         </div>
       </div>
     </div>

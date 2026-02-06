@@ -1,7 +1,7 @@
 import React from 'react';
 import {
     FolderOpen, X, Minus, Square, Info, LogOut,
-    History as HistoryIcon, Network, RefreshCw, PanelLeft, Files,
+    History as HistoryIcon, Network, PanelLeft, Files,
     Library
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -27,7 +27,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
         git,
         setGitSidebarView,
         layout,
-        forceLayout
     } = useStore();
 
     const showSidebar = layout.sidebar.isVisible;
@@ -250,30 +249,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                 >
                     <button
                         onClick={() => {
-                            forceLayout();
-                        }}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: isDark ? '#aaa' : '#666',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            padding: '4px 8px',
-                            borderRadius: '4px'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                        <RefreshCw size={14} />
-                        <span>{t('app.layout')}</span>
-                    </button>
-
-                    <button
-                        onClick={() => {
                             if (openedFolder) {
                                 setConfirmationModal({
                                     isOpen: true,
@@ -321,7 +296,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                     <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
                         <button
                             onClick={() => {
-                                void window.electron.windowMinimize();
+                                window.electron?.windowMinimize();
                             }}
                             title={t('app.window_controls.minimize')}
                             style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
@@ -332,7 +307,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         </button>
                         <button
                             onClick={() => {
-                                void window.electron.windowMaximize();
+                                window.electron?.windowMaximize();
                             }}
                             title={t('app.window_controls.maximize')}
                             style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}
@@ -343,7 +318,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         </button>
                         <button
                             onClick={() => {
-                                void window.electron.windowClose();
+                                window.electron?.windowClose();
                             }}
                             title={t('app.window_controls.close')}
                             style={{ background: 'transparent', border: 'none', color: isDark ? '#aaa' : '#666', padding: '4px 8px', cursor: 'pointer' }}

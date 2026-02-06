@@ -391,6 +391,14 @@ ipcMain.on('execution:stop', () => {
     executionManager.stopExecution();
 });
 
+ipcMain.on('execution:set-runtime', (_event, runtime: 'node' | 'bun' | 'deno') => {
+    executionManager.setRuntime(runtime);
+});
+
+ipcMain.handle('execution:check-availability', async () => {
+    return await executionManager.checkAvailability();
+});
+
 // MCP Sync State Handler
 ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
     const statePath = path.join(app.getAppPath(), 'state.json');

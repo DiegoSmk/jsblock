@@ -11,13 +11,15 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
         executionErrors,
         livePreviewEnabled,
         selectedFile,
-        code
+        code,
+        addToast
     } = useStore(useShallow(state => ({
         executionResults: state.executionResults,
         executionErrors: state.executionErrors,
         livePreviewEnabled: state.livePreviewEnabled,
         selectedFile: state.selectedFile,
-        code: state.code
+        code: state.code,
+        addToast: state.addToast
     })));
 
     const monaco = useMonaco();
@@ -55,12 +57,22 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
 
         // Click Handler for decorations
         const mouseDownListener = editorInstance.onMouseDown((e) => {
-            if (e.target.element?.className.includes('execution-decoration-suggestion')) {
+            const isSuggestion = e.target.element?.className.includes('execution-decoration-suggestion');
+            const isTimeoutTip = e.target.element?.className.includes('execution-decoration-timeout-tip');
+
+            if (isSuggestion || isTimeoutTip) {
                 const line = e.target.range?.startLineNumber;
                 if (line) {
                     const error = executionErrors.get(line);
                     if (error?.suggestion) {
                         applyFix(line, error);
+                    } else if (isTimeoutTip && error) {
+                        // Fallback for click-to-copy if suggestion is somehow missing
+                        const match = error.message.match(/\/\/\s*@timeout\s+\d+/);
+                        if (match) {
+                            navigator.clipboard.writeText(match[0]);
+                            addToast({ type: 'success', message: 'Comando copiado para o clipboard!' });
+                        }
                     }
                 }
             }
@@ -100,7 +112,7 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
             mouseDownListener.dispose();
             provider.dispose();
         };
-    }, [monaco, editorInstance, executionErrors, applyFix]);
+    }, [monaco, editorInstance, executionErrors, applyFix, addToast]);
 
     // 2. Decorations and Cursor Isolation
     useEffect(() => {
@@ -122,7 +134,7 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
         let dynamicCss = '';
 
         const processText = (text: string) => {
-            return (text.length > 50 ? text.substring(0, 47) + '...' : text)
+            return (text.length > 200 ? text.substring(0, 197) + '...' : text)
                 .replace(/"/g, '\\"')
                 .replace(/\n/g, '\\A ');
         };
@@ -139,14 +151,55 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
                 const line = Number(lineKey);
                 if (isNaN(line) || line < 1 || line > model.getLineCount()) return;
 
-                // SPECIAL RULE: Show suggestions EVEN ON THE CURSOR LINE
-                const isErrorWithSuggestion = type === 'error' && (entry as ExecutionError).suggestion;
+                const isError = type === 'error';
+                const err = isError ? entry as ExecutionError : null;
+                const isTimeout = isError && err?.errorCode === 'EXEC_TIMEOUT';
+                const hasSuggestion = isError && !!err?.suggestion;
 
-                if (!isErrorWithSuggestion && line === cursorLine) return;
+                if (!hasSuggestion && line === cursorLine) return;
 
+                const maxCol = model.getLineMaxColumn(line);
+
+                if (isTimeout && err) {
+                    // Split timeout into two: Error (Red) | Tip (Yellow)
+                    const parts = err.message.split('. Tip: ');
+                    const errorText = processText(parts[0]);
+                    const tipText = parts[1] ? processText('Tip: ' + parts[1]) : '';
+
+                    const errorClassName = `deco-timeout-err-${line}`;
+                    const tipClassName = `deco-timeout-tip-${line}`;
+
+                    dynamicCss += `.${errorClassName}::after { content: "${errorText}"; }\n`;
+                    if (tipText) {
+                        dynamicCss += `.${tipClassName}::after { content: "${tipText}"; }\n`;
+                    }
+
+                    // Error Part (Red)
+                    decorations.push({
+                        range: new monaco.Range(line, maxCol, line, maxCol),
+                        options: {
+                            isWholeLine: false,
+                            afterContentClassName: `execution-decoration-base execution-decoration-error ${errorClassName}`,
+                            linesDecorationsClassName: 'execution-error-gutter'
+                        }
+                    });
+
+                    // Tip Part (Yellow)
+                    if (tipText) {
+                        decorations.push({
+                            range: new monaco.Range(line, maxCol, line, maxCol),
+                            options: {
+                                isWholeLine: false,
+                                afterContentClassName: `execution-decoration-base execution-decoration-timeout-tip ${tipClassName}`,
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                // Standard Decoration Logic
                 let text = '';
                 let isLog = false;
-                let hasSuggestion = false;
 
                 if (type === 'result') {
                     const entries = entry as ExecutionEntry[];
@@ -158,32 +211,31 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
                     });
                     text = uniqueEntries.map(e => processText(e.value)).join(' | ');
                     isLog = entries.some(e => e.type === 'log');
-                } else {
-                    const err = entry as ExecutionError;
+                } else if (err) {
                     text = processText(err.message);
                     if (err.suggestion) {
                         text = `SUGGESTION: ${err.suggestion.text} (CTRL + ENTER to apply) | ${text}`;
-                        hasSuggestion = true;
                     }
                 }
 
                 const className = `deco-${type}-${line}`;
                 dynamicCss += `.${className}::after { content: "${text}"; }\n`;
 
-                const maxCol = model.getLineMaxColumn(line);
                 let baseClass = 'execution-decoration-base';
-                if (type === 'error') baseClass += ' execution-decoration-error';
+                if (isError) baseClass += ' execution-decoration-error';
                 else if (isLog) baseClass += ' execution-decoration-log';
                 else baseClass += ' execution-decoration-val';
 
-                if (hasSuggestion) baseClass = 'execution-decoration-base execution-decoration-suggestion';
+                if (hasSuggestion) {
+                    baseClass = 'execution-decoration-base execution-decoration-suggestion';
+                }
 
                 decorations.push({
                     range: new monaco.Range(line, maxCol, line, maxCol),
                     options: {
                         isWholeLine: false,
                         afterContentClassName: `${baseClass} ${className}`,
-                        linesDecorationsClassName: hasSuggestion ? 'execution-suggestion-gutter' : (type === 'error' ? 'execution-error-gutter' : 'execution-coverage-gutter')
+                        linesDecorationsClassName: hasSuggestion ? 'execution-suggestion-gutter' : (isError ? 'execution-error-gutter' : 'execution-coverage-gutter')
                     }
                 });
             });
