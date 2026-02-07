@@ -2,7 +2,7 @@
   "name": "js-blueprints-electron",
   "version": "0.5.0",
   "type": "module",
-  "description": "",
+  "description": "A powerful visual programming editor for Javascript and Node.js blueprints.",
   "main": "dist/electron/main.js",
   "scripts": {
     "dev": "vite",
@@ -18,7 +18,7 @@
     "release:patch": "standard-version --release-as patch"
   },
   "keywords": [],
-  "author": "",
+  "author": "DiegoSmk <guinho_p1@hotmail.com>",
   "license": "ISC",
   "dependencies": {
     "@babel/core": "^7.29.0",
