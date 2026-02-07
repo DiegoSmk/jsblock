@@ -21,9 +21,7 @@ let rafId: number | null = null;
 let hasPendingUpdates = false;
 
 export const resetExecutionStateForTesting = () => {
-    listenersInitialized = false;
     buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
-    lastExecutedCode = '';
 };
 
 export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => ({

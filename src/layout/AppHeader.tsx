@@ -10,6 +10,8 @@ import { useStore } from '../store/useStore';
 import { DESIGN_TOKENS } from '../constants/design';
 
 
+import { ScrollArea } from '../components/ui/ScrollArea';
+
 interface BreadcrumbItemProps {
     name: string;
     path: string;
@@ -18,7 +20,7 @@ interface BreadcrumbItemProps {
     isLast: boolean;
 }
 
-const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({ name, path, isDark, onSelect }) => {
+const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({ name, path, isDark, onSelect, isLast }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [items, setItems] = useState<{ name: string; isDirectory: boolean }[]>([]);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -42,7 +44,6 @@ const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({ name, path, isDark, onS
         if (window.electron) {
             void (async () => {
                 try {
-                    // The Breadcrumbs component should pass the directory path for each segment.
                     const entries = await window.electron.fileSystem.readDir(path);
 
                     // Sort folders first
@@ -64,21 +65,29 @@ const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({ name, path, isDark, onS
             <button
                 onClick={handleClick}
                 style={{
-                    background: isOpen ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)') : 'transparent',
+                    background: isOpen ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)') : 'transparent',
                     border: 'none',
                     borderRadius: '4px',
-                    color: isDark ? '#ccc' : '#666',
+                    color: isLast ? (isDark ? '#eee' : '#333') : (isDark ? '#aaa' : '#666'),
                     cursor: 'pointer',
-                    padding: '2px 4px',
+                    padding: '2px 6px',
                     fontSize: '12px',
-                    fontWeight: 500,
+                    fontWeight: isLast ? 600 : 400,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px'
+                    gap: '4px',
+                    transition: 'all 0.15s'
                 }}
-                onMouseEnter={e => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
-                onMouseLeave={e => e.currentTarget.style.color = isDark ? '#ccc' : '#666'}
+                onMouseEnter={e => {
+                    e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+                    e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.background = isOpen ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)') : 'transparent';
+                    e.currentTarget.style.color = isLast ? (isDark ? '#eee' : '#333') : (isDark ? '#aaa' : '#666');
+                }}
             >
+                {!isLast && <Folder size={12} opacity={0.6} />}
                 {name}
             </button>
 
@@ -90,59 +99,51 @@ const BreadcrumbItem: React.FC<BreadcrumbItemProps> = ({ name, path, isDark, onS
                     marginTop: '4px',
                     background: isDark ? '#1e1e1e' : '#fff',
                     border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                    borderRadius: '6px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                    minWidth: '200px',
-                    maxHeight: '300px',
-                    overflowY: 'auto',
+                    borderRadius: '8px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                    minWidth: '220px',
                     zIndex: 1000,
-                    display: 'flex',
-                    flexDirection: 'column',
                     padding: '4px'
                 }}>
-                    {items.map(item => (
-                        <div
-                            key={item.name}
-                            onClick={() => {
-                                if (!item.isDirectory) {
-                                    // path is the directory we listed. item.name is the file in it.
-                                    // We need to pass the full path to onSelect.
-                                    // But onSelect expects relative path adjustment?
-                                    // No, onSelect logic in Breadcrumbs handles appending.
-                                    // Wait, onSelect in Breadcrumbs:
-                                    // onSelect={(p) => setSelectedFile(`${dirToRead}/${p}`)}
-                                    // So we just pass item.name here.
-                                    onSelect(item.name);
-                                }
-                                setIsOpen(false);
-                            }}
-                            style={{
-                                padding: '4px 8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: item.isDirectory ? 'default' : 'pointer', // Disable folder selection for now
-                                borderRadius: '4px',
-                                color: isDark ? '#ccc' : '#666'
-                            }}
-                            onMouseEnter={e => {
-                                if (!item.isDirectory) {
-                                    e.currentTarget.style.background = isDark ? '#2d2d2d' : '#f3f4f6';
-                                    e.currentTarget.style.color = isDark ? '#fff' : '#000';
-                                }
-                            }}
-                            onMouseLeave={e => {
-                                if (!item.isDirectory) {
-                                    e.currentTarget.style.background = 'transparent';
-                                    e.currentTarget.style.color = isDark ? '#ccc' : '#666';
-                                }
-                            }}
-                        >
-                            {item.isDirectory ? <Folder size={14} /> : <FileIcon size={14} />}
-                            <span style={{ fontSize: '12px' }}>{item.name}</span>
-                        </div>
-                    ))}
-                    {items.length === 0 && <div style={{ padding: '8px', fontSize: '11px', opacity: 0.5, textAlign: 'center' }}>Empty</div>}
+                    <ScrollArea maxHeight="300px">
+                        {items.map(item => (
+                            <div
+                                key={item.name}
+                                onClick={() => {
+                                    if (!item.isDirectory) {
+                                        onSelect(item.name);
+                                    }
+                                    setIsOpen(false);
+                                }}
+                                style={{
+                                    padding: '6px 10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    cursor: item.isDirectory ? 'default' : 'pointer',
+                                    borderRadius: '4px',
+                                    color: isDark ? '#ccc' : '#444',
+                                    transition: 'all 0.1s'
+                                }}
+                                onMouseEnter={e => {
+                                    if (!item.isDirectory) {
+                                        e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                                        e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                                    }
+                                }}
+                                onMouseLeave={e => {
+                                    if (!item.isDirectory) {
+                                        e.currentTarget.style.background = 'transparent';
+                                        e.currentTarget.style.color = isDark ? '#ccc' : '#444';
+                                    }
+                                }}
+                            >
+                                {item.isDirectory ? <Folder size={14} color={isDark ? '#4fc3f7' : '#0070f3'} /> : <FileIcon size={14} color={isDark ? '#aaa' : '#666'} />}
+                                <span style={{ fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                            </div>
+                        ))}
+                        {items.length === 0 && <div style={{ padding: '12px', fontSize: '12px', color: '#666', textAlign: 'center' }}>Empty Folder</div>}
+                    </ScrollArea>
                 </div>
             )}
         </div>
@@ -189,7 +190,7 @@ const Breadcrumbs: React.FC<{
 
                 return (
                     <div key={segmentPath} style={{ display: 'flex', alignItems: 'center' }}>
-                         <BreadcrumbItem
+                        <BreadcrumbItem
                             name={part}
                             path={dirToRead}
                             isDark={isDark}

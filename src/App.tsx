@@ -105,20 +105,40 @@ function App() {
   }, [theme, isDark]);
 
   useEffect(() => {
+    const { setSidebarTab, saveFile, layout, toggleSidebar } = useStore.getState();
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      // Ctrl+S: Save
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && !e.shiftKey) {
         e.preventDefault();
         saveFile().catch(console.error);
+        return;
+      }
+
+      // Ctrl+Shift+F: Search
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        setSidebarTab('search');
+        if (!layout.sidebar.isVisible) {
+          toggleSidebar();
+        }
+        return;
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saveFile]);
+  }, []);
 
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      // Specifically catch and silence 'cancelation' errors from Monaco/Allotment
-      if (event.reason && typeof event.reason === 'object' && (event.reason as Record<string, unknown>).type === 'cancelation') {
+      // Specifically catch and silence 'cancelation' and common harmless Monaco errors
+      const reasonStr = String(event.reason);
+      if (
+        (event.reason && typeof event.reason === 'object' && (event.reason as Record<string, unknown>).type === 'cancelation') ||
+        reasonStr.includes('no diff result available') ||
+        reasonStr.includes('canceled')
+      ) {
         event.preventDefault();
         return;
       }

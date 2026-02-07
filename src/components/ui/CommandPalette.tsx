@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Command, RefreshCw, Search, Settings, Files, GitBranch, File as FileIcon, Clock } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import type { FileNode } from '../../features/workspace/types';
+import { ScrollArea } from './ScrollArea';
 
 export const CommandPalette: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -107,14 +108,16 @@ export const CommandPalette: React.FC = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'P' && e.ctrlKey) {
+            if ((e.key === 'p' || e.key === 'P') && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
+                e.stopPropagation();
+
                 const isShift = e.shiftKey;
 
                 setIsOpen(prev => {
                     // If already open in same mode, close it
                     if (prev && ((isShift && mode === 'commands') || (!isShift && mode === 'files'))) {
-                         return false;
+                        return false;
                     }
                     // Otherwise open/switch
                     setSearch('');
@@ -126,8 +129,8 @@ export const CommandPalette: React.FC = () => {
             if (e.key === 'Escape') setIsOpen(false);
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', handleKeyDown, true);
+        return () => window.removeEventListener('keydown', handleKeyDown, true);
     }, [mode]);
 
     useEffect(() => {
@@ -209,44 +212,46 @@ export const CommandPalette: React.FC = () => {
                 </div>
 
                 {/* Items List */}
-                <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '4px' }}>
-                    {filteredItems.length > 0 ? (
-                        filteredItems.map((item, index) => (
-                            <div
-                                key={item.id}
-                                onClick={() => handleSelect(item)}
-                                onMouseEnter={() => setSelectedIndex(index)}
-                                style={{
-                                    padding: '8px 12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
-                                    cursor: 'pointer',
-                                    backgroundColor: selectedIndex === index ? '#2a2d2e' : 'transparent',
-                                    borderRadius: '4px',
-                                    color: selectedIndex === index ? '#fff' : '#ccc'
-                                }}
-                            >
-                                <item.icon size={16} />
-                                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-                                     <span style={{ fontSize: '13px' }}>{item.label}</span>
-                                     {item.path && mode === 'files' && (
-                                         <span style={{ fontSize: '10px', opacity: 0.5, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-                                             {item.path}
-                                         </span>
-                                     )}
+                <ScrollArea maxHeight="400px">
+                    <div style={{ padding: '4px' }}>
+                        {filteredItems.length > 0 ? (
+                            filteredItems.map((item, index) => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => handleSelect(item)}
+                                    onMouseEnter={() => setSelectedIndex(index)}
+                                    style={{
+                                        padding: '8px 12px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        cursor: 'pointer',
+                                        backgroundColor: selectedIndex === index ? '#2a2d2e' : 'transparent',
+                                        borderRadius: '4px',
+                                        color: selectedIndex === index ? '#fff' : '#ccc'
+                                    }}
+                                >
+                                    <item.icon size={16} />
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                                        <span style={{ fontSize: '13px' }}>{item.label}</span>
+                                        {item.path && mode === 'files' && (
+                                            <span style={{ fontSize: '10px', opacity: 0.5, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+                                                {item.path}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {item.shortcut && (
+                                        <span style={{ fontSize: '11px', opacity: 0.5 }}>{item.shortcut}</span>
+                                    )}
                                 </div>
-                                {item.shortcut && (
-                                    <span style={{ fontSize: '11px', opacity: 0.5 }}>{item.shortcut}</span>
-                                )}
+                            ))
+                        ) : (
+                            <div style={{ padding: '12px', color: '#666', textAlign: 'center', fontSize: '13px' }}>
+                                {mode === 'commands' ? 'No commands found' : 'No files found'}
                             </div>
-                        ))
-                    ) : (
-                        <div style={{ padding: '12px', color: '#666', textAlign: 'center', fontSize: '13px' }}>
-                            {mode === 'commands' ? 'No commands found' : 'No files found'}
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
+                </ScrollArea>
             </div>
         </div>
     );

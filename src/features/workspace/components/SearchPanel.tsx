@@ -8,13 +8,15 @@ export const SearchPanel: React.FC = () => {
     const { theme, openedFolder, setSelectedFile } = useStore();
     const isDark = theme === 'dark';
 
-    const [query, setQuery] = useState('');
-    const [replaceQuery, setReplaceQuery] = useState('');
-    const [results, setResults] = useState<SearchResult[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [options, setOptions] = useState<SearchOptions>({ caseSensitive: false, regex: false });
-    const [showReplace, setShowReplace] = useState(false);
-    const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        // Focus search input when panel is mounted
+        setTimeout(() => {
+            inputRef.current?.focus();
+            inputRef.current?.select();
+        }, 50);
+    }, []);
 
     const handleSearch = async () => {
         if (!query.trim() || !openedFolder) return;
@@ -75,6 +77,7 @@ export const SearchPanel: React.FC = () => {
         void setSelectedFile(result.file);
         // Ideally scroll to line, but setSelectedFile just opens it.
         // We might need a way to pass line number to openFile.
+        // For now, at least we open the file.
     };
 
     // Group results by file
@@ -92,6 +95,7 @@ export const SearchPanel: React.FC = () => {
                 {/* Search Input */}
                 <div style={{ position: 'relative' }}>
                     <input
+                        ref={inputRef}
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}

@@ -12,6 +12,7 @@ export const parseCodeToFlow = (code: string): { nodes: AppNode[], edges: Edge[]
             sourceType: 'module',
             plugins: [
                 'typescript',
+                'jsx',
                 'topLevelAwait',
                 'numericSeparator',
                 'classProperties',
