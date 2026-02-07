@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.1](https://github.com/DiegoSmk/jsblock/compare/v0.5.0...v0.5.1) (2026-02-07)
+
+
+### 📚 Documentation
+
+* add project roadmap towards v1.0.0 ([b0217b5](https://github.com/DiegoSmk/jsblock/commit/b0217b5f0fe8d09abed41036b681de4c82fdbd57))
+
+
+### 🧹 Miscellaneous
+
+* fix build author and complete electron-builder setup ([8a4163f](https://github.com/DiegoSmk/jsblock/commit/8a4163f20a0e37bd3b3a05ad0b1755a77822b0d3))
+* **infra:** add standard-version configuration and release scripts ([6e9dbf9](https://github.com/DiegoSmk/jsblock/commit/6e9dbf9f8f26bebd49d331538765945b072faade))
+* setup final icon and enable release automation ([0883eee](https://github.com/DiegoSmk/jsblock/commit/0883eee9880220f43f8b3b2714f19065e3750674))
+
 ## 0.5.0 (2026-02-07)
 
 
