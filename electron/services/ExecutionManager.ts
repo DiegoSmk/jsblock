@@ -18,6 +18,9 @@ export class ExecutionManager {
     private executionTimeout: NodeJS.Timeout | null = null;
     private currentRuntime: RuntimeType = 'node';
     private telemetry = new TelemetryService();
+    private availabilityCache: Record<RuntimeType, boolean> | null = null;
+    private cacheTimestamp = 0;
+    private readonly CACHE_TTL = 30000; // 30 seconds
 
     constructor() {
         // IPC handles are now handled in main.ts to avoid double registration
@@ -32,7 +35,12 @@ export class ExecutionManager {
     }
 
 
-    async checkAvailability(): Promise<Record<RuntimeType, boolean>> {
+    async checkAvailability(force = false): Promise<Record<RuntimeType, boolean>> {
+        const now = Date.now();
+        if (!force && this.availabilityCache && (now - this.cacheTimestamp < this.CACHE_TTL)) {
+            return this.availabilityCache;
+        }
+
         const runtimes: RuntimeType[] = ['node', 'bun', 'deno'];
         const results = await Promise.all(
             runtimes.map(async (rt) => {
@@ -41,10 +49,12 @@ export class ExecutionManager {
             })
         );
 
-        return results.reduce(
+        this.availabilityCache = results.reduce(
             (acc, res) => ({ ...acc, [res.rt]: res.available }),
             {} as Record<RuntimeType, boolean>
         );
+        this.cacheTimestamp = now;
+        return this.availabilityCache;
     }
 
     private enhanceErrorWithSuggestion(code: string, error: ExecutionError): ExecutionError {
@@ -208,13 +218,25 @@ export class ExecutionManager {
                 }
             }, customTimeout);
 
-            await this.activeAdapter.execute(instrumentedCode, filePath);
+            try {
+                await this.activeAdapter.execute(instrumentedCode, filePath);
+            } finally {
+                this.stopCleanup();
+                // Safe async cleanup of the temporary file
+                if (fs.existsSync(filePath)) {
+                    void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
+                }
+            }
 
         } catch (e) {
             this.stopCleanup();
             if (this.mainWindow) {
                 const err = e as Error;
                 this.mainWindow.webContents.send('execution:error', { message: `Execution failed: ${err.message}`, line: 1, column: 1 });
+            }
+            // Cleanup on catch too
+            if (fs.existsSync(filePath)) {
+                void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
             }
         }
     }
@@ -254,11 +276,11 @@ export class ExecutionManager {
                 let args: string[] = [];
 
                 if (rt === 'node') {
-                    const isTs = originalPath?.endsWith('.ts') || originalPath?.endsWith('.tsx') || originalPath?.endsWith('.jsx');
+                    const isTs = originalPath?.endsWith('.ts') ?? originalPath?.endsWith('.tsx') ?? originalPath?.endsWith('.jsx');
                     const hasReact = /import\s+.*from\s+['"]react['"]|React\.createElement|<[a-zA-Z]/.test(fullBenchmarkCode);
 
                     if (isTs || hasReact) {
-                        const loaderPath = path.resolve(process.cwd(), 'node_modules/esbuild-register/loader.mjs');
+                        const loaderPath = path.resolve(process.cwd(), 'node_modules/esbuild-register/loader.js');
                         if (fs.existsSync(loaderPath)) {
                             args = ['--loader', loaderPath, benchPath];
                         } else {

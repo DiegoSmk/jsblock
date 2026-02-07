@@ -199,27 +199,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                     set({ systemStats: stats });
                 });
 
-                window.electron.onBenchmarkResult((results) => {
-                    const { selectedFile, benchmarkHistory } = get();
-                    const newRecord = {
-                        id: Math.random().toString(36).substring(2, 9),
-                        timestamp: Date.now(),
-                        filePath: selectedFile ?? undefined,
-                        line: Number(localStorage.getItem('last_bench_line') ?? 0),
-                        results
-                    };
-                    const newHistory = [newRecord, ...benchmarkHistory].slice(0, 50);
-                    localStorage.setItem('benchmark_history', JSON.stringify(newHistory));
-
-                    // We can still use set since we are in the store, 
-                    // but we must be careful about cross-slice updates if we were using distinct files.
-                    // Since AppState combines them, it works.
-                    set({
-                        benchmarkResults: results,
-                        isBenchmarking: false,
-                        benchmarkHistory: newHistory
-                    });
-                });
+                // Benchmark results moved to benchmarkSlice.ts
 
                 listenersInitialized = true;
             }

@@ -19,8 +19,8 @@ export class NodeAdapter extends BaseAdapter {
         }
     }
 
-    async resolveExecutable(): Promise<string> {
-        return 'node';
+    resolveExecutable(): Promise<string> {
+        return Promise.resolve('node');
     }
 
     async execute(code: string, filePath: string): Promise<void> {
@@ -33,10 +33,11 @@ export class NodeAdapter extends BaseAdapter {
 
         const isTs = runnerPath.endsWith('.ts');
 
-        // Ensure we are using 'node' with esbuild-register for runtime execution
-        const finalCommand = 'node';
+        // Use 'tsx' for development (TS) and plain 'node' for production (JS)
+        // 'tsx' is much more reliable for ESM TypeScript than esbuild-register + node --loader
+        const finalCommand = isTs ? 'npx' : 'node';
         const finalArgs = isTs
-            ? ['--loader', 'esbuild-register/loader', runnerPath]
+            ? ['tsx', runnerPath]
             : [runnerPath];
 
         await this.spawnProcess(finalCommand, finalArgs);

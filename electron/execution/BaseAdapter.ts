@@ -9,6 +9,7 @@ export abstract class BaseAdapter extends EventEmitter implements IExecutionAdap
     protected transport: Transport | null = null;
 
     abstract isAvailable(): Promise<boolean>;
+    abstract resolveExecutable(): Promise<string>;
 
     protected async spawnProcess(command: string, args: string[]): Promise<void> {
         this.stop();

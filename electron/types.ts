@@ -8,7 +8,8 @@ export type ExecutionPayload =
 export interface ExecutionError {
     message: string;
     line: number;
-    column?: number;
+    column: number;
+    errorCode?: string;
     suggestion?: {
         text: string;
         replace: string;

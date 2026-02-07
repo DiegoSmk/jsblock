@@ -10,7 +10,7 @@ export type ExecutionPayload =
 export interface ExecutionError {
   message: string;
   line: number;
-  column?: number;
+  column: number;
   errorCode?: string;
   suggestion?: {
     text: string;
@@ -78,6 +78,7 @@ export interface ElectronAPI {
 
 import type { PluginManifest } from '../features/extensions/types';
 import type { BenchmarkResult } from '../features/execution/types';
+export type { BenchmarkResult };
 
 declare global {
   interface Window {
