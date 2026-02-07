@@ -14,3 +14,13 @@ export interface ExecutionError {
         replace: string;
     };
 }
+
+export interface BenchmarkResult {
+    runtime: 'node' | 'bun' | 'deno';
+    avgTime: number;
+    minTime: number;
+    maxTime: number;
+    iterations: number;
+    output: string;
+    isWinner?: boolean;
+}

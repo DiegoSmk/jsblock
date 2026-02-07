@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ExecutionPayload, ExecutionError } from './types';
+import type { ExecutionPayload, ExecutionError, BenchmarkResult } from './types';
 
 contextBridge.exposeInMainWorld('electron', {
     // Dialogs & Window
@@ -55,8 +55,8 @@ contextBridge.exposeInMainWorld('electron', {
     executionCheckAvailability: () => ipcRenderer.invoke('execution:check-availability'),
     executionSetRuntime: (runtime: 'node' | 'bun' | 'deno') => ipcRenderer.send('execution:set-runtime', runtime),
     benchmarkStart: (code: string, line: number, filePath?: string) => ipcRenderer.send('benchmark:start', code, line, filePath),
-    onBenchmarkResult: (callback: (results: any) => void) => {
-        const subscription = (_event: unknown, results: any) => callback(results);
+    onBenchmarkResult: (callback: (results: BenchmarkResult[]) => void) => {
+        const subscription = (_event: unknown, results: BenchmarkResult[]) => callback(results);
         ipcRenderer.on('benchmark:result', subscription);
         return () => ipcRenderer.removeListener('benchmark:result', subscription);
     },

@@ -15,7 +15,7 @@ export class BunAdapter extends BaseAdapter {
             await execAsync('bun --version');
             return 'bun';
         } catch {
-            const localPath = path.join(process.env.HOME || '', '.bun/bin/bun');
+            const localPath = path.join(process.env.HOME ?? '', '.bun/bin/bun');
             if (fs.existsSync(localPath)) {
                 return localPath;
             }
@@ -29,7 +29,7 @@ export class BunAdapter extends BaseAdapter {
             return true;
         } catch {
             // Check common local install path on Linux
-            const localPath = path.join(process.env.HOME || '', '.bun/bin/bun');
+            const localPath = path.join(process.env.HOME ?? '', '.bun/bin/bun');
             if (fs.existsSync(localPath)) {
                 return true;
             }

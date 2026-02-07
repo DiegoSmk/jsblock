@@ -5,6 +5,15 @@ import {
     ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
+/**
+ * Professional Type Augmentation
+ * Defines our custom globals so we don't use 'any'
+ */
+declare global {
+    var __spy: (val: unknown, line: number, type?: string) => unknown;
+    var __coverage: (line: number) => void;
+}
+
 // Fallback for setImmediate which is not standard in all runtimes (Deno)
 const safeSetImmediate = (fn: (...args: unknown[]) => void): void => {
     const globalObj = globalThis as unknown as { setImmediate: (fn: (...args: unknown[]) => void) => void };
@@ -15,32 +24,33 @@ const safeSetImmediate = (fn: (...args: unknown[]) => void): void => {
     setTimeout(fn, 0);
 };
 
+interface RunnerRequire extends NodeRequire {
+    cache: NodeJS.Dict<NodeModule>;
+}
+
 // Safe way to get require in both CJS and ESM environments for the runner
-const getRequire = (): any => {
-    try {
-        // @ts-ignore
-        if (typeof require !== 'undefined') return require;
-    } catch (e) {
-        // Ignore
+const getRequire = (): RunnerRequire => {
+    if (typeof require !== 'undefined') {
+        return require as RunnerRequire;
     }
 
-    try {
-        // Fallback for ESM environments (Deno/Bun with node: compatibility)
-        // Using runnerMetadata.require if available (which should be the global require in CJS)
-        const nodeModule = (runnerMetadata as any).require ? (runnerMetadata as any).require('node:module') : null;
-        if (nodeModule?.createRequire) {
-            return nodeModule.createRequire(eval('import.meta.url'));
+    const runnerMeta = runnerMetadata as unknown as { require?: (id: string) => unknown };
+    if (runnerMeta.require) {
+        try {
+            const nodeModule = (runnerMeta.require as (id: string) => unknown)('node:module') as { createRequire?: (url: string) => RunnerRequire };
+            if (nodeModule?.createRequire) {
+                return nodeModule.createRequire(String(eval('import.meta.url')));
+            }
+        } catch {
+            // Fallback handled below
         }
-    } catch (e) {
-        // Ignore
     }
 
     throw new Error('Runtime does not support "require" - needed for synchronous execution of instrumented code.');
 };
 
 const runnerMetadata = {
-    // @ts-ignore - require might be global
-    require: typeof require !== 'undefined' ? require : (null as any)
+    require: typeof require !== 'undefined' ? require : null
 };
 
 // Safe stringify to handle circular refs and basic types
@@ -52,15 +62,18 @@ function safeStringify(obj: unknown): string {
     if (obj instanceof Error) return obj.message;
 
     try {
-        const json = JSON.stringify(obj, (_key, value) => {
+        const json = JSON.stringify(obj, (_key, value: unknown) => {
             if (typeof value === 'function') return '[Function]';
             if (value instanceof Promise) return '[Promise]';
             return value;
         });
         // Truncate long strings to prevent IPC bloat
         return json.length > 1000 ? json.substring(0, 1000) + '... [truncated]' : json;
-    } catch (e) {
-        return String(obj);
+    } catch {
+        if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean' || obj === null || obj === undefined) {
+            return String(obj);
+        }
+        return '[Object]';
     }
 }
 
@@ -71,11 +84,11 @@ const server = new Server(
 
 // Sampling and Batching state
 let notificationBuffer: unknown[] = [];
-let totalNotificationsSent = 0;
 const MAX_NOTIFICATIONS = 50000;
 const BATCH_INTERVAL_MS = 50;
 let batchTimeout: NodeJS.Timeout | null = null;
 let isExecutionLimitReached = false;
+let totalNotificationsSent = 0;
 
 // Intelligent Sampling state
 const lineHitCounts = new Map<number, number>();
@@ -85,8 +98,7 @@ const INITIAL_SAMPLING_LIMIT = 5;
 function flushNotifications() {
     if (notificationBuffer.length === 0 && lineLatestValues.size === 0) return;
 
-    // Add latest values for sampled lines to the buffer
-    for (const [line, payload] of lineLatestValues.entries()) {
+    for (const payload of lineLatestValues.values()) {
         notificationBuffer.push(payload);
     }
     lineLatestValues.clear();
@@ -108,11 +120,9 @@ function flushNotifications() {
     }
 }
 
-// Helper to send notifications back to the Electron Client
 function sendOutputNotification(payload: { line?: string | number } & Record<string, unknown>) {
     if (isExecutionLimitReached) return;
 
-    // Handle non-execution messages (logs, status) normally
     if (!payload.line) {
         notificationBuffer.push(payload);
         batchTimeout ??= setTimeout(flushNotifications, BATCH_INTERVAL_MS);
@@ -124,21 +134,18 @@ function sendOutputNotification(payload: { line?: string | number } & Record<str
     lineHitCounts.set(lineNum, hitCount);
 
     if (hitCount <= INITIAL_SAMPLING_LIMIT) {
-        // First 5 hits: Send immediately (batched)
         totalNotificationsSent++;
         notificationBuffer.push(payload);
     } else {
-        // Hit > 5: Only keep the latest value for this line
-        // This doesn't increase totalNotificationsSent because we only send ONE per batch
         lineLatestValues.set(lineNum, payload);
     }
 
     if (totalNotificationsSent > MAX_NOTIFICATIONS) {
         isExecutionLimitReached = true;
-        flushNotifications(); // Send what's left
+        flushNotifications();
         sendStatusNotification('error', {
             error: {
-                message: `Event Limit Reached: Too many execution updates (${MAX_NOTIFICATIONS}). Try a simpler version of the code.`,
+                message: `Event Limit Reached: Too many execution updates (${MAX_NOTIFICATIONS}).`,
                 line: 1,
                 column: 1
             }
@@ -154,17 +161,15 @@ function sendOutputNotification(payload: { line?: string | number } & Record<str
 }
 
 function sendStatusNotification(type: 'done' | 'error', data?: Record<string, unknown>) {
-    // Flush any pending notifications before status
     flushNotifications();
-
     void server.notification({
         method: 'execution/status',
         params: { type, ...data }
     });
 }
 
-// Global Spy Function (injected by Instrumenter)
-(globalThis as unknown as { __spy: unknown }).__spy = (val: unknown, line: number, type = 'spy') => {
+// Global instrumentation functions (properly typed via declare global above)
+globalThis.__spy = (val: unknown, line: number, type = 'spy') => {
     sendOutputNotification({
         type: 'execution:value',
         line,
@@ -174,15 +179,13 @@ function sendStatusNotification(type: 'done' | 'error', data?: Record<string, un
     return val;
 };
 
-// Global Coverage Function
-(globalThis as unknown as { __coverage: unknown }).__coverage = (line: number) => {
+globalThis.__coverage = (line: number) => {
     sendOutputNotification({
         type: 'execution:coverage',
         line
     });
 };
 
-// Intercept console
 function sendLogNotification(level: string, ...args: unknown[]) {
     const safeArgs = args.map(arg => {
         if (typeof arg === 'function') return '[Function]';
@@ -198,12 +201,12 @@ function sendLogNotification(level: string, ...args: unknown[]) {
     });
 }
 
-(console as unknown as Record<string, (...args: unknown[]) => void>).log = (...args: unknown[]) => sendLogNotification('log', ...args);
-(console as unknown as Record<string, (...args: unknown[]) => void>).info = (...args: unknown[]) => sendLogNotification('info', ...args);
-(console as unknown as Record<string, (...args: unknown[]) => void>).warn = (...args: unknown[]) => sendLogNotification('warn', ...args);
-(console as unknown as Record<string, (...args: unknown[]) => void>).error = (...args: unknown[]) => sendLogNotification('error', ...args);
+const typedConsole = console as unknown as Record<string, (...args: unknown[]) => void>;
+typedConsole.log = (...args) => sendLogNotification('log', ...args);
+typedConsole.info = (...args) => sendLogNotification('info', ...args);
+typedConsole.warn = (...args) => sendLogNotification('warn', ...args);
+typedConsole.error = (...args) => sendLogNotification('error', ...args);
 
-// MCP Tools Setup
 server.setRequestHandler(ListToolsRequestSchema, () => {
     return Promise.resolve({
         tools: [
@@ -228,9 +231,11 @@ server.setRequestHandler(CallToolRequestSchema, (request) => {
 
         try {
             const runnerRequire = getRequire();
-            // Clear cache to allow re-running
             const resolved = runnerRequire.resolve(filePath);
-            delete runnerRequire.cache[resolved];
+            const cache = runnerRequire.cache;
+            if (cache?.[resolved]) {
+                delete cache[resolved];
+            }
 
             safeSetImmediate(() => {
                 try {
@@ -241,8 +246,8 @@ server.setRequestHandler(CallToolRequestSchema, (request) => {
                     let column = 0;
 
                     if (err instanceof Error && err.stack) {
-                        const stackLines = (err.stack).split('\n');
-                        const fileLine = stackLines.find((l: string) => l.includes(filePath));
+                        const stackLines = err.stack.split('\n');
+                        const fileLine = stackLines.find(l => l.includes(filePath));
                         if (fileLine) {
                             const match = (/:(\d+):(\d+)\)/.exec(fileLine)) ?? (/:(\d+):(\d+)/.exec(fileLine));
                             if (match) {
@@ -262,11 +267,11 @@ server.setRequestHandler(CallToolRequestSchema, (request) => {
                 }
             });
 
-            return Promise.resolve({ content: [{ type: 'text', text: 'Execution triggered successfully' }] });
+            return Promise.resolve({ content: [{ type: 'text', text: 'Execution triggered' }] });
         } catch (err: unknown) {
             return Promise.resolve({
                 isError: true,
-                content: [{ type: 'text', text: `Failed to resolve script: ${err instanceof Error ? err.message : String(err)}` }]
+                content: [{ type: 'text', text: `Error: ${err instanceof Error ? err.message : String(err)}` }]
             });
         }
     }
@@ -278,4 +283,7 @@ async function main() {
     await server.connect(transport);
 }
 
-main().catch(console.error);
+main().catch(error => {
+    const err = error as Error;
+    sendLogNotification('error', 'Main Loop Error', err.message);
+});

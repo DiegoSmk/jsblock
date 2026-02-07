@@ -15,7 +15,7 @@ export class DenoAdapter extends BaseAdapter {
             await execAsync('deno --version');
             return 'deno';
         } catch {
-            const localPath = path.join(process.env.HOME || '', '.deno/bin/deno');
+            const localPath = path.join(process.env.HOME ?? '', '.deno/bin/deno');
             if (fs.existsSync(localPath)) {
                 return localPath;
             }
@@ -29,7 +29,7 @@ export class DenoAdapter extends BaseAdapter {
             return true;
         } catch {
             // Check common local install path on Linux
-            const localPath = path.join(process.env.HOME || '', '.deno/bin/deno');
+            const localPath = path.join(process.env.HOME ?? '', '.deno/bin/deno');
             if (fs.existsSync(localPath)) {
                 return true;
             }
