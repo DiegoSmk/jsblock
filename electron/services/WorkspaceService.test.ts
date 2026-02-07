@@ -64,8 +64,8 @@ describe('WorkspaceService Search', () => {
         const results = await (service as any).searchInFiles('Hello', '/root', { caseSensitive: false, regex: false });
 
         expect(results).toHaveLength(2);
-        const file1Result = results.find(r => r.file.includes('file1.txt'));
-        const file2Result = results.find(r => r.file.includes('file2.ts'));
+        const file1Result = results.find((r: { file: string }) => r.file.includes('file1.txt'));
+        const file2Result = results.find((r: { file: string }) => r.file.includes('file2.ts'));
 
         expect(file1Result).toBeDefined();
         expect(file1Result).toMatchObject({ line: 1, text: 'Hello World' });
