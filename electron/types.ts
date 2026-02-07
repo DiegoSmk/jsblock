@@ -25,3 +25,15 @@ export interface BenchmarkResult {
     output: string;
     isWinner?: boolean;
 }
+
+export interface SearchResult {
+    file: string;
+    line: number;
+    text: string;
+    matchIndex: number;
+}
+
+export interface SearchOptions {
+    caseSensitive: boolean;
+    regex: boolean;
+}

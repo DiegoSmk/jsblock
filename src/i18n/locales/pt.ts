@@ -2,6 +2,7 @@ export const pt = {
     translation: {
         app: {
             layout: "Layout",
+            search: "Busca",
             open: "Abrir",
             folder: "Pasta",
             hide_explorer: "Esconder Explorador",

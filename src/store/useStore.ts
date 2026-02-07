@@ -365,7 +365,7 @@ export const useStore = create<AppState>((set, get, api) => ({
             }
         }
     })),
-    setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions') => set((state) => ({
+    setSidebarTab: (tab) => set((state) => ({
         activeSidebarTab: tab,
         layout: {
             ...state.layout,

@@ -18,6 +18,18 @@ export interface ExecutionError {
   };
 }
 
+export interface SearchResult {
+  file: string;
+  line: number;
+  text: string;
+  matchIndex: number;
+}
+
+export interface SearchOptions {
+  caseSensitive: boolean;
+  regex: boolean;
+}
+
 export interface ElectronAPI {
   // Dialogs & Window
   selectFolder: () => Promise<string | null>;
@@ -79,6 +91,8 @@ export interface ElectronAPI {
     openFolder: () => Promise<{ path: string; tree: any[] } | null>;
     getTree: (path: string) => Promise<any[]>;
     onUpdated: (callback: (data: { event: string; path: string; tree: any[] }) => void) => () => void;
+    search: (query: string, rootPath: string, options: SearchOptions) => Promise<SearchResult[]>;
+    replace: (query: string, replacement: string, rootPath: string, options: SearchOptions) => Promise<void>;
   };
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Sun, Moon, GitBranch, Box, Blocks } from 'lucide-react';
+import { Settings, Sun, Moon, GitBranch, Box, Blocks, Search } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTranslation } from 'react-i18next';
 import { DESIGN_TOKENS } from '../constants/design';
@@ -93,6 +93,14 @@ export const SideRibbon: React.FC = () => {
                 active={activeSidebarTab === 'explorer' || activeSidebarTab === 'library'}
                 onClick={() => setSidebarTab('explorer')}
                 title={t('app.tooltips.blueprints')}
+                isDark={isDark}
+            />
+            <RibbonButton
+                icon={Search}
+                active={activeSidebarTab === 'search'}
+                onClick={() => setSidebarTab('search')}
+                title={t('app.search')} // Need to check if this key exists or add it
+                disabled={!openedFolder}
                 isDark={isDark}
             />
             <RibbonButton

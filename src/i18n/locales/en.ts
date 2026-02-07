@@ -2,6 +2,7 @@ export const en = {
     translation: {
         app: {
             layout: "Layout",
+            search: "Search",
             open: "Open",
             folder: "Folder",
             hide_explorer: "Hide Explorer",

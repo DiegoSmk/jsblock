@@ -20,6 +20,7 @@ import { CommitHistory } from '../features/git/components/CommitHistory';
 import { GitGraphView } from '../features/git/components/GitGraphView';
 import { GitInfoPanel } from '../features/git/components/GitInfoPanel';
 import { NotesLibrary } from '../features/editor/components/NotesLibrary';
+import { SearchPanel } from '../features/workspace/components/SearchPanel';
 
 export const SidebarContainer: React.FC = () => {
     const { t } = useTranslation();
@@ -158,6 +159,8 @@ export const SidebarContainer: React.FC = () => {
                 );
             case 'extensions':
                 return <ExtensionsView />;
+            case 'search':
+                return <SearchPanel />;
             default:
                 return null;
         }
