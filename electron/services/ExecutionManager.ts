@@ -179,6 +179,9 @@ export class ExecutionManager {
 
             this.activeAdapter.onError((errorData: ExecutionError) => {
                 this.stopCleanup();
+                if (fs.existsSync(filePath)) {
+                    void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
+                }
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     const enhancedError = this.enhanceErrorWithSuggestion(code, errorData);
                     this.mainWindow.webContents.send('execution:error', enhancedError);
@@ -187,6 +190,9 @@ export class ExecutionManager {
 
             this.activeAdapter.onDone(() => {
                 this.stopCleanup();
+                if (fs.existsSync(filePath)) {
+                    void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
+                }
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     this.mainWindow.webContents.send('execution:done');
                 }
