@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('electron', {
     windowMaximize: () => ipcRenderer.send('window-maximize'),
     windowClose: () => ipcRenderer.send('window-close'),
     appReady: () => ipcRenderer.send('app-ready'),
+    openWindow: (type: string, options?: any) => ipcRenderer.invoke('window:open', type, options),
 
     // File System API (Unified)
     fileSystem: {

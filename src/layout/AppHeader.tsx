@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     FolderOpen, X, Minus, Square, Info, LogOut,
     History as HistoryIcon, Network, PanelLeft, Files,
-    Library, ChevronRight, File as FileIcon, Folder
+    Library, ChevronRight, File as FileIcon, Folder, ExternalLink
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store/useStore';
@@ -498,6 +498,36 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                     >
                         {openedFolder ? <LogOut size={14} /> : <FolderOpen size={14} />}
                         <span>{openedFolder ? t('app.window_controls.close') : t('app.open')}</span>
+                    </button>
+
+                    {/* Pop-out Test Button */}
+                    <button
+                        onClick={() => {
+                            void window.electron.openWindow('test', { width: 600, height: 400 });
+                        }}
+                        title="Abrir Janela de Teste"
+                        style={{
+                            background: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)',
+                            border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.2)'}`,
+                            cursor: 'pointer',
+                            color: isDark ? '#a5b4fc' : '#4f46e5',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            padding: '4px 10px',
+                            borderRadius: '4px'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)';
+                        }}
+                    >
+                        <ExternalLink size={14} />
+                        <span>Pop-out</span>
                     </button>
 
                     {/* Window Controls */}

@@ -94,6 +94,13 @@ body {
     overflow: hidden;
 }
 
+body.is-windowed,
+html.is-windowed,
+html.is-windowed #root {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
 /* Logo Styles */
 .app-logo {
     display: flex;
@@ -611,13 +618,16 @@ body {
         opacity: 1;
     }
 }
+
 /* Git Gutter Decorations */
 .git-gutter-added {
     border-left: 3px solid #22c55e;
 }
+
 .git-gutter-modified {
     border-left: 3px solid #3b82f6;
 }
+
 .git-gutter-deleted {
     border-left: 3px solid #ef4444;
 }

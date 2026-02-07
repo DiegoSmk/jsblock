@@ -40,6 +40,7 @@ export interface ElectronAPI {
   windowMaximize: () => void;
   windowClose: () => void;
   appReady: () => void;
+  openWindow: (type: string, options?: { width?: number; height?: number; title?: string; payload?: any }) => Promise<string>;
 
   // File System API (Unified)
   fileSystem: {

@@ -11,12 +11,18 @@ import os from 'os';
 import { PluginManager } from './services/PluginManager';
 import { ExecutionManager } from './services/ExecutionManager';
 import { WorkspaceService } from './services/WorkspaceService';
+import { windowManager } from './services/WindowManager';
 
 const execFileAsync = promisify(execFile);
 // const execAsync = promisify(exec); // unused
 
-// Disable hardware acceleration to avoid some GPU-related errors and suppress autofill warnings
-app.disableHardwareAcceleration();
+// Enable transparency support for Linux
+if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('enable-transparent-visuals');
+}
+
+// Disable hardware acceleration only if NOT on Linux or for specific testing
+// app.disableHardwareAcceleration(); 
 app.commandLine.appendSwitch('disable-features', 'PasswordManager,PasswordGeneration');
 app.commandLine.appendSwitch('disable-autofill-keyboard-accessor-view', 'true');
 
@@ -26,7 +32,7 @@ let splashWindow: BrowserWindow | null;
 
 // Logging globals
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-let logToFile: (msg: string) => void = () => {};
+let logToFile: (msg: string) => void = () => { };
 let logStream: fs.WriteStream | null = null;
 
 function setupLogging() {
@@ -125,6 +131,7 @@ function createWindow() {
     }, 8000); // 8 seconds is a safe margin for slow dev environments
 
     ipcMain.once('app-ready', () => {
+        console.log('IPC: app-ready received from frontend');
         clearTimeout(fallbackTimeout);
         const elapsedTime = Date.now() - startLoadTime;
         const minimumTime = 1000;
@@ -142,15 +149,28 @@ function createWindow() {
     if (app.isPackaged) {
         void mainWindow.loadFile(path.join(__dirname, '../index.html'));
     } else {
-        void mainWindow.loadURL('http://localhost:5173');
+        // Try multiple ports in dev mode
+        const tryLoad = async (port: number) => {
+            try {
+                await mainWindow?.loadURL(`http://localhost:${port}`);
+                console.log(`Successfully loaded from port ${port}`);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        };
+
+        void (async () => {
+            if (await tryLoad(5173)) return;
+            if (await tryLoad(5174)) return;
+            console.error('Failed to load from both 5173 and 5174');
+        })();
     }
 
     // Add failure logging
-    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-        console.error('Failed to load:', errorCode, errorDescription);
-        if (errorCode === -102) { // ERR_CONNECTION_REFUSED
-            console.error('Connection refused. Is the dev server (Vite) running on http://localhost:5173?');
-        }
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+        if (errorCode === -102) return; // Ignore ERR_CONNECTION_REFUSED during port hunting
+        console.error(`Failed to load ${validatedURL}:`, errorCode, errorDescription);
     });
 
     mainWindow.on('closed', () => {
@@ -179,6 +199,7 @@ void app.whenReady().then(() => {
         pluginManager.setMainWindow(mainWindow);
         executionManager.setMainWindow(mainWindow);
         workspaceService.setMainWindow(mainWindow);
+        windowManager.setMainWindow(mainWindow);
     }
 
     // Register handlers
@@ -474,8 +495,13 @@ ipcMain.on('window-maximize', () => {
     }
 });
 
-ipcMain.on('window-close', () => {
-    mainWindow?.close();
+ipcMain.handle('window:open', (_event, type: any, options: any) => {
+    return windowManager.openWindow(type, options);
+});
+
+ipcMain.on('window-close', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.close();
 });
 
 // --- Terminal (PTY) Management ---

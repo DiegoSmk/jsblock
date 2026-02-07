@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlowProvider,
@@ -55,6 +55,7 @@ import { GitDiffEditor } from './features/git/components/GitDiffEditor';
 import { AppHeader } from './layout/AppHeader';
 import { AppFooter } from './layout/AppFooter';
 import { BenchmarkPanel } from './features/execution/components/BenchmarkPanel';
+import { WindowOutlet } from './routes/WindowOutlet';
 
 function App() {
   const { t } = useTranslation();
@@ -98,11 +99,62 @@ function App() {
 
   const isDark = theme === 'dark';
 
+  // Detect windowed mode via URL search params (set by WindowManager)
+  const isWindowed = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'window';
+  }, []);
 
   useEffect(() => {
-    document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
+    if (!isWindowed) {
+      document.body.style.backgroundColor = isDark ? '#121212' : '#ffffff';
+      document.body.classList.remove('is-windowed');
+      document.documentElement.classList.remove('is-windowed');
+    } else {
+      document.body.style.backgroundColor = 'transparent';
+      document.body.classList.add('is-windowed');
+      document.documentElement.classList.add('is-windowed');
+    }
     document.body.setAttribute('data-theme', theme);
-  }, [theme, isDark]);
+  }, [theme, isDark, isWindowed]);
+
+  // Notify Electron that the app is ready as soon as the basic component mounts
+  useEffect(() => {
+    if (window.electron?.appReady) {
+      window.electron.appReady();
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'settings.json' && e.newValue) {
+        try {
+          useStore.getState().updateSettingsConfig(e.newValue);
+        } catch (err) {
+          console.error('Failed to sync settings from storage event', err);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // If in windowed mode, we only render the specific component requested
+  if (isWindowed) {
+    return (
+      <div style={{
+        background: 'none',
+        backgroundColor: 'transparent',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0
+      }}>
+        <WindowOutlet />
+      </div>
+    );
+  }
 
   useEffect(() => {
     const { setSidebarTab, saveFile, layout, toggleSidebar } = useStore.getState();
@@ -149,9 +201,7 @@ function App() {
 
     const timer = setTimeout(() => {
       // Use the new window.electron pattern
-      if (window.electron?.appReady) {
-        window.electron.appReady();
-      }
+      console.log('App initialized');
     }, 200);
 
     return () => {
