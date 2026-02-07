@@ -224,15 +224,7 @@ export class ExecutionManager {
                 }
             }, customTimeout);
 
-            try {
-                await this.activeAdapter.execute(instrumentedCode, filePath);
-            } finally {
-                this.stopCleanup();
-                // Safe async cleanup of the temporary file
-                if (fs.existsSync(filePath)) {
-                    void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
-                }
-            }
+            await this.activeAdapter.execute(instrumentedCode, filePath);
 
         } catch (e) {
             this.stopCleanup();
@@ -282,7 +274,8 @@ export class ExecutionManager {
                 let args: string[] = [];
 
                 if (rt === 'node') {
-                    const isTs = originalPath?.endsWith('.ts') ?? originalPath?.endsWith('.tsx') ?? originalPath?.endsWith('.jsx');
+                    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+                    const isTs = originalPath?.endsWith('.ts') || originalPath?.endsWith('.tsx') || originalPath?.endsWith('.jsx');
                     const hasReact = /import\s+.*from\s+['"]react['"]|React\.createElement|<[a-zA-Z]/.test(fullBenchmarkCode);
 
                     if (isTs || hasReact) {
