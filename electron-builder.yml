@@ -10,16 +10,15 @@ linux:
   maintainer: DiegoSmk <guinho_p1@hotmail.com>
   target:
     - AppImage
-    - deb
   category: Development
-  icon: public/vite.svg # Ajuste conforme necessário
+  icon: build/icon.png
 win:
   target: nsis
-  icon: public/vite.svg # Ajuste conforme necessário
+  icon: build/icon.png
 mac:
   target: dmg
   category: public.app-category.developer-tools
-  icon: public/vite.svg # Ajuste conforme necessário
+  icon: build/icon.png
 extraMetadata:
   main: dist/electron/main.js
 publish:
