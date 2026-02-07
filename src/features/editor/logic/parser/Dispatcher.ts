@@ -10,6 +10,7 @@ import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { ImportHandler } from './handlers/ImportHandler';
+import { ExportHandler } from './handlers/ExportHandler';
 import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
 import type { AppNode } from '../../types';
@@ -64,27 +65,9 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
         return ReturnHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
     }
 
-    if (stmt.type === 'ExportNamedDeclaration') {
-        const namedExport = stmt;
-        if (namedExport.declaration) {
-            // Unwrap and mark as exported
-            ctx.isExporting = true;
-            const result = parseStatement(namedExport.declaration, ctx, parentId, handleName, index);
-            ctx.isExporting = false;
-            return result;
-        }
+    if (ExportHandler.canHandle(stmt)) {
+        return ExportHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
     }
-
-    if (stmt.type === 'ExportDefaultDeclaration') {
-        const defaultExport = stmt;
-        if (defaultExport.declaration) {
-            ctx.isExportingDefault = true;
-            const result = parseStatement(defaultExport.declaration as BabelNode, ctx, parentId, handleName, index);
-            ctx.isExportingDefault = false;
-            return result;
-        }
-    }
-
 
     return undefined;
 };
@@ -160,7 +143,9 @@ export const initializeContext = (astBody: Statement[], indexCounter: { value: n
         currentParentId: undefined,
         nativeApiNodeId: nativeApiId,
         processBlock: (bodyNode, entryNodeId, flowHandle, label, preNodes) =>
-            processBlockInScope(bodyNode, ctx, entryNodeId, flowHandle, label, preNodes)
+            processBlockInScope(bodyNode, ctx, entryNodeId, flowHandle, label, preNodes),
+        parseStatement: (stmt, parentId, handleName, index) =>
+            parseStatement(stmt, ctx, parentId, handleName, index)
     };
 
     return ctx;
