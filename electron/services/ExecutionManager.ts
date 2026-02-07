@@ -32,6 +32,8 @@ export class ExecutionManager {
 
     setRuntime(runtime: RuntimeType) {
         this.currentRuntime = runtime;
+        // Proactively invalidate cache on runtime change
+        void this.checkAvailability(true).catch(() => { /* ignore */ });
     }
 
 
@@ -279,8 +281,15 @@ export class ExecutionManager {
                     const hasReact = /import\s+.*from\s+['"]react['"]|React\.createElement|<[a-zA-Z]/.test(fullBenchmarkCode);
 
                     if (isTs || hasReact) {
-                        const loaderPath = path.resolve(process.cwd(), 'node_modules/esbuild-register/loader.js');
-                        if (fs.existsSync(loaderPath)) {
+                        const esbuildDir = path.resolve(process.cwd(), 'node_modules/esbuild-register');
+                        const mjsLoader = path.join(esbuildDir, 'loader.mjs');
+                        const jsLoader = path.join(esbuildDir, 'loader.js');
+
+                        let loaderPath: string | null = null;
+                        if (fs.existsSync(mjsLoader)) loaderPath = mjsLoader;
+                        else if (fs.existsSync(jsLoader)) loaderPath = jsLoader;
+
+                        if (loaderPath) {
                             args = ['--loader', loaderPath, benchPath];
                         } else {
                             args = [benchPath];

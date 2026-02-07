@@ -22,7 +22,17 @@ describe('Multi-Runtime Basic Validation', () => {
                 }
             });
 
-            it('should generate valid instrumented code', () => {
+            it(`should generate valid instrumented code for ${runtime}`, async () => {
+                // If special runtime is not available, we skip the E2E-like instrumentation test
+                // but we keep the logic check for basic detection above.
+                const adapter = ExecutionFactory.createAdapter(runtime);
+                const isAvailable = await adapter.isAvailable();
+
+                if (runtime !== 'node' && !isAvailable) {
+                    console.warn(`Skipping E2E instrumentation check for ${runtime} (not installed)`);
+                    return;
+                }
+
                 const code = 'const x = 10 + 5;';
                 const instrumented = Instrumenter.instrumentCode(code);
 
