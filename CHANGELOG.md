@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.3](https://github.com/DiegoSmk/jsblock/compare/v0.5.2...v0.5.3) (2026-02-07)
+
+
+### 🐛 Bug Fixes
+
+* add write permissions for github release automation ([2648100](https://github.com/DiegoSmk/jsblock/commit/2648100df397af292fc9d21e67ad08976dea4374))
+
 ### [0.5.2](https://github.com/DiegoSmk/jsblock/compare/v0.5.1...v0.5.2) (2026-02-07)
 
 
