@@ -10,8 +10,8 @@ describe('Quokka-like Execution Flow', () => {
     let mockOnExecutionError: ReturnType<typeof vi.fn>;
     let logCallback: (data: ExecutionPayload) => void;
     let errorCallback: (data: string | { line: number; message: string }) => void;
-<<<<<<< HEAD
     let onClearCallback: () => void;
+    let startCallback: () => void;
 
     beforeEach(() => {
         resetExecutionStateForTesting();
@@ -20,7 +20,9 @@ describe('Quokka-like Execution Flow', () => {
             executionResults: new Map(),
             executionErrors: new Map(),
             code: 'const a = 10;',
-            livePreviewEnabled: true // Enable for tests
+            livePreviewEnabled: true, // Enable for tests
+            isListenersInitialized: false,
+            lastExecutedCode: null
         });
 
         // Mock Electron API
@@ -38,13 +40,16 @@ describe('Quokka-like Execution Flow', () => {
             executionStart: mockExecutionStart,
             onExecutionLog: mockOnExecutionLog,
             onExecutionError: mockOnExecutionError,
-            onExecutionStarted: vi.fn(),
-            onExecutionDone: vi.fn(),
+            onExecutionStarted: vi.fn((cb: () => void) => {
+                startCallback = cb;
+                return () => { /* no-op */ };
+            }),
             onExecutionClear: vi.fn((cb) => {
                 onClearCallback = cb;
                 return () => { };
             }),
-            onSystemStats: vi.fn(),
+            onExecutionDone: vi.fn(() => () => { /* no-op */ }),
+            onSystemStats: vi.fn(() => () => { /* no-op */ }),
             checkExists: vi.fn(),
             discoverPlugins: vi.fn(),
         };
@@ -138,11 +143,13 @@ describe('Quokka-like Execution Flow', () => {
 
         runExecution(code2);
         if (onClearCallback) onClearCallback();
+        if (startCallback) startCallback();
 
         await vi.waitFor(() => {
             expect(useStore.getState().executionResults.size).toBe(0);
             expect(useStore.getState().executionErrors.size).toBe(0);
         });
     });
+
 
 });

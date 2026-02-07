@@ -45,6 +45,8 @@ export interface ExecutionSlice {
     setLivePreviewEnabled: (enabled: boolean) => void;
     setRuntime: (runtime: 'node' | 'bun' | 'deno') => void;
     checkAvailability: () => Promise<void>;
+    isListenersInitialized?: boolean;
+    lastExecutedCode?: string | null;
 }
 
 export interface BenchmarkSlice {

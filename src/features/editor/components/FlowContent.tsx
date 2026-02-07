@@ -203,29 +203,32 @@ export function FlowContent() {
     updateEdge(edgeStyleMenu.id, edgeUpdates);
   };
 
-  const scopeNodes = nodes.filter((n: Node) =>
+  const scopeNodes = React.useMemo(() => nodes.filter((n: Node) =>
     n.id !== 'node-js-runtime' && (
       n.data?.scopeId === activeScopeId ||
       (activeScopeId === 'root' && (!n.data?.scopeId || n.data?.scopeId === 'root'))
     )
-  );
+  ), [nodes, activeScopeId]);
 
-  const hasNativeCalls = edges.some((e: Edge) =>
+  const hasNativeCalls = React.useMemo(() => edges.some((e: Edge) =>
     e.source === 'node-js-runtime' &&
     scopeNodes.some((n: Node) => n.id === e.target)
-  );
+  ), [edges, scopeNodes]);
 
-  const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
-  const filteredNodes: Node[] = (hasNativeCalls && runtimeNode)
+  const runtimeNode = React.useMemo(() => nodes.find(n => n.id === 'node-js-runtime'), [nodes]);
+
+  const filteredNodes: Node[] = React.useMemo(() => (hasNativeCalls && runtimeNode)
     ? [...scopeNodes, runtimeNode]
-    : scopeNodes;
+    : scopeNodes, [hasNativeCalls, runtimeNode, scopeNodes]);
 
-  const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
-  const filteredEdges = edges.filter(e => {
-    if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
-    if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
-    return false;
-  });
+  const filteredEdges = React.useMemo(() => {
+    const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
+    return edges.filter(e => {
+      if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
+      if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
+      return false;
+    });
+  }, [edges, filteredNodes]);
 
   useEffect(() => {
     if (filteredNodes.length > 0) {
