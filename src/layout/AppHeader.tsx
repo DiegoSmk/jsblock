@@ -19,7 +19,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
         activeSidebarTab,
         toggleSidebar,
         setSidebarTab,
-        setOpenedFolder,
         setSelectedFile,
         setConfirmationModal,
         openedFolder,
@@ -27,6 +26,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
         git,
         setGitSidebarView,
         layout,
+        openWorkspace,
+        setWorkspaceRoot
     } = useStore();
 
     const showSidebar = layout.sidebar.isVisible;
@@ -260,20 +261,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                     cancelLabel: t('app.common.cancel') ?? 'Cancelar',
                                     variant: 'warning',
                                     onConfirm: () => {
-                                        setOpenedFolder(null);
+                                        setWorkspaceRoot(null);
                                         void setSelectedFile(null);
                                         setConfirmationModal(null);
                                     },
                                     onCancel: () => setConfirmationModal(null)
                                 });
                             } else {
-                                if (window.electron) {
-                                    window.electron.selectFolder()
-                                        .then((path) => {
-                                            if (path) setOpenedFolder(path);
-                                        })
-                                        .catch(console.error);
-                                }
+                                void openWorkspace();
                             }
                         }}
                         style={{

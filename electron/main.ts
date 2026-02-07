@@ -10,6 +10,7 @@ import * as pty from 'node-pty';
 import os from 'os';
 import { PluginManager } from './services/PluginManager';
 import { ExecutionManager } from './services/ExecutionManager';
+import { WorkspaceService } from './services/WorkspaceService';
 
 const execFileAsync = promisify(execFile);
 // const execAsync = promisify(exec); // unused
@@ -153,6 +154,7 @@ function createWindow() {
 
 const pluginManager = new PluginManager();
 const executionManager = new ExecutionManager();
+const workspaceService = new WorkspaceService();
 
 void app.whenReady().then(() => {
     createSplashWindow();
@@ -160,7 +162,11 @@ void app.whenReady().then(() => {
     if (mainWindow) {
         pluginManager.setMainWindow(mainWindow);
         executionManager.setMainWindow(mainWindow);
+        workspaceService.setMainWindow(mainWindow);
     }
+
+    // Register handlers
+    workspaceService.registerHandlers();
 
     // Initial discovery and host start
     pluginManager.discoverPlugins();

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileCode, FolderPlus, Trash2 } from 'lucide-react';
+import { FileCode, FolderPlus, Trash2, Edit2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 type TranslationFunction = (key: string) => string;
@@ -8,7 +8,7 @@ interface FolderContextMenuProps {
     x: number;
     y: number;
     onClose: () => void;
-    onAction: (type: 'file' | 'folder' | 'delete', ext?: string) => void;
+    onAction: (type: 'file' | 'folder' | 'delete' | 'rename', ext?: string) => void;
     isDark: boolean;
     t: TranslationFunction;
 }
@@ -73,6 +73,13 @@ export const FolderContextMenu: React.FC<FolderContextMenuProps> = ({ x, y, onCl
                 >
                     <FolderPlus size={14} color={isDark ? '#888' : '#666'} />
                     <span>{t('file_explorer.new_folder') ?? 'New Folder'}</span>
+                </button>
+                <button
+                    onClick={() => onAction('rename')}
+                    style={menuButtonStyle(isDark)}
+                >
+                    <Edit2 size={14} />
+                    <span>{t('file_explorer.rename') ?? 'Rename'}</span>
                 </button>
                 <div style={{ height: '1px', background: isDark ? '#333' : '#eee', margin: '4px 0' }} />
                 <button

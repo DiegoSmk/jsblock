@@ -91,5 +91,16 @@ contextBridge.exposeInMainWorld('electron', {
         return () => ipcRenderer.removeListener('system:stats', subscription);
     },
     // MCP Sync
-    mcpSyncState: (state: unknown) => ipcRenderer.send('mcp:sync-state', state)
+    mcpSyncState: (state: unknown) => ipcRenderer.send('mcp:sync-state', state),
+
+    // Workspace
+    workspace: {
+        openFolder: () => ipcRenderer.invoke('workspace:open-folder'),
+        getTree: (path: string) => ipcRenderer.invoke('workspace:get-tree', path),
+        onUpdated: (callback: (data: { event: string, path: string, tree: any[] }) => void) => {
+            const subscription = (_event: unknown, data: { event: string, path: string, tree: any[] }) => callback(data);
+            ipcRenderer.on('workspace:updated', subscription);
+            return () => ipcRenderer.removeListener('workspace:updated', subscription);
+        }
+    }
 });

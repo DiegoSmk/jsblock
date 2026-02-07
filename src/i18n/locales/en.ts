@@ -134,7 +134,9 @@ export const en = {
             },
             delete_title: "Delete Item",
             delete_confirm: "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
-            delete_success: "Item deleted successfully"
+            delete_success: "Item deleted successfully",
+            rename: "Rename",
+            rename_success: "Item renamed successfully"
         },
         library: {
             search_placeholder: "Search functions...",

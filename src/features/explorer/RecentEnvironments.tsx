@@ -53,7 +53,8 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
     const removeRecent = useStore(state => state.removeRecent);
     const toggleFavorite = useStore(state => state.toggleFavorite);
     const setRecentLabel = useStore(state => state.setRecentLabel);
-    const setOpenedFolder = useStore(state => state.setOpenedFolder);
+    const openWorkspace = useStore(state => state.openWorkspace);
+    const setWorkspaceRoot = useStore(state => state.setWorkspaceRoot);
     const validateRecents = useStore(state => state.validateRecents);
     const setConfirmationModal = useStore(state => state.setConfirmationModal);
     const theme = useStore(state => state.theme);
@@ -67,7 +68,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
         if (window.electron) {
             const exists = await window.electron.fileSystem.checkExists(path);
             if (exists) {
-                setOpenedFolder(path);
+                setWorkspaceRoot(path);
             } else {
                 void validateRecents();
             }
@@ -198,12 +199,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                     <button
                         onClick={() => {
-                            void (async () => {
-                                if (window.electron) {
-                                    const path = await window.electron.selectFolder();
-                                    if (path) setOpenedFolder(path);
-                                }
-                            })();
+                            void openWorkspace();
                         }}
                         style={{
                             display: 'flex',

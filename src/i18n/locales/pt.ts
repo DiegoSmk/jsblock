@@ -134,7 +134,9 @@ export const pt = {
             },
             delete_title: "Excluir Item",
             delete_confirm: "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
-            delete_success: "Item excluído com sucesso"
+            delete_success: "Item excluído com sucesso",
+            rename: "Renomear",
+            rename_success: "Item renomeado com sucesso"
         },
         library: {
             search_placeholder: "Buscar funções...",

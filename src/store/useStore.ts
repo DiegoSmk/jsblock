@@ -37,6 +37,7 @@ import i18n from '../i18n/config';
 import { createGitSlice } from '../features/git/store/slice';
 import { createExecutionSlice } from '../features/execution/store/executionSlice';
 import { createBenchmarkSlice } from '../features/execution/store/benchmarkSlice';
+import { createWorkspaceSlice } from '../features/workspace/store/workspaceSlice';
 import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
 import { validateConnection } from '../features/editor/logic/connectionLogic';
 
@@ -49,6 +50,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     ...createGitSlice(set, get, api),
     ...createExecutionSlice(set, get, api),
     ...createBenchmarkSlice(set, get, api),
+    ...createWorkspaceSlice(set, get, api),
 
     code: initialCode,
     nodes: [],
@@ -806,17 +808,7 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     setOpenedFolder: (path) => {
-        set({ openedFolder: path });
-        if (path) {
-            void get().addRecent(path); // Add to recents when opened
-            void get().syncProjectFiles(); // Sync files when folder is opened
-            if (window.electron) {
-                void window.electron.fileSystem.ensureProjectConfig(path);
-            }
-        } else if (get().activeSidebarTab === 'git') {
-            // Reset to explorer if closing folder while in git tab
-            set({ activeSidebarTab: 'explorer' });
-        }
+        get().setWorkspaceRoot(path);
     },
 
     setSelectedFile: async (path) => {

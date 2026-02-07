@@ -32,6 +32,7 @@
     "@types/react-window": "^1.8.8",
     "@xyflow/react": "^12.10.0",
     "allotment": "^1.20.5",
+    "chokidar": "^3.6.0",
     "dagre": "^0.8.5",
     "esbuild": "^0.27.2",
     "esbuild-register": "^3.6.0",
@@ -54,6 +55,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/babel__parser": "^7.0.0",
+    "@types/chokidar": "^2.1.7",
     "@types/dagre": "^0.7.53",
     "@types/node": "^25.0.10",
     "@types/react": "^18.3.3",

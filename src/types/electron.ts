@@ -74,6 +74,12 @@ export interface ElectronAPI {
   onExecutionDone: (callback: () => void) => () => void;
   onSystemStats: (callback: (data: { cpu: number }) => void) => () => void;
   mcpSyncState: (state: unknown) => void;
+
+  workspace: {
+    openFolder: () => Promise<{ path: string; tree: any[] } | null>;
+    getTree: (path: string) => Promise<any[]>;
+    onUpdated: (callback: (data: { event: string; path: string; tree: any[] }) => void) => () => void;
+  };
 }
 
 import type { PluginManifest } from '../features/extensions/types';
