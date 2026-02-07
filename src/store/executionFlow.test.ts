@@ -1,20 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useStore } from './useStore';
 import { resetExecutionStateForTesting } from '../features/execution/store/executionSlice';
-
 import type { ExecutionPayload } from '../types/electron';
 
 describe('Quokka-like Execution Flow', () => {
+    let useStore: any;
     let mockExecutionStart: ReturnType<typeof vi.fn>;
     let mockOnExecutionLog: ReturnType<typeof vi.fn>;
     let mockOnExecutionError: ReturnType<typeof vi.fn>;
+
     let logCallback: (data: ExecutionPayload) => void;
     let errorCallback: (data: string | { line: number; message: string }) => void;
-    let onClearCallback: () => void;
+    let clearCallback: () => void;
     let startCallback: () => void;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        vi.resetModules();
+        const storeModule = await import('./useStore');
+        useStore = storeModule.useStore;
+
         resetExecutionStateForTesting();
+
         // Reset store
         useStore.setState({
             executionResults: new Map(),
@@ -35,6 +40,10 @@ describe('Quokka-like Execution Flow', () => {
             errorCallback = cb;
             return () => { /* cleanup */ };
         });
+        const mockOnExecutionClear = vi.fn((cb: () => void) => {
+            clearCallback = cb;
+            return () => { /* cleanup */ };
+        });
 
         const mockApi = {
             executionStart: mockExecutionStart,
@@ -44,14 +53,13 @@ describe('Quokka-like Execution Flow', () => {
                 startCallback = cb;
                 return () => { /* no-op */ };
             }),
-            onExecutionClear: vi.fn((cb) => {
-                onClearCallback = cb;
-                return () => { };
-            }),
+            onExecutionClear: mockOnExecutionClear,
             onExecutionDone: vi.fn(() => () => { /* no-op */ }),
             onSystemStats: vi.fn(() => () => { /* no-op */ }),
             checkExists: vi.fn(),
             discoverPlugins: vi.fn(),
+            executionCheckAvailability: vi.fn(),
+            executionSetRuntime: vi.fn(),
         };
 
         // @ts-expect-error - Mocking global window property
@@ -142,7 +150,9 @@ describe('Quokka-like Execution Flow', () => {
         });
 
         runExecution(code2);
-        if (onClearCallback) onClearCallback();
+
+        // Simulate events from backend
+        if (clearCallback) clearCallback();
         if (startCallback) startCallback();
 
         await vi.waitFor(() => {
@@ -150,6 +160,8 @@ describe('Quokka-like Execution Flow', () => {
             expect(useStore.getState().executionErrors.size).toBe(0);
         });
     });
+});
+
 
 
 });

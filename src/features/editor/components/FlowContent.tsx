@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import {
@@ -248,6 +248,13 @@ export function FlowContent() {
     [nodes]
   );
 
+  const defaultEdgeOptions = useMemo(() => ({
+    style: { strokeWidth: 3, stroke: isDark ? '#4fc3f7' : '#0070f3' },
+    animated: true,
+    labelStyle: { fill: isDark ? '#fff' : '#000', fontWeight: 700, fontSize: 12 },
+    labelBgStyle: { fill: isDark ? '#1e1e1e' : '#fff', fillOpacity: 0.8 }
+  }), [isDark]);
+
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: '200px', minWidth: '200px' }}>
       <ReactFlow
@@ -269,12 +276,7 @@ export function FlowContent() {
         snapGrid={[15, 15]}
         connectionMode={ConnectionMode.Loose}
         connectionRadius={30}
-        defaultEdgeOptions={{
-          style: { strokeWidth: 3, stroke: isDark ? '#4fc3f7' : '#0070f3' },
-          animated: true,
-          labelStyle: { fill: isDark ? '#fff' : '#000', fontWeight: 700, fontSize: 12 },
-          labelBgStyle: { fill: isDark ? '#1e1e1e' : '#fff', fillOpacity: 0.8 }
-        }}
+        defaultEdgeOptions={defaultEdgeOptions}
       >
         <Background color={isDark ? '#333' : '#ddd'} gap={20} />
         <Controls />
