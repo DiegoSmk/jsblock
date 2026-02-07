@@ -156,12 +156,12 @@ export interface AppState extends GitSlice, ExecutionSlice, BenchmarkSlice, Work
       isVisible: boolean;
     };
   };
-  activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions';
+  activeSidebarTab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions' | 'search';
   showCode: boolean;
   showCanvas: boolean;
   setSidebarWidth: (width: number) => void;
   toggleSidebar: (show?: boolean) => void;
-  setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions') => void;
+  setSidebarTab: (tab: 'explorer' | 'library' | 'git' | 'settings' | 'extensions' | 'search') => void;
   toggleCode: () => void;
   toggleCanvas: () => void;
 

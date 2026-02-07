@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ExecutionPayload, ExecutionError, BenchmarkResult } from './types';
+import type { ExecutionPayload, ExecutionError, BenchmarkResult, SearchOptions } from './types';
 
 contextBridge.exposeInMainWorld('electron', {
     // Dialogs & Window
@@ -101,6 +101,8 @@ contextBridge.exposeInMainWorld('electron', {
             const subscription = (_event: unknown, data: { event: string, path: string, tree: any[] }) => callback(data);
             ipcRenderer.on('workspace:updated', subscription);
             return () => ipcRenderer.removeListener('workspace:updated', subscription);
-        }
+        },
+        search: (query: string, rootPath: string, options: SearchOptions) => ipcRenderer.invoke('workspace:search', query, rootPath, options),
+        replace: (query: string, replacement: string, rootPath: string, options: SearchOptions) => ipcRenderer.invoke('workspace:replace', query, replacement, rootPath, options)
     }
 });
