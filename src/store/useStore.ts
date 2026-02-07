@@ -279,6 +279,17 @@ export const useStore = create<AppState>((set, get, api) => ({
     },
 
     setDirty: (dirty: boolean) => set({ isDirty: dirty }),
+
+    recentFiles: (JSON.parse(localStorage.getItem('recentFiles') ?? '[]') as string[]),
+
+    addRecentFile: (path: string) => {
+        const { recentFiles } = get();
+        // Remove if exists to push to top
+        const newRecents = [path, ...recentFiles.filter(f => f !== path)].slice(0, 20);
+        localStorage.setItem('recentFiles', JSON.stringify(newRecents));
+        set({ recentFiles: newRecents });
+    },
+
     recentEnvironments: (JSON.parse(localStorage.getItem('recentEnvironments') ?? '[]') as RecentEnvironment[]),
 
     addRecent: async (path: string) => {
@@ -859,6 +870,7 @@ export const useStore = create<AppState>((set, get, api) => ({
         }
 
         if (path) {
+            get().addRecentFile(path);
             set({ selectedFile: path, isDirty: false });
             await get().loadContentForFile(path);
         } else {

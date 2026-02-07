@@ -183,6 +183,10 @@ export interface AppState extends GitSlice, ExecutionSlice, BenchmarkSlice, Work
   loadContentForFile: (path: string | null) => Promise<void>;
   saveFile: () => Promise<void>;
 
+  // Recent Files
+  recentFiles: string[];
+  addRecentFile: (path: string) => void;
+
   // Recent Environments
   recentEnvironments: RecentEnvironment[];
   addRecent: (path: string) => Promise<void>;
