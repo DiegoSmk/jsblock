@@ -5,9 +5,8 @@ import { useStore } from '../../../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 
 export function useMonacoBenchmarks(editorInstance: Monaco.editor.IStandaloneCodeEditor | null) {
-    const { runBenchmark, code, livePreviewEnabled } = useStore(useShallow(state => ({
+    const { runBenchmark, livePreviewEnabled } = useStore(useShallow(state => ({
         runBenchmark: state.runBenchmark,
-        code: state.code,
         livePreviewEnabled: state.livePreviewEnabled
     })));
 
@@ -54,7 +53,7 @@ export function useMonacoBenchmarks(editorInstance: Monaco.editor.IStandaloneCod
                 if (isBenchmark) {
                     const line = e.target.position?.lineNumber;
                     if (line) {
-                        runBenchmark(model.getValue(), line);
+                        void runBenchmark(model.getValue(), line);
                     }
                 }
             }
@@ -65,5 +64,5 @@ export function useMonacoBenchmarks(editorInstance: Monaco.editor.IStandaloneCod
             mouseListener.dispose();
             decorationIdsRef.current = editorInstance.deltaDecorations(decorationIdsRef.current, []);
         };
-    }, [editorInstance, monaco, code, runBenchmark, livePreviewEnabled]);
+    }, [editorInstance, monaco, runBenchmark, livePreviewEnabled]);
 }

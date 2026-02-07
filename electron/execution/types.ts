@@ -20,6 +20,16 @@ export interface ExecutionError {
     };
 }
 
+export interface BenchmarkResult {
+    runtime: 'node' | 'bun' | 'deno';
+    avgTime: number;
+    minTime: number;
+    maxTime: number;
+    iterations: number;
+    output: string;
+    isWinner?: boolean;
+}
+
 export interface IExecutionAdapter {
     id: string;
     isAvailable(): Promise<boolean>;

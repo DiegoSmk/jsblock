@@ -37,6 +37,7 @@ export default defineConfig([
           './tsconfig.app.json',
           './tsconfig.node.json',
           './tsconfig.electron.json',
+          './tsconfig.vitest.json',
         ],
         tsconfigRootDir: import.meta.dirname,
       },

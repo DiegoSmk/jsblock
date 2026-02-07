@@ -68,10 +68,11 @@ export function useMonacoDecorations(editorInstance: Monaco.editor.IStandaloneCo
                         applyFix(line, error);
                     } else if (isTimeoutTip && error) {
                         // Fallback for click-to-copy if suggestion is somehow missing
-                        const match = error.message.match(/\/\/\s*@timeout\s+\d+/);
+                        const match = /\/\/\s*@timeout\s+\d+/.exec(error.message);
                         if (match) {
-                            navigator.clipboard.writeText(match[0]);
-                            addToast({ type: 'success', message: 'Comando copiado para o clipboard!' });
+                            navigator.clipboard.writeText(match[0]).then(() => {
+                                addToast({ type: 'success', message: 'Comando copiado para o clipboard!' });
+                            }).catch((_err: unknown) => { /* ignore */ });
                         }
                     }
                 }

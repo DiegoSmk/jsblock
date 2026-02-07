@@ -36,6 +36,7 @@ import { getLayoutedElements } from '../features/editor/logic/layout';
 import i18n from '../i18n/config';
 import { createGitSlice } from '../features/git/store/slice';
 import { createExecutionSlice } from '../features/execution/store/executionSlice';
+import { createBenchmarkSlice } from '../features/execution/store/benchmarkSlice';
 import { getUtilityDefinition, type UtilityType } from '../registry/utilities';
 import { validateConnection } from '../features/editor/logic/connectionLogic';
 
@@ -47,6 +48,7 @@ let saveLayoutTimeout: ReturnType<typeof setTimeout> | null = null;
 export const useStore = create<AppState>((set, get, api) => ({
     ...createGitSlice(set, get, api),
     ...createExecutionSlice(set, get, api),
+    ...createBenchmarkSlice(set, get, api),
 
     code: initialCode,
     nodes: [],

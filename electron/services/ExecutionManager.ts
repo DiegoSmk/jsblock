@@ -1,17 +1,23 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { ExecutionFactory, RuntimeType } from '../execution/ExecutionFactory.js';
-import { IExecutionAdapter, RunnerMessage, ExecutionError } from '../execution/types.js';
-import { build, Message } from 'esbuild';
-import os from 'os';
+import { IExecutionAdapter, RunnerMessage, ExecutionError, BenchmarkResult } from '../execution/types.js';
+import { build, Message, Loader } from 'esbuild';
+import { Instrumenter } from './Instrumenter.js';
+import { TelemetryService } from './TelemetryService.js';
+import { CodeUtils } from '../utils/CodeUtils.js';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 export class ExecutionManager {
     private activeAdapter: IExecutionAdapter | null = null;
     private mainWindow: BrowserWindow | null = null;
     private executionTimeout: NodeJS.Timeout | null = null;
     private currentRuntime: RuntimeType = 'node';
-    private statsInterval: NodeJS.Timeout | null = null;
+    private telemetry = new TelemetryService();
 
     constructor() {
         // IPC handles are now handled in main.ts to avoid double registration
@@ -44,11 +50,12 @@ export class ExecutionManager {
     private enhanceErrorWithSuggestion(code: string, error: ExecutionError): ExecutionError {
         // Simple heuristic for common errors
         if (error.message.includes('is not defined')) {
-            const match = error.message.match(/(.+) is not defined/);
+            const match = /(.+) is not defined/.exec(error.message);
             if (match) {
                 const name = match[1];
                 // Check if it's a common typo or missing import
-                if (name === 'console' || name === 'Math' || name === 'JSON') return error;
+                const technicalTerms = ['console', 'Math', 'Json'.toUpperCase()];
+                if (technicalTerms.includes(name)) return error;
 
                 return {
                     ...error,
@@ -62,87 +69,15 @@ export class ExecutionManager {
         return error;
     }
 
-    private stripBenchmarkCode(code: string): string {
-        const lines = code.split('\n');
-        const strippedLines: string[] = [];
-        let inBenchmark = false;
-        let braceCount = 0;
-
-        for (const line of lines) {
-            if (line.includes('//@benchmark')) {
-                inBenchmark = true;
-                braceCount = 0;
-                strippedLines.push(''); // Preserve line number
-                continue;
-            }
-
-            if (inBenchmark) {
-                const openBraces = (line.match(/{/g) || []).length;
-                const closeBraces = (line.match(/}/g) || []).length;
-
-                if (braceCount === 0 && openBraces > 0) {
-                    braceCount += openBraces - closeBraces;
-                } else if (braceCount > 0) {
-                    braceCount += openBraces - closeBraces;
-                } else if (line.trim() !== '') {
-                    // One-liner after //@benchmark
-                    inBenchmark = false;
-                }
-
-                if (braceCount <= 0 && (line.includes('}') || (openBraces === 0 && closeBraces === 0 && braceCount === 0))) {
-                    inBenchmark = false;
-                }
-
-                strippedLines.push(''); // Preserve line number
-                continue;
-            }
-
-            strippedLines.push(line);
-        }
-
-        return strippedLines.join('\n');
-    }
-
     private startStatsMonitoring() {
-        if (this.statsInterval) clearInterval(this.statsInterval);
-
-        let lastCpus = os.cpus();
-
-        this.statsInterval = setInterval(() => {
-            if (!this.mainWindow || this.mainWindow.isDestroyed()) {
-                this.stopStatsMonitoring();
-                return;
-            }
-
-            const currentCpus = os.cpus();
-            let totalDiff = 0;
-            let idleDiff = 0;
-
-            for (let i = 0; i < currentCpus.length; i++) {
-                const last = lastCpus[i].times;
-                const current = currentCpus[i].times;
-
-                const lastTotal = last.user + last.nice + last.sys + last.idle + last.irq;
-                const currentTotal = current.user + current.nice + current.sys + current.idle + current.irq;
-
-                totalDiff += currentTotal - lastTotal;
-                idleDiff += current.idle - last.idle;
-            }
-
-            const cpuUsage = totalDiff > 0 ? (1 - idleDiff / totalDiff) * 100 : 0;
-            this.mainWindow.webContents.send('system:stats', { cpu: Math.round(cpuUsage) });
-
-            lastCpus = currentCpus;
-        }, 1000);
+        if (this.mainWindow) {
+            this.telemetry.start(this.mainWindow);
+        }
     }
 
     private stopStatsMonitoring() {
-        if (this.statsInterval) {
-            clearInterval(this.statsInterval);
-            this.statsInterval = null;
-        }
-        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-            this.mainWindow.webContents.send('system:stats', { cpu: 0 });
+        if (this.mainWindow) {
+            this.telemetry.stop(this.mainWindow);
         }
     }
 
@@ -154,23 +89,32 @@ export class ExecutionManager {
         }
 
         // Strip benchmark code for normal execution but PRESERVE line numbers
-        const cleanCode = this.stripBenchmarkCode(code);
+        const cleanCode = CodeUtils.stripBenchmarkCode(code);
 
         const userDataPath = app.getPath('userData');
         const tempDir = path.join(userDataPath, 'temp_runs');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-        const fileName = originalPath ? path.basename(originalPath) : 'scratch.js';
-        const filePath = path.join(tempDir, `run_${Date.now()}_${fileName}`);
+        const originalExtension = originalPath ? path.extname(originalPath) : '.ts';
+        const fileName = originalPath ? path.basename(originalPath, originalExtension) : 'scratch';
+        // Always use .js for the final run file to avoid resolution issues in node/bun
+        const filePath = path.join(tempDir, `run_${Date.now()}_${fileName}.js`);
 
         // Try to transpile/instrument if needed
         let instrumentedCode = cleanCode;
         try {
+            // 1. Instrument code for Live Preview/Coverage
+            instrumentedCode = Instrumenter.instrumentCode(cleanCode);
+
+            // 2. Transpile TS/TSX to JS
+            const isTsx = originalExtension === '.tsx' || originalExtension === '.jsx' || /import\s+.*from\s+['"]react['"]|React\.createElement|<[a-zA-Z]/.test(cleanCode);
+            const loader: Loader = isTsx ? 'tsx' : 'ts';
+
             const result = await build({
                 stdin: {
-                    contents: cleanCode,
+                    contents: instrumentedCode,
                     resolveDir: process.cwd(),
-                    loader: 'ts',
+                    loader: loader,
                 },
                 bundle: false,
                 write: false,
@@ -238,7 +182,7 @@ export class ExecutionManager {
                 }
             });
 
-            const timeoutMatch = code.match(/\/\/\s*@timeout\s+(\d+)/);
+            const timeoutMatch = /\/\/\s*@timeout\s+(\d+)/.exec(code);
             const customTimeout = timeoutMatch ? parseInt(timeoutMatch[1], 10) : 5000;
 
             this.executionTimeout = setTimeout(() => {
@@ -246,7 +190,7 @@ export class ExecutionManager {
                     this.stopExecution();
                     if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                         const nextTimeout = customTimeout * 2;
-                        const hasTimeoutComment = code.match(/\/\/\s*@timeout\s+\d+/);
+                        const hasTimeoutComment = /\/\/\s*@timeout\s+\d+/.exec(code);
 
                         this.mainWindow.webContents.send('execution:error', {
                             message: `Execution Timed Out (${customTimeout}ms). Tip: Click or CTRL+ENTER to increase limit`,
@@ -276,77 +220,18 @@ export class ExecutionManager {
     }
 
     async startBenchmark(code: string, line: number, originalPath?: string) {
+        this.stopExecution(); // Ensure no normal execution is running
         if (!this.mainWindow || this.mainWindow.isDestroyed()) return;
         this.startStatsMonitoring();
 
-        // 1. Get the host code by stripping ALL benchmark blocks
-        const lines = code.split('\n');
-        const strippedLines: string[] = [];
-        let inCurrentBenchmark = false;
-        let inOtherBenchmark = false;
-        let braceCount = 0;
-        let benchmarkBlock = '';
-
-        for (let i = 0; i < lines.length; i++) {
-            const currentLine = lines[i];
-            const isTargetLine = (i + 1) === line;
-
-            if (currentLine.includes('//@benchmark')) {
-                if (isTargetLine) {
-                    inCurrentBenchmark = true;
-                    inOtherBenchmark = false;
-                    braceCount = 0;
-                    strippedLines.push(currentLine);
-                } else {
-                    inCurrentBenchmark = false;
-                    inOtherBenchmark = true;
-                    braceCount = 0;
-                    strippedLines.push(''); // Replace other benchmarks with empty lines
-                }
-                continue;
-            }
-
-            if (inCurrentBenchmark) {
-                benchmarkBlock += currentLine + '\n';
-                const openBraces = (currentLine.match(/{/g) || []).length;
-                const closeBraces = (currentLine.match(/}/g) || []).length;
-                braceCount += openBraces - closeBraces;
-
-                if (braceCount === 0 && openBraces > 0) {
-                    // First block start
-                } else if (braceCount <= 0 && (currentLine.includes('}') || (openBraces === 0 && closeBraces === 0 && braceCount === 0))) {
-                    inCurrentBenchmark = false;
-                }
-                strippedLines.push(currentLine);
-                continue;
-            }
-
-            if (inOtherBenchmark) {
-                const openBraces = (currentLine.match(/{/g) || []).length;
-                const closeBraces = (currentLine.match(/}/g) || []).length;
-                braceCount += openBraces - closeBraces;
-
-                if (braceCount <= 0 && (currentLine.includes('}') || (openBraces === 0 && closeBraces === 0 && braceCount === 0))) {
-                    inOtherBenchmark = false;
-                }
-                strippedLines.push('');
-                continue;
-            }
-
-            strippedLines.push(currentLine);
-        }
-
-        const fullBenchmarkCode = strippedLines.join('\n');
+        const fullBenchmarkCode = CodeUtils.extractBenchmark(code, line);
 
         const availability = await this.checkAvailability();
         const runtimes = (Object.keys(availability) as RuntimeType[]).filter(rt => availability[rt]);
 
-        const results: any[] = [];
-        const { exec } = await import('child_process');
-        const { promisify } = await import('util');
-        const execAsync = promisify(exec);
+        const results: BenchmarkResult[] = [];
 
-        // Determine where to save based on Option A
+        // Determine where to save benchmarks
         let tempDir: string;
         if (originalPath && fs.existsSync(path.dirname(originalPath))) {
             tempDir = path.dirname(originalPath);
@@ -357,38 +242,38 @@ export class ExecutionManager {
         }
 
         await Promise.all(runtimes.map(async (rt) => {
-            let output = '';
-            const fileName = `.bench_${rt}_${Date.now()}.js`;
-            const benchPath = path.join(tempDir, fileName);
-
+            const benchPath = path.join(tempDir, `bench_${rt}_${Date.now()}.js`);
             try {
                 // Run the WHOLE file but with other benchmarks stripped
                 await fs.promises.writeFile(benchPath, fullBenchmarkCode, 'utf-8');
 
-                let command = '';
+                const command = rt;
+                let args: string[] = [];
+
                 if (rt === 'node') {
-                    // Check if we need loader for Node
-                    const isTs = originalPath?.endsWith('.ts') || originalPath?.endsWith('.tsx');
+                    const isTs = originalPath?.endsWith('.ts') ?? originalPath?.endsWith('.tsx');
                     if (isTs) {
                         const loaderPath = path.resolve(process.cwd(), 'node_modules/esbuild-register/loader.mjs');
                         if (fs.existsSync(loaderPath)) {
-                            command = `node --loader ${loaderPath} ${benchPath}`;
+                            args = ['--loader', loaderPath, benchPath];
                         } else {
-                            command = `node ${benchPath}`;
+                            args = [benchPath];
                         }
                     } else {
-                        command = `node ${benchPath}`;
+                        args = [benchPath];
                     }
+                } else if (rt === 'bun') {
+                    args = ['run', benchPath];
+                } else if (rt === 'deno') {
+                    args = ['run', '-A', benchPath];
                 }
-                else if (rt === 'bun') command = `bun run ${benchPath}`;
-                else if (rt === 'deno') command = `deno run -A ${benchPath}`;
 
                 const execStart = process.hrtime.bigint();
-                const { stdout, stderr } = await execAsync(command);
+                const { stdout, stderr } = await execFileAsync(command, args);
                 const execEnd = process.hrtime.bigint();
 
                 const durationMs = Number(execEnd - execStart) / 1_000_000;
-                output = stdout + stderr;
+                const output = stdout + stderr;
 
                 results.push({
                     runtime: rt,
@@ -398,16 +283,19 @@ export class ExecutionManager {
                     iterations: 1,
                     output: output.trim().substring(0, 200)
                 });
-            } catch (e: any) {
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
                 results.push({
                     runtime: rt,
                     avgTime: 0,
-                    output: `Error: ${e.message || String(e)}`
+                    minTime: 0,
+                    maxTime: 0,
+                    iterations: 0,
+                    output: `Error: ${message}`
                 });
             } finally {
-                // Clean up Option A temp file
                 if (fs.existsSync(benchPath)) {
-                    await fs.promises.unlink(benchPath).catch(() => { });
+                    void fs.promises.unlink(benchPath).catch(() => { /* ignore */ });
                 }
             }
         }));
@@ -417,7 +305,9 @@ export class ExecutionManager {
             validResults[0].isWinner = true;
         }
 
-        this.mainWindow.webContents.send('benchmark:result', results);
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+            this.mainWindow.webContents.send('benchmark:result', results);
+        }
         this.stopStatsMonitoring();
     }
     private stopCleanup() {

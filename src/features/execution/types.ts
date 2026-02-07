@@ -33,23 +33,27 @@ export interface ExecutionSlice {
     executionCoverage: Set<number>;
     isSimulating: boolean;
     isExecuting: boolean;
-    isBenchmarking: boolean;
-    benchmarkResults: BenchmarkResult[] | null;
-    benchmarkHistory: BenchmarkRecord[];
     livePreviewEnabled: boolean;
     runtimeValues: Record<string, unknown>;
     availableRuntimes: Record<'node' | 'bun' | 'deno', boolean>;
     systemStats: { cpu: number };
+    currentRuntime: 'node' | 'bun' | 'deno';
 
     toggleSimulation: () => void;
     runExecution: (customCode?: string, customPath?: string) => void;
     runExecutionDebounced: (customCode?: string, customPath?: string) => void;
-    runBenchmark: (code: string, line: number) => Promise<void>;
-    setBenchmarkResults: (results: BenchmarkResult[] | null) => void;
     setLivePreviewEnabled: (enabled: boolean) => void;
-    currentRuntime: 'node' | 'bun' | 'deno';
     setRuntime: (runtime: 'node' | 'bun' | 'deno') => void;
     checkAvailability: () => Promise<void>;
+}
+
+export interface BenchmarkSlice {
+    isBenchmarking: boolean;
+    benchmarkResults: BenchmarkResult[] | null;
+    benchmarkHistory: BenchmarkRecord[];
+
+    runBenchmark: (code: string, line: number) => Promise<void>;
+    setBenchmarkResults: (results: BenchmarkResult[] | null) => void;
     clearBenchmarkHistory: () => void;
     removeBenchmarkRecord: (id: string) => void;
 }

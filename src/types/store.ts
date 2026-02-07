@@ -32,7 +32,7 @@ import type {
 import type { PluginManifest } from '../features/extensions/types';
 import type { RecentEnvironment } from '../features/explorer/types';
 import type { Settings, SettingsConfig } from '../features/settings/types';
-import type { ExecutionSlice } from '../features/execution/types';
+import type { ExecutionSlice, BenchmarkSlice } from '../features/execution/types';
 
 // Exporting types for backward compatibility or ease of use
 export type {
@@ -58,7 +58,8 @@ export type {
   RecentEnvironment,
   Settings,
   SettingsConfig,
-  ExecutionSlice
+  ExecutionSlice,
+  BenchmarkSlice
 };
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -75,7 +76,7 @@ export interface Notification extends Toast {
   read: boolean;
 }
 
-export interface AppState extends GitSlice, ExecutionSlice {
+export interface AppState extends GitSlice, ExecutionSlice, BenchmarkSlice {
   code: string;
   nodes: AppNode[];
   edges: Edge[];

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Bell, BellOff, ListX, ChevronDown, Cpu, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useTranslation } from 'react-i18next';
+import { COLOR_TOKENS, LAYOUT_TOKENS } from '../constants/design';
 
 export const AppFooter: React.FC = () => {
     const { t } = useTranslation();
@@ -24,6 +25,7 @@ export const AppFooter: React.FC = () => {
     } = useStore();
 
     const isDark = theme === 'dark';
+    const tokens = isDark ? COLOR_TOKENS.dark : COLOR_TOKENS.light;
     const [showNotifications, setShowNotifications] = useState(false);
     const [showRuntimeSelector, setShowRuntimeSelector] = useState(false);
     const popoverRef = useRef<HTMLDivElement>(null);
@@ -31,10 +33,10 @@ export const AppFooter: React.FC = () => {
 
     const bgColor = isDark ? '#1e1e1e' : '#f3f4f6';
     const borderColor = isDark ? '#2d2d2d' : '#d1d1d1';
-    const cyanColor = '#4fc3f7';
+    const cyanColor = COLOR_TOKENS.cyan;
 
     useEffect(() => {
-        checkAvailability();
+        void checkAvailability();
     }, [checkAvailability]);
 
     const handleClickOutside = useCallback((event: MouseEvent) => {
@@ -109,13 +111,13 @@ export const AppFooter: React.FC = () => {
         <footer
             className={`app-footer ${isDark ? 'dark' : 'light'}`}
             style={{
-                background: bgColor,
-                borderTop: `1px solid ${borderColor}`,
+                background: tokens.bg,
+                borderTop: `1px solid ${tokens.border}`,
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                height: '22px'
+                height: LAYOUT_TOKENS.footerHeight
             }}
         >
             <div className="footer-left" style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
@@ -129,7 +131,7 @@ export const AppFooter: React.FC = () => {
                     fontSize: '10px',
                     fontWeight: 700,
                     letterSpacing: '0.05em',
-                    borderRight: `1px solid ${borderColor}`,
+                    borderRight: `1px solid ${borderColor} `,
                     background: isExecuting
                         ? (isDark ? 'rgba(79, 195, 247, 0.1)' : 'rgba(79, 195, 247, 0.05)')
                         : 'transparent',
@@ -155,7 +157,7 @@ export const AppFooter: React.FC = () => {
                         height: '100%',
                         fontSize: '10px',
                         fontWeight: 600,
-                        borderRight: `1px solid ${borderColor}`,
+                        borderRight: `1px solid ${borderColor} `,
                         color: systemStats.cpu > 80 ? '#f87171' : (isDark ? '#cbd5e1' : '#475569'),
                         transition: 'all 0.3s ease',
                         background: systemStats.cpu > 80 ? 'rgba(248, 113, 113, 0.05)' : 'transparent'
@@ -175,7 +177,7 @@ export const AppFooter: React.FC = () => {
                         alignItems: 'center',
                         gap: '8px',
                         cursor: 'pointer',
-                        borderRight: `1px solid ${borderColor}`,
+                        borderRight: `1px solid ${borderColor} `,
                         background: showRuntimeSelector ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
                         fontSize: '11px',
                         fontWeight: 500,
@@ -208,7 +210,7 @@ export const AppFooter: React.FC = () => {
                                 left: '6px',
                                 width: '220px',
                                 background: isDark ? '#1e1e1e' : '#fff',
-                                border: `1px solid ${borderColor}`,
+                                border: `1px solid ${borderColor} `,
                                 borderRadius: '6px',
                                 boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                                 display: 'flex',
@@ -223,9 +225,8 @@ export const AppFooter: React.FC = () => {
                                 padding: '10px 12px',
                                 fontSize: '10px',
                                 fontWeight: 700,
-                                opacity: 0.5,
                                 letterSpacing: '0.05em',
-                                borderBottom: `1px solid ${borderColor}`,
+                                borderBottom: `1px solid ${borderColor} `,
                                 background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)'
                             }}>
                                 Select runtime
@@ -271,7 +272,7 @@ export const AppFooter: React.FC = () => {
                         alignItems: 'center',
                         cursor: 'pointer',
                         background: showNotifications ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                        borderLeft: `1px solid ${borderColor}`,
+                        borderLeft: `1px solid ${borderColor} `,
                         position: 'relative'
                     }}
                 >
@@ -289,7 +290,7 @@ export const AppFooter: React.FC = () => {
                                 height: '6px',
                                 background: cyanColor,
                                 borderRadius: '50%',
-                                border: `1px solid ${bgColor}`
+                                border: `1px solid ${bgColor} `
                             }} />
                         )}
                     </div>
@@ -304,7 +305,7 @@ export const AppFooter: React.FC = () => {
                                 right: '6px',
                                 width: '320px',
                                 background: isDark ? '#1e1e1e' : '#fff',
-                                border: `1px solid ${borderColor}`,
+                                border: `1px solid ${borderColor} `,
                                 borderRadius: '6px',
                                 boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                                 display: 'flex',
@@ -321,7 +322,7 @@ export const AppFooter: React.FC = () => {
                                 justifyContent: 'space-between',
                                 padding: '12px',
                                 background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-                                borderBottom: notifications.length > 0 ? `1px solid ${borderColor}` : 'none'
+                                borderBottom: notifications.length > 0 ? `1px solid ${borderColor} ` : 'none'
                             }}>
                                 <span style={{ fontSize: '10px', fontWeight: 700, opacity: 0.6, letterSpacing: '0.1em' }}>
                                     {notifications.length > 0 ? 'Notifications' : 'No new notifications'}
@@ -342,7 +343,7 @@ export const AppFooter: React.FC = () => {
                                             size={14}
                                             cursor="pointer"
                                             color={cyanColor}
-                                            onClick={(e) => {
+                                            onClick={(e: React.MouseEvent) => {
                                                 e.stopPropagation();
                                                 toggleDoNotDisturb();
                                             }}
@@ -376,7 +377,7 @@ export const AppFooter: React.FC = () => {
                                             key={notif.id}
                                             style={{
                                                 padding: '12px',
-                                                borderBottom: `1px solid ${isDark ? '#262626' : '#f0f0f0'}`,
+                                                borderBottom: `1px solid ${isDark ? '#262626' : '#f0f0f0'} `,
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 gap: '4px',
@@ -416,18 +417,18 @@ export const AppFooter: React.FC = () => {
                 </div>
             </div>
             <style>{`
-                @keyframes spin {
+@keyframes spin {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
-                }
-                .hover-item:hover {
-                    background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} !important;
-                }
-                .hover-cyan:hover {
-                    color: ${cyanColor} !important;
-                    opacity: 1 !important;
-                }
-            `}</style>
+}
+                .hover - item:hover {
+    background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} !important;
+}
+                .hover - cyan:hover {
+    color: ${cyanColor} !important;
+    opacity: 1!important;
+}
+`}</style>
         </footer>
     );
 };
