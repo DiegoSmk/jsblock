@@ -23,11 +23,13 @@
 ## ✨ Key Features
 
 - 🧠 **XYFlow Canvas**: High-performance node-based architecture for complex logic mapping.
+- ⚡ **Multi-Runtime Execution**: Native support for **Node.js**, **Bun**, and **Deno** with automated detection.
+- 📊 **Live Benchmarking**: Compare real-time performance across runtimes with microsecond precision.
 - 📝 **Advanced Note System**: Proximity-sensitive connection handles and markdown-flavored sticky notes.
 - ⚡ **Dual-View Sync**: Instantly switch between the visual graph and a full **Monaco-powered** code editor.
 - 🛠️ **Command Palette**: VS Code-inspired productivity with `Ctrl+Shift+P` for quick actions.
 - 🎨 **Premium UI/UX**: Glassmorphism aesthetic, dynamic themes (Light/Dark), and smooth micro-animations.
-- 📂 **Native Integration**: Full file system access via Electron, with workspace management.
+- 📂 **Native Integration**: Full file system access via Electron, with workspace management and [Execution Adapters](ADAPTERS.md) for cross-platform reliability.
 
 ## 🏗️ Modular Architecture
 
@@ -50,8 +52,9 @@ JS Block features a built-in, modular Git dashboard designed for modern develope
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v16+)
+- [Node.js](https://nodejs.org/) (v18+)
 - [npm](https://www.npmjs.com/)
+- *Optional*: [Bun](https://bun.sh/) or [Deno](https://deno.com/) for multi-runtime benchmarking
 
 ### Installation
 

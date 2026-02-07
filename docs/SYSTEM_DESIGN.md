@@ -60,4 +60,17 @@ Melhorias focadas na experiência do desenvolvedor e fluidez do app.
 *   [UI Architecture (UI_ARCHITECTURE.md)](UI_ARCHITECTURE.md)
 
 ---
-*Last Updated / Atualizado em: February 01, 2026*
+
+## 🚀 4. Hardening & Performance / Robustez e Performance
+
+O JS Block prioriza a estabilidade da infraestrutura de execução e a precisão dos dados analíticos.
+
+*JS Block prioritizes execution infrastructure stability and analytical data accuracy.*
+
+### Infrastructure Pillars / Pilares de Infraestrutura:
+*   **Availability Caching**: Verificações de runtime (`--version`) possuem um cache de 30s para evitar excesso de processos filhos. / *Runtime availability checks are cached for 30s to prevent process overhead.*
+*   **Sequential Benchmarking**: Benchmarks rodam de forma sequencial para evitar contenção de CPU/RAM e garantir métricas precisas. / *Benchmarks run sequentially to avoid resource contention and ensure accurate metrics.*
+*   **Automatic Cleanup**: Arquivos temporários em `temp_runs` são deletados imediatamente após o término do processo (sucesso ou erro). / *Temporary files are deleted immediately after process completion.*
+
+---
+*Last Updated / Atualizado em: February 06, 2026*

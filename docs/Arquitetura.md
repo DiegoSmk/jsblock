@@ -39,10 +39,14 @@ A característica mais complexa do projeto é a tradução bidirecional entre c�
 - **Entrada (Code -> Flow)**: O código é parseado em AST. Um "Dispatcher" percorre a árvore e cria nós visuais correspondentes para estruturas suportadas (If, While, For, Switch, CallExpression).
 - **Saída (Flow -> Code)**: Os nós visuais são convertidos de volta para AST. O `Recast` é usado para preservar a formatação original do código onde possível, embora a regeneração completa seja comum.
 
-### Execução de Código
-Existem dois modos de execução:
-1.  **Web Worker (Sandbox)**: Para execução rápida e segura de lógica pura (sem acesso a DOM ou Node.js). Usado para avaliar expressões em tempo real.
-2.  **Terminal (PTY)**: Para executar o arquivo real com `node`. O Main Process spawna um shell e conecta a entrada/saída a um componente `xterm.js` no Renderer via IPC.
+### 4. Execução de Código e Telemetria
+Existem três modos principais de execução, gerenciados pelo `ExecutionManager`:
+1.  **Web Worker (Sandbox)**: Para avaliação rápida de expressões isoladas em tempo real.
+2.  **Multi-Runtime (MCP)**: O núcleo do sistema de execução profissional. 
+    - **Adapters**: O sistema usa o [Adapter Pattern](ADAPTERS.md) para suportar Node.js, Bun e Deno de forma transparente.
+    - **MCP (Model Context Protocol)**: Usamos um `mcp-runner.ts` que atua como servidor de telemetria, enviando notificações JSON via stdout/stdin para o processo principal.
+    - **Instrumentação**: O código é transformado via `esbuild-register` e injetado com "spies" para capturar valores de variáveis e cobertura em tempo real.
+3.  **Terminal (PTY)**: Para execução interativa tradicional via `node-pty` conectado ao `xterm.js`.
 
 ## Estrutura de Diretórios
 
