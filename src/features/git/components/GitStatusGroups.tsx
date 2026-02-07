@@ -24,13 +24,15 @@ interface GitStatusGroupsProps {
     gitClean: () => Promise<void>;
     gitIgnore: (pattern: string) => Promise<void>;
     setConfirmationModal: (config: AppState['confirmationModal']) => void;
+    onSelectDiff: (path: string) => void;
 }
 
 export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
     isDark, staged, unstaged,
     gitUnstageAll, gitStageAll, gitDiscardAll,
     gitUnstage, gitStage, gitDiscard,
-    gitClean, gitIgnore, setConfirmationModal
+    gitClean, gitIgnore, setConfirmationModal,
+    onSelectDiff
 }) => {
     const { t } = useTranslation();
     const [isTreeView, setIsTreeView] = useState(false);
@@ -106,6 +108,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     files={staged}
                     type="staged"
                     onUnstage={(path) => void gitUnstage(path)}
+                    onSelectDiff={onSelectDiff}
                 />
             )}
 
@@ -154,6 +157,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     onStage={(path) => void gitStage(path)}
                     onDiscard={(path) => void gitDiscard(path)}
                     onIgnore={handleIgnore}
+                    onSelectDiff={onSelectDiff}
                 />
             )}
         </div>

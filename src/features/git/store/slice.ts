@@ -11,6 +11,8 @@ import { createStageActions } from './actions/stageActions';
 import { createStashActions } from './actions/stashActions';
 import { createTagActions } from './actions/tagActions';
 import { createViewActions } from './actions/viewActions';
+import { createNetworkActions } from './actions/networkActions';
+import { createDiffActions } from './actions/diffActions';
 
 export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, get) => ({
     git: initialGitState,
@@ -67,4 +69,6 @@ export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, ge
     ...createStashActions(set, get),
     ...createTagActions(set, get),
     ...createViewActions(set, get),
+    ...createNetworkActions(set, get),
+    ...createDiffActions(set, get),
 });

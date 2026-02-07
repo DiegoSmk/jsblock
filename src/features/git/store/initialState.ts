@@ -18,5 +18,6 @@ export const initialGitState: GitSlice['git'] = {
         projectSize: ''
     },
     tags: [],
-    isInitialized: false
+    isInitialized: false,
+    selectedDiffFile: null
 };
