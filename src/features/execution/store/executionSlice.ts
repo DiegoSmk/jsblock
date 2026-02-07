@@ -5,8 +5,6 @@ import type { ExecutionPayload } from '../../../types/electron';
 
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
-let listenersInitialized = false;
-let lastExecutedCode = '';
 
 // Internal Buffer (not in state to avoid React overhead)
 let buffer: {
@@ -32,6 +30,8 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
     runtimeValues: {},
     availableRuntimes: { node: false, bun: false, deno: false },
     systemStats: { cpu: 0 },
+    isListenersInitialized: false,
+    lastExecutedCode: null,
 
     toggleSimulation: () => {
         const { isSimulating } = get();
@@ -87,7 +87,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
     },
 
     runExecution: (customCode?: string, customPath?: string) => {
-        const { code, selectedFile, livePreviewEnabled } = get();
+        const { code, selectedFile, livePreviewEnabled, lastExecutedCode } = get();
         const codeToRun = customCode ?? code;
         const pathToRun = customPath ?? selectedFile;
 
@@ -102,7 +102,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
 
         const shouldExecute = (customCode === undefined) || livePreviewEnabled;
         if (window.electron && shouldExecute) {
-            lastExecutedCode = codeToRun;
+            set({ lastExecutedCode: codeToRun });
 
             // Reset buffer
             buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
@@ -126,7 +126,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
             };
 
 
-            if (!listenersInitialized) {
+            if (!get().isListenersInitialized) {
                 // Main thread messages
                 window.electron.onExecutionLog((data: ExecutionPayload) => {
                     if ('level' in data && data.level === 'data') {
@@ -179,7 +179,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
 
                 window.electron.onExecutionStarted(() => {
-                    set({ executionErrors: new Map(), isExecuting: true });
+                    set({ executionResults: new Map(), executionErrors: new Map(), isExecuting: true });
                 });
 
                 window.electron.onExecutionDone(() => {
@@ -201,7 +201,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
 
                 // Benchmark results moved to benchmarkSlice.ts
 
-                listenersInitialized = true;
+                set({ isListenersInitialized: true });
             }
             set({ isExecuting: true });
             window.electron.executionStart(codeToRun, pathToRun ?? undefined);
