@@ -24,6 +24,49 @@ app.commandLine.appendSwitch('disable-autofill-keyboard-accessor-view', 'true');
 let mainWindow: BrowserWindow | null;
 let splashWindow: BrowserWindow | null;
 
+// Logging globals
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+let logToFile: (msg: string) => void = () => {};
+let logStream: fs.WriteStream | null = null;
+
+function setupLogging() {
+    const logPath = path.join(app.getAppPath(), 'app.log');
+    // Create write stream with append flag
+    logStream = fs.createWriteStream(logPath, { flags: 'a' });
+
+    logStream.on('error', (err) => {
+        // Fallback to stderr if file logging fails
+        process.stderr.write(`[LOG ERROR] Failed to write to log file: ${err.message}\n`);
+    });
+
+    logToFile = (msg: string) => {
+        const timestamp = new Date().toISOString();
+        if (logStream && !logStream.destroyed) {
+            logStream.write(`[${timestamp}] ${msg}\n`);
+        }
+    };
+
+    // Override Main Process console
+    /* eslint-disable no-console */
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+
+    console.log = (...args: unknown[]) => {
+        originalLog(...args);
+        logToFile(`[MAIN][INFO] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+    };
+    console.warn = (...args: unknown[]) => {
+        originalWarn(...args);
+        logToFile(`[MAIN][WARN] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+    };
+    console.error = (...args: unknown[]) => {
+        originalError(...args);
+        logToFile(`[MAIN][ERROR] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+    };
+    /* eslint-enable no-console */
+}
+
 function createSplashWindow() {
     splashWindow = new BrowserWindow({
         width: 500,
@@ -114,36 +157,6 @@ function createWindow() {
         mainWindow = null;
     });
 
-    // --- MCP LOG CAPTURE ---
-    const logPath = path.join(app.getAppPath(), 'app.log');
-    const logToFile = (msg: string) => {
-        const timestamp = new Date().toISOString();
-        try {
-            fs.appendFileSync(logPath, `[${timestamp}] ${msg}\n`);
-        } catch {
-            // Can't use console.error here if we're overriding it
-        }
-    };
-
-    // Override Main Process console
-    /* eslint-disable no-console */
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
-
-    console.log = (...args: unknown[]) => {
-        originalLog(...args);
-        logToFile(`[MAIN][INFO] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    console.warn = (...args: unknown[]) => {
-        originalWarn(...args);
-        logToFile(`[MAIN][WARN] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    console.error = (...args: unknown[]) => {
-        originalError(...args);
-        logToFile(`[MAIN][ERROR] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    /* eslint-enable no-console */
 
     mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
         const levels = ['Debug', 'Info', 'Warn', 'Error'];
@@ -159,6 +172,7 @@ const executionManager = new ExecutionManager();
 const workspaceService = new WorkspaceService();
 
 void app.whenReady().then(() => {
+    setupLogging();
     createSplashWindow();
     createWindow();
     if (mainWindow) {
@@ -552,4 +566,5 @@ ipcMain.on('terminal-kill', () => {
 // Ensure cleanup on quit
 app.on('will-quit', () => {
     ptyProcess?.kill();
+    logStream?.end();
 });
