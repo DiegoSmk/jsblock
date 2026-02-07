@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.5.2](https://github.com/DiegoSmk/jsblock/compare/v0.5.1...v0.5.2) (2026-02-07)
+
+
+### 🐛 Bug Fixes
+
+* make build scripts cross-platform for windows runners ([5f7f832](https://github.com/DiegoSmk/jsblock/commit/5f7f8326909ec21f823f20e1cda13d5ed83bac6b))
+
 ### [0.5.1](https://github.com/DiegoSmk/jsblock/compare/v0.5.0...v0.5.1) (2026-02-07)
 
 
