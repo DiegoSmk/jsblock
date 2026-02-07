@@ -13,6 +13,7 @@ interface GitStatusListProps {
     onUnstage?: (path: string) => void;
     onDiscard?: (path: string) => void;
     onIgnore?: (path: string) => void;
+    onSelectDiff?: (path: string) => void;
 }
 
 export const GitStatusList: React.FC<GitStatusListProps> = ({
@@ -21,7 +22,8 @@ export const GitStatusList: React.FC<GitStatusListProps> = ({
     onStage,
     onUnstage,
     onDiscard,
-    onIgnore
+    onIgnore,
+    onSelectDiff
 }) => {
     const { t } = useTranslation();
 
@@ -48,7 +50,13 @@ export const GitStatusList: React.FC<GitStatusListProps> = ({
                         </div>
                     )}
 
-                    <span>{f.path}</span>
+                    <span
+                        onClick={() => onSelectDiff && onSelectDiff(f.path)}
+                        style={{ cursor: 'pointer', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        title={f.path}
+                    >
+                        {f.path}
+                    </span>
 
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: '4px' }}>

@@ -91,6 +91,7 @@ export interface GitSlice {
     };
     tags: GitTag[];
     isInitialized: boolean;
+    selectedDiffFile: string | null;
   };
   gitProfiles: GitProfile[];
   commitTemplates: CommitTemplate[];
@@ -158,4 +159,15 @@ export interface GitSlice {
   // Git Panel Configuration
   updateGitPanelConfig: (updates: Partial<GitPanelConfig>) => void;
   resetGitPanelConfig: () => void;
+
+  // Network
+  gitFetch: () => Promise<void>;
+  gitPull: () => Promise<void>;
+  gitPush: () => Promise<void>;
+  gitSync: () => Promise<void>;
+
+  // Diff
+  selectGitDiffFile: (path: string) => void;
+  closeGitDiffFile: () => void;
+  getGitFileContent: (path: string, ref: string) => Promise<string>;
 }

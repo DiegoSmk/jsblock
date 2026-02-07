@@ -7,6 +7,7 @@ import { CommitTemplateModal } from './CommitTemplateModal';
 import { ProductivityToolbar } from './ProductivityToolbar';
 import { GitIgnoreModal } from './GitIgnoreModal';
 import { GitStatusHeader } from './GitStatusHeader';
+import { NetworkToolbar } from './NetworkToolbar';
 import { Briefcase, User, Sparkles, Smile } from 'lucide-react';
 import './GitPanel.css';
 import './GitStatus.css';
@@ -17,7 +18,8 @@ export const GitStatusView: React.FC = () => {
         gitStage, gitUnstage, gitCommit,
         gitStageAll, gitUnstageAll, gitDiscard, gitDiscardAll,
         addGitProfile, removeGitProfile,
-        setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal
+        setGitConfig, gitProfiles, gitClean, gitIgnore, setConfirmationModal,
+        selectGitDiffFile
     } = useStore();
 
     const isDark = theme === 'dark';
@@ -149,6 +151,10 @@ export const GitStatusView: React.FC = () => {
                 setShowAuthorConfigModal={setShowAuthorConfigModal}
             />
 
+            <div className="animate-entrance" style={{ animationDelay: '0.08s', opacity: 0 }}>
+                <NetworkToolbar isDark={isDark} />
+            </div>
+
             <div className="animate-entrance" style={{ animationDelay: '0.1s', opacity: 0 }}>
                 <CommitSection
                     isDark={isDark}
@@ -181,6 +187,7 @@ export const GitStatusView: React.FC = () => {
                     gitClean={gitClean}
                     gitIgnore={gitIgnore}
                     setConfirmationModal={setConfirmationModal}
+                    onSelectDiff={selectGitDiffFile}
                 />
             </div>
 
