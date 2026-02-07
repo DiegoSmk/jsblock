@@ -204,6 +204,19 @@ ipcMain.handle('ensure-project-config', async (_event, folderPath: string) => {
     }
 });
 
+ipcMain.handle('check-paths-exists', (_event, pathsToCheck: string[]) => {
+    try {
+        const results: Record<string, boolean> = {};
+        for (const p of pathsToCheck) {
+            results[p] = fs.existsSync(p);
+        }
+        return results;
+    } catch (err) {
+        console.error('Error checking paths existence:', err);
+        throw err;
+    }
+});
+
 // IPC Handlers for File System
 ipcMain.handle('select-folder', async () => {
     const win = BrowserWindow.getFocusedWindow() ?? mainWindow;
