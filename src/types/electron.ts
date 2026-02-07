@@ -45,6 +45,7 @@ export interface ElectronAPI {
   fileSystem: {
     readDir: (path: string) => Promise<{ name: string; isDirectory: boolean; path: string }[]>;
     readFile: (path: string) => Promise<string>;
+    readFiles: (paths: string[]) => Promise<Record<string, string>>;
     writeFile: (path: string, content: string) => Promise<void>;
     createFile: (path: string, content?: string) => Promise<void>;
     createDirectory: (path: string) => Promise<boolean>;

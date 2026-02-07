@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useStore } from './useStore';
+import { resetExecutionStateForTesting } from '../features/execution/store/executionSlice';
 
 import type { ExecutionPayload } from '../types/electron';
 
@@ -9,9 +10,11 @@ describe('Quokka-like Execution Flow', () => {
     let mockOnExecutionError: ReturnType<typeof vi.fn>;
     let logCallback: (data: ExecutionPayload) => void;
     let errorCallback: (data: string | { line: number; message: string }) => void;
+<<<<<<< HEAD
     let onClearCallback: () => void;
 
     beforeEach(() => {
+        resetExecutionStateForTesting();
         // Reset store
         useStore.setState({
             executionResults: new Map(),
@@ -127,12 +130,6 @@ describe('Quokka-like Execution Flow', () => {
         const code2 = 'const unique = 2;';
 
         runExecution(code1);
-        // If logCallback is not updated because listeners are reused, we use the existing one
-        // (which is captured in closure if we were accessing it via module, but here we access the variable logCallback)
-        // Note: logCallback might be stale if listeners are not re-registered.
-        // But since we can't easily reset listenersInitialized, we rely on the fact that logCallback variable
-        // holds the reference to the callback that executionSlice IS using (from the first test run).
-
         logCallback({ type: 'execution:value', line: 1, value: 'old' });
 
         await vi.waitFor(() => {
@@ -147,4 +144,5 @@ describe('Quokka-like Execution Flow', () => {
             expect(useStore.getState().executionErrors.size).toBe(0);
         });
     });
+
 });
