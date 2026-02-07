@@ -327,18 +327,18 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (!window.electron) return;
 
         const { recentEnvironments } = get();
-        const validRecents = [];
+        const paths = recentEnvironments.map((r: RecentEnvironment) => r.path);
 
-        for (const recent of recentEnvironments) {
-            const exists = await window.electron.fileSystem.checkExists(recent.path);
-            if (exists) {
-                validRecents.push(recent);
+        try {
+            const existenceMap = await window.electron.fileSystem.checkPathsExists(paths);
+            const validRecents = recentEnvironments.filter((r: RecentEnvironment) => existenceMap[r.path]);
+
+            if (validRecents.length !== recentEnvironments.length) {
+                localStorage.setItem('recentEnvironments', JSON.stringify(validRecents));
+                set({ recentEnvironments: validRecents });
             }
-        }
-
-        if (validRecents.length !== recentEnvironments.length) {
-            localStorage.setItem('recentEnvironments', JSON.stringify(validRecents));
-            set({ recentEnvironments: validRecents });
+        } catch (err) {
+            console.error('Failed to validate recents:', err);
         }
     },
     addCanvasNode: () => {

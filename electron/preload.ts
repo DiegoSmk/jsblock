@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('electron', {
         delete: (path: string) => ipcRenderer.invoke('delete-file-or-folder', path),
         move: (source: string, target: string) => ipcRenderer.invoke('move-file', source, target),
         checkExists: (path: string) => ipcRenderer.invoke('check-path-exists', path),
+        checkPathsExists: (paths: string[]) => ipcRenderer.invoke('check-paths-exists', paths),
         getStats: (path: string) => ipcRenderer.invoke('get-file-stats', path),
         ensureProjectConfig: (path: string) => ipcRenderer.invoke('ensure-project-config', path),
     },
