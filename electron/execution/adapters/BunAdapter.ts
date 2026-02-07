@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 export class BunAdapter extends BaseAdapter {
     id = 'bun';
 
-    private async resolveExecutable(): Promise<string> {
+    public async resolveExecutable(): Promise<string> {
         try {
             await execAsync('bun --version');
             return 'bun';

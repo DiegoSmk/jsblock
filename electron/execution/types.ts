@@ -33,6 +33,7 @@ export interface BenchmarkResult {
 export interface IExecutionAdapter {
     id: string;
     isAvailable(): Promise<boolean>;
+    resolveExecutable(): Promise<string>;
     execute(code: string, filePath: string): Promise<void>;
     stop(): void;
     onMessage(callback: (msg: RunnerMessage) => void): void;

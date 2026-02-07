@@ -10,7 +10,7 @@ const execAsync = promisify(exec);
 export class DenoAdapter extends BaseAdapter {
     id = 'deno';
 
-    private async resolveExecutable(): Promise<string> {
+    public async resolveExecutable(): Promise<string> {
         try {
             await execAsync('deno --version');
             return 'deno';

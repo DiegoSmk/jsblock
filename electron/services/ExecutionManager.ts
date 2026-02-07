@@ -241,18 +241,23 @@ export class ExecutionManager {
             if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
         }
 
-        await Promise.all(runtimes.map(async (rt) => {
+        // Run benchmarks SEQUENTIALLY to avoid CPU/memory spikes and ensure accurate measurement
+        for (const rt of runtimes) {
             const benchPath = path.join(tempDir, `bench_${rt}_${Date.now()}.js`);
             try {
+                const adapter = ExecutionFactory.createAdapter(rt);
+                const executable = await adapter.resolveExecutable();
+
                 // Run the WHOLE file but with other benchmarks stripped
                 await fs.promises.writeFile(benchPath, fullBenchmarkCode, 'utf-8');
 
-                const command = rt;
                 let args: string[] = [];
 
                 if (rt === 'node') {
-                    const isTs = originalPath?.endsWith('.ts') ?? originalPath?.endsWith('.tsx');
-                    if (isTs) {
+                    const isTs = originalPath?.endsWith('.ts') || originalPath?.endsWith('.tsx') || originalPath?.endsWith('.jsx');
+                    const hasReact = /import\s+.*from\s+['"]react['"]|React\.createElement|<[a-zA-Z]/.test(fullBenchmarkCode);
+
+                    if (isTs || hasReact) {
                         const loaderPath = path.resolve(process.cwd(), 'node_modules/esbuild-register/loader.mjs');
                         if (fs.existsSync(loaderPath)) {
                             args = ['--loader', loaderPath, benchPath];
@@ -269,7 +274,7 @@ export class ExecutionManager {
                 }
 
                 const execStart = process.hrtime.bigint();
-                const { stdout, stderr } = await execFileAsync(command, args);
+                const { stdout, stderr } = await execFileAsync(executable, args);
                 const execEnd = process.hrtime.bigint();
 
                 const durationMs = Number(execEnd - execStart) / 1_000_000;
@@ -295,10 +300,10 @@ export class ExecutionManager {
                 });
             } finally {
                 if (fs.existsSync(benchPath)) {
-                    void fs.promises.unlink(benchPath).catch(() => { /* ignore */ });
+                    void fs.promises.unlink(benchPath).catch((_err: unknown) => { /* ignore */ });
                 }
             }
-        }));
+        }
 
         const validResults = results.filter(r => r.avgTime > 0).sort((a, b) => a.avgTime - b.avgTime);
         if (validResults.length > 0) {

@@ -25,8 +25,8 @@ export function useMonacoBenchmarks(editorInstance: Monaco.editor.IStandaloneCod
                 decorationIdsRef.current = editorInstance.deltaDecorations(decorationIdsRef.current, []);
                 return;
             }
-            // Support //@benchmark, //@bench, //@performance
-            const regex = /\/\/@(benchmark|bench|performance)/g;
+            // Support // @benchmark, //@bench, // @performance with optional spaces
+            const regex = /\/\/\s*@(benchmark|bench|performance)/g;
             const matches = model.findMatches(regex.source, true, true, false, null, true);
 
             const newDecorations: Monaco.editor.IModelDeltaDecoration[] = matches.map(match => ({

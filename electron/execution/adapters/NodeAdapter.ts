@@ -19,6 +19,10 @@ export class NodeAdapter extends BaseAdapter {
         }
     }
 
+    async resolveExecutable(): Promise<string> {
+        return 'node';
+    }
+
     async execute(code: string, filePath: string): Promise<void> {
         let runnerPath = path.join(__dirname, '../../runners/mcp-runner.js');
 
