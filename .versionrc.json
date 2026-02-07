@@ -1,0 +1,36 @@
+{
+    "types": [
+        {
+            "type": "feat",
+            "section": "🚀 Features"
+        },
+        {
+            "type": "fix",
+            "section": "🐛 Bug Fixes"
+        },
+        {
+            "type": "perf",
+            "section": "⚡ Performance"
+        },
+        {
+            "type": "infra",
+            "section": "🏗️ Infrastructure"
+        },
+        {
+            "type": "docs",
+            "section": "📚 Documentation"
+        },
+        {
+            "type": "chore",
+            "section": "🧹 Miscellaneous"
+        },
+        {
+            "type": "test",
+            "section": "🧪 Testing"
+        },
+        {
+            "type": "style",
+            "section": "🎨 UI/UX"
+        }
+    ]
+}
