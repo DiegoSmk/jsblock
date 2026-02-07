@@ -6,7 +6,7 @@ const {
     ListResourcesRequestSchema,
     ReadResourceRequestSchema
 } = require('@modelcontextprotocol/sdk/types.js');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
 // Path to the log file shared with the Electron app
@@ -52,10 +52,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
     if (filePath) {
         try {
-            if (!fs.existsSync(filePath)) {
-                return { contents: [{ uri: request.params.uri, text: '(File not found)' }] };
-            }
-            const data = fs.readFileSync(filePath, 'utf-8');
+            const data = await fs.readFile(filePath, 'utf-8');
             return {
                 contents: [{
                     uri: request.params.uri,
@@ -64,6 +61,9 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
                 }]
             };
         } catch (err) {
+            if (err.code === 'ENOENT') {
+                return { contents: [{ uri: request.params.uri, text: '(File not found)' }] };
+            }
             throw new Error(`Failed to read resource: ${err.message}`);
         }
     }
@@ -101,20 +101,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (request.params.name) {
         case 'clear_app_logs':
-            fs.writeFileSync(LOG_PATH, '');
+            await fs.writeFile(LOG_PATH, '');
             return { content: [{ type: 'text', text: 'Logs cleared successfully.' }] };
 
         case 'get_recent_logs': {
-            if (!fs.existsSync(LOG_PATH)) return { content: [{ type: 'text', text: 'Log file does not exist.' }] };
-            const lines = request.params.arguments?.lines || 50;
-            const content = fs.readFileSync(LOG_PATH, 'utf-8').split('\n').slice(-lines).join('\n');
-            return { content: [{ type: 'text', text: content }] };
+            try {
+                const lines = request.params.arguments?.lines || 50;
+                const fileContent = await fs.readFile(LOG_PATH, 'utf-8');
+                const content = fileContent.split('\n').slice(-lines).join('\n');
+                return { content: [{ type: 'text', text: content }] };
+            } catch (err) {
+                if (err.code === 'ENOENT') return { content: [{ type: 'text', text: 'Log file does not exist.' }] };
+                throw err;
+            }
         }
 
         case 'get_zustand_state': {
-            if (!fs.existsSync(STATE_PATH)) return { content: [{ type: 'text', text: 'State file not populated yet.' }] };
-            const state = fs.readFileSync(STATE_PATH, 'utf-8');
-            return { content: [{ type: 'text', text: state }] };
+            try {
+                const state = await fs.readFile(STATE_PATH, 'utf-8');
+                return { content: [{ type: 'text', text: state }] };
+            } catch (err) {
+                if (err.code === 'ENOENT') return { content: [{ type: 'text', text: 'State file not populated yet.' }] };
+                throw err;
+            }
         }
 
         default:
