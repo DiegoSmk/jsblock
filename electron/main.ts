@@ -237,6 +237,27 @@ ipcMain.handle('read-file', async (_event, filePath: string) => {
     }
 });
 
+ipcMain.handle('read-multiple-files', async (_event, filePaths: string[]) => {
+    try {
+        const results: Record<string, string> = {};
+        await Promise.all(filePaths.map(async (filePath) => {
+            try {
+                const content = await fs.promises.readFile(filePath, 'utf-8');
+                results[filePath] = content;
+            } catch (err) {
+                console.error(`Error reading file ${filePath} in bulk:`, err);
+                // We choose to omit failed files from the result or return empty string
+                // returning empty string to avoid breaking the loop on frontend if strict
+                results[filePath] = '';
+            }
+        }));
+        return results;
+    } catch (err) {
+        console.error('Error reading multiple files:', err);
+        return {};
+    }
+});
+
 ipcMain.handle('write-file', async (_event, filePath: string, content: string) => {
     try {
         await fs.promises.writeFile(filePath, content, 'utf-8');
