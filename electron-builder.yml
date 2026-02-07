@@ -1,0 +1,27 @@
+appId: com.jsblock.app
+productName: JS Block
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - package.json
+linux:
+  maintainer: DiegoSmk <guinho_p1@hotmail.com>
+  target:
+    - AppImage
+  category: Development
+  icon: build/icon.png
+win:
+  target: nsis
+  icon: build/icon.png
+mac:
+  target: dmg
+  category: public.app-category.developer-tools
+  icon: build/icon.png
+extraMetadata:
+  main: dist/electron/main.js
+publish:
+  provider: github
+  owner: DiegoSmk
+  repo: jsblock

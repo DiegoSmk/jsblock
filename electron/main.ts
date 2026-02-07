@@ -32,6 +32,7 @@ function createSplashWindow() {
         frame: false,
         alwaysOnTop: true,
         resizable: false,
+        icon: path.join(__dirname, '../../build/icon.png'),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true
@@ -59,6 +60,7 @@ function createWindow() {
         backgroundColor: '#0f172a', // Match app's dark theme background
         titleBarStyle: 'hidden',
         trafficLightPosition: { x: 12, y: 12 }, // For macOS
+        icon: path.join(__dirname, '../../build/icon.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
