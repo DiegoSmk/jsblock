@@ -96,7 +96,8 @@ export class WindowManager {
 
         if (app.isPackaged) {
             void win.loadFile(path.join(__dirname, '../index.html'), {
-                query: Object.fromEntries(new URLSearchParams(queryParams))
+                query: Object.fromEntries(new URLSearchParams(queryParams)),
+                hash: '?' + queryParams
             });
         } else {
             const tryLoad = async (port: number) => {

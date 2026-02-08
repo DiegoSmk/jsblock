@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DiffEditor } from '@monaco-editor/react';
 import { useStore } from '../../../store/useStore';
+import { resolveGitPath } from '../../../utils/pathUtils';
 
 interface GitDiffEditorProps {
     filePath?: string;
@@ -50,12 +51,8 @@ export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFile
                 const folder = currentFolder || useStore.getState().openedFolder;
                 if (!folder) return;
 
-                // Safer path join - Check if currentFilePath is already absolute
-                let fullPath = currentFilePath;
-                if (!currentFilePath.startsWith('/') && !currentFilePath.startsWith('\\') && !(currentFilePath.length > 2 && currentFilePath[1] === ':')) {
-                    const cleanFolder = folder.replace(/[/\\]$/, '');
-                    fullPath = `${cleanFolder}/${currentFilePath}`;
-                }
+                // Use robust path resolution (handles absolute paths correctly)
+                const fullPath = resolveGitPath(folder, currentFilePath);
 
                 try {
                     // Check if file exists before reading to avoid terminal error noise
@@ -64,14 +61,16 @@ export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFile
                         const modified = await window.electron.fileSystem.readFile(fullPath);
                         if (isMounted) setModifiedContent(modified);
                     } else {
-                        // If relative join failed, try currentFilePath directly if it looks absolute
-                        const existsDirect = await window.electron.fileSystem.checkExists(currentFilePath);
-                        if (existsDirect) {
-                            const modified = await window.electron.fileSystem.readFile(currentFilePath);
-                            if (isMounted) setModifiedContent(modified);
-                        } else {
-                            if (isMounted) setModifiedContent('');
+                        // If resolving failed to find it, try currentFilePath directly as fallback
+                        if (fullPath !== currentFilePath) {
+                            const existsDirect = await window.electron.fileSystem.checkExists(currentFilePath);
+                            if (existsDirect) {
+                                const modified = await window.electron.fileSystem.readFile(currentFilePath);
+                                if (isMounted) setModifiedContent(modified);
+                                return;
+                            }
                         }
+                        if (isMounted) setModifiedContent('');
                     }
                 } catch (readErr: any) {
                     if (isMounted) setModifiedContent('');
