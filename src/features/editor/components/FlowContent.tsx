@@ -36,6 +36,8 @@ import { NoteNode } from '../nodes/NoteNode/index';
 import { UtilityNode } from '../nodes/UtilityNode';
 import { ImportNode } from '../nodes/ImportNode';
 import { CanvasNode } from '../nodes/CanvasNode';
+import { ClassNode } from '../nodes/ClassNode';
+import { MethodNode } from '../nodes/MethodNode';
 import { validateConnection } from '../logic/connectionLogic';
 
 const nodeTypes: NodeTypes = {
@@ -53,7 +55,9 @@ const nodeTypes: NodeTypes = {
   noteNode: NoteNode,
   utilityNode: UtilityNode,
   importNode: ImportNode,
-  canvasNode: CanvasNode
+  canvasNode: CanvasNode,
+  classNode: ClassNode,
+  methodNode: MethodNode
 };
 
 export function FlowContent() {
