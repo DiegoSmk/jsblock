@@ -14,64 +14,64 @@ import { WorkspaceService } from './services/WorkspaceService';
 import { windowManager, WindowType, WindowOptions } from './services/WindowManager';
 
 const execFileAsync = promisify(execFile);
-// const execAsync = promisify(exec); // unused
 
 // Enable transparency support for Linux
 if (process.platform === 'linux') {
     app.commandLine.appendSwitch('enable-transparent-visuals');
 }
 
-// Disable hardware acceleration only if NOT on Linux or for specific testing
-// app.disableHardwareAcceleration(); 
 app.commandLine.appendSwitch('disable-features', 'PasswordManager,PasswordGeneration');
 app.commandLine.appendSwitch('disable-autofill-keyboard-accessor-view', 'true');
 
-
-let mainWindow: BrowserWindow | null;
-let splashWindow: BrowserWindow | null;
-
-// Logging globals
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-let logToFile: (msg: string) => void = () => { };
+// --- Logging Configuration ---
 let logStream: fs.WriteStream | null = null;
+let logToFile: (msg: string) => void = (msg: string) => {
+    // Early fallback before setupLogging
+    process.stdout.write(`[PRE-INIT] ${msg}\n`);
+};
 
 function setupLogging() {
-    const logPath = path.join(app.getPath('userData'), 'app.log');
-    // Create write stream with append flag
-    logStream = fs.createWriteStream(logPath, { flags: 'a' });
+    try {
+        const logPath = path.join(app.getPath('userData'), 'app.log');
+        logStream = fs.createWriteStream(logPath, { flags: 'a' });
 
-    logStream.on('error', (err) => {
-        // Fallback to stderr if file logging fails
-        process.stderr.write(`[LOG ERROR] Failed to write to log file: ${err.message}\n`);
-    });
+        logStream.on('error', (err) => {
+            process.stderr.write(`[LOG ERROR] Failed to write to log file: ${err.message}\n`);
+        });
 
-    logToFile = (msg: string) => {
-        const timestamp = new Date().toISOString();
-        if (logStream && !logStream.destroyed) {
-            logStream.write(`[${timestamp}] ${msg}\n`);
-        }
-    };
+        logToFile = (msg: string) => {
+            const timestamp = new Date().toISOString();
+            if (logStream && !logStream.destroyed && logStream.writable) {
+                logStream.write(`[${timestamp}] ${msg}\n`);
+            }
+        };
 
-    // Override Main Process console
-    /* eslint-disable no-console */
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
+        // Override console globally
+        /* eslint-disable no-console */
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
 
-    console.log = (...args: unknown[]) => {
-        originalLog(...args);
-        logToFile(`[MAIN][INFO] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    console.warn = (...args: unknown[]) => {
-        originalWarn(...args);
-        logToFile(`[MAIN][WARN] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    console.error = (...args: unknown[]) => {
-        originalError(...args);
-        logToFile(`[MAIN][ERROR] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    /* eslint-enable no-console */
+        console.log = (...args: unknown[]) => {
+            originalLog(...args);
+            logToFile(`[MAIN][INFO] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+        };
+        console.warn = (...args: unknown[]) => {
+            originalWarn(...args);
+            logToFile(`[MAIN][WARN] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+        };
+        console.error = (...args: unknown[]) => {
+            originalError(...args);
+            logToFile(`[MAIN][ERROR] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+        };
+        /* eslint-enable no-console */
+    } catch (err) {
+        process.stderr.write(`[FATAL] Failed to setup logging: ${String(err)}\n`);
+    }
 }
+
+let mainWindow: BrowserWindow | null = null;
+let splashWindow: BrowserWindow | null = null;
 
 function createSplashWindow() {
     splashWindow = new BrowserWindow({
@@ -88,7 +88,6 @@ function createSplashWindow() {
         }
     });
 
-    // Use app.isPackaged for reliable path resolution
     const splashPath = !app.isPackaged
         ? path.join(__dirname, '../../public/splash.html')
         : path.join(__dirname, '../public/splash.html');
@@ -105,10 +104,10 @@ function createWindow() {
         height: 800,
         minWidth: 800,
         minHeight: 600,
-        show: false, // Don't show until ready
-        backgroundColor: '#0f172a', // Match app's dark theme background
+        show: false,
+        backgroundColor: '#0f172a',
         titleBarStyle: 'hidden',
-        trafficLightPosition: { x: 12, y: 12 }, // For macOS
+        trafficLightPosition: { x: 12, y: 12 },
         icon: path.join(__dirname, '../../build/icon.png'),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
@@ -117,8 +116,6 @@ function createWindow() {
         },
     });
 
-    // Surgical transition: Close splash and show main window only when UI is 100% ready
-    // Failsafe: if the app takes more than 5s to send app-ready, show it anyway
     const fallbackTimeout = setTimeout(() => {
         if (mainWindow && !mainWindow.isVisible()) {
             console.warn('App ready timeout - showing main window as fallback');
@@ -128,7 +125,7 @@ function createWindow() {
             }
             mainWindow.show();
         }
-    }, 8000); // 8 seconds is a safe margin for slow dev environments
+    }, 8000);
 
     ipcMain.once('app-ready', () => {
         console.log('IPC: app-ready received from frontend');
@@ -149,11 +146,9 @@ function createWindow() {
     if (app.isPackaged) {
         void mainWindow.loadFile(path.join(__dirname, '../index.html'));
     } else {
-        // Try multiple ports in dev mode
         const tryLoad = async (port: number) => {
             try {
                 await mainWindow?.loadURL(`http://localhost:${port}`);
-                console.log(`Successfully loaded from port ${port}`);
                 return true;
             } catch (e) {
                 return false;
@@ -163,23 +158,18 @@ function createWindow() {
         void (async () => {
             if (await tryLoad(5173)) return;
             if (await tryLoad(5174)) return;
-            console.error('Failed to load from both 5173 and 5174');
         })();
     }
 
-    // Add failure logging
     mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
-        if (errorCode === -102) return; // Ignore ERR_CONNECTION_REFUSED during port hunting
+        if (errorCode === -102) return;
         console.error(`Failed to load ${validatedURL}:`, errorCode, errorDescription);
     });
 
     mainWindow.on('closed', () => {
         windowManager.closeAllWindows();
-        // Clear selected diff on store when main window closes
-        // Note: we might need to access the webContents to dispatch an action if store is not shared
         mainWindow = null;
     });
-
 
     mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
         const levels = ['Debug', 'Info', 'Warn', 'Error'];
