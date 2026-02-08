@@ -210,32 +210,34 @@ export function FlowContent() {
     updateEdge(edgeStyleMenu.id, edgeUpdates);
   };
 
-  const scopeNodes = React.useMemo(() => nodes.filter((n: Node) =>
-    n.id !== 'node-js-runtime' && (
-      n.data?.scopeId === activeScopeId ||
-      (activeScopeId === 'root' && (!n.data?.scopeId || n.data?.scopeId === 'root'))
-    )
-  ), [nodes, activeScopeId]);
+  const { filteredNodes, filteredEdges } = useMemo(() => {
+    const scopeNodes = nodes.filter((n: Node) =>
+      n.id !== 'node-js-runtime' && (
+        n.data?.scopeId === activeScopeId ||
+        (activeScopeId === 'root' && (!n.data?.scopeId || n.data?.scopeId === 'root'))
+      )
+    );
 
-  const hasNativeCalls = React.useMemo(() => edges.some((e: Edge) =>
-    e.source === 'node-js-runtime' &&
-    scopeNodes.some((n: Node) => n.id === e.target)
-  ), [edges, scopeNodes]);
+    const scopeNodeIds = new Set(scopeNodes.map(n => n.id));
+    const hasNativeCalls = edges.some((e: Edge) =>
+      e.source === 'node-js-runtime' &&
+      scopeNodeIds.has(e.target)
+    );
 
-  const runtimeNode = React.useMemo(() => nodes.find(n => n.id === 'node-js-runtime'), [nodes]);
+    const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
+    const filteredNodes: Node[] = (hasNativeCalls && runtimeNode)
+      ? [...scopeNodes, runtimeNode]
+      : scopeNodes;
 
-  const filteredNodes: Node[] = React.useMemo(() => (hasNativeCalls && runtimeNode)
-    ? [...scopeNodes, runtimeNode]
-    : scopeNodes, [hasNativeCalls, runtimeNode, scopeNodes]);
-
-  const filteredEdges = React.useMemo(() => {
     const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
-    return edges.filter(e => {
+    const filteredEdges = edges.filter(e => {
       if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
       if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
       return false;
     });
-  }, [edges, filteredNodes]);
+
+    return { filteredNodes, filteredEdges };
+  }, [nodes, edges, activeScopeId]);
 
   useEffect(() => {
     if (filteredNodes.length > 0) {

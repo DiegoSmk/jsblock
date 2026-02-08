@@ -20,8 +20,18 @@ let buffer: {
 let rafId: number | null = null;
 let hasPendingUpdates = false;
 
+// For testing purposes
 export const resetExecutionStateForTesting = () => {
-    buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
+    buffer = {
+        results: new Map(),
+        coverage: new Set(),
+        errors: new Map()
+    };
+    hasPendingUpdates = false;
+    if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+    }
 };
 
 export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => ({
@@ -183,7 +193,12 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
 
                 window.electron.onExecutionStarted(() => {
-                    set({ executionResults: new Map(), executionErrors: new Map(), isExecuting: true });
+                    set({
+                        executionResults: new Map(),
+                        executionErrors: new Map(),
+                        executionCoverage: new Set(),
+                        isExecuting: true
+                    });
                 });
 
                 window.electron.onExecutionDone(() => {
