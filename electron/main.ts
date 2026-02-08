@@ -284,6 +284,24 @@ ipcMain.handle('check-path-exists', (_event, pathToCheck: string) => {
     }
 });
 
+ipcMain.handle('check-paths-exists', async (_event, paths: string[]) => {
+    try {
+        const results: Record<string, boolean> = {};
+        await Promise.all(paths.map(async (p) => {
+            try {
+                await fs.promises.access(p);
+                results[p] = true;
+            } catch {
+                results[p] = false;
+            }
+        }));
+        return results;
+    } catch (err) {
+        console.error('Error checking paths:', err);
+        return {};
+    }
+});
+
 ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => {
     try {
         await fs.promises.rename(oldPath, newPath);

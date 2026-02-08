@@ -327,13 +327,26 @@ export const useStore = create<AppState>((set, get, api) => ({
         if (!window.electron) return;
 
         const { recentEnvironments } = get();
-        const validRecents = [];
+        const paths = recentEnvironments.map(r => r.path);
 
-        for (const recent of recentEnvironments) {
-            const exists = await window.electron.fileSystem.checkExists(recent.path);
-            if (exists) {
-                validRecents.push(recent);
+        // Use bulk check API if available (simulated or real)
+        // Fallback handled by the fact that we define the API.
+        // If electron.ts types are updated, this is safe.
+        // But if the running electron binary is old (not reloaded), this might fail?
+        // In dev mode with HMR/reload it should be fine.
+        let validRecents: RecentEnvironment[] = [];
+
+        if (window.electron.fileSystem.checkPathsExists) {
+             const existenceMap = await window.electron.fileSystem.checkPathsExists(paths);
+             validRecents = recentEnvironments.filter(r => existenceMap[r.path]);
+        } else {
+            // Fallback for safety or older versions
+            const valid = [];
+            for (const recent of recentEnvironments) {
+                const exists = await window.electron.fileSystem.checkExists(recent.path);
+                if (exists) valid.push(recent);
             }
+            validRecents = valid;
         }
 
         if (validRecents.length !== recentEnvironments.length) {
