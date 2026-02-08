@@ -484,17 +484,40 @@ ipcMain.handle('execution:check-availability', async () => {
 });
 
 // MCP Sync State Handler
-ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
+let isSyncingState = false;
+let pendingSyncState: unknown = null;
+
+const processSyncState = async () => {
+    // If no pending state, we're done
+    if (pendingSyncState === null) {
+        isSyncingState = false;
+        return;
+    }
+
+    const state = pendingSyncState;
+    pendingSyncState = null; // Clear pending state so new updates can be queued
     const statePath = path.join(app.getAppPath(), 'state.json');
-    // Use async IIFE to handle errors properly (including JSON.stringify)
-    void (async () => {
-        try {
-            const content = JSON.stringify(state, null, 2);
-            await fs.promises.writeFile(statePath, content, 'utf-8');
-        } catch (err) {
-            console.error('Failed to sync state to file', err);
+
+    try {
+        await fs.promises.writeFile(statePath, JSON.stringify(state, null, 2), 'utf-8');
+    } catch (err) {
+        console.error('Failed to sync state to file', err);
+    } finally {
+        // If new state arrived while writing, process it
+        if (pendingSyncState !== null) {
+            void processSyncState();
+        } else {
+            isSyncingState = false;
         }
-    })();
+    }
+};
+
+ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
+    pendingSyncState = state;
+    if (!isSyncingState) {
+        isSyncingState = true;
+        void processSyncState();
+    }
 });
 
 
