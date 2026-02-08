@@ -1,6 +1,5 @@
 import * as dagre from 'dagre';
-import type { Edge } from '@xyflow/react';
-import { Position } from '@xyflow/react';
+import type { Edge, Position } from '@xyflow/react';
 import type { AppNode } from '../types';
 
 export const getLayoutedElements = (nodes: AppNode[], edges: Edge[]) => {
@@ -70,8 +69,8 @@ export const getLayoutedElements = (nodes: AppNode[], edges: Edge[]) => {
             const pos = g.node(node.id);
             processedNodes.push({
                 ...node,
-                targetPosition: Position.Left,
-                sourcePosition: Position.Right,
+                targetPosition: 'left' as Position,
+                sourcePosition: 'right' as Position,
                 position: {
                     x: pos.x - pos.width / 2,
                     y: pos.y - pos.height / 2,

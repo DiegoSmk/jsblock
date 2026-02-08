@@ -1,43 +1,52 @@
-import { parse } from '@babel/parser';
-import type { Edge } from '@xyflow/react';
-import { initializeContext, parseStatement } from './parser/Dispatcher';
-import type { Statement } from '@babel/types';
 import type { AppNode } from '../types';
+import type { Edge } from '@xyflow/react';
 
+let worker: Worker | null = null;
+let messageId = 0;
+const pendingRequests = new Map<number, { resolve: (value: { nodes: AppNode[], edges: Edge[] }) => void, reject: (reason?: unknown) => void }>();
 
-export const parseCodeToFlow = (code: string): { nodes: AppNode[], edges: Edge[] } => {
-    let ast;
-    try {
-        ast = parse(code, {
-            sourceType: 'module',
-            plugins: [
-                'typescript',
-                'jsx',
-                'topLevelAwait',
-                'numericSeparator',
-                'classProperties',
-                'objectRestSpread',
-                'dynamicImport'
-            ]
-        });
-    } catch (e) {
-        console.error("Parse Error", e);
-        return { nodes: [], edges: [] };
+interface WorkerResponse {
+    id: number;
+    nodes: AppNode[];
+    edges: Edge[];
+}
+
+const getWorker = () => {
+    if (!worker) {
+        // Correct path for Vite to pick up the worker
+        worker = new Worker(new URL('./parser.worker.ts', import.meta.url), { type: 'module' });
+
+        worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+            const { id, nodes, edges } = e.data;
+            const request = pendingRequests.get(id);
+            if (request) {
+                request.resolve({ nodes, edges });
+                pendingRequests.delete(id);
+            }
+        };
+
+        worker.onerror = (err) => {
+            console.error('Worker error', err);
+            for (const [id, request] of pendingRequests) {
+                request.reject(err);
+                pendingRequests.delete(id);
+            }
+        };
     }
-
-    const indexCounter = { value: 0 };
-    const ctx = initializeContext(ast.program.body, indexCounter);
-
-    // One-pass recursive parsing via Dispatcher
-    let prevId: string | undefined = undefined;
-
-    ast.program.body.forEach((stmt: Statement, index: number) => {
-        const nodeId = parseStatement(stmt, ctx, prevId, 'flow-next', index);
-        if (nodeId) {
-            prevId = nodeId;
-        }
-    });
-
-    return { nodes: ctx.nodes, edges: ctx.edges };
+    return worker;
 };
 
+export const parseCodeToFlowAsync = (code: string): Promise<{ nodes: AppNode[], edges: Edge[] }> => {
+    // Check for Worker support (SSR or Test Env)
+    if (typeof Worker === 'undefined') {
+        console.warn('Web Workers are not supported in this environment. Returning empty flow.');
+        return Promise.resolve({ nodes: [], edges: [] });
+    }
+
+    const id = ++messageId;
+    return new Promise((resolve, reject) => {
+        const w = getWorker();
+        pendingRequests.set(id, { resolve, reject });
+        w.postMessage({ code, id });
+    });
+};

@@ -30,7 +30,7 @@ const getUUID = (prefix = 'id') => {
     return `${prefix}-${uuid}`;
 };
 
-import { parseCodeToFlow } from '../features/editor/logic/CodeParser';
+import { parseCodeToFlowAsync } from '../features/editor/logic/CodeParser';
 import { generateCodeFromFlow } from '../features/editor/logic/CodeGenerator';
 import { getLayoutedElements } from '../features/editor/logic/layout';
 import i18n from '../i18n/config';
@@ -423,7 +423,7 @@ export const useStore = create<AppState>((set, get, api) => ({
 
 
     setCode: (code: string, shouldSetDirty = true, debounce = true) => {
-        const { nodes, edges } = parseCodeToFlow(code);
+        set({ code });
 
         if (saveTimeout) clearTimeout(saveTimeout);
 
@@ -437,44 +437,49 @@ export const useStore = create<AppState>((set, get, api) => ({
             }
         }
 
+        parseCodeToFlowAsync(code).then(({ nodes, edges }) => {
+            // Race condition check: ensure code hasn't changed while we were parsing
+            if (get().code !== code) return;
 
+            const currentStack = get().navigationStack;
+            const currentScopeId = get().activeScopeId;
 
-        const currentStack = get().navigationStack;
-        const currentScopeId = get().activeScopeId;
+            // Worker returns layouted nodes
+            const activeNodeExists = currentScopeId === 'root' || nodes.some(n => n.id === currentScopeId);
 
-        const layouted = getLayoutedElements(nodes, edges);
-        const activeNodeExists = currentScopeId === 'root' || layouted.nodes.some(n => n.id === currentScopeId);
+            // Pattern-based CanvasNode appearance: Check if canvasData is present in code
+            const hasCanvasPattern = code.includes('canvasData');
+            const hasCanvasNode = nodes.some(n => n.type === 'canvasNode');
 
-        // Pattern-based CanvasNode appearance: Check if canvasData is present in code
-        const hasCanvasPattern = code.includes('canvasData');
-        const hasCanvasNode = layouted.nodes.some(n => n.type === 'canvasNode');
+            let finalNodes = nodes;
+            if (hasCanvasPattern && !hasCanvasNode) {
+                finalNodes = [
+                    ...nodes,
+                    {
+                        id: 'pattern-canvas-node',
+                        type: 'canvasNode',
+                        position: { x: 500, y: 100 },
+                        data: { label: 'Canvas Viewer', scopeId: 'root' }
+                    }
+                ];
+            }
 
-        let finalNodes = layouted.nodes;
-        if (hasCanvasPattern && !hasCanvasNode) {
-            finalNodes = [
-                ...layouted.nodes,
-                {
-                    id: 'pattern-canvas-node',
-                    type: 'canvasNode',
-                    position: { x: 500, y: 100 },
-                    data: { label: 'Canvas Viewer', scopeId: 'root' }
-                }
-            ];
-        }
+            set({
+                // code is already set
+                nodes: finalNodes,
+                edges: edges,
+                navigationStack: activeNodeExists ? currentStack : [{ id: 'root', label: 'Main' }],
+                activeScopeId: activeNodeExists ? currentScopeId : 'root'
+            });
 
-        set({
-            code,
-            nodes: finalNodes,
-            edges: layouted.edges,
-            navigationStack: activeNodeExists ? currentStack : [{ id: 'root', label: 'Main' }],
-            activeScopeId: activeNodeExists ? currentScopeId : 'root'
+            if (debounce) {
+                get().runExecutionDebounced(code);
+            } else {
+                get().runExecution(code);
+            }
+        }).catch(err => {
+            console.error('Parsing failed', err);
         });
-
-        if (debounce) {
-            get().runExecutionDebounced(code);
-        } else {
-            get().runExecution(code);
-        }
     },
 
     onNodesChange: (changes: NodeChange<AppNode>[]) => {
