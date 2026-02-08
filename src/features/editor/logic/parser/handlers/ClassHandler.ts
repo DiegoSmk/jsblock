@@ -44,11 +44,11 @@ export const ClassHandler: ParserHandler = {
 
         // Process Class Body
         const body = stmt.body;
-        if (body && body.type === 'ClassBody') {
+        if (body?.type === 'ClassBody') {
             let methodY = 60;
             body.body.forEach((member) => {
                 if (member.type === 'ClassMethod') {
-                    const method = member as ClassMethod;
+                    const method = member;
                     if (method.key.type === 'Identifier') {
                         const methodName = method.key.name;
                         const methodId = generateId(`method-${className}-${methodName}`);

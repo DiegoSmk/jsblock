@@ -255,7 +255,7 @@ export const generateCodeFromFlow = (
         // 4. Main Generation Pass (Visitor)
         types.visit(ast, {
             visitFunctionDeclaration(path: any) {
-                const funcDecl = path.node as any;
+                const funcDecl = path.node;
                 if (!funcDecl.id) {
                     this.traverse(path);
                     return false;

@@ -23,6 +23,8 @@
 ## ✨ Key Features
 
 - 🧠 **XYFlow Canvas**: High-performance node-based architecture for complex logic mapping.
+- ⚡ **Async/Await Support**: First-class visual support for modern asynchronous JavaScript with dedicated nodes and controls.
+- 🔄 **Visual Control Flow**: Full range of control structures including `If/Else`, `While`, `For` loops, and `Switch` statements.
 - ⚡ **Multi-Runtime Execution**: Native support for **Node.js**, **Bun**, and **Deno** with automated detection.
 - 📊 **Live Benchmarking**: Compare real-time performance across runtimes with microsecond precision.
 - 📝 **Advanced Note System**: Proximity-sensitive connection handles and markdown-flavored sticky notes.

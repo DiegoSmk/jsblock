@@ -141,7 +141,7 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginLeft: 'auto' }}>
                     {isDecl && isAsync && (
-                         <div style={{
+                        <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
@@ -278,12 +278,25 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
             }}>
                 {/* Return Value Section (if standalone call) */}
                 {!isDecl && !isConsoleLog && (
-                    <div style={{ padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: data.hasReturn ? 1 : 0.5 }}>
-                        <div style={{ fontSize: '0.65rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 800, textTransform: 'uppercase' }}>Return Value</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            {returnValue !== null && <span style={{ color: '#38bdf8', fontSize: '0.9rem', fontWeight: 800 }}>{returnValue}</span>}
-                            <Handle type="source" position={Position.Right} id="return" className="handle-data" style={{ right: '-8px' }} />
+                    <div style={{ padding: '10px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: data.hasReturn ? 1 : 0.5 }}>
+                            <div style={{ fontSize: '0.65rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 800, textTransform: 'uppercase' }}>Return Value</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                {returnValue !== null && <span style={{ color: '#38bdf8', fontSize: '0.9rem', fontWeight: 800 }}>{returnValue}</span>}
+                                <Handle type="source" position={Position.Right} id="return" className="handle-data" style={{ right: '-8px' }} />
+                            </div>
                         </div>
+                        {isStandalone && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderTop: `1px dashed ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, paddingTop: '8px' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={!!isAwait}
+                                    onChange={(e) => updateNodeData(id, { isAwait: e.target.checked })}
+                                    style={{ accentColor: '#eab308', cursor: 'pointer' }}
+                                />
+                                <span style={{ fontSize: '0.75rem', color: isDark ? '#fbbf24' : '#d97706', fontWeight: 700 }}>Await Result</span>
+                            </div>
+                        )}
                     </div>
                 )}
 

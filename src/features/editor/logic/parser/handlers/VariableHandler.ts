@@ -190,7 +190,7 @@ export const VariableHandler: ParserHandler = {
                 if (!flowTargetId) flowTargetId = destrId;
 
                 let sourceLabel = 'Object';
-                if (decl.init && decl.init.type === 'Identifier') {
+                if (decl.init?.type === 'Identifier') {
                     sourceLabel = decl.init.name;
                 }
 
@@ -208,7 +208,7 @@ export const VariableHandler: ParserHandler = {
                 });
 
                 // Connect source object to destructuring node input
-                if (decl.init && decl.init.type === 'Identifier' && ctx.variableNodes[decl.init.name]) {
+                if (decl.init?.type === 'Identifier' && ctx.variableNodes[decl.init.name]) {
                     ctx.edges.push({
                         id: `e-${ctx.variableNodes[decl.init.name]}-to-${destrId}-input`,
                         source: ctx.variableNodes[decl.init.name],

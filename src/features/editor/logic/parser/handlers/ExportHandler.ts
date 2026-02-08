@@ -7,7 +7,7 @@ export const ExportHandler: ParserHandler = {
         const nodeId = idSuffix ? `export-${ctx.nodes.length}-${idSuffix}` : `export-${ctx.nodes.length}`;
 
         if (node.type === 'ExportNamedDeclaration') {
-            const stmt = node as ExportNamedDeclaration;
+            const stmt = node;
             if (stmt.declaration) {
                 // Handle export const x = ...
                 ctx.isExporting = true;
@@ -18,7 +18,7 @@ export const ExportHandler: ParserHandler = {
         }
 
         if (node.type === 'ExportDefaultDeclaration') {
-            const stmt = node as ExportDefaultDeclaration;
+            const stmt = node;
             if (stmt.declaration) {
                 ctx.isExportingDefault = true;
                 const result = ctx.parseStatement(stmt.declaration as BabelNode, parentId, handleName, undefined, idSuffix);
