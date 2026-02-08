@@ -22,6 +22,20 @@ let buffer: {
 let rafId: number | null = null;
 let hasPendingUpdates = false;
 
+export const resetListeners = () => {
+    listenersInitialized = false;
+    lastExecutedCode = '';
+    buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
+    if (simulationInterval) {
+        clearInterval(simulationInterval);
+        simulationInterval = null;
+    }
+    if (executionDebounceTimeout) {
+        clearTimeout(executionDebounceTimeout);
+        executionDebounceTimeout = null;
+    }
+};
+
 export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => ({
     executionResults: new Map(),
     executionErrors: new Map(),
@@ -179,7 +193,12 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
 
                 window.electron.onExecutionStarted(() => {
-                    set({ executionErrors: new Map(), isExecuting: true });
+                    set({
+                        executionResults: new Map(),
+                        executionErrors: new Map(),
+                        executionCoverage: new Set(),
+                        isExecuting: true
+                    });
                 });
 
                 window.electron.onExecutionDone(() => {
