@@ -10,6 +10,7 @@ import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { ImportHandler } from './handlers/ImportHandler';
+import { ExportHandler } from './handlers/ExportHandler';
 import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
 import type { AppNode } from '../../types';
@@ -65,14 +66,7 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
     }
 
     if (stmt.type === 'ExportNamedDeclaration') {
-        const namedExport = stmt;
-        if (namedExport.declaration) {
-            // Unwrap and mark as exported
-            ctx.isExporting = true;
-            const result = parseStatement(namedExport.declaration, ctx, parentId, handleName, index);
-            ctx.isExporting = false;
-            return result;
-        }
+        return ExportHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
     }
 
     if (stmt.type === 'ExportDefaultDeclaration') {
