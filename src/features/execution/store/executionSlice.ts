@@ -6,6 +6,7 @@ import type { ExecutionPayload } from '../../../types/electron';
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let listenersInitialized = false;
+export const resetListeners = () => { listenersInitialized = false; };
 let lastExecutedCode = '';
 
 // Internal Buffer (not in state to avoid React overhead)
@@ -179,7 +180,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
 
                 window.electron.onExecutionStarted(() => {
-                    set({ executionErrors: new Map(), isExecuting: true });
+                    set({ executionResults: new Map(), executionErrors: new Map(), executionCoverage: new Set(), isExecuting: true });
                 });
 
                 window.electron.onExecutionDone(() => {

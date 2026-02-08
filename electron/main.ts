@@ -19,6 +19,49 @@ app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-features', 'PasswordManager,PasswordGeneration');
 app.commandLine.appendSwitch('disable-autofill-keyboard-accessor-view', 'true');
 
+// --- MCP LOG CAPTURE & CONSOLE OVERRIDE ---
+// Initialize logging early to capture startup issues
+const logPath = path.join(app.getAppPath(), 'app.log');
+// Use a WriteStream for better performance (non-blocking) compared to appendFileSync
+const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+
+logStream.on('error', (err) => {
+    // If logging fails, we can't really log it to the file.
+    // Fallback to original console?
+    process.stderr.write(`Failed to write to log file: ${err.message}\n`);
+});
+
+const logToFile = (msg: string) => {
+    const timestamp = new Date().toISOString();
+    try {
+        if (logStream.writable) {
+            logStream.write(`[${timestamp}] ${msg}\n`);
+        }
+    } catch {
+        // Ignore logging errors to prevent infinite loops if console.error is used
+    }
+};
+
+// Override Main Process console globally (once)
+/* eslint-disable no-console */
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalError = console.error;
+
+console.log = (...args: unknown[]) => {
+    originalLog(...args);
+    logToFile(`[MAIN][INFO] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+};
+console.warn = (...args: unknown[]) => {
+    originalWarn(...args);
+    logToFile(`[MAIN][WARN] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+};
+console.error = (...args: unknown[]) => {
+    originalError(...args);
+    logToFile(`[MAIN][ERROR] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
+};
+/* eslint-enable no-console */
+
 
 let mainWindow: BrowserWindow | null;
 let splashWindow: BrowserWindow | null;
@@ -112,37 +155,6 @@ function createWindow() {
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
-
-    // --- MCP LOG CAPTURE ---
-    const logPath = path.join(app.getAppPath(), 'app.log');
-    const logToFile = (msg: string) => {
-        const timestamp = new Date().toISOString();
-        try {
-            fs.appendFileSync(logPath, `[${timestamp}] ${msg}\n`);
-        } catch {
-            // Can't use console.error here if we're overriding it
-        }
-    };
-
-    // Override Main Process console
-    /* eslint-disable no-console */
-    const originalLog = console.log;
-    const originalWarn = console.warn;
-    const originalError = console.error;
-
-    console.log = (...args: unknown[]) => {
-        originalLog(...args);
-        logToFile(`[MAIN][INFO] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    console.warn = (...args: unknown[]) => {
-        originalWarn(...args);
-        logToFile(`[MAIN][WARN] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    console.error = (...args: unknown[]) => {
-        originalError(...args);
-        logToFile(`[MAIN][ERROR] ${args.map(a => (a !== null && typeof a === 'object') ? JSON.stringify(a) : String(a)).join(' ')}`);
-    };
-    /* eslint-enable no-console */
 
     mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
         const levels = ['Debug', 'Info', 'Warn', 'Error'];
