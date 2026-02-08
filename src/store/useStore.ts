@@ -1226,3 +1226,8 @@ useStore.subscribe((state) => {
         }
     }, 1000); // 1s debounce to prevent IPC congestion
 });
+
+if (import.meta.env.DEV) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).useStore = useStore;
+}

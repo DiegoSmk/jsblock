@@ -2,7 +2,7 @@ import { memo, useCallback } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
-import { Hash, Plus, ExternalLink, Activity } from 'lucide-react';
+import { Hash, Plus, ExternalLink, Activity, Clock } from 'lucide-react';
 import type { AppNode, AppNodeData } from '../types';
 import type { Edge } from '@xyflow/react';
 
@@ -14,6 +14,7 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
         [id])));
     const addFunctionCall = useStore((state) => state.addFunctionCall);
     const navigateInto = useStore((state) => state.navigateInto);
+    const updateNodeData = useStore((state) => state.updateNodeData);
 
     const handleEnterScope = () => {
         const scope = data.scopes?.body;
@@ -25,6 +26,8 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
     const isDark = theme === 'dark';
     const isConsoleLog = typeof data.label === 'string' && data.label.includes('console.log');
     const isDecl = data.isDecl;
+    const isAsync = data.isAsync;
+    const isAwait = data.isAwait;
 
     const BUILTIN_COLORS: Record<string, string> = {
         'console.log': '#4fc3f7',
@@ -137,6 +140,36 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
                 )}
 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginLeft: 'auto' }}>
+                    {isDecl && isAsync && (
+                         <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'rgba(124, 58, 237, 0.2)',
+                            color: '#a78bfa',
+                            padding: '2px 8px',
+                            borderRadius: '20px',
+                            fontSize: '0.65rem',
+                            fontWeight: 800
+                        }}>
+                            <Clock size={10} /> ASYNC
+                        </div>
+                    )}
+                    {!isDecl && isAwait && (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'rgba(234, 179, 8, 0.2)',
+                            color: '#facc15',
+                            padding: '2px 8px',
+                            borderRadius: '20px',
+                            fontSize: '0.65rem',
+                            fontWeight: 800
+                        }}>
+                            <Clock size={10} /> AWAIT
+                        </div>
+                    )}
                     {isDecl && (
                         <div style={{
                             display: 'flex',
@@ -167,6 +200,15 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
             <div className="node-content">
                 {isDecl && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px' }}>
+                            <input
+                                type="checkbox"
+                                checked={!!isAsync}
+                                onChange={(e) => updateNodeData(id, { isAsync: e.target.checked })}
+                                style={{ accentColor: '#7c3aed', cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.8rem', color: isDark ? '#ddd' : '#555', fontWeight: 600 }}>Async Function</span>
+                        </div>
                         {args.length > 0 && (
                             <div style={{ padding: '12px', background: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)', borderRadius: '10px', border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` }}>
                                 <div style={{ fontSize: '0.65rem', color: isDark ? '#81c784' : '#4caf50', marginBottom: '8px', fontWeight: 800, letterSpacing: '0.05em' }}>Arguments</div>

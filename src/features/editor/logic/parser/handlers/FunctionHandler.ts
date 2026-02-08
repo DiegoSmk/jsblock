@@ -25,6 +25,7 @@ export const FunctionHandler: ParserHandler = {
                 label: `Definition: ${funcName}`,
                 args: params,
                 isDecl: true,
+                isAsync: !!stmt.async,
                 isExported: !!ctx.isExporting || !!ctx.isExportingDefault,
                 usageCount: 0,
                 scopeId: ctx.currentScopeId

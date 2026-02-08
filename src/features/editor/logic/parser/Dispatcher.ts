@@ -8,6 +8,7 @@ import { VariableHandler } from './handlers/VariableHandler';
 import { LogicHandler } from './handlers/LogicHandler';
 import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
+import { AwaitHandler } from './handlers/AwaitHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { ImportHandler } from './handlers/ImportHandler';
 import { generateId } from './utils';
@@ -34,6 +35,10 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
 
     if (AssignmentHandler.canHandle(stmt)) {
         return AssignmentHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+    }
+
+    if (AwaitHandler.canHandle(stmt)) {
+        return AwaitHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
     }
 
     if (IfHandler.canHandle(stmt)) {
@@ -160,7 +165,8 @@ export const initializeContext = (astBody: Statement[], indexCounter: { value: n
         currentParentId: undefined,
         nativeApiNodeId: nativeApiId,
         processBlock: (bodyNode, entryNodeId, flowHandle, label, preNodes) =>
-            processBlockInScope(bodyNode, ctx, entryNodeId, flowHandle, label, preNodes)
+            processBlockInScope(bodyNode, ctx, entryNodeId, flowHandle, label, preNodes),
+        parseStatement: (stmt, c, p, h, i) => parseStatement(stmt, c, p, h, i)
     };
 
     return ctx;

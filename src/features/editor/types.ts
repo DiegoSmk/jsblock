@@ -28,6 +28,8 @@ export interface AppNodeData {
   value?: unknown;
   scopeId?: string;
   isDecl?: boolean;
+  isAsync?: boolean;
+  isAwait?: boolean;
   isExported?: boolean;
   isStandalone?: boolean;
   hasReturn?: boolean;
