@@ -25,18 +25,15 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
     }
 
     if (VariableHandler.canHandle(stmt)) {
-        VariableHandler.handle(stmt, ctx, undefined, undefined, suffix);
-        return undefined;
+        return VariableHandler.handle(stmt, ctx, undefined, undefined, suffix);
     }
 
     if (FunctionHandler.canHandle(stmt)) {
-        FunctionHandler.handle(stmt, ctx, undefined, undefined, suffix);
-        return undefined;
+        return FunctionHandler.handle(stmt, ctx, undefined, undefined, suffix);
     }
 
     if (ClassHandler.canHandle(stmt)) {
-        ClassHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
-        return undefined;
+        return ClassHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
     }
 
     if (AssignmentHandler.canHandle(stmt)) {
