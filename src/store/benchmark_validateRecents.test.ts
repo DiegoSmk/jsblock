@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, vi, beforeEach, afterEach } from 'vitest';
 import { useStore } from './useStore';
+import type { ElectronAPI } from '../types/electron';
 
 // Mock window.electron
 const originalElectron = window.electron;
@@ -39,12 +40,12 @@ describe('validateRecents Performance Benchmark', () => {
                     return true;
                 }),
                 // New method: 10ms per batch (simulated)
-                checkPathsExists: vi.fn().mockImplementation(async (paths: string[]) => {
+                checkPathsExists: vi.fn().mockImplementation(async (ps: string[]) => {
                     await new Promise(resolve => setTimeout(resolve, delayPerCall));
-                    return paths.reduce((acc, p) => ({ ...acc, [p]: true }), {});
+                    return ps.reduce((acc, p) => ({ ...acc, [p]: true }), {});
                 })
-            } as any
-        } as any;
+            } as unknown as ElectronAPI['fileSystem']
+        } as unknown as ElectronAPI;
 
         const start = performance.now();
 
@@ -53,6 +54,7 @@ describe('validateRecents Performance Benchmark', () => {
         const end = performance.now();
         const duration = end - start;
 
+        // eslint-disable-next-line no-console
         console.log(`[Benchmark] validateRecents took ${duration.toFixed(2)}ms for ${count} items.`);
 
         // This assertion will help us verify if we are running in the slow or fast mode

@@ -27,12 +27,12 @@ export const WindowOutlet: React.FC = () => {
         const payloadStr = params.get('payload');
         if (payloadStr) {
             try {
-                const p = JSON.parse(payloadStr);
+                const p = JSON.parse(payloadStr) as { filePath?: string };
                 if (type === 'git-diff' && p?.filePath) {
-                    const fileName = p.filePath.split(/[\\/]/).pop();
+                    const fileName = p.filePath.split(/[\\/]/).pop() ?? '';
                     return `GIT-DIFF: ${fileName}`;
                 }
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
         }
         return null;
     });
@@ -237,7 +237,7 @@ export const WindowOutlet: React.FC = () => {
                     <button
                         onClick={() => window.electron.windowClose()}
                         style={{
-                            ...({ WebkitAppRegion: 'no-drag' } as any),
+                            ...({ WebkitAppRegion: 'no-drag' } as React.CSSProperties),
                             background: 'transparent',
                             border: 'none',
                             cursor: 'pointer',

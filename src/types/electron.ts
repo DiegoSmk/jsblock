@@ -1,34 +1,14 @@
 // Electron API types
-// Electron API types
-export type ExecutionPayload =
-  | { type: 'execution:log'; level: string; args: unknown[] }
-  | { type: 'execution:value'; line: number; value: string; valueType?: 'spy' | 'log' }
-  | { type: 'execution:coverage'; line: number }
-  | { type: 'execution:started' }
-  | { level: 'data'; args: ['canvasData', unknown] };
+import type {
+  ExecutionPayload,
+  ExecutionError,
+  BenchmarkResult,
+  SearchOptions,
+  SearchResult,
+  FileNode
+} from '../../electron/shared/ipc-types';
 
-export interface ExecutionError {
-  message: string;
-  line: number;
-  column: number;
-  errorCode?: string;
-  suggestion?: {
-    text: string;
-    replace: string;
-  };
-}
-
-export interface SearchResult {
-  file: string;
-  line: number;
-  text: string;
-  matchIndex: number;
-}
-
-export interface SearchOptions {
-  caseSensitive: boolean;
-  regex: boolean;
-}
+export type { ExecutionPayload, ExecutionError, BenchmarkResult, SearchOptions, SearchResult, FileNode };
 
 export interface ElectronAPI {
   // Dialogs & Window
@@ -102,10 +82,6 @@ export interface ElectronAPI {
 }
 
 import type { PluginManifest } from '../features/extensions/types';
-import type { BenchmarkResult } from '../features/execution/types';
-import type { FileNode } from '../features/workspace/types';
-export type { BenchmarkResult };
-export type { FileNode };
 
 declare global {
   interface Window {

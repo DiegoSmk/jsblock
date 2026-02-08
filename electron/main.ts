@@ -128,7 +128,7 @@ function createWindow() {
     }, 8000);
 
     ipcMain.once('app-ready', () => {
-        console.log('IPC: app-ready received from frontend');
+        console.warn('IPC: app-ready received from frontend');
         clearTimeout(fallbackTimeout);
         const elapsedTime = Date.now() - startLoadTime;
         const minimumTime = 1000;
@@ -150,7 +150,7 @@ function createWindow() {
             try {
                 await mainWindow?.loadURL(`http://localhost:${port}`);
                 return true;
-            } catch (e) {
+            } catch {
                 return false;
             }
         };

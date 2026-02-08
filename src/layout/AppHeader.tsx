@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import React, { useState, useEffect, useRef } from 'react';
 import {
     FolderOpen, X, Minus, Square, Info, LogOut,
@@ -471,7 +470,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                     message: t('app.confirm_close_folder.message') ?? 'Tem certeza que deseja fechar a pasta atual? Quaisquer alterações não salvas serão perdidas.',
                                     confirmLabel: t('app.window_controls.close') ?? 'Fechar',
                                     cancelLabel: t('app.common.cancel') ?? 'Cancelar',
-                                    variant: 'warning' as any, // 'warning' uses default for now or I could add it
+                                    variant: 'warning',
                                     onConfirm: () => {
                                         setWorkspaceRoot(null);
                                         void setSelectedFile(null);

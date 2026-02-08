@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { useStore } from '../../../store/useStore';
 import { initialGitState } from './initialState';
+import type { ElectronAPI } from '../../../types/electron';
 
 describe('Git Network Actions', () => {
     beforeEach(() => {
@@ -16,8 +17,8 @@ describe('Git Network Actions', () => {
             fileSystem: {
                 readFile: vi.fn(),
                 writeFile: vi.fn(),
-            } as any
-        } as any;
+            }
+        } as unknown as ElectronAPI;
     });
 
     it('should call git fetch', async () => {
@@ -43,6 +44,7 @@ describe('Git Network Actions', () => {
         await gitSync();
 
         const calls = (window.electron.gitCommand as Mock).mock.calls;
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         const args = calls.map(c => c[1]);
 
         // Check for pull
@@ -68,8 +70,8 @@ describe('Git Diff Actions', () => {
             gitCommand: vi.fn().mockResolvedValue({ stdout: '' }),
             fileSystem: {
                 readFile: vi.fn(),
-            } as any
-        } as any;
+            }
+        } as unknown as ElectronAPI;
     });
 
     it('should select diff file', () => {
@@ -90,6 +92,7 @@ describe('Git Diff Actions', () => {
         const { getGitFileContent } = useStore.getState();
         (window.electron.gitCommand as Mock).mockResolvedValue({ stdout: 'content' });
 
+        // eslint-disable-next-line no-restricted-syntax
         const content = await getGitFileContent('src/test.ts', 'HEAD');
         expect(content).toBe('content');
         expect(window.electron.gitCommand).toHaveBeenCalledWith('/test/repo', ['show', 'HEAD:src/test.ts']);

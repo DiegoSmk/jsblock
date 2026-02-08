@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -36,7 +35,6 @@ vi.mock('i18next', () => ({
 const capturedProps: any[] = [];
 
 vi.mock('@xyflow/react', async () => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const actual = await vi.importActual('@xyflow/react');
   return {
     ...actual,
@@ -72,7 +70,6 @@ describe('FlowContent Performance', () => {
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     root = createRoot(container);
     capturedProps.length = 0; // Reset captured props
 
@@ -85,10 +82,10 @@ describe('FlowContent Performance', () => {
     });
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     if (root) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-      await act(() => root.unmount());
+      void act(() => root.unmount());
     }
     if (container) {
       document.body.removeChild(container);
@@ -96,9 +93,9 @@ describe('FlowContent Performance', () => {
     vi.restoreAllMocks();
   });
 
-  it('maintains stable defaultEdgeOptions reference across renders', async () => {
+  it('maintains stable defaultEdgeOptions reference across renders', () => {
     // Initial Render
-    await act(async () => {
+    act(() => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       root.render(<FlowContent />);
     });
@@ -109,8 +106,7 @@ describe('FlowContent Performance', () => {
 
     // Trigger a re-render by updating nodes in the store
     // We update nodes to force the component to re-render, but keep theme 'light'
-    await act(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    act(() => {
       useStore.setState({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         nodes: [{ id: '1', type: 'variableNode', position: { x: 0, y: 0 }, data: {} }] as any

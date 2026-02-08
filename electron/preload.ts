@@ -113,7 +113,7 @@ contextBridge.exposeInMainWorld('electron', {
 
     // Generic Event Listener (Sub-only)
     on: <K extends keyof IpcEvents>(channel: K, callback: IpcEvents[K]) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
         const subscription = (_event: unknown, ...args: any[]) => (callback as any)(...args);
         ipcRenderer.on(channel, subscription);
         return () => ipcRenderer.removeListener(channel, subscription);

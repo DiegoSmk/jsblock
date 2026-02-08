@@ -14,7 +14,8 @@ import { createViewActions } from './actions/viewActions';
 import { createNetworkActions } from './actions/networkActions';
 import { createDiffActions } from './actions/diffActions';
 
-export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, get) => ({
+// eslint-disable-next-line @typescript-eslint/no-unsafe-return
+export const createGitSlice: StateCreator<AppState, [], [], GitSlice> = (set, get): GitSlice => ({
     git: initialGitState,
 
     gitPanelConfig: (() => {

@@ -70,7 +70,7 @@ export const SearchPanel: React.FC = () => {
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            handleSearch();
+            void handleSearch();
         }
     };
 
@@ -189,7 +189,7 @@ export const SearchPanel: React.FC = () => {
                             }}
                         />
                         <button
-                            onClick={handleReplace}
+                            onClick={() => void handleReplace()}
                             disabled={isSearching}
                             title="Replace All"
                             style={{
@@ -254,9 +254,9 @@ export const SearchPanel: React.FC = () => {
 
                                     {isExpanded && (
                                         <div style={{ marginLeft: '12px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}` }}>
-                                            {fileResults.map((result, idx) => (
+                                            {fileResults.map((result) => (
                                                 <div
-                                                    key={idx}
+                                                    key={`${result.file}-${result.line}-${result.matchIndex}`}
                                                     onClick={() => openResult(result)}
                                                     style={{
                                                         padding: '4px 8px',

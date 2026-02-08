@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useStore } from './useStore';
+import type { ElectronAPI } from '../types/electron';
 
 // Mock window.electron
 const checkExistsMock = vi.fn();
@@ -10,12 +11,11 @@ const mockElectron = {
         checkExists: checkExistsMock,
         checkPathsExists: checkPathsExistsMock,
     },
-};
+} as unknown as ElectronAPI;
 
 describe('validateRecents Performance', () => {
     beforeEach(() => {
         vi.resetAllMocks();
-        // @ts-ignore
         window.electron = mockElectron;
         useStore.setState({
             recentEnvironments: [
@@ -27,8 +27,8 @@ describe('validateRecents Performance', () => {
     });
 
     afterEach(() => {
-        // @ts-ignore
-        delete window.electron;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        delete (window as any).electron;
     });
 
     it('should call checkPathsExists ONCE (Bulk check)', async () => {

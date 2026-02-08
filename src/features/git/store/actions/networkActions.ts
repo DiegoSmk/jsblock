@@ -1,7 +1,7 @@
 import type { AppState } from '../../../../types/store';
-import type { GitSlice } from '../types';
+import type { GitSlice } from '../../types';
 
-export const createNetworkActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
+export const createNetworkActions = (_set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     gitFetch: async () => {
         const { openedFolder, refreshGit } = get();
         if (!openedFolder || !window.electron) return;
@@ -19,6 +19,7 @@ export const createNetworkActions = (set: (nextState: Partial<AppState> | ((stat
         const { openedFolder, refreshGit, git } = get();
         if (!openedFolder || !window.electron) return;
 
+        // eslint-disable-next-line no-restricted-syntax
         const branch = git.currentBranch || 'HEAD';
 
         try {
@@ -35,6 +36,7 @@ export const createNetworkActions = (set: (nextState: Partial<AppState> | ((stat
         const { openedFolder, refreshGit, git } = get();
         if (!openedFolder || !window.electron) return;
 
+        // eslint-disable-next-line no-restricted-syntax
         const branch = git.currentBranch || 'HEAD';
 
         try {

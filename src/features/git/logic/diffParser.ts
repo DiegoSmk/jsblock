@@ -8,14 +8,11 @@ export function parseGitDiff(diffOutput: string): DiffRange[] {
     const ranges: DiffRange[] = [];
     const lines = diffOutput.split('\n');
 
-    let currentNewStart = 0;
-
     for (const line of lines) {
         if (line.startsWith('@@')) {
             // @@ -old_start,old_count +new_start,new_count @@
             const match = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
             if (match) {
-                const oldStart = parseInt(match[1], 10);
                 const oldCount = match[2] ? parseInt(match[2], 10) : 1;
                 const newStart = parseInt(match[3], 10);
                 const newCount = match[4] ? parseInt(match[4], 10) : 1;

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { resetExecutionStateForTesting } from '../features/execution/store/executionSlice';
-import type { ExecutionPayload } from '../types/electron';
+import { useStore } from './useStore';
+import type { ExecutionPayload } from '../electron/shared/ipc-types';
 
 describe('Quokka-like Execution Flow', () => {
-    let useStore: any;
     let mockExecutionStart: ReturnType<typeof vi.fn>;
     let mockOnExecutionLog: ReturnType<typeof vi.fn>;
     let mockOnExecutionError: ReturnType<typeof vi.fn>;
@@ -13,10 +13,8 @@ describe('Quokka-like Execution Flow', () => {
     let clearCallback: () => void;
     let startCallback: () => void;
 
-    beforeEach(async () => {
+    beforeEach(() => {
         vi.resetModules();
-        const storeModule = await import('./useStore');
-        useStore = storeModule.useStore;
 
         resetExecutionStateForTesting();
 

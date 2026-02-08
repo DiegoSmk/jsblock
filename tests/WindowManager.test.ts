@@ -71,8 +71,7 @@ describe('WindowManager', () => {
 
         const callArgs = mocks.loadFile.mock.calls[0];
         const filePath = callArgs[0] as string;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const options = callArgs[1] as any;
+        const options = callArgs[1] as { query?: Record<string, string>; hash?: string };
 
         expect(filePath).toContain('index.html');
         expect(options).toHaveProperty('query');

@@ -291,7 +291,7 @@ export const FileExplorer: React.FC = () => {
                                 onToggle={handleToggleFolder}
                                 onSelect={handleFileSelect}
                                 onContextMenu={handleContextMenu}
-                                onRename={handleRename}
+                                onRename={(oldPath, newName) => { void handleRename(oldPath, newName); }}
                                 onCancelRename={() => setRenamingPath(null)}
                             />
                         ))}

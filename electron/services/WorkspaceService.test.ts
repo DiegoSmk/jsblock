@@ -66,13 +66,14 @@ describe('WorkspaceService Search', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const searchCall = calls.find((call: any[]) => call[0] === 'workspace:search');
         expect(searchCall).toBeDefined();
-        const searchHandler = searchCall![1];
+        const searchHandler = searchCall![1] as (event: unknown, query: string, path: string, options: unknown) => Promise<unknown>;
 
         const searchPromise = searchHandler({}, 'query', '/root', {
             regex: false,
             caseSensitive: false
         });
 
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(utilityProcess.fork).toHaveBeenCalled();
 
         // Should have 2 messages: 1 for cancellation, 1 for search
@@ -80,7 +81,7 @@ describe('WorkspaceService Search', () => {
 
         expect(mockWorker.postMessage).toHaveBeenNthCalledWith(1, { type: 'cancel' });
 
-        const sentPayload = (mockWorker.postMessage).mock.calls[1][0];
+        const sentPayload = mockWorker.postMessage.mock.calls[1][0] as { id: string };
         expect(sentPayload).toMatchObject({
             type: 'search',
             payload: {
@@ -92,7 +93,6 @@ describe('WorkspaceService Search', () => {
             }
         });
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         const id = sentPayload.id;
         const mockResults = [{
             file: '/root/test.ts', line: 1, text: 'match', matchIndex: 0
@@ -102,7 +102,6 @@ describe('WorkspaceService Search', () => {
             workerCallbacks.message({ id, results: mockResults });
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const results = await searchPromise;
         expect(results).toEqual(mockResults);
     });
@@ -110,13 +109,12 @@ describe('WorkspaceService Search', () => {
     it('should handle worker errors', async () => {
         const calls = (ipcMain.handle as unknown as Mock).mock.calls;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const searchHandler = calls.find((call: any[]) => call[0] === 'workspace:search')![1];
+        const searchHandler = calls.find((call: any[]) => call[0] === 'workspace:search')![1] as (event: unknown, query: string, path: string, options: unknown) => Promise<unknown>;
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const searchPromise = searchHandler({}, 'query', '/root', {});
 
         // Skip cancellation message, look at the second call (the actual search)
-        const sentPayload = (mockWorker.postMessage).mock.calls[1][0];
+        const sentPayload = mockWorker.postMessage.mock.calls[1][0] as { id: string };
         const id = sentPayload.id;
 
         if (workerCallbacks.message) {
