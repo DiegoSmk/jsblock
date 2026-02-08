@@ -507,8 +507,6 @@ ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
         void processSyncState();
     }
 });
-
-
 // Window Control Handlers
 ipcMain.on('window-minimize', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
