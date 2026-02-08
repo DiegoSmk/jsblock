@@ -254,6 +254,24 @@ export const generateCodeFromFlow = (
 
         // 4. Main Generation Pass (Visitor)
         types.visit(ast, {
+            visitFunctionDeclaration(path: any) {
+                const funcDecl = path.node as any;
+                if (!funcDecl.id) {
+                    this.traverse(path);
+                    return false;
+                }
+                const funcName = funcDecl.id.name;
+                // Find node by label since ID might vary
+                const node = nodes.find(n => n.type === 'functionCallNode' && n.data.isDecl && n.data.label === `Definition: ${funcName}`);
+
+                if (node && node.data.isAsync !== undefined) {
+                    funcDecl.async = node.data.isAsync;
+                }
+
+                this.traverse(path);
+                return false;
+            },
+
             visitIfStatement(path: any) {
                 const ifStmt = path.node as IfStatement;
                 const index = body.indexOf(ifStmt);
@@ -497,6 +515,19 @@ export const generateCodeFromFlow = (
                 if (exprStmt.expression.type === 'CallExpression') {
                     const callNodeId = `call-exec-${index}`;
                     updateCallArguments(exprStmt.expression, callNodeId, connections, varNodeMap, varValueMap, callOverrideMap[callNodeId], standaloneCalls);
+
+                    const node = nodes.find(n => n.id === callNodeId);
+                    if (node && node.data.isAwait) {
+                        exprStmt.expression = b.awaitExpression(exprStmt.expression) as any;
+                    }
+                } else if (exprStmt.expression.type === 'AwaitExpression' && exprStmt.expression.argument.type === 'CallExpression') {
+                    const callNodeId = `call-exec-${index}`;
+                    updateCallArguments(exprStmt.expression.argument as CallExpression, callNodeId, connections, varNodeMap, varValueMap, callOverrideMap[callNodeId], standaloneCalls);
+
+                    const node = nodes.find(n => n.id === callNodeId);
+                    if (node && node.data.isAwait === false) {
+                        exprStmt.expression = exprStmt.expression.argument;
+                    }
                 } else if (exprStmt.expression.type === 'BinaryExpression' || exprStmt.expression.type === 'LogicalExpression') {
                     const logicNodeId = `logic-${index}`;
                     const node = nodes.find(n => n.id === logicNodeId);

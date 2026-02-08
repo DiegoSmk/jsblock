@@ -53,9 +53,15 @@ export const VariableHandler: ParserHandler = {
 
                 let value = '';
                 let nestedCall: { name: string, args: string[] } | undefined = undefined;
+                let isAwait = false;
 
                 if (decl.init) {
-                    const init = decl.init;
+                    let init = decl.init;
+                    if (init.type === 'AwaitExpression') {
+                        isAwait = true;
+                        init = init.argument;
+                    }
+
                     if (t.isNumericLiteral(init) || t.isStringLiteral(init) || t.isBooleanLiteral(init)) {
                         value = String(init.value);
                         if (t.isStringLiteral(init)) value = `'${value}'`;
@@ -155,6 +161,7 @@ export const VariableHandler: ParserHandler = {
                         value,
                         typeAnnotation,
                         isExported: !!ctx.isExporting || !!ctx.isExportingDefault,
+                        isAwait: isAwait,
                         expression: value === '(computed)' || value.includes(' ') ? value : undefined,
                         nestedCall: nestedCall as { name: string, args: string[] } | undefined,
                         scopeId: ctx.currentScopeId

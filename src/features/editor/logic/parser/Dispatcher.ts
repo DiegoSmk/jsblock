@@ -8,6 +8,7 @@ import { VariableHandler } from './handlers/VariableHandler';
 import { LogicHandler } from './handlers/LogicHandler';
 import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
+import { AwaitHandler } from './handlers/AwaitHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { ImportHandler } from './handlers/ImportHandler';
 import { ClassHandler } from './handlers/ClassHandler';
@@ -38,6 +39,10 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
 
     if (AssignmentHandler.canHandle(stmt)) {
         return AssignmentHandler.handle(stmt, ctx, parentId, handleName, suffix);
+    }
+
+    if (AwaitHandler.canHandle(stmt)) {
+        return AwaitHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
     }
 
     if (IfHandler.canHandle(stmt)) {
