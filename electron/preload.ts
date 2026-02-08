@@ -1,5 +1,19 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ExecutionPayload, ExecutionError, BenchmarkResult, SearchOptions } from './types';
+import type { ExecutionPayload, ExecutionError, BenchmarkResult, SearchOptions, FileNode } from './types';
+
+// Define allowed IPC channels and their data types
+interface IpcEvents {
+    'terminal-data': (data: string) => void;
+    'plugin:notification': (data: { message: string }) => void;
+    'benchmark:result': (results: BenchmarkResult[]) => void;
+    'execution:log': (data: ExecutionPayload) => void;
+    'execution:error': (error: ExecutionError | string) => void;
+    'execution:clear': () => void;
+    'execution:started': () => void;
+    'execution:done': () => void;
+    'system:stats': (data: { cpu: number }) => void;
+    'workspace:updated': (data: { event: string; path: string; tree: FileNode[] }) => void;
+}
 
 contextBridge.exposeInMainWorld('electron', {
     // Dialogs & Window
@@ -101,11 +115,13 @@ contextBridge.exposeInMainWorld('electron', {
     workspace: {
         openFolder: () => ipcRenderer.invoke('workspace:open-folder'),
         getTree: (path: string) => ipcRenderer.invoke('workspace:get-tree', path),
+        search: (query: string, root: string, options: SearchOptions) => ipcRenderer.invoke('workspace:search', query, root, options),
+        replace: (query: string, replace: string, root: string, options: SearchOptions) => ipcRenderer.invoke('workspace:replace', query, replace, root, options),
     },
 
     // Generic Event Listener (Sub-only)
-    on: (channel: string, callback: (...args: any[]) => void) => {
-        const subscription = (_event: unknown, ...args: any[]) => callback(...args);
+    on: <K extends keyof IpcEvents>(channel: K, callback: IpcEvents[K]) => {
+        const subscription = (_event: unknown, ...args: any[]) => (callback as any)(...args);
         ipcRenderer.on(channel, subscription);
         return () => ipcRenderer.removeListener(channel, subscription);
     }

@@ -1,15 +1,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { createSearchPattern } from '../utils/SearchUtils';
+import { SearchOptions } from '../types';
 
 /**
  * Workspace Worker
  * Handles heavy I/O operations like search and replace.
  */
-
-interface SearchOptions {
-    caseSensitive: boolean;
-    regex: boolean;
-}
 
 interface SearchResult {
     file: string;
@@ -20,6 +17,7 @@ interface SearchResult {
 
 const MAX_SEARCH_RESULTS = 2000;
 const MAX_FILE_SIZE_FOR_SEARCH = 1024 * 1024; // 1MB
+const MAX_SEARCH_DEPTH = 20;
 
 class WorkspaceWorker {
     private currentActionId: string | null = null;
@@ -81,25 +79,14 @@ class WorkspaceWorker {
         });
     }
 
-    private createSearchPattern(query: string, options: SearchOptions): RegExp | null {
-        try {
-            if (options.regex) {
-                return new RegExp(query, options.caseSensitive ? 'g' : 'gi');
-            } else {
-                return new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), options.caseSensitive ? 'g' : 'gi');
-            }
-        } catch (err) {
-            return null;
-        }
-    }
-
     private async searchInFiles(query: string, rootPath: string, options: SearchOptions): Promise<SearchResult[]> {
         const results: SearchResult[] = [];
-        const pattern = this.createSearchPattern(query, options);
+        const pattern = createSearchPattern(query, options);
         if (!pattern) return [];
 
-        const traverse = async (currentPath: string) => {
+        const traverse = async (currentPath: string, depth: number) => {
             if (results.length >= MAX_SEARCH_RESULTS) return;
+            if (depth > MAX_SEARCH_DEPTH) return;
 
             try {
                 const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
@@ -114,7 +101,7 @@ class WorkspaceWorker {
                     }
 
                     if (entry.isDirectory()) {
-                        await traverse(fullPath);
+                        await traverse(fullPath, depth + 1);
                     } else if (entry.isFile()) {
                         const ext = path.extname(entry.name).toLowerCase();
                         if (['.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.exe', '.bin', '.dll', '.so', '.dylib'].includes(ext)) {
@@ -148,15 +135,17 @@ class WorkspaceWorker {
             } catch (err) { /* ignore */ }
         };
 
-        await traverse(rootPath);
+        await traverse(rootPath, 0);
         return results;
     }
 
     private async replaceInFiles(query: string, replacement: string, rootPath: string, options: SearchOptions): Promise<void> {
-        const pattern = this.createSearchPattern(query, options);
+        const pattern = createSearchPattern(query, options);
         if (!pattern) return;
 
-        const traverse = async (currentPath: string) => {
+        const traverse = async (currentPath: string, depth: number) => {
+            if (depth > MAX_SEARCH_DEPTH) return;
+
             try {
                 const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
 
@@ -169,7 +158,7 @@ class WorkspaceWorker {
                     }
 
                     if (entry.isDirectory()) {
-                        await traverse(fullPath);
+                        await traverse(fullPath, depth + 1);
                     } else if (entry.isFile()) {
                         const ext = path.extname(entry.name).toLowerCase();
                         if (['.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.exe', '.bin', '.dll', '.so', '.dylib'].includes(ext)) {
@@ -177,6 +166,9 @@ class WorkspaceWorker {
                         }
 
                         try {
+                            const stats = await fs.promises.stat(fullPath);
+                            if (stats.size > MAX_FILE_SIZE_FOR_SEARCH) continue;
+
                             const content = await fs.promises.readFile(fullPath, 'utf-8');
                             if (content.includes('\0')) continue;
 
@@ -190,7 +182,7 @@ class WorkspaceWorker {
             } catch (err) { /* ignore */ }
         };
 
-        await traverse(rootPath);
+        await traverse(rootPath, 0);
     }
 
     private sendToMain(id: string, payload: any) {

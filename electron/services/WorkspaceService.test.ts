@@ -1,112 +1,130 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { WorkspaceService } from './WorkspaceService';
-import * as fs from 'fs';
-import * as path from 'path';
+import { ipcMain, utilityProcess } from 'electron';
 
 // Mock electron module
 vi.mock('electron', () => {
     return {
-        ipcMain: { handle: vi.fn(), on: vi.fn() },
-        dialog: { showOpenDialog: vi.fn() },
+        ipcMain: {
+            handle: vi.fn(),
+            on: vi.fn()
+        },
+        dialog: {
+            showOpenDialog: vi.fn()
+        },
         BrowserWindow: vi.fn(),
-    };
-});
-
-// Mock fs module
-vi.mock('fs', () => {
-    return {
-        promises: {
-            readdir: vi.fn(),
-            readFile: vi.fn(),
-            writeFile: vi.fn(),
-        }
+        utilityProcess: {
+            fork: vi.fn()
+        },
     };
 });
 
 describe('WorkspaceService Search', () => {
     let service: WorkspaceService;
+    let mockWorker: any;
+    let workerCallbacks: Record<string, Function> = {};
 
     beforeEach(() => {
+        workerCallbacks = {};
+        mockWorker = {
+            on: vi.fn((event, cb) => {
+                workerCallbacks[event] = cb;
+            }),
+            postMessage: vi.fn(),
+            kill: vi.fn(),
+            stdout: {
+                on: vi.fn()
+            },
+            stderr: {
+                on: vi.fn()
+            },
+        };
+
+        // Reset mock implementations
+        (utilityProcess.fork as any).mockImplementation(() => mockWorker);
+        (ipcMain.handle as any).mockClear();
+
         service = new WorkspaceService();
+        service.registerHandlers();
+    });
+
+    afterEach(() => {
+        service.stop();
         vi.clearAllMocks();
     });
 
-    it('should find text in files', async () => {
-        const mockReaddir = fs.promises.readdir as unknown as ReturnType<typeof vi.fn>;
-        const mockReadFile = fs.promises.readFile as unknown as ReturnType<typeof vi.fn>;
+    it('should delegate search to worker', async () => {
+        // Find the registered handler for 'workspace:search'
+        // ipcMain.handle is called during registerHandlers in beforeEach
+        const calls = (ipcMain.handle as any).mock.calls;
+        const searchCall = calls.find((call: any[]) => call[0] === 'workspace:search');
+        expect(searchCall).toBeDefined();
+        const searchHandler = searchCall[1];
 
-        // Setup directory structure mocks
-        // When readdir is called with '/root', return file1 and subdir
-        mockReaddir.mockImplementation(async (dirPath) => {
-            if (dirPath === '/root' || dirPath === path.normalize('/root')) {
-                return [
-                    { name: 'file1.txt', isFile: () => true, isDirectory: () => false },
-                    { name: 'subdir', isFile: () => false, isDirectory: () => true },
-                ];
-            }
-            if (dirPath === path.join('/root', 'subdir') || dirPath === path.normalize('/root/subdir')) {
-                return [
-                    { name: 'file2.ts', isFile: () => true, isDirectory: () => false },
-                ];
-            }
-            return [];
+        // Trigger the handler
+        const searchPromise = searchHandler({}, 'query', '/root', {
+            regex: false,
+            caseSensitive: false
         });
 
-        // Setup file content mocks
-        mockReadFile.mockImplementation(async (filePath) => {
-            if (filePath.includes('file1.txt')) return 'Hello World\nAnother line';
-            if (filePath.includes('file2.ts')) return 'console.log("Hello JS");';
-            return '';
+        // Verify worker was started
+        expect(utilityProcess.fork).toHaveBeenCalled();
+
+        // Verify message sent to worker
+        expect(mockWorker.postMessage).toHaveBeenCalled();
+        const sentPayload = (mockWorker.postMessage as any).mock.calls[0][0];
+
+        expect(sentPayload).toMatchObject({
+            type: 'search',
+            payload: {
+                query: 'query',
+                options: {
+                    regex: false,
+                    caseSensitive: false
+                }
+            }
         });
+        expect(sentPayload.payload.rootPath).toContain('root'); // Normalized path check
 
-        // Access private method
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const results = await (service as any).searchInFiles('Hello', '/root', { caseSensitive: false, regex: false });
+        const id = sentPayload.id;
+        const mockResults = [{
+            file: '/root/test.ts',
+            line: 1,
+            text: 'match',
+            matchIndex: 0
+        }];
 
-        expect(results).toHaveLength(2);
-        const file1Result = results.find((r: { file: string }) => r.file.includes('file1.txt'));
-        const file2Result = results.find((r: { file: string }) => r.file.includes('file2.ts'));
+        // Simulate worker response
+        // Worker sends { id, results } for search success
+        if (workerCallbacks['message']) {
+            workerCallbacks['message']({
+                id,
+                results: mockResults
+            });
+        }
 
-        expect(file1Result).toBeDefined();
-        expect(file1Result).toMatchObject({ line: 1, text: 'Hello World' });
-
-        expect(file2Result).toBeDefined();
-        expect(file2Result).toMatchObject({ line: 1, text: 'console.log("Hello JS");' });
+        const results = await searchPromise;
+        expect(results).toEqual(mockResults);
     });
 
-    it('should support case sensitive search', async () => {
-        const mockReaddir = fs.promises.readdir as unknown as ReturnType<typeof vi.fn>;
-        const mockReadFile = fs.promises.readFile as unknown as ReturnType<typeof vi.fn>;
+    it('should handle worker errors', async () => {
+        const calls = (ipcMain.handle as any).mock.calls;
+        const searchHandler = calls.find((call: any[]) => call[0] === 'workspace:search')[1];
 
-        mockReaddir.mockResolvedValue([
-            { name: 'file1.txt', isFile: () => true, isDirectory: () => false },
-        ]);
+        const searchPromise = searchHandler({}, 'query', '/root', {});
 
-        mockReadFile.mockResolvedValue('hello world\nHello World');
+        // Get the ID
+        const sentPayload = (mockWorker.postMessage as any).mock.calls[0][0];
+        const id = sentPayload.id;
 
-        // Case Sensitive: "Hello" should only match line 2
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const results = await (service as any).searchInFiles('Hello', '/root', { caseSensitive: true, regex: false });
+        // Simulate worker error
+        if (workerCallbacks['message']) {
+            workerCallbacks['message']({
+                id,
+                error: 'Worker crashed'
+            });
+        }
 
-        expect(results).toHaveLength(1);
-        expect(results[0]).toMatchObject({ line: 2, text: 'Hello World' });
-    });
-
-    it('should support regex search', async () => {
-        const mockReaddir = fs.promises.readdir as unknown as ReturnType<typeof vi.fn>;
-        const mockReadFile = fs.promises.readFile as unknown as ReturnType<typeof vi.fn>;
-
-        mockReaddir.mockResolvedValue([
-            { name: 'file1.txt', isFile: () => true, isDirectory: () => false },
-        ]);
-
-        mockReadFile.mockResolvedValue('user123\nadmin');
-
-        // Regex: "user\d+"
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const results = await (service as any).searchInFiles('user\\d+', '/root', { caseSensitive: false, regex: true });
-
-        expect(results).toHaveLength(1);
-        expect(results[0]).toMatchObject({ line: 1, text: 'user123' });
+        await expect(searchPromise).rejects.toThrow('Worker crashed');
     });
 });
