@@ -179,7 +179,7 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
 
                 window.electron.onExecutionStarted(() => {
-                    set({ executionErrors: new Map(), isExecuting: true });
+                    set({ executionResults: new Map(), executionErrors: new Map(), isExecuting: true });
                 });
 
                 window.electron.onExecutionDone(() => {
