@@ -34,6 +34,10 @@ describe('Quokka-like Execution Flow', () => {
             executionStart: mockExecutionStart,
             onExecutionLog: mockOnExecutionLog,
             onExecutionError: mockOnExecutionError,
+            onExecutionStarted: vi.fn(),
+            onExecutionDone: vi.fn(),
+            onExecutionClear: vi.fn(),
+            onSystemStats: vi.fn(),
             checkExists: vi.fn(),
             discoverPlugins: vi.fn(),
         };

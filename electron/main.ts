@@ -406,13 +406,16 @@ ipcMain.handle('execution:check-availability', async () => {
 });
 
 // MCP Sync State Handler
+let stateSyncPromise = Promise.resolve();
 ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
     const statePath = path.join(app.getAppPath(), 'state.json');
-    try {
-        fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
-    } catch (err) {
-        console.error('Failed to sync state to file', err);
-    }
+    stateSyncPromise = stateSyncPromise.then(async () => {
+        try {
+            await fs.promises.writeFile(statePath, JSON.stringify(state, null, 2), 'utf-8');
+        } catch (err) {
+            console.error('Failed to sync state to file', err);
+        }
+    });
 });
 
 
