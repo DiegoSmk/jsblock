@@ -204,6 +204,24 @@ ipcMain.handle('ensure-project-config', async (_event, folderPath: string) => {
     }
 });
 
+ipcMain.handle('check-paths-exists', async (_event, paths: string[]) => {
+    try {
+        const results: Record<string, boolean> = {};
+        await Promise.all(paths.map(async (pathToCheck) => {
+            try {
+                await fs.promises.access(pathToCheck);
+                results[pathToCheck] = true;
+            } catch {
+                results[pathToCheck] = false;
+            }
+        }));
+        return results;
+    } catch (err) {
+        console.error('Error checking paths existence:', err);
+        return {};
+    }
+});
+
 // IPC Handlers for File System
 ipcMain.handle('select-folder', async () => {
     const win = BrowserWindow.getFocusedWindow() ?? mainWindow;

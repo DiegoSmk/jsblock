@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useStore } from './useStore';
+import { resetListeners } from '../features/execution/store/executionSlice';
 
 import type { ExecutionPayload } from '../types/electron';
 
@@ -7,8 +8,10 @@ describe('Quokka-like Execution Flow', () => {
     let mockExecutionStart: ReturnType<typeof vi.fn>;
     let mockOnExecutionLog: ReturnType<typeof vi.fn>;
     let mockOnExecutionError: ReturnType<typeof vi.fn>;
+    let mockOnExecutionClear: ReturnType<typeof vi.fn>;
     let logCallback: (data: ExecutionPayload) => void;
     let errorCallback: (data: string | { line: number; message: string }) => void;
+    let clearCallback: () => void;
 
     beforeEach(() => {
         // Reset store
@@ -29,6 +32,10 @@ describe('Quokka-like Execution Flow', () => {
             errorCallback = cb;
             return () => { /* cleanup */ };
         });
+        mockOnExecutionClear = vi.fn((cb: () => void) => {
+            clearCallback = cb;
+            return () => { /* cleanup */ };
+        });
 
         const mockApi = {
             executionStart: mockExecutionStart,
@@ -36,6 +43,11 @@ describe('Quokka-like Execution Flow', () => {
             onExecutionError: mockOnExecutionError,
             checkExists: vi.fn(),
             discoverPlugins: vi.fn(),
+            onExecutionStarted: vi.fn(),
+            onExecutionDone: vi.fn(),
+            onExecutionClear: mockOnExecutionClear,
+            onSystemStats: vi.fn(),
+            checkPathsExists: vi.fn(),
         };
 
         // @ts-expect-error - Mocking global window property
@@ -44,6 +56,7 @@ describe('Quokka-like Execution Flow', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+        resetListeners();
         // @ts-expect-error - Cleaning up mock
         delete window.electron;
     });
@@ -54,7 +67,7 @@ describe('Quokka-like Execution Flow', () => {
         expect(mockExecutionStart).toHaveBeenCalledWith('const a = 10;', undefined);
     });
 
-    it('should update executionResults when receiving execution:value messages', () => {
+    it('should update executionResults when receiving execution:value messages', async () => {
         const { runExecution } = useStore.getState();
         runExecution('const a = 10;');
 
@@ -67,12 +80,14 @@ describe('Quokka-like Execution Flow', () => {
         expect(logCallback).toBeDefined();
         logCallback(message);
 
-        const results = useStore.getState().executionResults;
-        expect(results.has(1)).toBe(true);
-        expect(results.get(1)).toEqual([{ value: '10', type: 'spy' }]);
+        await vi.waitFor(() => {
+            const results = useStore.getState().executionResults;
+            expect(results.has(1)).toBe(true);
+            expect(results.get(1)).toEqual([{ value: '10', type: 'spy' }]);
+        });
     });
 
-    it('should update executionErrors when receiving execution:error messages', () => {
+    it('should update executionErrors when receiving execution:error messages', async () => {
         const { runExecution } = useStore.getState();
         runExecution('const a = 10;');
 
@@ -85,30 +100,46 @@ describe('Quokka-like Execution Flow', () => {
         expect(errorCallback).toBeDefined();
         errorCallback(error);
 
-        const errors = useStore.getState().executionErrors;
-        expect(errors.has(5)).toBe(true);
-        expect(errors.get(5)).toEqual('Something went wrong');
+        await vi.waitFor(() => {
+            const errors = useStore.getState().executionErrors;
+            expect(errors.has(5)).toBe(true);
+        expect(errors.get(5)).toEqual({
+            message: 'Something went wrong',
+            line: 5,
+            column: 10
+        });
+        });
     });
 
-    it('should accumulate multiple values for the same line', () => {
+    it('should accumulate multiple values for the same line', async () => {
         const { runExecution } = useStore.getState();
         runExecution('const a = 10;');
 
         logCallback({ type: 'execution:value', line: 2, value: '0' });
         logCallback({ type: 'execution:value', line: 2, value: '1' });
 
-        const results = useStore.getState().executionResults;
-        expect(results.get(2)).toEqual([{ value: '0', type: 'spy' }, { value: '1', type: 'spy' }]);
+        await vi.waitFor(() => {
+            const results = useStore.getState().executionResults;
+            expect(results.get(2)).toEqual([{ value: '0', type: 'spy' }, { value: '1', type: 'spy' }]);
+        });
     });
 
-    it('should clear previous results on new execution', () => {
+    it('should clear previous results on new execution', async () => {
         const { runExecution } = useStore.getState();
 
         runExecution('const a = 10;');
         logCallback({ type: 'execution:value', line: 1, value: 'old' });
-        expect(useStore.getState().executionResults.get(1)).toEqual([{ value: 'old', type: 'spy' }]);
 
-        runExecution('const a = 10;');
+        await vi.waitFor(() => {
+            expect(useStore.getState().executionResults.get(1)).toEqual([{ value: 'old', type: 'spy' }]);
+        });
+
+        runExecution('const a = 20;');
+
+        // Simulate backend clear event
+        expect(clearCallback).toBeDefined();
+        clearCallback();
+
         expect(useStore.getState().executionResults.size).toBe(0);
         expect(useStore.getState().executionErrors.size).toBe(0);
     });

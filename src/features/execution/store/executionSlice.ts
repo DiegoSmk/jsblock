@@ -22,6 +22,13 @@ let buffer: {
 let rafId: number | null = null;
 let hasPendingUpdates = false;
 
+// Export for testing
+export const resetListeners = () => {
+    listenersInitialized = false;
+    buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
+    lastExecutedCode = '';
+};
+
 export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => ({
     executionResults: new Map(),
     executionErrors: new Map(),
