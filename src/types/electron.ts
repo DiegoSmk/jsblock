@@ -55,6 +55,7 @@ export interface ElectronAPI {
     delete: (path: string) => Promise<boolean>;
     move: (source: string, target: string) => Promise<boolean>; // ensure target includes filename if needed, or update consumers
     checkExists: (path: string) => Promise<boolean>;
+    checkPathsExists: (paths: string[]) => Promise<Record<string, boolean>>;
     getStats: (path: string) => Promise<{ size: number; mtime: number; isDirectory: boolean }>;
     ensureProjectConfig: (path: string) => Promise<void>;
   };

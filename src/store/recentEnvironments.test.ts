@@ -1,0 +1,68 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useStore } from './useStore';
+
+// Mock window.electron
+const checkExistsMock = vi.fn();
+const checkPathsExistsMock = vi.fn();
+
+const mockElectron = {
+    fileSystem: {
+        checkExists: checkExistsMock,
+        checkPathsExists: checkPathsExistsMock,
+    },
+};
+
+describe('validateRecents Performance', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+        // @ts-ignore
+        window.electron = mockElectron;
+        useStore.setState({
+            recentEnvironments: [
+                { path: '/path/to/repo1', lastOpened: Date.now() },
+                { path: '/path/to/repo2', lastOpened: Date.now() },
+                { path: '/path/to/repo3', lastOpened: Date.now() },
+            ],
+        });
+    });
+
+    afterEach(() => {
+        // @ts-ignore
+        delete window.electron;
+    });
+
+    it('should call checkPathsExists ONCE (Bulk check)', async () => {
+        // Setup mock to return true for all paths
+        checkPathsExistsMock.mockResolvedValue({
+            '/path/to/repo1': true,
+            '/path/to/repo2': true,
+            '/path/to/repo3': true,
+        });
+
+        await useStore.getState().validateRecents();
+
+        expect(checkPathsExistsMock).toHaveBeenCalledTimes(1);
+        expect(checkExistsMock).not.toHaveBeenCalled();
+
+        // Ensure state is maintained
+        const state = useStore.getState();
+        expect(state.recentEnvironments).toHaveLength(3);
+    });
+
+    it('should filter out non-existent paths', async () => {
+        // Setup mock to return false for one path
+        checkPathsExistsMock.mockResolvedValue({
+            '/path/to/repo1': true,
+            '/path/to/repo2': false,
+            '/path/to/repo3': true,
+        });
+
+        await useStore.getState().validateRecents();
+
+        expect(checkPathsExistsMock).toHaveBeenCalledTimes(1);
+
+        const state = useStore.getState();
+        expect(state.recentEnvironments).toHaveLength(2);
+        expect(state.recentEnvironments.map(r => r.path)).toEqual(['/path/to/repo1', '/path/to/repo3']);
+    });
+});
