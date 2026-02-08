@@ -303,8 +303,6 @@ ipcMain.handle('read-multiple-files', async (_event, filePaths: string[]) => {
                 results[filePath] = content;
             } catch (err) {
                 console.error(`Error reading file ${filePath} in bulk:`, err);
-                // We choose to omit failed files from the result or return empty string
-                // returning empty string to avoid breaking the loop on frontend if strict
                 results[filePath] = '';
             }
         }));
