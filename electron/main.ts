@@ -11,7 +11,7 @@ import os from 'os';
 import { PluginManager } from './services/PluginManager';
 import { ExecutionManager } from './services/ExecutionManager';
 import { WorkspaceService } from './services/WorkspaceService';
-import { windowManager } from './services/WindowManager';
+import { windowManager, WindowType, WindowOptions } from './services/WindowManager';
 
 const execFileAsync = promisify(execFile);
 // const execAsync = promisify(exec); // unused
@@ -36,7 +36,7 @@ let logToFile: (msg: string) => void = () => { };
 let logStream: fs.WriteStream | null = null;
 
 function setupLogging() {
-    const logPath = path.join(app.getAppPath(), 'app.log');
+    const logPath = path.join(app.getPath('userData'), 'app.log');
     // Create write stream with append flag
     logStream = fs.createWriteStream(logPath, { flags: 'a' });
 
@@ -510,7 +510,7 @@ ipcMain.handle('window:toggle-always-on-top', (event) => {
     return false;
 });
 
-ipcMain.handle('window:open', (_event, type: any, options: any) => {
+ipcMain.handle('window:open', (_event, type: WindowType, options: WindowOptions) => {
     return windowManager.openWindow(type, options);
 });
 

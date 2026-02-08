@@ -13,7 +13,7 @@ export function parseGitDiff(diffOutput: string): DiffRange[] {
     for (const line of lines) {
         if (line.startsWith('@@')) {
             // @@ -old_start,old_count +new_start,new_count @@
-            const match = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+            const match = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
             if (match) {
                 const oldStart = parseInt(match[1], 10);
                 const oldCount = match[2] ? parseInt(match[2], 10) : 1;

@@ -53,7 +53,7 @@ export const GitStatusList: React.FC<GitStatusListProps> = ({
                     )}
 
                     <span
-                        onClick={() => onSelectDiff && onSelectDiff(f.path)}
+                        onClick={() => onSelectDiff?.(f.path)}
                         style={{ cursor: 'pointer', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         title={f.path}
                     >

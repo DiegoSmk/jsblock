@@ -41,8 +41,8 @@ export interface ElectronAPI {
   windowClose: () => void;
   windowToggleAlwaysOnTop: () => Promise<boolean>;
   appReady: () => void;
-  openWindow: (type: string, options?: { width?: number; height?: number; title?: string; alwaysOnTop?: boolean; payload?: any; singleton?: boolean }) => Promise<string>;
-  on: (channel: string, callback: (...args: any[]) => void) => () => void;
+  openWindow: (type: string, options?: { width?: number; height?: number; title?: string; alwaysOnTop?: boolean; payload?: unknown; singleton?: boolean }) => Promise<string>;
+  on: (channel: string, callback: (...args: unknown[]) => void) => () => void;
 
   // File System API (Unified)
   fileSystem: {
@@ -92,9 +92,9 @@ export interface ElectronAPI {
   mcpSyncState: (state: unknown) => void;
 
   workspace: {
-    openFolder: () => Promise<{ path: string; tree: any[] } | null>;
-    getTree: (path: string) => Promise<any[]>;
-    onUpdated: (callback: (data: { event: string; path: string; tree: any[] }) => void) => () => void;
+    openFolder: () => Promise<{ path: string; tree: FileNode[] } | null>;
+    getTree: (path: string) => Promise<FileNode[]>;
+    onUpdated: (callback: (data: { event: string; path: string; tree: FileNode[] }) => void) => () => void;
     search: (query: string, rootPath: string, options: SearchOptions) => Promise<SearchResult[]>;
     replace: (query: string, replacement: string, rootPath: string, options: SearchOptions) => Promise<void>;
   };
@@ -102,7 +102,9 @@ export interface ElectronAPI {
 
 import type { PluginManifest } from '../features/extensions/types';
 import type { BenchmarkResult } from '../features/execution/types';
+import type { FileNode } from '../features/workspace/types';
 export type { BenchmarkResult };
+export type { FileNode };
 
 declare global {
   interface Window {

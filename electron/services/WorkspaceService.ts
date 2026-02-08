@@ -17,7 +17,9 @@ export class WorkspaceService {
     private currentRoot: string | null = null;
     private mainWindow: BrowserWindow | null = null;
     private worker: UtilityProcess | null = null;
-    private pendingRequests = new Map<string, { resolve: (val: any) => void, reject: (err: any) => void }>();
+    private pendingRequests = new Map<string, { resolve: (val: unknown) => void, reject: (err: Error) => void }>();
+
+    private cachedTree: FileNode[] = [];
 
     constructor() { }
 
@@ -33,7 +35,7 @@ export class WorkspaceService {
             stdio: 'inherit'
         });
 
-        this.worker.on('message', (msg: any) => {
+        this.worker.on('message', (msg: { id: string; results?: unknown; success?: boolean; error?: string }) => {
             const { id, results, success, error } = msg;
             const request = this.pendingRequests.get(id);
             if (request) {
@@ -58,7 +60,7 @@ export class WorkspaceService {
         return this.worker;
     }
 
-    private sendToWorker(type: string, payload: any): Promise<any> {
+    private sendToWorker(type: string, payload: unknown): Promise<unknown> {
         return new Promise((resolve, reject) => {
             const id = Math.random().toString(36).substring(7);
             this.pendingRequests.set(id, { resolve, reject });
@@ -79,15 +81,18 @@ export class WorkspaceService {
             }
 
             const folderPath = PathUtils.normalize(result.filePaths[0]);
+            this.cachedTree = await this.getFileTree(folderPath); // Full scan once
             await this.setupWatcher(folderPath);
             return {
                 path: folderPath,
-                tree: await this.getFileTree(folderPath)
+                tree: this.cachedTree
             };
         });
 
         ipcMain.handle('workspace:get-tree', async (_event, folderPath: string) => {
-            return await this.getFileTree(PathUtils.normalize(folderPath));
+            const normalizedPath = PathUtils.normalize(folderPath);
+            if (normalizedPath === this.currentRoot) return this.cachedTree;
+            return await this.getFileTree(normalizedPath);
         });
 
         ipcMain.handle('workspace:search', async (_event, query: string, rootPath: string, options: SearchOptions) => {
@@ -114,20 +119,51 @@ export class WorkspaceService {
 
         // Use a simple debounce for watcher events to avoid spamming tree updates
         let updateTimeout: NodeJS.Timeout | null = null;
-        this.watcher.on('all', (event: string, filePath: string) => {
+        this.watcher.on('all', async (event: string, filePath: string) => {
+            const normalizedFilePath = PathUtils.normalize(filePath);
+            const parentDir = path.dirname(normalizedFilePath);
+
+            // Fast path: partially update the tree
+            if (event === 'add' || event === 'addDir' || event === 'unlink' || event === 'unlinkDir') {
+                // Re-scan only the parent directory
+                const parentNodes = await this.getFileTree(parentDir);
+                this.updateTreeCacheAt(parentDir, parentNodes);
+            }
+
             if (updateTimeout) clearTimeout(updateTimeout);
 
             updateTimeout = setTimeout(async () => {
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
-                    const tree = await this.getFileTree(this.currentRoot!);
                     this.mainWindow.webContents.send('workspace:updated', {
                         event,
-                        path: PathUtils.normalize(filePath),
-                        tree
+                        path: normalizedFilePath,
+                        tree: this.cachedTree
                     });
                 }
             }, 300); // 300ms debounce
         });
+    }
+
+    private updateTreeCacheAt(targetPath: string, newNodes: FileNode[]) {
+        if (targetPath === this.currentRoot) {
+            this.cachedTree = newNodes;
+            return;
+        }
+
+        const updateRecursive = (nodes: FileNode[]): boolean => {
+            for (let i = 0; i < nodes.length; i++) {
+                if (nodes[i].path === targetPath) {
+                    nodes[i].children = newNodes;
+                    return true;
+                }
+                if (nodes[i].children && updateRecursive(nodes[i].children!)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        updateRecursive(this.cachedTree);
     }
 
     private async getFileTree(folderPath: string): Promise<FileNode[]> {

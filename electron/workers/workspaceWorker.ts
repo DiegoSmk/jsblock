@@ -22,24 +22,61 @@ const MAX_SEARCH_RESULTS = 2000;
 const MAX_FILE_SIZE_FOR_SEARCH = 1024 * 1024; // 1MB
 
 class WorkspaceWorker {
+    private currentActionId: string | null = null;
+    private isCancelled = false;
+
     constructor() {
         this.setupListeners();
     }
 
     private setupListeners() {
-        process.on('message', async (msg: any) => {
+        process.on('message', async (msg: { id: string; type: string; payload?: any }) => {
             const { id, type, payload } = msg;
 
+            if (type === 'cancel') {
+                if (this.currentActionId === payload?.id) {
+                    this.isCancelled = true;
+                }
+                return;
+            }
+
+            // Start new action
+            this.currentActionId = id;
+            this.isCancelled = false;
+
             try {
+                // Global timeout of 30 seconds for any operation
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Operation timed out after 30s')), 30000);
+                });
+
+                let operationPromise: Promise<unknown>;
+
                 if (type === 'search') {
-                    const results = await this.searchInFiles(payload.query, payload.rootPath, payload.options);
-                    this.sendToMain(id, { results });
+                    operationPromise = this.searchInFiles(payload.query, payload.rootPath, payload.options);
                 } else if (type === 'replace') {
-                    await this.replaceInFiles(payload.query, payload.replacement, payload.rootPath, payload.options);
-                    this.sendToMain(id, { success: true });
+                    operationPromise = this.replaceInFiles(payload.query, payload.replacement, payload.rootPath, payload.options);
+                } else {
+                    throw new Error(`Unknown operation type: ${type}`);
+                }
+
+                const result = await Promise.race([operationPromise, timeoutPromise]);
+
+                if (this.isCancelled) {
+                    this.sendToMain(id, { error: 'Operation cancelled' });
+                } else {
+                    if (type === 'search') {
+                        this.sendToMain(id, { results: result });
+                    } else {
+                        this.sendToMain(id, { success: true });
+                    }
                 }
             } catch (error: any) {
                 this.sendToMain(id, { error: error.message || String(error) });
+            } finally {
+                if (this.currentActionId === id) {
+                    this.currentActionId = null;
+                }
             }
         });
     }
@@ -68,7 +105,7 @@ class WorkspaceWorker {
                 const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
 
                 for (const entry of entries) {
-                    if (results.length >= MAX_SEARCH_RESULTS) break;
+                    if (this.isCancelled || results.length >= MAX_SEARCH_RESULTS) break;
 
                     const fullPath = path.join(currentPath, entry.name);
 
@@ -124,6 +161,7 @@ class WorkspaceWorker {
                 const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
 
                 for (const entry of entries) {
+                    if (this.isCancelled) break;
                     const fullPath = path.join(currentPath, entry.name);
 
                     if (entry.name === 'node_modules' || entry.name === '.git' || entry.name.startsWith('.')) {

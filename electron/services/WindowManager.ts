@@ -9,13 +9,13 @@ export interface WindowOptions {
     height?: number;
     title?: string;
     alwaysOnTop?: boolean;
-    payload?: any;
+    payload?: unknown;
     singleton?: boolean;
 }
 
 export class WindowManager {
-    private windows: Map<string, BrowserWindow> = new Map();
-    private singletonWindows: Map<WindowType, string> = new Map();
+    private windows = new Map<string, BrowserWindow>();
+    private singletonWindows = new Map<WindowType, string>();
     private mainWindow: BrowserWindow | null = null;
     private windowStates: Record<string, { x: number, y: number, width: number, height: number }> = {};
     private readonly statesFilePath: string;
@@ -96,7 +96,7 @@ export class WindowManager {
 
         if (app.isPackaged) {
             void win.loadFile(path.join(__dirname, '../index.html'), {
-                hash: `/?${queryParams}`
+                query: Object.fromEntries(new URLSearchParams(queryParams))
             });
         } else {
             const tryLoad = async (port: number) => {

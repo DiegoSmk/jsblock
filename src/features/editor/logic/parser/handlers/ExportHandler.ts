@@ -7,7 +7,7 @@ export const ExportHandler: ParserHandler = {
         const index = idSuffix && !isNaN(parseInt(idSuffix)) ? parseInt(idSuffix) : undefined;
 
         if (node.type === 'ExportNamedDeclaration') {
-            const stmt = node as ExportNamedDeclaration;
+            const stmt = node;
             if (stmt.declaration && ctx.parseStatement) {
                 ctx.isExporting = true;
                 const result = ctx.parseStatement(stmt.declaration, parentId, handleName, index);
@@ -17,7 +17,7 @@ export const ExportHandler: ParserHandler = {
         }
 
         if (node.type === 'ExportDefaultDeclaration') {
-            const stmt = node as ExportDefaultDeclaration;
+            const stmt = node;
             if (stmt.declaration && ctx.parseStatement) {
                 ctx.isExportingDefault = true;
                 const result = ctx.parseStatement(stmt.declaration, parentId, handleName, index);

@@ -51,7 +51,6 @@ import { ExtensionLandingPage } from './features/extensions/ExtensionLandingPage
 import { CommandPalette } from './components/ui/CommandPalette';
 import { CommitDetailModal } from './features/git/components/CommitDetailModal';
 import { FlowContent } from './features/editor/components/FlowContent';
-import { GitDiffEditor } from './features/git/components/GitDiffEditor';
 import { AppHeader } from './layout/AppHeader';
 import { AppFooter } from './layout/AppFooter';
 import { BenchmarkPanel } from './features/execution/components/BenchmarkPanel';
@@ -138,23 +137,6 @@ function App() {
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
-
-  // If in windowed mode, we only render the specific component requested
-  if (isWindowed) {
-    return (
-      <div style={{
-        background: 'none',
-        backgroundColor: 'transparent',
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        margin: 0,
-        padding: 0
-      }}>
-        <WindowOutlet />
-      </div>
-    );
-  }
 
   useEffect(() => {
     const { setSidebarTab, saveFile, layout, toggleSidebar } = useStore.getState();
@@ -274,6 +256,23 @@ function App() {
   // Styles moved to src/index.css for reliability
 
   const showAppBorder = settings.showAppBorder;
+
+  // If in windowed mode, we only render the specific component requested
+  if (isWindowed) {
+    return (
+      <div style={{
+        background: 'none',
+        backgroundColor: 'transparent',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        margin: 0,
+        padding: 0
+      }}>
+        <WindowOutlet />
+      </div>
+    );
+  }
 
   return (
     <div style={{

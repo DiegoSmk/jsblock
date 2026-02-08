@@ -6,40 +6,49 @@ import { useStore } from '../store/useStore';
 import { X, Move, Pin, PinOff } from 'lucide-react';
 
 export const WindowOutlet: React.FC = () => {
-    const params = useMemo(() => new URLSearchParams(window.location.search), []);
+    const params = useMemo(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.has('mode')) return searchParams;
+
+        // Fallback to hash if search is empty (common in some Electron packaged modes)
+        const hash = window.location.hash;
+        if (hash.includes('?')) {
+            return new URLSearchParams(hash.split('?')[1]);
+        }
+        return searchParams;
+    }, []);
     const type = params.get('type');
     const theme = useStore(state => state.theme);
     const isDark = theme === 'dark';
     const settings = useStore(state => state.settings);
     const { setWorkspaceRoot, closeGitDiffFile } = useStore();
     const [isPinned, setIsPinned] = useState(settings.windowAlwaysOnTop);
-    const [dynamicTitle, setDynamicTitle] = useState<string | null>(null);
+    const [dynamicTitle, setDynamicTitle] = useState<string | null>(() => {
+        const payloadStr = params.get('payload');
+        if (payloadStr) {
+            try {
+                const p = JSON.parse(payloadStr);
+                if (type === 'git-diff' && p?.filePath) {
+                    const fileName = p.filePath.split(/[\\/]/).pop();
+                    return `GIT-DIFF: ${fileName}`;
+                }
+            } catch (e) { /* ignore */ }
+        }
+        return null;
+    });
 
     // Listen for title updates (Diff file changes)
     useEffect(() => {
         if (!window.electron?.on) return;
-        const unsubscribe = window.electron.on('window-update-payload', (payload: any) => {
-            if (payload?.filePath) {
-                const fileName = payload.filePath.split(/[\\/]/).pop();
+        const unsubscribe = window.electron.on('window-update-payload', (payload: unknown) => {
+            const p = payload as { filePath?: string };
+            if (p?.filePath) {
+                const fileName = p.filePath.split(/[\\/]/).pop();
                 setDynamicTitle(`GIT-DIFF: ${fileName}`);
             }
         });
         return () => unsubscribe();
     }, []);
-
-    // Set initial title from payload if available
-    useEffect(() => {
-        const payloadStr = params.get('payload');
-        if (payloadStr) {
-            try {
-                const p = JSON.parse(payloadStr);
-                if (type === 'git-diff' && p.filePath) {
-                    const fileName = p.filePath.split(/[\\/]/).pop();
-                    setDynamicTitle(`GIT-DIFF: ${fileName}`);
-                }
-            } catch (e) { /* ignore */ }
-        }
-    }, [params, type]);
 
     // Parse payload from URL
     const payload = useMemo(() => {
@@ -137,9 +146,10 @@ export const WindowOutlet: React.FC = () => {
                 return <GitTerminalView />;
             case 'search':
                 return <SearchPanel />;
-            case 'git-diff':
+            case 'git-diff': {
                 const diffPayload = payload as { filePath?: string, openedFolder?: string };
                 return <GitDiffEditor filePath={diffPayload?.filePath} openedFolder={diffPayload?.openedFolder} />;
+            }
             case 'execution':
             default:
                 return (
@@ -191,7 +201,7 @@ export const WindowOutlet: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '0 12px',
-                ...({ WebkitAppRegion: 'drag' } as any),
+                ...({ WebkitAppRegion: 'drag' } as React.CSSProperties),
                 borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(0, 0, 0, 0.1)',
                 borderTopLeftRadius: '12px',
                 borderTopRightRadius: '12px'
@@ -199,16 +209,16 @@ export const WindowOutlet: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isDark ? '#94a3b8' : '#64748b' }}>
                     <Move size={14} />
                     <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {dynamicTitle || `${type || 'Pop-out'} Window`}
+                        {dynamicTitle ?? `${type ?? 'Pop-out'} Window`}
                     </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <button
-                        onClick={handleTogglePin}
+                        onClick={() => void handleTogglePin()}
                         title={isPinned ? "Desafixar janela" : "Fixar no topo"}
                         style={{
-                            ...({ WebkitAppRegion: 'no-drag' } as any),
+                            ...({ WebkitAppRegion: 'no-drag' } as React.CSSProperties),
                             background: isPinned ? (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)') : 'transparent',
                             border: 'none',
                             cursor: 'pointer',

@@ -38,6 +38,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
 }) => {
     const { t } = useTranslation();
     const [isTreeView, setIsTreeView] = useState(false);
+    const selectedDiffFile = useStore(state => state.git.selectedDiffFile);
 
     const untrackedCount = unstaged.filter(f => f.status === 'untracked' || f.workingTree === '?').length;
 
@@ -108,7 +109,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     files={staged}
                     onUnstage={(path) => { void gitUnstage(path); }}
                     onSelectDiff={onSelectDiff}
-                    selectedPath={useStore(state => state.git.selectedDiffFile)}
+                    selectedPath={selectedDiffFile}
                     isDark={isDark}
                 />
             ) : (
@@ -117,7 +118,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     type="staged"
                     onUnstage={(path) => void gitUnstage(path)}
                     onSelectDiff={onSelectDiff}
-                    selectedPath={useStore(state => state.git.selectedDiffFile)}
+                    selectedPath={selectedDiffFile}
                 />
             )}
 
@@ -163,7 +164,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     onStage={(path) => { void gitStage(path); }}
                     onDiscard={(path) => { void gitDiscard(path); }}
                     onSelectDiff={onSelectDiff}
-                    selectedPath={useStore(state => state.git.selectedDiffFile)}
+                    selectedPath={selectedDiffFile}
                     isDark={isDark}
                 />
             ) : (
@@ -174,7 +175,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     onDiscard={(path) => void gitDiscard(path)}
                     onIgnore={handleIgnore}
                     onSelectDiff={onSelectDiff}
-                    selectedPath={useStore(state => state.git.selectedDiffFile)}
+                    selectedPath={selectedDiffFile}
                 />
             )}
         </ScrollArea>
