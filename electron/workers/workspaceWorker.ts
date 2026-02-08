@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { createSearchPattern } from '../utils/SearchUtils';
-import { SearchOptions } from '../types';
+import { SearchOptions } from '../shared/ipc-types';
 
 /**
  * Workspace Worker
@@ -28,11 +28,15 @@ class WorkspaceWorker {
     }
 
     private setupListeners() {
-        process.on('message', async (msg: { id: string; type: string; payload?: any }) => {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        process.on('message', async (msg: { id: string; type: string; payload?: unknown }) => {
             const { id, type, payload } = msg;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+            const data = payload as any;
 
             if (type === 'cancel') {
-                if (this.currentActionId === payload?.id) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                if (this.currentActionId === data?.id) {
                     this.isCancelled = true;
                 }
                 return;
@@ -51,9 +55,11 @@ class WorkspaceWorker {
                 let operationPromise: Promise<unknown>;
 
                 if (type === 'search') {
-                    operationPromise = this.searchInFiles(payload.query, payload.rootPath, payload.options);
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+                    operationPromise = this.searchInFiles(data.query, data.rootPath, data.options);
                 } else if (type === 'replace') {
-                    operationPromise = this.replaceInFiles(payload.query, payload.replacement, payload.rootPath, payload.options);
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+                    operationPromise = this.replaceInFiles(data.query, data.replacement, data.rootPath, data.options);
                 } else {
                     throw new Error(`Unknown operation type: ${type}`);
                 }
@@ -69,8 +75,9 @@ class WorkspaceWorker {
                         this.sendToMain(id, { success: true });
                     }
                 }
-            } catch (error: any) {
-                this.sendToMain(id, { error: error.message || String(error) });
+            } catch (error: unknown) {
+                const message = error instanceof Error ? error.message : String(error);
+                this.sendToMain(id, { error: message });
             } finally {
                 if (this.currentActionId === id) {
                     this.currentActionId = null;
@@ -129,10 +136,10 @@ class WorkspaceWorker {
                                     });
                                 }
                             });
-                        } catch (err) { /* ignore */ }
+                        } catch { /* ignore */ }
                     }
                 }
-            } catch (err) { /* ignore */ }
+            } catch { /* ignore */ }
         };
 
         await traverse(rootPath, 0);
@@ -176,17 +183,17 @@ class WorkspaceWorker {
                                 const newContent = content.replace(pattern, replacement);
                                 await fs.promises.writeFile(fullPath, newContent, 'utf-8');
                             }
-                        } catch (err) { /* ignore */ }
+                        } catch { /* ignore */ }
                     }
                 }
-            } catch (err) { /* ignore */ }
+            } catch { /* ignore */ }
         };
 
         await traverse(rootPath, 0);
     }
 
-    private sendToMain(id: string, payload: any) {
-        if (process.send) {
+    private sendToMain(id: string, payload: unknown) {
+        if (process.send && typeof payload === 'object' && payload !== null) {
             process.send({ id, ...payload });
         }
     }

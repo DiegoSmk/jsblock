@@ -65,7 +65,7 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: data.nestedCall ? '12px' : '0', position: 'relative' }}>
                             <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '1.1rem', color: '#f472b6' }}>
                                 {data.nestedCall ? `${data.nestedCall.name}()` : 'Calculation'}
-                                <Tooltip content={data.typeAnnotation || 'Input'} side="top">
+                                <Tooltip content={data.typeAnnotation ?? 'Input'} side="top">
                                     <Handle
                                         type="target"
                                         position={Position.Top}
@@ -170,7 +170,7 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
                 )}
             </div>
 
-            <Tooltip content={data.typeAnnotation || 'Output'} side="right">
+            <Tooltip content={data.typeAnnotation ?? 'Output'} side="right">
                 <Handle
                     type="source"
                     position={Position.Right}

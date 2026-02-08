@@ -2,7 +2,7 @@ import { ipcMain, dialog, BrowserWindow, utilityProcess, UtilityProcess } from '
 import * as fs from 'fs';
 import * as path from 'path';
 import * as chokidar from 'chokidar';
-import { SearchOptions, SearchResult, FileNode } from '../shared/ipc-types';
+import { SearchOptions, FileNode } from '../shared/ipc-types';
 import { PathUtils } from '../utils/PathUtils';
 
 export class WorkspaceService {
@@ -14,6 +14,7 @@ export class WorkspaceService {
 
     private cachedTree: FileNode[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     constructor() { }
 
     setMainWindow(window: BrowserWindow) {
@@ -91,13 +92,13 @@ export class WorkspaceService {
         ipcMain.handle('workspace:search', async (_event, query: string, rootPath: string, options: SearchOptions) => {
             // Cancel current action if any
             this.ensureWorker().postMessage({ type: 'cancel' });
-            return await this.sendToWorker('search', { query, rootPath: PathUtils.normalize(rootPath), options });
+            return this.sendToWorker('search', { query, rootPath: PathUtils.normalize(rootPath), options });
         });
 
         ipcMain.handle('workspace:replace', async (_event, query: string, replacement: string, rootPath: string, options: SearchOptions) => {
             // Cancel current action if any
             this.ensureWorker().postMessage({ type: 'cancel' });
-            return await this.sendToWorker('replace', { query, replacement, rootPath: PathUtils.normalize(rootPath), options });
+            return this.sendToWorker('replace', { query, replacement, rootPath: PathUtils.normalize(rootPath), options });
         });
     }
 
@@ -108,7 +109,7 @@ export class WorkspaceService {
 
         this.currentRoot = folderPath;
         this.watcher = chokidar.watch(folderPath, {
-            ignored: [/(^|[\/\\])\../, '**/node_modules/**', '**/.git/**'],
+            ignored: [/(^|[/\\])\../, '**/node_modules/**', '**/.git/**'],
             persistent: true,
             ignoreInitial: true,
             depth: 99
@@ -116,6 +117,7 @@ export class WorkspaceService {
 
         // Use a simple debounce for watcher events to avoid spamming tree updates
         let updateTimeout: NodeJS.Timeout | null = null;
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         this.watcher.on('all', async (event: string, filePath: string) => {
             const normalizedFilePath = PathUtils.normalize(filePath);
             const parentDir = path.dirname(normalizedFilePath);
@@ -128,7 +130,7 @@ export class WorkspaceService {
 
             if (updateTimeout) clearTimeout(updateTimeout);
 
-            updateTimeout = setTimeout(async () => {
+            updateTimeout = setTimeout(() => {
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     this.mainWindow.webContents.send('workspace:updated', {
                         event,
@@ -147,12 +149,12 @@ export class WorkspaceService {
         }
 
         const updateRecursive = (nodes: FileNode[]): boolean => {
-            for (let i = 0; i < nodes.length; i++) {
-                if (nodes[i].path === targetPath) {
-                    nodes[i].children = newNodes;
+            for (const node of nodes) {
+                if (node.path === targetPath) {
+                    node.children = newNodes;
                     return true;
                 }
-                if (nodes[i].children && updateRecursive(nodes[i].children!)) {
+                if (node.children && updateRecursive(node.children)) {
                     return true;
                 }
             }

@@ -29,6 +29,7 @@ export class WindowManager {
         try {
             if (fs.existsSync(this.statesFilePath)) {
                 const data = fs.readFileSync(this.statesFilePath, 'utf-8');
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 this.windowStates = JSON.parse(data);
             }
         } catch (err) {
@@ -67,12 +68,13 @@ export class WindowManager {
         const lastState = this.windowStates[stateKey];
 
         const win = new BrowserWindow({
-            width: lastState?.width || options.width || 800,
-            height: lastState?.height || options.height || 600,
+            width: lastState?.width ?? options.width ?? 800,
+            height: lastState?.height ?? options.height ?? 600,
             x: lastState?.x, // Will be undefined if no state, letting Electron center it
             y: lastState?.y,
+            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
             parent: this.mainWindow || undefined,
-            title: options.title || `JS Blueprints - ${type.toUpperCase()}`,
+            title: options.title ?? `JS Blueprints - ${type.toUpperCase()}`,
             transparent: true,
             backgroundColor: '#00000000',
             alwaysOnTop: options.alwaysOnTop ?? false,
@@ -104,7 +106,7 @@ export class WindowManager {
                 try {
                     await win.loadURL(`http://localhost:${port}/?${queryParams}`);
                     return true;
-                } catch (e) {
+                } catch {
                     return false;
                 }
             };

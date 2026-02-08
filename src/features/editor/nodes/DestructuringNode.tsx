@@ -10,7 +10,7 @@ export const DestructuringNode = memo(({ data, id }: { id: string, data: AppNode
     const theme = useStore((state) => state.theme);
     const isDark = theme === 'dark';
 
-    const keys = data.destructuringKeys || [];
+    const keys = data.destructuringKeys ?? [];
 
     return (
         <div className="premium-node" style={{ minWidth: '200px' }}>
@@ -27,9 +27,9 @@ export const DestructuringNode = memo(({ data, id }: { id: string, data: AppNode
             <div className="node-content" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', marginBottom: '10px' }}>
                     <span style={{ fontSize: '0.9rem', fontWeight: 700, color: isDark ? '#d8b4fe' : '#7e22ce' }}>
-                        {data.destructuringSource || 'Object'}
+                        {data.destructuringSource ?? 'Object'}
                     </span>
-                    <Tooltip content={data.typeAnnotation || 'Source Object'} side="top">
+                    <Tooltip content={data.typeAnnotation ?? 'Source Object'} side="top">
                         <Handle
                             type="target"
                             position={Position.Top}

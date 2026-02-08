@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { parseCodeToFlow } from './parser/Parser';
-import type { AppNode } from '../types';
 
 describe('CodeParser', () => {
     it('should parse variable destructuring', () => {

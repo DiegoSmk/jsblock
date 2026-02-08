@@ -1,4 +1,4 @@
-import { SearchOptions } from '../types';
+import { SearchOptions } from '../shared/ipc-types';
 
 export function createSearchPattern(query: string, options: SearchOptions): RegExp | null {
     try {
@@ -7,7 +7,7 @@ export function createSearchPattern(query: string, options: SearchOptions): RegE
         } else {
             return new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), options.caseSensitive ? 'g' : 'gi');
         }
-    } catch (err) {
+    } catch {
         return null;
     }
 }

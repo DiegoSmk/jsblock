@@ -1,5 +1,5 @@
 import React from 'react';
-import { useConnection } from '@xyflow/react';
+import { ConnectionLineComponentProps } from '@xyflow/react';
 
 export const ConnectionLine = ({
   fromX,
@@ -7,8 +7,8 @@ export const ConnectionLine = ({
   toX,
   toY,
   connectionStatus,
-}: any) => {
-  const { fromHandle } = useConnection();
+}: ConnectionLineComponentProps) => {
+  // const { fromHandle } = useConnection();
 
   let stroke = '#b1b1b7'; // Default gray
   let strokeDasharray = '5,5'; // Dashed by default while dragging

@@ -4,7 +4,6 @@ import type {
     ExecutionError,
     BenchmarkResult,
     SearchOptions,
-    FileNode,
     IpcEvents
 } from './shared/ipc-types';
 
@@ -17,7 +16,7 @@ contextBridge.exposeInMainWorld('electron', {
     windowClose: () => ipcRenderer.send('window-close'),
     windowToggleAlwaysOnTop: () => ipcRenderer.invoke('window:toggle-always-on-top'),
     appReady: () => ipcRenderer.send('app-ready'),
-    openWindow: (type: string, options?: any) => ipcRenderer.invoke('window:open', type, options),
+    openWindow: (type: string, options?: unknown) => ipcRenderer.invoke('window:open', type, options),
 
     // File System API (Unified)
     fileSystem: {
@@ -114,6 +113,7 @@ contextBridge.exposeInMainWorld('electron', {
 
     // Generic Event Listener (Sub-only)
     on: <K extends keyof IpcEvents>(channel: K, callback: IpcEvents[K]) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument
         const subscription = (_event: unknown, ...args: any[]) => (callback as any)(...args);
         ipcRenderer.on(channel, subscription);
         return () => ipcRenderer.removeListener(channel, subscription);

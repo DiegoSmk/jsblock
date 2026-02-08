@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { WorkspaceService } from './WorkspaceService';
 import { ipcMain, utilityProcess } from 'electron';
 
@@ -21,13 +21,21 @@ vi.mock('electron', () => {
 
 describe('WorkspaceService Search', () => {
     let service: WorkspaceService;
-    let mockWorker: any;
-    let workerCallbacks: Record<string, Function> = {};
+    let mockWorker: {
+        on: Mock;
+        postMessage: Mock;
+        kill: Mock;
+        stdout: { on: Mock };
+        stderr: { on: Mock };
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let workerCallbacks: Record<string, (msg: any) => void> = {};
 
     beforeEach(() => {
         workerCallbacks = {};
         mockWorker = {
-            on: vi.fn((event, cb) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            on: vi.fn((event: string, cb: (msg: any) => void) => {
                 workerCallbacks[event] = cb;
             }),
             postMessage: vi.fn(),
@@ -41,8 +49,8 @@ describe('WorkspaceService Search', () => {
         };
 
         // Reset mock implementations
-        (utilityProcess.fork as any).mockImplementation(() => mockWorker);
-        (ipcMain.handle as any).mockClear();
+        (utilityProcess.fork as unknown as Mock).mockImplementation(() => mockWorker);
+        (ipcMain.handle as unknown as Mock).mockClear();
 
         service = new WorkspaceService();
         service.registerHandlers();
@@ -54,10 +62,11 @@ describe('WorkspaceService Search', () => {
     });
 
     it('should delegate search to worker after cancelling pending', async () => {
-        const calls = (ipcMain.handle as any).mock.calls;
+        const calls = (ipcMain.handle as unknown as Mock).mock.calls;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const searchCall = calls.find((call: any[]) => call[0] === 'workspace:search');
         expect(searchCall).toBeDefined();
-        const searchHandler = searchCall[1];
+        const searchHandler = searchCall![1];
 
         const searchPromise = searchHandler({}, 'query', '/root', {
             regex: false,
@@ -71,7 +80,7 @@ describe('WorkspaceService Search', () => {
 
         expect(mockWorker.postMessage).toHaveBeenNthCalledWith(1, { type: 'cancel' });
 
-        const sentPayload = (mockWorker.postMessage as any).mock.calls[1][0];
+        const sentPayload = (mockWorker.postMessage).mock.calls[1][0];
         expect(sentPayload).toMatchObject({
             type: 'search',
             payload: {
@@ -83,31 +92,35 @@ describe('WorkspaceService Search', () => {
             }
         });
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
         const id = sentPayload.id;
         const mockResults = [{
             file: '/root/test.ts', line: 1, text: 'match', matchIndex: 0
         }];
 
-        if (workerCallbacks['message']) {
-            workerCallbacks['message']({ id, results: mockResults });
+        if (workerCallbacks.message) {
+            workerCallbacks.message({ id, results: mockResults });
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const results = await searchPromise;
         expect(results).toEqual(mockResults);
     });
 
     it('should handle worker errors', async () => {
-        const calls = (ipcMain.handle as any).mock.calls;
-        const searchHandler = calls.find((call: any[]) => call[0] === 'workspace:search')[1];
+        const calls = (ipcMain.handle as unknown as Mock).mock.calls;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const searchHandler = calls.find((call: any[]) => call[0] === 'workspace:search')![1];
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         const searchPromise = searchHandler({}, 'query', '/root', {});
 
         // Skip cancellation message, look at the second call (the actual search)
-        const sentPayload = (mockWorker.postMessage as any).mock.calls[1][0];
+        const sentPayload = (mockWorker.postMessage).mock.calls[1][0];
         const id = sentPayload.id;
 
-        if (workerCallbacks['message']) {
-            workerCallbacks['message']({ id, error: 'Worker crashed' });
+        if (workerCallbacks.message) {
+            workerCallbacks.message({ id, error: 'Worker crashed' });
         }
 
         await expect(searchPromise).rejects.toThrow('Worker crashed');

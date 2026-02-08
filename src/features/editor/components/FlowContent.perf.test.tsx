@@ -32,12 +32,15 @@ vi.mock('i18next', () => ({
 
 
 // We need to capture the props passed to ReactFlow
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const capturedProps: any[] = [];
 
 vi.mock('@xyflow/react', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const actual = await vi.importActual('@xyflow/react');
   return {
     ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ReactFlow: (props: any) => {
       capturedProps.push(props);
       return <div data-testid="react-flow-mock">ReactFlow Mock</div>;
@@ -63,11 +66,13 @@ vi.mock('./EdgeStylePopup', () => ({
 
 describe('FlowContent Performance', () => {
   let container: HTMLDivElement | null = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let root: any = null;
 
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     root = createRoot(container);
     capturedProps.length = 0; // Reset captured props
 
@@ -80,9 +85,10 @@ describe('FlowContent Performance', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     if (root) {
-      act(() => root.unmount());
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
+      await act(() => root.unmount());
     }
     if (container) {
       document.body.removeChild(container);
@@ -93,24 +99,27 @@ describe('FlowContent Performance', () => {
   it('maintains stable defaultEdgeOptions reference across renders', async () => {
     // Initial Render
     await act(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       root.render(<FlowContent />);
     });
 
     expect(capturedProps.length).toBeGreaterThan(0);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const initialOptions = capturedProps[capturedProps.length - 1].defaultEdgeOptions;
 
     // Trigger a re-render by updating nodes in the store
     // We update nodes to force the component to re-render, but keep theme 'light'
     await act(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       useStore.setState({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
         nodes: [{ id: '1', type: 'variableNode', position: { x: 0, y: 0 }, data: {} }] as any
       });
     });
 
     // Component should have re-rendered
     expect(capturedProps.length).toBeGreaterThan(1);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
     const nextOptions = capturedProps[capturedProps.length - 1].defaultEdgeOptions;
 
     // Verify content is visually identical (sanity check)

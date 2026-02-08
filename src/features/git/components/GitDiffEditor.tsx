@@ -8,6 +8,11 @@ interface GitDiffEditorProps {
     openedFolder?: string;
 }
 
+interface UpdatePayload {
+    filePath?: string;
+    openedFolder?: string;
+}
+
 export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFilePath, openedFolder: propOpenedFolder }) => {
     const { getGitFileContent, theme } = useStore();
 
@@ -24,12 +29,13 @@ export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFile
     useEffect(() => {
         if (!window.electron?.on) return;
 
-        const unsubscribe = window.electron.on('window-update-payload', (payload: any) => {
-            if (payload?.filePath) {
-                setCurrentFilePath(payload.filePath);
+        const unsubscribe = window.electron.on('window-update-payload', (payload: unknown) => {
+            const p = payload as UpdatePayload;
+            if (p?.filePath) {
+                setCurrentFilePath(p.filePath);
             }
-            if (payload?.openedFolder) {
-                setCurrentFolder(payload.openedFolder);
+            if (p?.openedFolder) {
+                setCurrentFolder(p.openedFolder);
             }
         });
 
@@ -43,11 +49,13 @@ export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFile
             setIsLoading(true);
             try {
                 // Fetch original content (HEAD)
+                // eslint-disable-next-line no-restricted-syntax
                 const original = await getGitFileContent(currentFilePath, 'HEAD');
                 if (!isMounted) return;
                 setOriginalContent(original);
 
                 // Fetch modified content (disk)
+                // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
                 const folder = currentFolder || useStore.getState().openedFolder;
                 if (!folder) return;
 
@@ -72,7 +80,7 @@ export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFile
                         }
                         if (isMounted) setModifiedContent('');
                     }
-                } catch (readErr: any) {
+                } catch {
                     if (isMounted) setModifiedContent('');
                 }
             } catch (err) {
@@ -90,6 +98,7 @@ export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFile
         return () => { isMounted = false; };
     }, [currentFilePath, currentFolder, getGitFileContent]);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const editorRef = React.useRef<any>(null);
 
     if (!currentFilePath) return (
@@ -99,6 +108,7 @@ export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFile
     );
 
     // Detect language from extension
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const extension = currentFilePath.split('.').pop()?.toLowerCase() || 'typescript';
     const langMap: Record<string, string> = {
         'js': 'javascript',

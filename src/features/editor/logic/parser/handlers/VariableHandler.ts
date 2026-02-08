@@ -35,7 +35,7 @@ export const VariableHandler: ParserHandler = {
             if (decl.id.type === 'Identifier') {
                 const varName = decl.id.name;
                 const nodeId = idSuffix ? `var-${varName}-${idSuffix}` : `var-${varName}`;
-                if (!flowTargetId) flowTargetId = nodeId;
+                flowTargetId ??= nodeId;
 
                 let typeAnnotation: string | undefined = undefined;
                 if (t.isIdentifier(decl.id) && decl.id.typeAnnotation) {
@@ -187,7 +187,7 @@ export const VariableHandler: ParserHandler = {
                 });
 
                 const destrId = idSuffix ? `destr-${Math.random().toString(36).substr(2, 5)}-${idSuffix}` : `destr-${Math.random().toString(36).substr(2, 5)}`;
-                if (!flowTargetId) flowTargetId = destrId;
+                flowTargetId ??= destrId;
 
                 let sourceLabel = 'Object';
                 if (decl.init?.type === 'Identifier') {

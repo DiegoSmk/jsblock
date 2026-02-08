@@ -94,7 +94,7 @@ export const FileExplorer: React.FC = () => {
         setContextMenu({ x: e.clientX, y: e.clientY, node });
     };
 
-    const handleMenuAction = async (type: 'file' | 'folder' | 'delete' | 'rename', ext?: string) => {
+    const handleMenuAction = (type: 'file' | 'folder' | 'delete' | 'rename', ext?: string) => {
         if (!contextMenu) return;
         const { node } = contextMenu;
 
@@ -345,23 +345,25 @@ export const FileExplorer: React.FC = () => {
                     borderTop: `1px solid ${isDark ? '#333' : '#e5e7eb'}`
                 }}>
                     <form
-                        onSubmit={async (e) => {
+                        onSubmit={(e) => {
                             e.preventDefault();
-                            if (!newName) return;
-                            try {
-                                const sep = isCreating.parentPath.includes('\\') ? '\\' : '/';
-                                if (isCreating.type === 'folder') {
-                                    await window.electron?.fileSystem.createDirectory(`${isCreating.parentPath}${sep}${newName}`);
-                                } else {
-                                    const ext = isCreating.ext ?? '';
-                                    const fileName = newName.endsWith(ext) ? newName : `${newName}${ext}`;
-                                    await window.electron?.fileSystem.createFile(`${isCreating.parentPath}${sep}${fileName}`, '');
+                            void (async () => {
+                                if (!newName) return;
+                                try {
+                                    const sep = isCreating.parentPath.includes('\\') ? '\\' : '/';
+                                    if (isCreating.type === 'folder') {
+                                        await window.electron?.fileSystem.createDirectory(`${isCreating.parentPath}${sep}${newName}`);
+                                    } else {
+                                        const ext = isCreating.ext ?? '';
+                                        const fileName = newName.endsWith(ext) ? newName : `${newName}${ext}`;
+                                        await window.electron?.fileSystem.createFile(`${isCreating.parentPath}${sep}${fileName}`, '');
+                                    }
+                                    setIsCreating(null);
+                                    setNewName('');
+                                } catch (err) {
+                                    addToast({ type: 'error', message: String(err) });
                                 }
-                                setIsCreating(null);
-                                setNewName('');
-                            } catch (err) {
-                                addToast({ type: 'error', message: String(err) });
-                            }
+                            })();
                         }}
                         style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
