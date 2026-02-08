@@ -139,6 +139,13 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 rafId ??= requestAnimationFrame(flushBuffer);
             };
 
+            // Clear previous results immediately
+            set({
+                executionResults: new Map(),
+                executionErrors: new Map(),
+                executionCoverage: new Set(),
+                isExecuting: true
+            });
 
             if (!get().isListenersInitialized) {
                 // Main thread messages

@@ -10,7 +10,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: {
     type: '3rdParty',
-    init: () => {},
+    init: () => { /* no-op */ },
   },
 }));
 
@@ -24,7 +24,7 @@ vi.mock('i18next', () => ({
   default: {
     use: () => ({
       use: () => ({
-        init: () => {},
+        init: () => { /* no-op */ },
       }),
     }),
   },
@@ -90,25 +90,27 @@ describe('FlowContent Performance', () => {
     vi.restoreAllMocks();
   });
 
-  it('re-creates defaultEdgeOptions object on every render even if theme is unchanged', async () => {
+  it('maintains stable defaultEdgeOptions reference across renders', async () => {
     // Initial Render
     await act(async () => {
       root.render(<FlowContent />);
     });
 
     expect(capturedProps.length).toBeGreaterThan(0);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const initialOptions = capturedProps[capturedProps.length - 1].defaultEdgeOptions;
 
     // Trigger a re-render by updating nodes in the store
     // We update nodes to force the component to re-render, but keep theme 'light'
     await act(async () => {
       useStore.setState({
-        nodes: [{ id: '1', type: 'variableNode', position: { x: 0, y: 0 }, data: {} }]
+        nodes: [{ id: '1', type: 'variableNode', position: { x: 0, y: 0 }, data: {} }] as any
       });
     });
 
     // Component should have re-rendered
     expect(capturedProps.length).toBeGreaterThan(1);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const nextOptions = capturedProps[capturedProps.length - 1].defaultEdgeOptions;
 
     // Verify content is visually identical (sanity check)

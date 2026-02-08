@@ -108,6 +108,13 @@ export function FlowContent() {
   const { fitView } = useReactFlow();
   const isDark = theme === 'dark';
 
+  const defaultEdgeOptions = useMemo(() => ({
+    style: { strokeWidth: 3, stroke: isDark ? '#4fc3f7' : '#0070f3' },
+    animated: true,
+    labelStyle: { fill: isDark ? '#fff' : '#000', fontWeight: 700, fontSize: 12 },
+    labelBgStyle: { fill: isDark ? '#1e1e1e' : '#fff', fillOpacity: 0.8 }
+  }), [isDark]);
+
   // Edge Context Menu state
   const [edgeMenu, setEdgeMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [edgeStyleMenu, setEdgeStyleMenu] = useState<{ id: string; x: number; y: number } | null>(null);
@@ -257,12 +264,7 @@ export function FlowContent() {
     [nodes]
   );
 
-  const defaultEdgeOptions = useMemo(() => ({
-    style: { strokeWidth: 3, stroke: isDark ? '#4fc3f7' : '#0070f3' },
-    animated: true,
-    labelStyle: { fill: isDark ? '#fff' : '#000', fontWeight: 700, fontSize: 12 },
-    labelBgStyle: { fill: isDark ? '#1e1e1e' : '#fff', fillOpacity: 0.8 }
-  }), [isDark]);
+
 
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', flex: 1, minHeight: '200px', minWidth: '200px' }}>

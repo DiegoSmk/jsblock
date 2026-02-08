@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+<<<<<<< HEAD
 import { resetExecutionStateForTesting } from '../features/execution/store/executionSlice';
+=======
+import { waitFor } from '@testing-library/react';
+import { useStore } from './useStore';
+import { resetListeners } from '../features/execution/store/executionSlice';
+
+>>>>>>> origin/perf-flowcontent-memo-edgeoptions-3918042967156325040
 import type { ExecutionPayload } from '../types/electron';
 
 describe('Quokka-like Execution Flow', () => {
@@ -58,7 +65,14 @@ describe('Quokka-like Execution Flow', () => {
             onSystemStats: vi.fn(() => () => { /* no-op */ }),
             checkExists: vi.fn(),
             discoverPlugins: vi.fn(),
+<<<<<<< HEAD
             executionCheckAvailability: vi.fn(),
+=======
+            onExecutionStarted: vi.fn(),
+            onExecutionDone: vi.fn(),
+            onExecutionClear: vi.fn(),
+            onSystemStats: vi.fn(),
+>>>>>>> origin/perf-flowcontent-memo-edgeoptions-3918042967156325040
             executionSetRuntime: vi.fn(),
         };
 
@@ -68,6 +82,7 @@ describe('Quokka-like Execution Flow', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+        resetListeners();
         // @ts-expect-error - Cleaning up mock
         delete window.electron;
     });
@@ -91,7 +106,11 @@ describe('Quokka-like Execution Flow', () => {
         expect(logCallback).toBeDefined();
         logCallback(message);
 
+<<<<<<< HEAD
         await vi.waitFor(() => {
+=======
+        await waitFor(() => {
+>>>>>>> origin/perf-flowcontent-memo-edgeoptions-3918042967156325040
             const results = useStore.getState().executionResults;
             expect(results.has(1)).toBe(true);
             expect(results.get(1)).toEqual([{ value: '10', type: 'spy' }]);
@@ -111,10 +130,19 @@ describe('Quokka-like Execution Flow', () => {
         expect(errorCallback).toBeDefined();
         errorCallback(error);
 
+<<<<<<< HEAD
         await vi.waitFor(() => {
             const errors = useStore.getState().executionErrors;
             expect(errors.has(5)).toBe(true);
             expect(errors.get(5)).toMatchObject({
+=======
+        await waitFor(() => {
+            const errors = useStore.getState().executionErrors;
+            expect(errors.has(5)).toBe(true);
+            const errorObj = errors.get(5);
+            expect(errorObj).toBeDefined();
+            expect(errorObj).toMatchObject({
+>>>>>>> origin/perf-flowcontent-memo-edgeoptions-3918042967156325040
                 message: 'Something went wrong',
                 line: 5,
                 column: 10
@@ -129,7 +157,11 @@ describe('Quokka-like Execution Flow', () => {
         logCallback({ type: 'execution:value', line: 2, value: '0' });
         logCallback({ type: 'execution:value', line: 2, value: '1' });
 
+<<<<<<< HEAD
         await vi.waitFor(() => {
+=======
+        await waitFor(() => {
+>>>>>>> origin/perf-flowcontent-memo-edgeoptions-3918042967156325040
             const results = useStore.getState().executionResults;
             expect(results.get(2)).toEqual([{ value: '0', type: 'spy' }, { value: '1', type: 'spy' }]);
         });
@@ -138,6 +170,7 @@ describe('Quokka-like Execution Flow', () => {
     it('should clear previous results on new execution', async () => {
         const { runExecution } = useStore.getState();
 
+<<<<<<< HEAD
         // Use unique code to bypass debounce/cache
         const code1 = 'const unique = 1;';
         const code2 = 'const unique = 2;';
@@ -158,5 +191,17 @@ describe('Quokka-like Execution Flow', () => {
             expect(useStore.getState().executionResults.size).toBe(0);
             expect(useStore.getState().executionErrors.size).toBe(0);
         });
+=======
+        runExecution('const a = 10;');
+        logCallback({ type: 'execution:value', line: 1, value: 'old' });
+
+        await waitFor(() => {
+            expect(useStore.getState().executionResults.get(1)).toEqual([{ value: 'old', type: 'spy' }]);
+        });
+
+        runExecution('const a = 20;');
+        expect(useStore.getState().executionResults.size).toBe(0);
+        expect(useStore.getState().executionErrors.size).toBe(0);
+>>>>>>> origin/perf-flowcontent-memo-edgeoptions-3918042967156325040
     });
 });
