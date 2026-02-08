@@ -6,7 +6,7 @@ const {
     ListResourcesRequestSchema,
     ReadResourceRequestSchema
 } = require('@modelcontextprotocol/sdk/types.js');
-const fs = require('fs').promises;
+const fs = require('fs/promises');
 const path = require('path');
 
 // Path to the log file shared with the Electron app
@@ -106,12 +106,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         case 'get_recent_logs': {
             try {
+                const data = await fs.readFile(LOG_PATH, 'utf-8');
                 const lines = request.params.arguments?.lines || 50;
-                const fileContent = await fs.readFile(LOG_PATH, 'utf-8');
-                const content = fileContent.split('\n').slice(-lines).join('\n');
+                const content = data.split('\n').slice(-lines).join('\n');
                 return { content: [{ type: 'text', text: content }] };
             } catch (err) {
-                if (err.code === 'ENOENT') return { content: [{ type: 'text', text: 'Log file does not exist.' }] };
+                if (err.code === 'ENOENT') {
+                    return { content: [{ type: 'text', text: 'Log file does not exist.' }] };
+                }
                 throw err;
             }
         }
@@ -121,7 +123,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const state = await fs.readFile(STATE_PATH, 'utf-8');
                 return { content: [{ type: 'text', text: state }] };
             } catch (err) {
-                if (err.code === 'ENOENT') return { content: [{ type: 'text', text: 'State file not populated yet.' }] };
+                if (err.code === 'ENOENT') {
+                    return { content: [{ type: 'text', text: 'State file not populated yet.' }] };
+                }
                 throw err;
             }
         }
