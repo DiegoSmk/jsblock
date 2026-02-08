@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { Box } from 'lucide-react';
+import { Tooltip } from '../../../components/ui/Tooltip';
 
 import type { AppNodeData } from '../types';
 
@@ -64,22 +65,24 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: data.nestedCall ? '12px' : '0', position: 'relative' }}>
                             <div style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '1.1rem', color: '#f472b6' }}>
                                 {data.nestedCall ? `${data.nestedCall.name}()` : 'Calculation'}
-                                <Handle
-                                    type="target"
-                                    position={Position.Top}
-                                    id="ref-target"
-                                    className="handle-data"
-                                    style={{
-                                        top: '-10px',
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        background: data.nestedCall
-                                            ? (['console', 'Math', 'JSON', 'Array', 'Object'].some(p => data.nestedCall?.name.startsWith(p)) || ['alert', 'prompt', 'confirm'].includes(data.nestedCall?.name) // eslint-disable-line no-restricted-syntax
-                                                ? '#f7df1e' // Native = Yellow
-                                                : '#4caf50') // Custom function = Green
-                                            : '#f472b6', // Calculation = Pink
-                                    }}
-                                />
+                                <Tooltip content={data.typeAnnotation || 'Input'} side="top">
+                                    <Handle
+                                        type="target"
+                                        position={Position.Top}
+                                        id="ref-target"
+                                        className="handle-data"
+                                        style={{
+                                            top: '-10px',
+                                            left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            background: data.nestedCall
+                                                ? (['console', 'Math', 'JSON', 'Array', 'Object'].some(p => data.nestedCall?.name.startsWith(p)) || ['alert', 'prompt', 'confirm'].includes(data.nestedCall?.name) // eslint-disable-line no-restricted-syntax
+                                                    ? '#f7df1e' // Native = Yellow
+                                                    : '#4caf50') // Custom function = Green
+                                                : '#f472b6', // Calculation = Pink
+                                        }}
+                                    />
+                                </Tooltip>
                             </div>
                             <div style={{
                                 fontSize: isShowingExpression ? '0.9rem' : '1.1rem',
@@ -96,13 +99,15 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {data.nestedCall.args.map((arg, i) => (
                                     <div key={`${id}-arg-${arg}`} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                        <Handle
-                                            type="target"
-                                            position={Position.Left}
-                                            id={`nested-arg-${i}`}
-                                            className="handle-data"
-                                            style={{ left: '-12px', background: '#f472b6' }}
-                                        />
+                                        <Tooltip content="Argument" side="left">
+                                            <Handle
+                                                type="target"
+                                                position={Position.Left}
+                                                id={`nested-arg-${i}`}
+                                                className="handle-data"
+                                                style={{ left: '-12px', background: '#f472b6' }}
+                                            />
+                                        </Tooltip>
                                         <span style={{ fontSize: '0.8rem', color: isDark ? '#94a3b8' : '#64748b', fontWeight: 700, letterSpacing: '0.05em' }}>{arg}</span>
                                     </div>
                                 ))}
@@ -165,17 +170,19 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
                 )}
             </div>
 
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="output"
-                className="handle-data source"
-                style={{
-                    right: '-8px',
-                    top: '50%',
-                    // Default grey via CSS class for output
-                }}
-            />
+            <Tooltip content={data.typeAnnotation || 'Output'} side="right">
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    id="output"
+                    className="handle-data source"
+                    style={{
+                        right: '-8px',
+                        top: '50%',
+                        // Default grey via CSS class for output
+                    }}
+                />
+            </Tooltip>
         </div>
     );
 });

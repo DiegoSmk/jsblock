@@ -46,6 +46,9 @@ export interface AppNodeData {
   targetId?: string | null;
   text?: string;
   customStyle?: NodeCustomStyle;
+  // Destructuring
+  destructuringKeys?: string[];
+  destructuringSource?: string;
   // Metadata
   createdAt?: number;
   updatedAt?: number;

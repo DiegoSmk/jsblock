@@ -1,6 +1,14 @@
 import type { Connection, Edge } from '@xyflow/react';
 import type { AppNode } from '../types';
 
+const isFlowHandle = (handleId: string | null | undefined): boolean => {
+    if (!handleId) return false;
+    return handleId.startsWith('flow') ||
+           handleId === 'true' ||
+           handleId === 'false' ||
+           handleId === 'default';
+};
+
 export const validateConnection = (connection: Connection | Edge, nodes: AppNode[]): boolean => {
     const sourceNode = nodes.find(n => n.id === connection.source);
     const targetNode = nodes.find(n => n.id === connection.target);
@@ -12,11 +20,6 @@ export const validateConnection = (connection: Connection | Edge, nodes: AppNode
 
     // Hybrid Connection Logic: If either is a note/utility, we allow more freedom
     if (isHybridSource || isHybridTarget) {
-        // Allow self-connections for notes? Usually not useful but maybe for loops.
-        // Plan says: "Hybrid Connection (multiple inputs/outputs, no direction restriction)"
-        // But usually source != target is a physical constraint of React Flow unless configured otherwise.
-        // We will allow it generally, but maybe block self-connection to avoid infinite loop complexity if not needed.
-        // However, "Check de Domínio" implies we just distinguish between Semantic (Code) and Hybrid.
         return true;
     }
 
@@ -24,8 +27,35 @@ export const validateConnection = (connection: Connection | Edge, nodes: AppNode
     // 1. No self-connections
     if (connection.source === connection.target) return false;
 
-    // 2. Strict direction is usually enforced by handle types (source to target), which React Flow does automatically.
-    // We can add data type checking here later if needed.
+    // 2. Flow Connections vs Data Connections
+    const isSourceFlow = isFlowHandle(connection.sourceHandle);
+    const isTargetFlow = isFlowHandle(connection.targetHandle);
+
+    // Prevent mixing flow and data handles
+    if (isSourceFlow !== isTargetFlow) return false;
+
+    // 3. Type Checking (Only for Data Connections)
+    if (!isSourceFlow && !isTargetFlow) {
+        const sourceType = sourceNode.data.typeAnnotation;
+        const targetType = targetNode.data.typeAnnotation;
+
+        // If both have type annotations, check compatibility
+        if (sourceType && targetType) {
+            const normalizedSource = sourceType.toLowerCase();
+            const normalizedTarget = targetType.toLowerCase();
+
+            // Allow 'any' or 'unknown' to bypass checks
+            if (normalizedSource === 'any' || normalizedSource === 'unknown' ||
+                normalizedTarget === 'any' || normalizedTarget === 'unknown') {
+                return true;
+            }
+
+            // Strict equality check
+            if (normalizedSource !== normalizedTarget) {
+                return false;
+            }
+        }
+    }
 
     return true;
 };
