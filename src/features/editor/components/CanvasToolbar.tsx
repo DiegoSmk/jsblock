@@ -1,6 +1,6 @@
 import React from 'react';
 import { Panel } from '@xyflow/react';
-import { StickyNote, Plus, Wrench } from 'lucide-react';
+import { StickyNote, Plus, Wrench, Layout } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../../store/useStore';
 import { getAllUtilities } from '../../../registry/utilities';
@@ -13,6 +13,7 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
     const { t } = useTranslation();
     const addNoteNode = useStore(state => state.addNoteNode);
     const addUtilityNode = useStore(state => state.addUtilityNode);
+    const forceLayout = useStore(state => state.forceLayout);
     const isBlockFile = useStore(state => state.isBlockFile);
     const [showUtilityMenu, setShowUtilityMenu] = React.useState(false);
 
@@ -86,6 +87,18 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({ isDark }) => {
                     </div>
                 </button>
                 <div className="tooltip">{t('toolbar.add_note')}</div>
+            </div>
+
+            <div className="tooltip-container">
+                <button
+                    onClick={forceLayout}
+                    style={buttonStyle}
+                    className="toolbar-btn"
+                    aria-label="Auto-Layout"
+                >
+                    <Layout size={20} />
+                </button>
+                <div className="tooltip">Auto-Layout</div>
             </div>
 
             <div style={{ width: '1px', height: '20px', background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', margin: '0 4px' }} />
