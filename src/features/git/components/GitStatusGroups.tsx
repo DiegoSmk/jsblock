@@ -1,4 +1,4 @@
-import type { AppState } from '../../../../types/store';
+import type { AppState } from '../../../types/store';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Minus, RotateCcw, Eraser } from 'lucide-react';
@@ -7,7 +7,9 @@ import { Tooltip } from '../../../components/ui/Tooltip';
 import { FileTreeView } from './FileTreeView';
 import { GitStatusList } from './GitStatusList';
 import { TreeToggle } from './TreeToggle';
+import { ScrollArea } from '../../../components/ui/ScrollArea';
 import type { GitFileStatus } from '../types';
+import { useStore } from '../../../store/useStore';
 import './GitStatus.css';
 import './GitPanel.css';
 
@@ -72,7 +74,7 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
     };
 
     return (
-        <div className="git-status-groups">
+        <ScrollArea className="git-status-groups" visibility="hover">
             <SectionHeader
                 title={
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -102,13 +104,20 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
             )}
 
             {isTreeView ? (
-                staged.length > 0 && <FileTreeView files={staged} onUnstage={(path) => { void gitUnstage(path); }} isDark={isDark} />
+                staged.length > 0 && <FileTreeView
+                    files={staged}
+                    onUnstage={(path) => { void gitUnstage(path); }}
+                    onSelectDiff={onSelectDiff}
+                    selectedPath={useStore(state => state.git.selectedDiffFile)}
+                    isDark={isDark}
+                />
             ) : (
                 <GitStatusList
                     files={staged}
                     type="staged"
                     onUnstage={(path) => void gitUnstage(path)}
                     onSelectDiff={onSelectDiff}
+                    selectedPath={useStore(state => state.git.selectedDiffFile)}
                 />
             )}
 
@@ -149,7 +158,14 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
             )}
 
             {isTreeView ? (
-                unstaged.length > 0 && <FileTreeView files={unstaged} onStage={(path) => { void gitStage(path); }} onDiscard={(path) => { void gitDiscard(path); }} isDark={isDark} />
+                unstaged.length > 0 && <FileTreeView
+                    files={unstaged}
+                    onStage={(path) => { void gitStage(path); }}
+                    onDiscard={(path) => { void gitDiscard(path); }}
+                    onSelectDiff={onSelectDiff}
+                    selectedPath={useStore(state => state.git.selectedDiffFile)}
+                    isDark={isDark}
+                />
             ) : (
                 <GitStatusList
                     files={unstaged}
@@ -158,8 +174,9 @@ export const GitStatusGroups: React.FC<GitStatusGroupsProps> = ({
                     onDiscard={(path) => void gitDiscard(path)}
                     onIgnore={handleIgnore}
                     onSelectDiff={onSelectDiff}
+                    selectedPath={useStore(state => state.git.selectedDiffFile)}
                 />
             )}
-        </div>
+        </ScrollArea>
     );
 };

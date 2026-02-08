@@ -3,6 +3,19 @@ import type { GitSlice } from '../types';
 
 export const createDiffActions = (set: (nextState: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void, get: () => AppState): Partial<GitSlice> => ({
     selectGitDiffFile: (path: string) => {
+        const { openedFolder } = get();
+        if (window.electron?.openWindow) {
+            void window.electron.openWindow('git-diff', {
+                width: 1000,
+                height: 700,
+                title: `Diff: ${path.split(/[\\/]/).pop()}`,
+                singleton: true,
+                payload: { filePath: path, openedFolder }
+            });
+        }
+
+        // We still keep the state to know which file is being diffed if needed, 
+        // but the UI will no longer render it internally.
         set((state: AppState) => ({
             git: {
                 ...state.git,

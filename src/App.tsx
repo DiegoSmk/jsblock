@@ -523,26 +523,22 @@ function App() {
                       )}
                     </Allotment.Pane>
 
-                    <Allotment.Pane minSize={400} visible={git.selectedDiffFile !== null || (activeSidebarTab !== 'git' && activeSidebarTab !== 'extensions' && (isBlockFile || showCanvas))}>
-                      {git.selectedDiffFile ? (
-                        <GitDiffEditor />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
-                          <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
-                            <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
-                              <ScopeBreadcrumbs />
-                            </div>
+                    <Allotment.Pane minSize={400} visible={activeSidebarTab !== 'git' && activeSidebarTab !== 'extensions' && (isBlockFile || showCanvas)}>
+                      <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
+                        <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
+                          <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
+                            <ScopeBreadcrumbs />
                           </div>
-                          {!selectedFile ? (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                              <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
-                              <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
-                            </div>
-                          ) : (
-                            <FlowContent />
-                          )}
                         </div>
-                      )}
+                        {!selectedFile ? (
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
+                            <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
+                            <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
+                          </div>
+                        ) : (
+                          <FlowContent />
+                        )}
+                      </div>
                     </Allotment.Pane>
                   </Allotment>
                 </div>

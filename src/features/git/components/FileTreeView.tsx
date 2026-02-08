@@ -20,10 +20,12 @@ interface FileTreeViewProps {
     onStage?: (path: string) => void;
     onUnstage?: (path: string) => void;
     onDiscard?: (path: string) => void;
+    onSelectDiff?: (path: string) => void;
+    selectedPath?: string | null;
     isDark: boolean;
 }
 
-export const FileTreeView: React.FC<FileTreeViewProps> = ({ files, onStage, onUnstage, onDiscard, isDark }) => {
+export const FileTreeView: React.FC<FileTreeViewProps> = ({ files, onStage, onUnstage, onDiscard, onSelectDiff, selectedPath, isDark }) => {
     const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
     const [hoveredPath, setHoveredPath] = useState<string | null>(null);
 
@@ -121,7 +123,12 @@ export const FileTreeView: React.FC<FileTreeViewProps> = ({ files, onStage, onUn
                         cursor: 'pointer',
                         fontSize: '0.75rem',
                         color: isDark ? '#ddd' : '#333',
-                        background: isHovered ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)') : 'transparent',
+                        background: selectedPath === node.file?.path
+                            ? (isDark ? 'rgba(52, 211, 153, 0.08)' : 'rgba(16, 185, 129, 0.08)')
+                            : (isHovered ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)') : 'transparent'),
+                        border: selectedPath === node.file?.path
+                            ? (isDark ? '1px solid rgba(52, 211, 153, 0.2)' : '1px solid rgba(16, 185, 129, 0.15)')
+                            : '1px solid transparent',
                         borderRadius: '4px',
                         margin: '0 4px',
                         transition: 'background 0.1s'
@@ -130,7 +137,11 @@ export const FileTreeView: React.FC<FileTreeViewProps> = ({ files, onStage, onUn
                     onMouseLeave={() => setHoveredPath(null)}
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (isFolder) toggleFolder(node.path);
+                        if (isFolder) {
+                            toggleFolder(node.path);
+                        } else if (onSelectDiff) {
+                            onSelectDiff(node.file!.path);
+                        }
                     }}
                 >
                     {isFolder ? (
@@ -142,7 +153,15 @@ export const FileTreeView: React.FC<FileTreeViewProps> = ({ files, onStage, onUn
                     ) : (
                         <>
                             <File size={14} color={isDark ? '#888' : '#777'} style={{ marginLeft: '14px' }} />
-                            <span style={{ opacity: 0.9, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+                            <span style={{
+                                opacity: 0.9,
+                                flex: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                color: selectedPath === node.file!.path ? (isDark ? '#34d399' : '#10b981') : 'inherit',
+                                fontWeight: selectedPath === node.file!.path ? 700 : 'normal'
+                            }}>{node.name}</span>
                             <StatusBadge status={node.file!.status} />
 
                             {isHovered && (

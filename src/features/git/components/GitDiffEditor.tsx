@@ -1,46 +1,80 @@
 import React, { useEffect, useState } from 'react';
 import { DiffEditor } from '@monaco-editor/react';
 import { useStore } from '../../../store/useStore';
-import { X } from 'lucide-react';
 
-export const GitDiffEditor: React.FC = () => {
-    const { git, closeGitDiffFile, getGitFileContent, theme } = useStore();
+interface GitDiffEditorProps {
+    filePath?: string;
+    openedFolder?: string;
+}
+
+export const GitDiffEditor: React.FC<GitDiffEditorProps> = ({ filePath: propFilePath, openedFolder: propOpenedFolder }) => {
+    const { getGitFileContent, theme } = useStore();
+
+    const [currentFilePath, setCurrentFilePath] = useState<string | undefined>(propFilePath);
+    const [currentFolder, setCurrentFolder] = useState<string | undefined>(propOpenedFolder);
 
     const [originalContent, setOriginalContent] = useState<string>('');
     const [modifiedContent, setModifiedContent] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
 
-    const filePath = git.selectedDiffFile;
     const isDark = theme === 'dark';
+
+    // Listen for updates from Main process (Singleton mode)
+    useEffect(() => {
+        if (!window.electron?.on) return;
+
+        const unsubscribe = window.electron.on('window-update-payload', (payload: any) => {
+            if (payload?.filePath) {
+                setCurrentFilePath(payload.filePath);
+            }
+            if (payload?.openedFolder) {
+                setCurrentFolder(payload.openedFolder);
+            }
+        });
+
+        return () => { unsubscribe(); };
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
         const loadContent = async () => {
-            if (!filePath || !window.electron) return;
+            if (!currentFilePath || !window.electron) return;
             setIsLoading(true);
             try {
                 // Fetch original content (HEAD)
-                const original = await getGitFileContent(filePath, 'HEAD');
+                const original = await getGitFileContent(currentFilePath, 'HEAD');
                 if (!isMounted) return;
                 setOriginalContent(original);
 
                 // Fetch modified content (disk)
-                const folder = useStore.getState().openedFolder;
+                const folder = currentFolder || useStore.getState().openedFolder;
                 if (!folder) return;
 
-                // Safer path join
-                const fullPath = folder.replace(/[/\\]$/, '') + (filePath.startsWith('/') || filePath.startsWith('\\') ? filePath : '/' + filePath);
+                // Safer path join - Check if currentFilePath is already absolute
+                let fullPath = currentFilePath;
+                if (!currentFilePath.startsWith('/') && !currentFilePath.startsWith('\\') && !(currentFilePath.length > 2 && currentFilePath[1] === ':')) {
+                    const cleanFolder = folder.replace(/[/\\]$/, '');
+                    fullPath = `${cleanFolder}/${currentFilePath}`;
+                }
 
                 try {
-                    const modified = await window.electron.fileSystem.readFile(fullPath);
-                    if (isMounted) setModifiedContent(modified);
-                } catch (readErr: any) {
-                    // If file is deleted on disk, show empty modified side
-                    if (readErr?.message?.includes('ENOENT')) {
-                        if (isMounted) setModifiedContent('');
+                    // Check if file exists before reading to avoid terminal error noise
+                    const exists = await window.electron.fileSystem.checkExists(fullPath);
+                    if (exists) {
+                        const modified = await window.electron.fileSystem.readFile(fullPath);
+                        if (isMounted) setModifiedContent(modified);
                     } else {
-                        throw readErr;
+                        // If relative join failed, try currentFilePath directly if it looks absolute
+                        const existsDirect = await window.electron.fileSystem.checkExists(currentFilePath);
+                        if (existsDirect) {
+                            const modified = await window.electron.fileSystem.readFile(currentFilePath);
+                            if (isMounted) setModifiedContent(modified);
+                        } else {
+                            if (isMounted) setModifiedContent('');
+                        }
                     }
+                } catch (readErr: any) {
+                    if (isMounted) setModifiedContent('');
                 }
             } catch (err) {
                 console.error('Failed to load diff content:', err);
@@ -55,14 +89,18 @@ export const GitDiffEditor: React.FC = () => {
 
         void loadContent();
         return () => { isMounted = false; };
-    }, [filePath, getGitFileContent]);
+    }, [currentFilePath, currentFolder, getGitFileContent]);
 
     const editorRef = React.useRef<any>(null);
 
-    if (!filePath) return null;
+    if (!currentFilePath) return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc' }}>
+            Selecione um arquivo para ver as alterações
+        </div>
+    );
 
     // Detect language from extension
-    const extension = filePath.split('.').pop()?.toLowerCase() || 'typescript';
+    const extension = currentFilePath.split('.').pop()?.toLowerCase() || 'typescript';
     const langMap: Record<string, string> = {
         'js': 'javascript',
         'ts': 'typescript',
@@ -77,50 +115,13 @@ export const GitDiffEditor: React.FC = () => {
     const language = langMap[extension] || 'typescript';
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: isDark ? '#1e1e1e' : '#fff' }}>
-            {/* Header */}
-            <div style={{
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0 12px',
-                background: isDark ? '#2d2d2d' : '#f0f0f0',
-                borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`,
-                color: isDark ? '#ccc' : '#555',
-                fontSize: '0.8rem'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                    <span style={{ fontWeight: 600 }}>Diff:</span>
-                    <span style={{ opacity: 0.8, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{filePath}</span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {/* Close Button */}
-                    <button
-                        onClick={closeGitDiffFile}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: isDark ? '#aaa' : '#666',
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '4px',
-                            borderRadius: '4px'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#3c3c3c' : '#e0e0e0'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                    >
-                        <X size={16} />
-                    </button>
-                </div>
-            </div>
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
+            {/* Unified Header is now handled by WindowOutlet */}
 
             {/* Diff Editor - KEEP MOUNTED to avoid disposal errors */}
             <div style={{ flex: 1, position: 'relative' }}>
                 <DiffEditor
-                    key={filePath}
+                    key={currentFilePath}
                     height="100%"
                     onMount={(editor) => { editorRef.current = editor; }}
                     theme={isDark ? "vs-dark" : "light"}
@@ -133,7 +134,15 @@ export const GitDiffEditor: React.FC = () => {
                         scrollBeyondLastLine: false,
                         renderSideBySide: true,
                         folding: true,
-                        wordWrap: 'on'
+                        wordWrap: 'on',
+                        renderOverviewRuler: false,
+                        scrollbar: {
+                            vertical: 'visible',
+                            horizontal: 'visible',
+                            useShadows: false,
+                            verticalScrollbarSize: 10,
+                            horizontalScrollbarSize: 10
+                        }
                     }}
                 />
 
@@ -142,7 +151,7 @@ export const GitDiffEditor: React.FC = () => {
                     <div style={{
                         position: 'absolute', inset: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: isDark ? 'rgba(30, 30, 30, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+                        background: isDark ? 'rgba(30, 30, 30, 0.4)' : 'rgba(255, 255, 255, 0.4)',
                         zIndex: 10,
                         color: isDark ? '#888' : '#aaa',
                         backdropFilter: 'blur(2px)'

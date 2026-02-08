@@ -175,6 +175,8 @@ function createWindow() {
 
     mainWindow.on('closed', () => {
         windowManager.closeAllWindows();
+        // Clear selected diff on store when main window closes
+        // Note: we might need to access the webContents to dispatch an action if store is not shared
         mainWindow = null;
     });
 

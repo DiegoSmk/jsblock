@@ -14,6 +14,7 @@ interface GitStatusListProps {
     onDiscard?: (path: string) => void;
     onIgnore?: (path: string) => void;
     onSelectDiff?: (path: string) => void;
+    selectedPath?: string | null;
 }
 
 export const GitStatusList: React.FC<GitStatusListProps> = ({
@@ -23,7 +24,8 @@ export const GitStatusList: React.FC<GitStatusListProps> = ({
     onUnstage,
     onDiscard,
     onIgnore,
-    onSelectDiff
+    onSelectDiff,
+    selectedPath
 }) => {
     const { t } = useTranslation();
 
@@ -38,7 +40,7 @@ export const GitStatusList: React.FC<GitStatusListProps> = ({
     return (
         <div className="git-status-list">
             {files.map((f) => (
-                <div key={f.path} className="git-file-item">
+                <div key={f.path} className={`git-file-item ${selectedPath === f.path ? 'selected' : ''}`}>
                     {/* Badge */}
                     {type === 'staged' ? (
                         <div className="git-file-badge git-badge-staged">

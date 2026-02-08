@@ -13,15 +13,27 @@
 }
 
 .git-section-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    transition: background 0.12s ease;
+    background: #f1f1f1;
+    color: #555;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+[data-theme='dark'] .git-section-header {
+    background: #252525;
+    color: #aaa;
+    border-bottom: 1px solid #2d2d2d;
+}
+
+.git-section-header .git-badge {
+    background: rgba(0, 0, 0, 0.05);
+    color: #666;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .git-section-header .git-badge {
+    background: rgba(255, 255, 255, 0.05);
+    color: #aaa;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .git-action-toolbar {

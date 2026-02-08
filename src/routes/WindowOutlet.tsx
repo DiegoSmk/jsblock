@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { GitTerminalView } from '../features/git/components/GitTerminalView';
+import { GitDiffEditor } from '../features/git/components/GitDiffEditor';
 import { SearchPanel } from '../features/workspace/components/SearchPanel';
 import { useStore } from '../store/useStore';
 import { X, Move, Pin, PinOff } from 'lucide-react';
@@ -10,8 +11,35 @@ export const WindowOutlet: React.FC = () => {
     const theme = useStore(state => state.theme);
     const isDark = theme === 'dark';
     const settings = useStore(state => state.settings);
-    const { setWorkspaceRoot } = useStore();
-    const [isPinned, setIsPinned] = useState(settings.windowAlwaysOnTop); // Inicia com base na configuração default
+    const { setWorkspaceRoot, closeGitDiffFile } = useStore();
+    const [isPinned, setIsPinned] = useState(settings.windowAlwaysOnTop);
+    const [dynamicTitle, setDynamicTitle] = useState<string | null>(null);
+
+    // Listen for title updates (Diff file changes)
+    useEffect(() => {
+        if (!window.electron?.on) return;
+        const unsubscribe = window.electron.on('window-update-payload', (payload: any) => {
+            if (payload?.filePath) {
+                const fileName = payload.filePath.split(/[\\/]/).pop();
+                setDynamicTitle(`GIT-DIFF: ${fileName}`);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    // Set initial title from payload if available
+    useEffect(() => {
+        const payloadStr = params.get('payload');
+        if (payloadStr) {
+            try {
+                const p = JSON.parse(payloadStr);
+                if (type === 'git-diff' && p.filePath) {
+                    const fileName = p.filePath.split(/[\\/]/).pop();
+                    setDynamicTitle(`GIT-DIFF: ${fileName}`);
+                }
+            } catch (e) { /* ignore */ }
+        }
+    }, [params, type]);
 
     // Parse payload from URL
     const payload = useMemo(() => {
@@ -32,6 +60,52 @@ export const WindowOutlet: React.FC = () => {
             setWorkspaceRoot(payload.openedFolder);
         }
     }, [payload, setWorkspaceRoot]);
+
+    // Add is-windowed class to html and inject Monaco transparency CSS
+    useEffect(() => {
+        document.documentElement.classList.add('is-windowed');
+        document.body.classList.add('is-windowed');
+
+        const styleId = 'monaco-transparency-styles';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.innerHTML = `
+                .monaco-diff-editor .monaco-editor,
+                .monaco-diff-editor .monaco-editor .margin,
+                .monaco-diff-editor .monaco-editor-background,
+                .monaco-diff-editor .monaco-editor .inputarea.ime-input,
+                .monaco-diff-editor .monaco-component,
+                .monaco-diff-editor .monaco-scrollable-element,
+                .monaco-diff-editor .margin-view-overlays,
+                .monaco-diff-editor .monaco-editor .scroll-decoration,
+                .monaco-diff-editor .decorationsOverviewRuler,
+                .monaco-diff-editor .lines-content.monaco-editor-background {
+                    background-color: transparent !important;
+                    background: transparent !important;
+                }
+                .monaco-diff-editor .diffOverview {
+                    background-color: rgba(255, 255, 255, 0.02) !important;
+                }
+                .monaco-diff-editor .editor-container {
+                    background-color: transparent !important;
+                }
+                /* Target nested editors in diff view */
+                .monaco-diff-editor .editor {
+                    background-color: transparent !important;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        return () => {
+            document.documentElement.classList.remove('is-windowed');
+            document.body.classList.remove('is-windowed');
+            if (type === 'git-diff') {
+                closeGitDiffFile();
+            }
+        };
+    }, [type, closeGitDiffFile]);
 
     const handleTogglePin = async () => {
         if (window.electron?.windowToggleAlwaysOnTop) {
@@ -63,8 +137,10 @@ export const WindowOutlet: React.FC = () => {
                 return <GitTerminalView />;
             case 'search':
                 return <SearchPanel />;
+            case 'git-diff':
+                const diffPayload = payload as { filePath?: string, openedFolder?: string };
+                return <GitDiffEditor filePath={diffPayload?.filePath} openedFolder={diffPayload?.openedFolder} />;
             case 'execution':
-                return <div style={{ padding: '20px', color: isDark ? '#fff' : '#000' }}>Painel de Execução Independente</div>;
             default:
                 return (
                     <div style={{
@@ -90,7 +166,7 @@ export const WindowOutlet: React.FC = () => {
             background: bgColor,
             backdropFilter: 'blur(24px) saturate(150%)',
             WebkitBackdropFilter: 'blur(24px) saturate(150%)',
-            backgroundClip: 'padding-box', // Prevents background from bleeding under border
+            backgroundClip: 'padding-box',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
@@ -101,7 +177,7 @@ export const WindowOutlet: React.FC = () => {
                 : 'inset 0 0 0 1px rgba(255, 255, 255, 0.4)',
             isolation: 'isolate',
             transform: 'translateZ(0)',
-            backfaceVisibility: 'hidden', // Forces hardware-accelerated anti-aliasing
+            backfaceVisibility: 'hidden',
             WebkitFontSmoothing: 'antialiased'
         }}>
             {/* Custom Frameless Header */}
@@ -109,8 +185,8 @@ export const WindowOutlet: React.FC = () => {
                 height: '32px',
                 minHeight: '32px',
                 background: isDark
-                    ? 'linear-gradient(to right, #1e293b, #1e1e1e)'
-                    : 'linear-gradient(to right, #f1f5f9, #f3f4f6)',
+                    ? 'linear-gradient(to right, rgba(30, 41, 59, 0.4), rgba(30, 30, 30, 0.4))'
+                    : 'linear-gradient(to right, rgba(241, 245, 249, 0.4), rgba(243, 244, 246, 0.4))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -123,7 +199,7 @@ export const WindowOutlet: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: isDark ? '#94a3b8' : '#64748b' }}>
                     <Move size={14} />
                     <span style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {type || 'Pop-out'} Window
+                        {dynamicTitle || `${type || 'Pop-out'} Window`}
                     </span>
                 </div>
 

@@ -107,5 +107,12 @@ contextBridge.exposeInMainWorld('electron', {
         },
         search: (query: string, rootPath: string, options: SearchOptions) => ipcRenderer.invoke('workspace:search', query, rootPath, options),
         replace: (query: string, replacement: string, rootPath: string, options: SearchOptions) => ipcRenderer.invoke('workspace:replace', query, replacement, rootPath, options)
+    },
+
+    // Generic Event Listener (Sub-only)
+    on: (channel: string, callback: (...args: any[]) => void) => {
+        const subscription = (_event: unknown, ...args: any[]) => callback(...args);
+        ipcRenderer.on(channel, subscription);
+        return () => ipcRenderer.removeListener(channel, subscription);
     }
 });

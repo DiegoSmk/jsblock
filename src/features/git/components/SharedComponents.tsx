@@ -23,10 +23,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             onClick={onToggle}
             className="git-section-header"
             style={{
-                background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-                color: isDark ? '#999' : '#777',
                 cursor: onToggle ? 'pointer' : 'default',
-                borderBottom: `1px solid ${isDark ? '#2a2a2a' : '#e5e7eb'}`,
                 display: 'flex',
                 alignItems: 'center',
                 width: '100%',
@@ -35,7 +32,6 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
                 height: '32px',
                 fontSize: '0.7rem',
                 fontWeight: 600,
-                
                 letterSpacing: '0.03em'
             }}
         >
@@ -47,14 +43,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px' }}>
                 {count >= 0 && (
-                    <span className="git-badge" style={{
-                        background: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
-                        color: isDark ? '#eee' : '#555',
-                        border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'}`,
-                        padding: '1px 6px',
-                        borderRadius: '10px',
-                        fontSize: '0.65rem'
-                    }}>{count}</span>
+                    <span className="git-badge">{count}</span>
                 )}
                 {rightElement}
             </div>

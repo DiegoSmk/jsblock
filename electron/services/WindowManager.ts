@@ -1,7 +1,8 @@
 import { BrowserWindow, app } from 'electron';
 import path from 'path';
+import fs from 'fs';
 
-export type WindowType = 'terminal' | 'search' | 'execution' | 'debug';
+export type WindowType = 'terminal' | 'search' | 'execution' | 'debug' | 'git-diff';
 
 export interface WindowOptions {
     width?: number;
@@ -9,22 +10,67 @@ export interface WindowOptions {
     title?: string;
     alwaysOnTop?: boolean;
     payload?: any;
+    singleton?: boolean;
 }
 
 export class WindowManager {
     private windows: Map<string, BrowserWindow> = new Map();
+    private singletonWindows: Map<WindowType, string> = new Map();
     private mainWindow: BrowserWindow | null = null;
+    private windowStates: Record<string, { x: number, y: number, width: number, height: number }> = {};
+    private readonly statesFilePath: string;
+
+    constructor() {
+        this.statesFilePath = path.join(app.getPath('userData'), 'window-states.json');
+        this.loadStates();
+    }
+
+    private loadStates() {
+        try {
+            if (fs.existsSync(this.statesFilePath)) {
+                const data = fs.readFileSync(this.statesFilePath, 'utf-8');
+                this.windowStates = JSON.parse(data);
+            }
+        } catch (err) {
+            console.error('Failed to load window states:', err);
+        }
+    }
+
+    private saveStates() {
+        try {
+            fs.writeFileSync(this.statesFilePath, JSON.stringify(this.windowStates, null, 2));
+        } catch (err) {
+            console.error('Failed to save window states:', err);
+        }
+    }
 
     setMainWindow(win: BrowserWindow) {
         this.mainWindow = win;
     }
 
     openWindow(type: WindowType, options: WindowOptions = {}) {
+        // Handle singleton logic
+        if (options.singleton) {
+            const existingId = this.singletonWindows.get(type);
+            if (existingId) {
+                const existingWin = this.windows.get(existingId);
+                if (existingWin && !existingWin.isDestroyed()) {
+                    existingWin.webContents.send('window-update-payload', options.payload);
+                    existingWin.focus();
+                    return existingId;
+                }
+            }
+        }
+
         const windowId = `window-${type}-${Date.now()}`;
+        const stateKey = `window-state-${type}`;
+        const lastState = this.windowStates[stateKey];
 
         const win = new BrowserWindow({
-            width: options.width || 800,
-            height: options.height || 600,
+            width: lastState?.width || options.width || 800,
+            height: lastState?.height || options.height || 600,
+            x: lastState?.x, // Will be undefined if no state, letting Electron center it
+            y: lastState?.y,
             parent: this.mainWindow || undefined,
             title: options.title || `JS Blueprints - ${type.toUpperCase()}`,
             transparent: true,
@@ -40,7 +86,7 @@ export class WindowManager {
             },
         });
 
-        win.setMenuBarVisibility(false); // Extra guarantee for Linux/Windows
+        win.setMenuBarVisibility(false);
 
         const queryParams = new URLSearchParams({
             mode: 'window',
@@ -53,7 +99,6 @@ export class WindowManager {
                 hash: `/?${queryParams}`
             });
         } else {
-            // Try multiple ports in dev mode
             const tryLoad = async (port: number) => {
                 try {
                     await win.loadURL(`http://localhost:${port}/?${queryParams}`);
@@ -71,9 +116,29 @@ export class WindowManager {
 
         win.on('closed', () => {
             this.windows.delete(windowId);
+            if (options.singleton) {
+                this.singletonWindows.delete(type);
+            }
+        });
+
+        // Window state persistence
+        win.on('close', () => {
+            if (!win.isDestroyed()) {
+                const bounds = win.getBounds();
+                this.windowStates[stateKey] = {
+                    x: bounds.x,
+                    y: bounds.y,
+                    width: bounds.width,
+                    height: bounds.height
+                };
+                this.saveStates();
+            }
         });
 
         this.windows.set(windowId, win);
+        if (options.singleton) {
+            this.singletonWindows.set(type, windowId);
+        }
         return windowId;
     }
 

@@ -17,7 +17,10 @@
     "isolatedModules": true,
     "noEmit": false,
     "outDir": "dist/electron",
-    "rootDir": "electron"
+    "rootDir": "electron",
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "electron"

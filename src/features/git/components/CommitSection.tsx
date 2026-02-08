@@ -19,7 +19,7 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
     isDark, commitMessage, setCommitMessage, onCommit, stagedCount, isAmend, setIsAmend
 }) => {
     const { t } = useTranslation();
-    const activeColor = isDark ? '#5da5db' : '#217dbb';
+    // activeColor const removed - now using static emerald colors
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Auto-expand if message comes with a body (e.g. from a template)
@@ -69,12 +69,12 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                             style={{
                                 padding: '4px 8px',
                                 borderRadius: '5px',
-                                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'}`,
-                                background: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
+                                border: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'}`,
+                                background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
                                 color: isDark ? '#999' : '#666',
                                 cursor: 'pointer',
                                 fontSize: '0.7rem',
-                                fontWeight: 600,
+                                fontWeight: 500,
                                 transition: 'all 0.15s ease',
                                 outline: 'none',
                                 display: 'flex',
@@ -82,18 +82,18 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                                 justifyContent: 'center',
                                 gap: '5px',
                                 letterSpacing: '0.02em',
-                                flex: '1 0 calc(33.33% - 12px)', // Tries to put at least 3 per row if possible, but grows
+                                flex: '1 0 calc(33.33% - 12px)',
                                 minWidth: '65px',
-                                maxWidth: '120px' // Prevents single buttons from becoming too stretched
+                                maxWidth: '120px'
                             }}
                             onMouseEnter={(e) => {
-                                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
-                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
-                                e.currentTarget.style.color = isDark ? '#fff' : '#000';
+                                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : '#f3f4f6';
+                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : '#e5e7eb';
+                                e.currentTarget.style.color = isDark ? '#fff' : '#111';
                             }}
                             onMouseLeave={(e) => {
-                                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)';
-                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+                                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff';
+                                e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
                                 e.currentTarget.style.color = isDark ? '#999' : '#666';
                             }}
                         >
@@ -224,14 +224,14 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                         <Radio
                             checked={isAmend}
                             onChange={() => setIsAmend(!isAmend)}
-                            activeColor={activeColor}
+                            activeColor={isDark ? '#10b981' : '#059669'} // Emerald color
                             isDark={isDark}
                             size={16}
                         />
                         <label
                             style={{
                                 fontSize: '0.75rem',
-                                color: isDark ? '#aaa' : '#666',
+                                color: isDark ? '#888' : '#666',
                                 cursor: 'pointer',
                                 userSelect: 'none',
                                 fontWeight: 500
@@ -247,14 +247,14 @@ export const CommitSection: React.FC<CommitSectionProps> = ({
                     style={{
                         padding: '6px 16px',
                         background: (!commitMessage || stagedCount === 0)
-                            ? (isDark ? 'rgba(79, 195, 247, 0.05)' : 'rgba(0, 112, 243, 0.05)')
-                            : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
+                            ? (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
+                            : (isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)'), // Emerald tint
                         color: (!commitMessage || stagedCount === 0)
-                            ? (isDark ? '#444' : '#aaa')
-                            : (isDark ? '#4fc3f7' : '#0070f3'),
+                            ? (isDark ? '#555' : '#aaa')
+                            : (isDark ? '#34d399' : '#059669'), // Emerald text
                         border: `1px solid ${(!commitMessage || stagedCount === 0)
                             ? (isDark ? '#333' : '#eee')
-                            : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')
+                            : (isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)')
                             } `,
                         borderRadius: '6px',
                         cursor: (!commitMessage || stagedCount === 0) ? 'not-allowed' : 'pointer',
