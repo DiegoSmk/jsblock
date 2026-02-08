@@ -111,7 +111,13 @@ export const FileExplorer: React.FC = () => {
                         if (!window.electron?.fileSystem) return;
                         await window.electron.fileSystem.delete(node.path);
 
-                        if (selectedFile === node.path || (selectedFile && selectedFile.startsWith(node.path + '/'))) {
+                        const isInternalPath = (parent: string, child: string) => {
+                            const normalizedParent = parent.replace(/\\/g, '/');
+                            const normalizedChild = child.replace(/\\/g, '/');
+                            return normalizedChild === normalizedParent || normalizedChild.startsWith(normalizedParent + '/');
+                        };
+
+                        if (selectedFile && isInternalPath(node.path, selectedFile)) {
                             setDirty(false);
                             await setSelectedFile(null);
                         }
@@ -128,7 +134,9 @@ export const FileExplorer: React.FC = () => {
         } else if (type === 'rename') {
             setRenamingPath(node.path);
         } else {
-            setIsCreating({ type, ext, parentPath: node.isDirectory ? node.path : node.path.substring(0, node.path.lastIndexOf('/')) });
+            const lastIdx = Math.max(node.path.lastIndexOf('/'), node.path.lastIndexOf('\\'));
+            const parentPath = node.isDirectory ? node.path : node.path.substring(0, lastIdx);
+            setIsCreating({ type, ext, parentPath });
         }
         setContextMenu(null);
     };
@@ -140,15 +148,23 @@ export const FileExplorer: React.FC = () => {
         }
 
         try {
-            const parent = oldPath.substring(0, oldPath.lastIndexOf('/'));
-            const newPath = `${parent}/${newNameValue}`;
+            const sep = oldPath.includes('\\') ? '\\' : '/';
+            const lastIdx = Math.max(oldPath.lastIndexOf('/'), oldPath.lastIndexOf('\\'));
+            const parent = oldPath.substring(0, lastIdx);
+            const newPath = `${parent}${sep}${newNameValue}`;
 
             if (!window.electron?.fileSystem) return;
             await window.electron.fileSystem.move(oldPath, newPath);
 
+            const isInternalPath = (parentDir: string, child: string) => {
+                const normalizedParent = parentDir.replace(/\\/g, '/');
+                const normalizedChild = child.replace(/\\/g, '/');
+                return normalizedChild === normalizedParent || normalizedChild.startsWith(normalizedParent + '/');
+            };
+
             if (selectedFile === oldPath) {
                 await setSelectedFile(newPath);
-            } else if (selectedFile?.startsWith(oldPath + '/')) {
+            } else if (selectedFile && isInternalPath(oldPath, selectedFile)) {
                 await setSelectedFile(selectedFile.replace(oldPath, newPath));
             }
 
@@ -333,12 +349,13 @@ export const FileExplorer: React.FC = () => {
                             e.preventDefault();
                             if (!newName) return;
                             try {
+                                const sep = isCreating.parentPath.includes('\\') ? '\\' : '/';
                                 if (isCreating.type === 'folder') {
-                                    await window.electron?.fileSystem.createDirectory(`${isCreating.parentPath}/${newName}`);
+                                    await window.electron?.fileSystem.createDirectory(`${isCreating.parentPath}${sep}${newName}`);
                                 } else {
                                     const ext = isCreating.ext ?? '';
                                     const fileName = newName.endsWith(ext) ? newName : `${newName}${ext}`;
-                                    await window.electron?.fileSystem.createFile(`${isCreating.parentPath}/${fileName}`, '');
+                                    await window.electron?.fileSystem.createFile(`${isCreating.parentPath}${sep}${fileName}`, '');
                                 }
                                 setIsCreating(null);
                                 setNewName('');

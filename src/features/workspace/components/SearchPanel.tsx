@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../../store/useStore';
 import { Search, ArrowRight, Replace, Loader2, File, CaseSensitive, Code } from 'lucide-react';
 import { SidebarPanel } from '../../../components/ui/SidebarPanel';
@@ -7,6 +7,17 @@ import type { SearchResult, SearchOptions } from '../../../types/electron';
 export const SearchPanel: React.FC = () => {
     const { theme, openedFolder, setSelectedFile } = useStore();
     const isDark = theme === 'dark';
+
+    const [query, setQuery] = useState('');
+    const [replaceQuery, setReplaceQuery] = useState('');
+    const [results, setResults] = useState<SearchResult[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showReplace, setShowReplace] = useState(false);
+    const [options, setOptions] = useState<SearchOptions>({
+        caseSensitive: false,
+        regex: false
+    });
+    const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
 
     const inputRef = useRef<HTMLInputElement>(null);
 

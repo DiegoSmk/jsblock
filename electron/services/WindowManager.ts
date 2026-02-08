@@ -49,7 +49,9 @@ export class WindowManager {
         }).toString();
 
         if (app.isPackaged) {
-            void win.loadFile(path.join(__dirname, '../index.html'), { query: { mode: 'window', type } });
+            void win.loadFile(path.join(__dirname, '../index.html'), {
+                hash: `/?${queryParams}`
+            });
         } else {
             // Try multiple ports in dev mode
             const tryLoad = async (port: number) => {
