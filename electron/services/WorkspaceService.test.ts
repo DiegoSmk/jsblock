@@ -123,4 +123,33 @@ describe('WorkspaceService Search', () => {
 
         await expect(searchPromise).rejects.toThrow('Worker crashed');
     });
+
+    it('should handle worker process exit', async () => {
+        const calls = (ipcMain.handle as unknown as Mock).mock.calls;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const searchHandler = calls.find((call: any[]) => call[0] === 'workspace:search')![1] as (event: unknown, query: string, path: string, options: unknown) => Promise<unknown>;
+
+        const searchPromise = searchHandler({}, 'query', '/root', {});
+
+        if (workerCallbacks.exit) {
+            workerCallbacks.exit(1);
+        }
+
+        await expect(searchPromise).rejects.toThrow('Worker exited');
+    });
+
+    it('should handle operation timeout', async () => {
+        vi.useFakeTimers();
+        const calls = (ipcMain.handle as unknown as Mock).mock.calls;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const searchHandler = calls.find((call: any[]) => call[0] === 'workspace:search')![1] as (event: unknown, query: string, path: string, options: unknown) => Promise<unknown>;
+
+        const searchPromise = searchHandler({}, 'query', '/root', {});
+
+        // Fast-forward time
+        vi.advanceTimersByTime(31000);
+
+        await expect(searchPromise).rejects.toThrow('Operation search timed out after 30s');
+        vi.useRealTimers();
+    });
 });

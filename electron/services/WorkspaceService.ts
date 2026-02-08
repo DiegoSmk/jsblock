@@ -57,7 +57,27 @@ export class WorkspaceService {
     private sendToWorker(type: string, payload: unknown): Promise<unknown> {
         return new Promise((resolve, reject) => {
             const id = Math.random().toString(36).substring(7);
-            this.pendingRequests.set(id, { resolve, reject });
+
+            const timeout = setTimeout(() => {
+                const pending = this.pendingRequests.get(id);
+                if (pending) {
+                    pending.reject(new Error(`Operation ${type} timed out after 30s`));
+                    this.pendingRequests.delete(id);
+                    // Also notify worker to stop if possible
+                    if (this.worker) this.worker.postMessage({ id, type: 'cancel', payload: { id } });
+                }
+            }, 30000);
+
+            this.pendingRequests.set(id, {
+                resolve: (val) => {
+                    clearTimeout(timeout);
+                    resolve(val);
+                },
+                reject: (err) => {
+                    clearTimeout(timeout);
+                    reject(err);
+                }
+            });
             this.ensureWorker().postMessage({ id, type, payload });
         });
     }

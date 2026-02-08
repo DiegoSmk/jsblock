@@ -1,9 +1,5 @@
-export interface FileNode {
-    name: string;
-    path: string;
-    isDirectory: boolean;
-    children?: FileNode[];
-}
+import type { FileNode } from '../../../electron/shared/ipc-types';
+export type { FileNode };
 
 export interface WorkspaceSlice {
     workspace: {

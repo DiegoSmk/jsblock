@@ -76,3 +76,10 @@ state.json
 **/node_modules/
 .agent/state/
 .agent/logs/
+
+# Compiled artifacts in source
+src/**/*.js
+lint_errors*.txt
+lint_warnings.txt
+verification/
+verify_flow.py

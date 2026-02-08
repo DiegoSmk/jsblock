@@ -17,7 +17,7 @@ interface SearchResult {
 
 const MAX_SEARCH_RESULTS = 2000;
 const MAX_FILE_SIZE_FOR_SEARCH = 1024 * 1024; // 1MB
-const MAX_SEARCH_DEPTH = 20;
+const MAX_SEARCH_DEPTH = 50;
 
 class WorkspaceWorker {
     private currentActionId: string | null = null;
