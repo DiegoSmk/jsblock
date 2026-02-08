@@ -4,30 +4,28 @@ import type { Node as BabelNode, ExportNamedDeclaration, ExportDefaultDeclaratio
 export const ExportHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration',
     handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
-        const index = idSuffix && !isNaN(parseInt(idSuffix)) ? parseInt(idSuffix) : undefined;
+        const nodeId = idSuffix ? `export-${ctx.nodes.length}-${idSuffix}` : `export-${ctx.nodes.length}`;
 
         if (node.type === 'ExportNamedDeclaration') {
-            const stmt = node;
-            if (stmt.declaration && ctx.parseStatement) {
+            const stmt = node as ExportNamedDeclaration;
+            if (stmt.declaration) {
+                // Handle export const x = ...
                 ctx.isExporting = true;
-                const result = ctx.parseStatement(stmt.declaration, parentId, handleName, index);
+                const result = ctx.parseStatement(stmt.declaration, parentId, handleName, undefined, idSuffix);
                 ctx.isExporting = false;
                 return result;
             }
         }
 
         if (node.type === 'ExportDefaultDeclaration') {
-            const stmt = node;
-            if (stmt.declaration && ctx.parseStatement) {
+            const stmt = node as ExportDefaultDeclaration;
+            if (stmt.declaration) {
                 ctx.isExportingDefault = true;
-                const result = ctx.parseStatement(stmt.declaration, parentId, handleName, index);
+                const result = ctx.parseStatement(stmt.declaration as BabelNode, parentId, handleName, undefined, idSuffix);
                 ctx.isExportingDefault = false;
-
                 if (result) return result;
             }
         }
-
-        const nodeId = idSuffix ? `export-${ctx.nodes.length}-${idSuffix}` : `export-${ctx.nodes.length}`;
 
         let label = 'export';
         let exportType: 'named' | 'default' = 'named';

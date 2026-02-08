@@ -16,21 +16,21 @@ import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
 import type { AppNode } from '../../types';
 
-export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number): string | undefined => {
-    const idSuffix = index !== undefined ? `${index}` : undefined;
+export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, index?: number, idSuffix?: string): string | undefined => {
+    const suffix = idSuffix ?? (index !== undefined ? `${index}` : undefined);
 
     if (ImportHandler.canHandle(stmt)) {
-        ImportHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        ImportHandler.handle(stmt, ctx, undefined, undefined, suffix);
         return undefined;
     }
 
     if (VariableHandler.canHandle(stmt)) {
-        VariableHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        VariableHandler.handle(stmt, ctx, undefined, undefined, suffix);
         return undefined;
     }
 
     if (FunctionHandler.canHandle(stmt)) {
-        FunctionHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        FunctionHandler.handle(stmt, ctx, undefined, undefined, suffix);
         return undefined;
     }
 
@@ -40,39 +40,39 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
     }
 
     if (AssignmentHandler.canHandle(stmt)) {
-        return AssignmentHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return AssignmentHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (IfHandler.canHandle(stmt)) {
-        return IfHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return IfHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (LoopHandler.canHandle(stmt)) {
-        return LoopHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return LoopHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (SwitchHandler.canHandle(stmt)) {
-        return SwitchHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return SwitchHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (TryCatchHandler.canHandle(stmt)) {
-        return TryCatchHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return TryCatchHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (CallHandler.canHandle(stmt)) {
-        return CallHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return CallHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (LogicHandler.canHandle(stmt)) {
-        return LogicHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return LogicHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (ReturnHandler.canHandle(stmt)) {
-        return ReturnHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return ReturnHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     if (ExportHandler.canHandle(stmt)) {
-        return ExportHandler.handle(stmt, ctx, parentId, handleName, idSuffix);
+        return ExportHandler.handle(stmt, ctx, parentId, handleName, suffix);
     }
 
     return undefined;
@@ -150,8 +150,8 @@ export const initializeContext = (astBody: Statement[], indexCounter: { value: n
         nativeApiNodeId: nativeApiId,
         processBlock: (bodyNode, entryNodeId, flowHandle, label, preNodes) =>
             processBlockInScope(bodyNode, ctx, entryNodeId, flowHandle, label, preNodes),
-        parseStatement: (stmt, parentId, handleName, index) =>
-            parseStatement(stmt, ctx, parentId, handleName, index)
+        parseStatement: (stmt: BabelNode, parentId?: string, handleName?: string, index?: number, idSuffix?: string) =>
+            parseStatement(stmt, ctx, parentId, handleName, index, idSuffix)
     };
 
     return ctx;
