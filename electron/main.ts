@@ -237,6 +237,19 @@ ipcMain.handle('read-file', async (_event, filePath: string) => {
     }
 });
 
+ipcMain.handle('read-multiple-files', async (_event, filePaths: string[]) => {
+    try {
+        const results: Record<string, string> = {};
+        await Promise.all(filePaths.map(async (filePath) => {
+            results[filePath] = await fs.promises.readFile(filePath, 'utf-8');
+        }));
+        return results;
+    } catch (err) {
+        console.error('Error reading multiple files:', err);
+        throw err;
+    }
+});
+
 ipcMain.handle('write-file', async (_event, filePath: string, content: string) => {
     try {
         await fs.promises.writeFile(filePath, content, 'utf-8');

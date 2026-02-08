@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electron', {
     fileSystem: {
         readDir: (path: string) => ipcRenderer.invoke('read-dir', path),
         readFile: (path: string) => ipcRenderer.invoke('read-file', path),
+        readFiles: (paths: string[]) => ipcRenderer.invoke('read-multiple-files', paths),
         writeFile: (path: string, content: string) => ipcRenderer.invoke('write-file', path, content),
         createFile: (path: string, content?: string) => ipcRenderer.invoke('create-file', path, content),
         createDirectory: (path: string) => ipcRenderer.invoke('create-directory', path),
