@@ -406,13 +406,35 @@ ipcMain.handle('execution:check-availability', async () => {
 });
 
 // MCP Sync State Handler
+let isSyncingState = false;
+let pendingSyncState: { data: unknown } | null = null;
+
 ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
-    const statePath = path.join(app.getAppPath(), 'state.json');
-    try {
-        fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
-    } catch (err) {
-        console.error('Failed to sync state to file', err);
+    if (isSyncingState) {
+        pendingSyncState = { data: state };
+        return;
     }
+
+    isSyncingState = true;
+    const statePath = path.join(app.getAppPath(), 'state.json');
+
+    const writeLoop = async (data: unknown) => {
+        try {
+            await fs.promises.writeFile(statePath, JSON.stringify(data, null, 2), 'utf-8');
+        } catch (err) {
+            console.error('Failed to sync state to file', err);
+        } finally {
+            if (pendingSyncState) {
+                const nextState = pendingSyncState.data;
+                pendingSyncState = null;
+                void writeLoop(nextState);
+            } else {
+                isSyncingState = false;
+            }
+        }
+    };
+
+    void writeLoop(state);
 });
 
 
