@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ExecutionPayload, ExecutionError, BenchmarkResult, SearchOptions } from './types';
-import type { FileNode } from '../src/features/workspace/types';
 
 contextBridge.exposeInMainWorld('electron', {
     // Dialogs & Window
