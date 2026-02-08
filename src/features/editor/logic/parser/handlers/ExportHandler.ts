@@ -1,29 +1,57 @@
 import type { ParserContext, ParserHandler } from '../types';
-import type { Node as BabelNode, ExportNamedDeclaration } from '@babel/types';
+import type { Node as BabelNode, ExportNamedDeclaration, ExportDefaultDeclaration } from '@babel/types';
+import { VariableHandler } from './VariableHandler';
+import { FunctionHandler } from './FunctionHandler';
 
 export const ExportHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ExportNamedDeclaration' || node.type === 'ExportDefaultDeclaration',
-    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
-        const nodeId = idSuffix ? `export-${ctx.nodes.length}-${idSuffix}` : `export-${ctx.nodes.length}`;
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+        if (node.type === 'ExportNamedDeclaration') {
+            const stmt = node as ExportNamedDeclaration;
+            if (stmt.declaration) {
+                ctx.isExporting = true;
+                let result: string | undefined;
 
+                if (VariableHandler.canHandle(stmt.declaration)) {
+                    result = VariableHandler.handle(stmt.declaration, ctx, parentId, handleName, idSuffix);
+                } else if (FunctionHandler.canHandle(stmt.declaration)) {
+                    result = FunctionHandler.handle(stmt.declaration, ctx, parentId, handleName, idSuffix);
+                }
+
+                ctx.isExporting = false;
+
+                // If we successfully handled the inner declaration, return its result
+                if (result) return result;
+
+                // Fallback for unhandled named declarations (e.g. Class)
+                return undefined;
+            }
+        } else if (node.type === 'ExportDefaultDeclaration') {
+            const stmt = node as ExportDefaultDeclaration;
+            if (stmt.declaration) {
+                ctx.isExportingDefault = true;
+                let result: string | undefined;
+
+                const decl = stmt.declaration as BabelNode;
+                if (VariableHandler.canHandle(decl)) {
+                    result = VariableHandler.handle(decl, ctx, parentId, handleName, idSuffix);
+                } else if (FunctionHandler.canHandle(decl)) {
+                    result = FunctionHandler.handle(decl, ctx, parentId, handleName, idSuffix);
+                }
+
+                ctx.isExportingDefault = false;
+                if (result) return result;
+            }
+        }
+
+        // Handle re-exports or default exports of expressions
+        const nodeId = idSuffix ? `export-${ctx.nodes.length}-${idSuffix}` : `export-${ctx.nodes.length}`;
         let label = 'export';
         let exportType: 'named' | 'default' = 'named';
 
         if (node.type === 'ExportDefaultDeclaration') {
             exportType = 'default';
             label = 'export default';
-            // We might want to parse the decl here as well if it's a function/class
-        } else {
-            const stmt = node as ExportNamedDeclaration;
-            if (stmt.declaration) {
-                // Handle export const x = ...
-                // This is tricky because we usually want to show the variable node but marked as exported.
-                // For now, let's just parse the inner declaration.
-
-                // We'll mark the context as "exporting" or similar?
-                // Actually, let's just return the result of parsing the inner stmt.
-                return undefined; // TODO: properly handle this
-            }
         }
 
         ctx.nodes.push({
@@ -38,6 +66,6 @@ export const ExportHandler: ParserHandler = {
             }
         });
 
-        return undefined;
+        return nodeId;
     }
 };
