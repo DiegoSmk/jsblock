@@ -839,8 +839,8 @@ export const useStore = create<AppState>((set, get, api) => ({
             const files = await window.electron.fileSystem.readDir(openedFolder) as { name: string, isDirectory: boolean }[];
             const tsFiles = files.filter(f => !f.isDirectory && (f.name.endsWith('.ts') || f.name.endsWith('.js')));
 
-            const paths = tsFiles.map(file => `${openedFolder}/${file.name}`);
-            const contents = await window.electron.fileSystem.readFiles(paths);
+            const filePaths = tsFiles.map(file => `${openedFolder}/${file.name}`);
+            const contents = await window.electron.fileSystem.readFiles(filePaths);
 
             set({ projectFiles: contents });
         } catch (err) {

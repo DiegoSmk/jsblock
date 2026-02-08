@@ -7,7 +7,7 @@ describe('Quokka-like Execution Flow', () => {
     let mockExecutionStart: ReturnType<typeof vi.fn>;
     let mockOnExecutionLog: ReturnType<typeof vi.fn>;
     let mockOnExecutionError: ReturnType<typeof vi.fn>;
-
+    let mockOnExecutionClear: ReturnType<typeof vi.fn>;
     let logCallback: (data: ExecutionPayload) => void;
     let errorCallback: (data: string | { line: number; message: string }) => void;
     let clearCallback: () => void;
@@ -40,7 +40,7 @@ describe('Quokka-like Execution Flow', () => {
             errorCallback = cb;
             return () => { /* cleanup */ };
         });
-        const mockOnExecutionClear = vi.fn((cb: () => void) => {
+        mockOnExecutionClear = vi.fn((cb: () => void) => {
             clearCallback = cb;
             return () => { /* cleanup */ };
         });
@@ -74,13 +74,13 @@ describe('Quokka-like Execution Flow', () => {
 
     it('should send execution request to backend', () => {
         const { runExecution } = useStore.getState();
-        runExecution('const a = 10;');
-        expect(mockExecutionStart).toHaveBeenCalledWith('const a = 10;', undefined);
+        runExecution('const a = 10; // test 1');
+        expect(mockExecutionStart).toHaveBeenCalledWith('const a = 10; // test 1', undefined);
     });
 
     it('should update executionResults when receiving execution:value messages', async () => {
         const { runExecution } = useStore.getState();
-        runExecution('const a = 10;');
+        runExecution('const a = 10; // test 2');
 
         const message = {
             type: 'execution:value' as const,
@@ -100,7 +100,7 @@ describe('Quokka-like Execution Flow', () => {
 
     it('should update executionErrors when receiving execution:error messages', async () => {
         const { runExecution } = useStore.getState();
-        runExecution('const a = 10;');
+        runExecution('const a = 10; // test 3');
 
         const error = {
             message: 'Something went wrong',
@@ -124,7 +124,7 @@ describe('Quokka-like Execution Flow', () => {
 
     it('should accumulate multiple values for the same line', async () => {
         const { runExecution } = useStore.getState();
-        runExecution('const a = 10;');
+        runExecution('const a = 10; // test 4');
 
         logCallback({ type: 'execution:value', line: 2, value: '0' });
         logCallback({ type: 'execution:value', line: 2, value: '1' });
@@ -144,7 +144,6 @@ describe('Quokka-like Execution Flow', () => {
 
         runExecution(code1);
         logCallback({ type: 'execution:value', line: 1, value: 'old' });
-
         await vi.waitFor(() => {
             expect(useStore.getState().executionResults.get(1)).toEqual([{ value: 'old', type: 'spy' }]);
         });

@@ -5,12 +5,6 @@ import type { ExecutionPayload } from '../../../types/electron';
 
 let simulationInterval: ReturnType<typeof setInterval> | null = null;
 let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
-<<<<<<< HEAD
-=======
-let listenersInitialized = false;
-export const resetListeners = () => { listenersInitialized = false; };
-let lastExecutedCode = '';
->>>>>>> origin/perf/async-logging-main-process-15478900141646906091
 
 // Internal Buffer (not in state to avoid React overhead)
 let buffer: {

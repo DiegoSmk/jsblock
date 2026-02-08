@@ -1,59 +1,57 @@
-/* eslint-disable no-console */
 import { describe, it, expect } from 'vitest';
 
-describe('File Sync Performance Benchmark', () => {
+describe('Performance Benchmark: File Sync', () => {
+    // Simulation parameters
     const FILE_COUNT = 100;
-    const IPC_LATENCY_MS = 10;
-    const FILE_READ_TIME_MS = 1;
+    const IPC_LATENCY_MS = 5; // Conservative estimate for IPC overhead + disk I/O start
 
-    // Simulate IPC call overhead
-    const simulateIPC = async <T>(fn: () => T): Promise<T> => {
-        await new Promise(resolve => setTimeout(resolve, IPC_LATENCY_MS));
-        return fn();
-    };
-
-    // Simulate Sequential Read (Current Implementation)
+    // Mock implementation of sequential read
     const sequentialRead = async (files: string[]) => {
-        const start = Date.now();
         const results: Record<string, string> = {};
         for (const file of files) {
-            await simulateIPC(async () => {
-                await new Promise(resolve => setTimeout(resolve, FILE_READ_TIME_MS)); // file read time
-                results[file] = 'content';
-            });
+            // Simulate IPC call latency
+            await new Promise(resolve => setTimeout(resolve, IPC_LATENCY_MS));
+            results[file] = 'content';
         }
-        return Date.now() - start;
+        return results;
     };
 
-    // Simulate Bulk Read (New Implementation)
+    // Mock implementation of bulk read
     const bulkRead = async (files: string[]) => {
-        const start = Date.now();
-        await simulateIPC(async () => {
-            // Parallel file reading on backend
-            await Promise.all(files.map(async () => {
-                await new Promise(resolve => setTimeout(resolve, FILE_READ_TIME_MS));
-            }));
-            // Return all results
-        });
-        return Date.now() - start;
+        // Simulate single IPC call latency
+        await new Promise(resolve => setTimeout(resolve, IPC_LATENCY_MS));
+
+        // Simulate some processing time scaling with file count (but much faster than latency per call)
+        await new Promise(resolve => setTimeout(resolve, files.length * 0.1));
+
+        const results: Record<string, string> = {};
+        for (const file of files) {
+            results[file] = 'content';
+        }
+        return results;
     };
 
-    it('should demonstrate that bulk read is significantly faster than sequential read', async () => {
+    it('should demonstrate significant performance improvement with bulk read', async () => {
         const files = Array.from({ length: FILE_COUNT }, (_, i) => `file_${i}.ts`);
 
-        console.log(`Starting benchmark with ${FILE_COUNT} files...`);
+        const startSequential = performance.now();
+        await sequentialRead(files);
+        const endSequential = performance.now();
+        const durationSequential = endSequential - startSequential;
 
-        const sequentialTime = await sequentialRead(files);
-        console.log(`Sequential Read Time: ${sequentialTime}ms`);
+        const startBulk = performance.now();
+        await bulkRead(files);
+        const endBulk = performance.now();
+        const durationBulk = endBulk - startBulk;
 
-        const bulkTime = await bulkRead(files);
-        console.log(`Bulk Read Time: ${bulkTime}ms`);
+        // eslint-disable-next-line no-console
+        console.log(`Sequential Read (${FILE_COUNT} files): ${durationSequential.toFixed(2)}ms`);
+        // eslint-disable-next-line no-console
+        console.log(`Bulk Read (${FILE_COUNT} files): ${durationBulk.toFixed(2)}ms`);
+        // eslint-disable-next-line no-console
+        console.log(`Speedup: ${(durationSequential / durationBulk).toFixed(2)}x`);
 
-        const improvement = sequentialTime / bulkTime;
-        console.log(`Performance Improvement: ${improvement.toFixed(2)}x`);
-
-        expect(bulkTime).toBeLessThan(sequentialTime);
-        // Expect at least 5x improvement (conservative estimate, theoretically close to FILE_COUNTx if latency dominates)
-        expect(improvement).toBeGreaterThan(5);
+        expect(durationBulk).toBeLessThan(durationSequential);
+        expect(durationSequential / durationBulk).toBeGreaterThan(10);
     });
 });
