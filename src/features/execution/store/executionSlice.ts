@@ -8,6 +8,13 @@ let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 let listenersInitialized = false;
 let lastExecutedCode = '';
 
+// For testing purposes
+export const resetListeners = () => {
+    listenersInitialized = false;
+    lastExecutedCode = '';
+    buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
+};
+
 // Internal Buffer (not in state to avoid React overhead)
 let buffer: {
     results: Map<number, { value: string; type: 'spy' | 'log' }[]>;
@@ -125,6 +132,13 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 rafId ??= requestAnimationFrame(flushBuffer);
             };
 
+            // Clear previous results immediately
+            set({
+                executionResults: new Map(),
+                executionErrors: new Map(),
+                executionCoverage: new Set(),
+                isExecuting: true
+            });
 
             if (!listenersInitialized) {
                 // Main thread messages
@@ -179,7 +193,12 @@ export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice
                 });
 
                 window.electron.onExecutionStarted(() => {
-                    set({ executionErrors: new Map(), isExecuting: true });
+                    set({
+                        executionErrors: new Map(),
+                        executionResults: new Map(),
+                        executionCoverage: new Set(),
+                        isExecuting: true
+                    });
                 });
 
                 window.electron.onExecutionDone(() => {
