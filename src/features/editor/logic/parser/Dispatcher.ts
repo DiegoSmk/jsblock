@@ -10,6 +10,7 @@ import { AssignmentHandler } from './handlers/AssignmentHandler';
 import { FunctionHandler } from './handlers/FunctionHandler';
 import { ReturnHandler } from './handlers/ReturnHandler';
 import { ImportHandler } from './handlers/ImportHandler';
+import { ClassHandler } from './handlers/ClassHandler';
 import { ExportHandler } from './handlers/ExportHandler';
 import { generateId } from './utils';
 import type { Node as BabelNode, Statement } from '@babel/types';
@@ -30,6 +31,11 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
 
     if (FunctionHandler.canHandle(stmt)) {
         FunctionHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        return undefined;
+    }
+
+    if (ClassHandler.canHandle(stmt)) {
+        ClassHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
         return undefined;
     }
 
