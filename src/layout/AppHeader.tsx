@@ -11,6 +11,7 @@ import { DESIGN_TOKENS } from '../constants/design';
 
 
 import { ScrollArea } from '../components/ui/ScrollArea';
+import { GlassButton } from '../components/ui/GlassButton';
 
 interface BreadcrumbItemProps {
     name: string;
@@ -461,7 +462,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         gap: '4px'
                     }}
                 >
-                    <button
+                    <GlassButton
                         onClick={() => {
                             if (openedFolder) {
                                 setConfirmationModal({
@@ -470,7 +471,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                     message: t('app.confirm_close_folder.message') ?? 'Tem certeza que deseja fechar a pasta atual? Quaisquer alterações não salvas serão perdidas.',
                                     confirmLabel: t('app.window_controls.close') ?? 'Fechar',
                                     cancelLabel: t('app.common.cancel') ?? 'Cancelar',
-                                    variant: 'warning',
+                                    variant: 'warning' as any, // 'warning' uses default for now or I could add it
                                     onConfirm: () => {
                                         setWorkspaceRoot(null);
                                         void setSelectedFile(null);
@@ -482,53 +483,28 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                 void openWorkspace();
                             }
                         }}
-                        style={{
-                            background: isDark ? '#2d2d2d' : '#fff',
-                            border: `1px solid ${isDark ? '#444' : '#ccc'}`,
-                            cursor: 'pointer',
-                            color: isDark ? '#ddd' : '#444',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            padding: '4px 10px',
-                            borderRadius: '4px'
-                        }}
-                    >
-                        {openedFolder ? <LogOut size={14} /> : <FolderOpen size={14} />}
-                        <span>{openedFolder ? t('app.window_controls.close') : t('app.open')}</span>
-                    </button>
+                        isDark={isDark}
+                        icon={openedFolder ? LogOut : FolderOpen}
+                        label={openedFolder ? t('app.window_controls.close') : t('app.open')}
+                    />
 
                     {/* Pop-out Test Button */}
-                    <button
+                    <GlassButton
                         onClick={() => {
-                            void window.electron.openWindow('test', { width: 600, height: 400 });
+                            const { settings, openedFolder } = useStore.getState();
+                            void window.electron.openWindow('test', {
+                                width: 600,
+                                height: 400,
+                                alwaysOnTop: settings.windowAlwaysOnTop,
+                                payload: { openedFolder }
+                            });
                         }}
                         title="Abrir Janela de Teste"
-                        style={{
-                            background: isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)',
-                            border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.4)' : 'rgba(99, 102, 241, 0.2)'}`,
-                            cursor: 'pointer',
-                            color: isDark ? '#a5b4fc' : '#4f46e5',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            padding: '4px 10px',
-                            borderRadius: '4px'
-                        }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.background = isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(99, 102, 241, 0.05)';
-                        }}
-                    >
-                        <ExternalLink size={14} />
-                        <span>Pop-out</span>
-                    </button>
+                        isDark={isDark}
+                        variant="primary"
+                        icon={ExternalLink}
+                        label="Pop-out"
+                    />
 
                     {/* Window Controls */}
                     <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>

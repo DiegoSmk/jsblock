@@ -174,6 +174,7 @@ function createWindow() {
     });
 
     mainWindow.on('closed', () => {
+        windowManager.closeAllWindows();
         mainWindow = null;
     });
 
@@ -483,16 +484,28 @@ ipcMain.on('mcp:sync-state', (_event, state: unknown) => {
 
 
 // Window Control Handlers
-ipcMain.on('window-minimize', () => {
-    mainWindow?.minimize();
+ipcMain.on('window-minimize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.minimize();
 });
 
-ipcMain.on('window-maximize', () => {
-    if (mainWindow?.isMaximized()) {
-        mainWindow.unmaximize();
+ipcMain.on('window-maximize', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win?.isMaximized()) {
+        win.unmaximize();
     } else {
-        mainWindow?.maximize();
+        win?.maximize();
     }
+});
+
+ipcMain.handle('window:toggle-always-on-top', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+        const newState = !win.isAlwaysOnTop();
+        win.setAlwaysOnTop(newState);
+        return newState;
+    }
+    return false;
 });
 
 ipcMain.handle('window:open', (_event, type: any, options: any) => {

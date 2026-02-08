@@ -130,7 +130,7 @@ export const GitTerminalView: React.FC = () => {
                         className="git-terminal-external-btn"
                     >
                         <ExternalLink size={14} />
-                        <span>{t('git.terminal.external')}</span>
+                        <span>Sistema</span>
                     </button>
                 </div>
             </div>

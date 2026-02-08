@@ -5,12 +5,18 @@ export interface Settings {
   fontSize: number;
   showAppBorder: boolean;
   showDebugHandles: boolean;
+  windowTransparency: number;
+  windowBackground: string;
+  windowAlwaysOnTop: boolean;
 }
 
 export interface SettingsConfig {
   appearance?: {
     theme?: 'light' | 'dark';
     showAppBorder?: boolean;
+    windowTransparency?: number;
+    windowBackground?: string;
+    windowAlwaysOnTop?: boolean;
   };
   layout?: {
     sidebar?: {

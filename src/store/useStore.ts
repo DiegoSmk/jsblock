@@ -79,7 +79,13 @@ export const useStore = create<AppState>((set, get, api) => ({
     // Settings Configuration
     settingsConfig: (() => {
         const defaults = {
-            appearance: { theme: 'dark', showAppBorder: false },
+            appearance: {
+                theme: 'dark',
+                showAppBorder: false,
+                windowTransparency: 0.85,
+                windowBackground: '#0f172a',
+                windowAlwaysOnTop: false
+            },
             layout: { sidebar: { width: 260 } },
             editor: { fontSize: 14, autoLayoutNodes: false },
             terminal: { copyOnSelect: true, rightClickPaste: true },
@@ -132,6 +138,9 @@ export const useStore = create<AppState>((set, get, api) => ({
             if (parsed.terminal?.copyOnSelect !== undefined) newSettings.terminalCopyOnSelect = parsed.terminal.copyOnSelect;
             if (parsed.terminal?.rightClickPaste !== undefined) newSettings.terminalRightClickPaste = parsed.terminal.rightClickPaste;
             if (parsed.appearance?.showAppBorder !== undefined) newSettings.showAppBorder = parsed.appearance.showAppBorder;
+            if (parsed.appearance?.windowTransparency !== undefined) newSettings.windowTransparency = parsed.appearance.windowTransparency;
+            if (parsed.appearance?.windowBackground !== undefined) newSettings.windowBackground = parsed.appearance.windowBackground;
+            if (parsed.appearance?.windowAlwaysOnTop !== undefined) newSettings.windowAlwaysOnTop = parsed.appearance.windowAlwaysOnTop;
 
             set({ settings: newSettings });
         } catch {
@@ -198,7 +207,10 @@ export const useStore = create<AppState>((set, get, api) => ({
             autoLayoutNodes: false,
             fontSize: 14,
             showAppBorder: false,
-            showDebugHandles: false
+            showDebugHandles: false,
+            windowTransparency: 0.85,
+            windowBackground: '#0f172a',
+            windowAlwaysOnTop: false
         };
         try {
             const saved = localStorage.getItem('settings.json');
@@ -210,7 +222,10 @@ export const useStore = create<AppState>((set, get, api) => ({
                     autoLayoutNodes: parsed.editor?.autoLayoutNodes ?? defaultSettings.autoLayoutNodes,
                     fontSize: parsed.editor?.fontSize ?? defaultSettings.fontSize,
                     showAppBorder: parsed.appearance?.showAppBorder ?? false,
-                    showDebugHandles: parsed.developer?.showDebugHandles ?? defaultSettings.showDebugHandles
+                    showDebugHandles: parsed.developer?.showDebugHandles ?? defaultSettings.showDebugHandles,
+                    windowTransparency: parsed.appearance?.windowTransparency ?? 0.85,
+                    windowBackground: parsed.appearance?.windowBackground ?? (parsed.appearance?.theme === 'light' ? '#f8fbfc' : '#0f172a'),
+                    windowAlwaysOnTop: parsed.appearance?.windowAlwaysOnTop ?? false
                 };
             }
         } catch { /* Ignore missing or corrupt settings */ }
@@ -234,6 +249,9 @@ export const useStore = create<AppState>((set, get, api) => ({
             if (updates.terminalCopyOnSelect !== undefined) parsed.terminal.copyOnSelect = updates.terminalCopyOnSelect;
             if (updates.terminalRightClickPaste !== undefined) parsed.terminal.rightClickPaste = updates.terminalRightClickPaste;
             if (updates.showAppBorder !== undefined) parsed.appearance.showAppBorder = updates.showAppBorder;
+            if (updates.windowTransparency !== undefined) parsed.appearance.windowTransparency = updates.windowTransparency;
+            if (updates.windowBackground !== undefined) parsed.appearance.windowBackground = updates.windowBackground;
+            if (updates.windowAlwaysOnTop !== undefined) parsed.appearance.windowAlwaysOnTop = updates.windowAlwaysOnTop;
 
             // Developer Settings
             parsed.developer ??= {};
@@ -583,13 +601,24 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     toggleTheme: () => {
         const nextTheme = get().theme === 'light' ? 'dark' : 'light';
+        const nextBg = nextTheme === 'dark' ? '#0f172a' : '#f8fafc';
+
         set({ theme: nextTheme });
+
+        // Sync to settings state
+        set(state => ({
+            settings: {
+                ...state.settings,
+                windowBackground: nextBg
+            }
+        }));
 
         // Sync to JSON
         try {
             const parsed = JSON.parse(get().settingsConfig) as SettingsConfig;
             parsed.appearance ??= {};
             parsed.appearance.theme = nextTheme;
+            parsed.appearance.windowBackground = nextBg;
 
             const newJson = JSON.stringify(parsed, null, 2);
             localStorage.setItem('settings.json', newJson);
@@ -1025,7 +1054,13 @@ export const useStore = create<AppState>((set, get, api) => ({
 
     resetSettings: () => {
         const defaults = {
-            appearance: { theme: 'dark', showAppBorder: false },
+            appearance: {
+                theme: 'dark' as 'dark' | 'light',
+                showAppBorder: false,
+                windowTransparency: 0.85,
+                windowBackground: '#0f172a',
+                windowAlwaysOnTop: false
+            },
             layout: { sidebar: { width: 260 } },
             editor: { fontSize: 14, autoLayoutNodes: false },
             terminal: { copyOnSelect: true, rightClickPaste: true },
@@ -1041,7 +1076,10 @@ export const useStore = create<AppState>((set, get, api) => ({
                 fontSize: 14,
                 showAppBorder: false,
                 autoLayoutNodes: false,
-                showDebugHandles: false
+                showDebugHandles: false,
+                windowTransparency: 0.85,
+                windowBackground: '#0f172a',
+                windowAlwaysOnTop: false
             },
             layout: {
                 ...get().layout,

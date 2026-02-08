@@ -39,8 +39,9 @@ export interface ElectronAPI {
   windowMinimize: () => void;
   windowMaximize: () => void;
   windowClose: () => void;
+  windowToggleAlwaysOnTop: () => Promise<boolean>;
   appReady: () => void;
-  openWindow: (type: string, options?: { width?: number; height?: number; title?: string; payload?: any }) => Promise<string>;
+  openWindow: (type: string, options?: { width?: number; height?: number; title?: string; alwaysOnTop?: boolean; payload?: any }) => Promise<string>;
 
   // File System API (Unified)
   fileSystem: {

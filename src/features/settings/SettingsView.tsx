@@ -13,7 +13,8 @@ import {
     Moon,
     FileJson,
     Layers,
-    RotateCcw
+    RotateCcw,
+    Pin
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ScrollArea } from '../../components/ui/ScrollArea';
@@ -204,6 +205,78 @@ export const SettingsView: React.FC = () => {
                                     checked={settings.showAppBorder}
                                     onChange={() => updateSettings({ showAppBorder: !settings.showAppBorder })}
                                 />
+                            </SettingRow>
+                        </SettingGroup>
+
+                        <SettingGroup title="Janelas Pop-out">
+                            <SettingRow
+                                label="Fixar por Padrão"
+                                description="Janelas abrem fixas no topo (Always on Top) automaticamente."
+                                icon={Pin}
+                            >
+                                <Switch
+                                    checked={settings.windowAlwaysOnTop}
+                                    onChange={() => updateSettings({ windowAlwaysOnTop: !settings.windowAlwaysOnTop })}
+                                />
+                            </SettingRow>
+                            <SettingRow
+                                label="Transparência"
+                                description="Ajusta o nível de transparência das janelas secundárias."
+                                icon={Layers}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <input
+                                        type="range"
+                                        min="0.3"
+                                        max="1"
+                                        step="0.05"
+                                        value={settings.windowTransparency ?? 0.85}
+                                        onChange={(e) => updateSettings({ windowTransparency: parseFloat(e.target.value) })}
+                                        style={{ width: '100px', cursor: 'pointer' }}
+                                    />
+                                    <span style={{ fontSize: '11px', fontWeight: 600, color: isDark ? '#4fc3f7' : '#0070f3', width: '32px' }}>
+                                        {Math.round((settings.windowTransparency ?? 0.85) * 100)}%
+                                    </span>
+                                </div>
+                            </SettingRow>
+                            <SettingRow
+                                label="Cor de Fundo"
+                                description="Escolha uma cor de fundo que combine com seu setup."
+                                icon={Monitor}
+                            >
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    {(isDark ? [
+                                        { name: 'Onyx', color: '#0f172a' },
+                                        { name: 'Deep Blue', color: '#1e293b' },
+                                        { name: 'Midnight Purple', color: '#1e1b4b' },
+                                        { name: 'Nord Night', color: '#2e3440' },
+                                        { name: 'Deep Navy', color: '#0a0f1e' }
+                                    ] : [
+                                        { name: 'Snow', color: '#f8fafc' },
+                                        { name: 'Ghost', color: '#f1f5f9' },
+                                        { name: 'Parchment', color: '#fcf5e5' },
+                                        { name: 'Soft Mint', color: '#f0fdf4' },
+                                        { name: 'Frosted Blue', color: '#f0f7ff' }
+                                    ]).map(bg => (
+                                        <button
+                                            key={bg.color}
+                                            onClick={() => updateSettings({ windowBackground: bg.color })}
+                                            title={bg.name}
+                                            style={{
+                                                width: '24px',
+                                                height: '24px',
+                                                borderRadius: '6px',
+                                                backgroundColor: bg.color,
+                                                border: settings.windowBackground === bg.color
+                                                    ? `2px solid ${isDark ? '#4fc3f7' : '#0070f3'}`
+                                                    : `1px solid ${isDark ? '#333' : '#ddd'}`,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                padding: 0
+                                            }}
+                                        />
+                                    ))}
+                                </div>
                             </SettingRow>
                         </SettingGroup>
 

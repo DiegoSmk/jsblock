@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electron', {
     windowMinimize: () => ipcRenderer.send('window-minimize'),
     windowMaximize: () => ipcRenderer.send('window-maximize'),
     windowClose: () => ipcRenderer.send('window-close'),
+    windowToggleAlwaysOnTop: () => ipcRenderer.invoke('window:toggle-always-on-top'),
     appReady: () => ipcRenderer.send('app-ready'),
     openWindow: (type: string, options?: any) => ipcRenderer.invoke('window:open', type, options),
 

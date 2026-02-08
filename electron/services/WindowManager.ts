@@ -7,6 +7,7 @@ export interface WindowOptions {
     width?: number;
     height?: number;
     title?: string;
+    alwaysOnTop?: boolean;
     payload?: any;
 }
 
@@ -24,9 +25,11 @@ export class WindowManager {
         const win = new BrowserWindow({
             width: options.width || 800,
             height: options.height || 600,
+            parent: this.mainWindow || undefined,
             title: options.title || `JS Blueprints - ${type.toUpperCase()}`,
             transparent: true,
             backgroundColor: '#00000000',
+            alwaysOnTop: options.alwaysOnTop ?? false,
             frame: false,
             autoHideMenuBar: true,
             hasShadow: true,
