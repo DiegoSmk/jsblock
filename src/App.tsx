@@ -284,7 +284,7 @@ function App() {
       background: isDark ? '#000' : '#fff',
       color: isDark ? '#fff' : '#000',
       overflow: 'hidden',
-      padding: showAppBorder ? '4px' : '0',
+      padding: '6px', // Permanent padding to allow resize grip on edges
       transition: 'padding 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       position: 'relative'
     }}>
