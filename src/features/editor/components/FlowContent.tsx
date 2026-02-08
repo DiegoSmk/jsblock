@@ -38,6 +38,8 @@ import { ImportNode } from '../nodes/ImportNode';
 import { CanvasNode } from '../nodes/CanvasNode';
 import { ClassNode } from '../nodes/ClassNode';
 import { MethodNode } from '../nodes/MethodNode';
+import { DestructuringNode } from '../nodes/DestructuringNode';
+import { ConnectionLine } from './ConnectionLine';
 import { validateConnection } from '../logic/connectionLogic';
 
 const nodeTypes: NodeTypes = {
@@ -57,7 +59,8 @@ const nodeTypes: NodeTypes = {
   importNode: ImportNode,
   canvasNode: CanvasNode,
   classNode: ClassNode,
-  methodNode: MethodNode
+  methodNode: MethodNode,
+  destructuringNode: DestructuringNode
 };
 
 export function FlowContent() {
@@ -281,6 +284,7 @@ export function FlowContent() {
         connectionMode={ConnectionMode.Loose}
         connectionRadius={30}
         defaultEdgeOptions={defaultEdgeOptions}
+        connectionLineComponent={ConnectionLine}
       >
         <Background color={isDark ? '#333' : '#ddd'} gap={20} />
         <Controls />
