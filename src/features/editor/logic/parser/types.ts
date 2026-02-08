@@ -16,6 +16,7 @@ export interface ParserContext {
     isExporting?: boolean;
     isExportingDefault?: boolean;
     processBlock: (bodyNode: BabelNode | BabelNode[], entryNodeId: string, flowHandle: string, label: string, preNodes?: AppNode[]) => void;
+    parseStatement: (stmt: BabelNode, parentId?: string, handleName?: string, index?: number, idSuffix?: string) => string | undefined;
 }
 
 export interface ParserHandler {
