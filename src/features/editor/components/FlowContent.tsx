@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import {
@@ -203,29 +203,34 @@ export function FlowContent() {
     updateEdge(edgeStyleMenu.id, edgeUpdates);
   };
 
-  const scopeNodes = nodes.filter((n: Node) =>
-    n.id !== 'node-js-runtime' && (
-      n.data?.scopeId === activeScopeId ||
-      (activeScopeId === 'root' && (!n.data?.scopeId || n.data?.scopeId === 'root'))
-    )
-  );
+  const { filteredNodes, filteredEdges } = useMemo(() => {
+    const scopeNodes = nodes.filter((n: Node) =>
+      n.id !== 'node-js-runtime' && (
+        n.data?.scopeId === activeScopeId ||
+        (activeScopeId === 'root' && (!n.data?.scopeId || n.data?.scopeId === 'root'))
+      )
+    );
 
-  const hasNativeCalls = edges.some((e: Edge) =>
-    e.source === 'node-js-runtime' &&
-    scopeNodes.some((n: Node) => n.id === e.target)
-  );
+    const scopeNodeIds = new Set(scopeNodes.map(n => n.id));
+    const hasNativeCalls = edges.some((e: Edge) =>
+      e.source === 'node-js-runtime' &&
+      scopeNodeIds.has(e.target)
+    );
 
-  const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
-  const filteredNodes: Node[] = (hasNativeCalls && runtimeNode)
-    ? [...scopeNodes, runtimeNode]
-    : scopeNodes;
+    const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
+    const filteredNodes: Node[] = (hasNativeCalls && runtimeNode)
+      ? [...scopeNodes, runtimeNode]
+      : scopeNodes;
 
-  const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
-  const filteredEdges = edges.filter(e => {
-    if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
-    if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
-    return false;
-  });
+    const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
+    const filteredEdges = edges.filter(e => {
+      if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
+      if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
+      return false;
+    });
+
+    return { filteredNodes, filteredEdges };
+  }, [nodes, edges, activeScopeId]);
 
   useEffect(() => {
     if (filteredNodes.length > 0) {
