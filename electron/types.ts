@@ -37,3 +37,10 @@ export interface SearchOptions {
     caseSensitive: boolean;
     regex: boolean;
 }
+
+export interface FileNode {
+    name: string;
+    path: string;
+    isDirectory: boolean;
+    children?: FileNode[];
+}

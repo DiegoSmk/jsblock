@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright
 import time
+import os
 
 def run():
     with sync_playwright() as p:
@@ -9,47 +10,14 @@ def run():
         page.on("pageerror", lambda err: print(f"Page Error: {err}"))
 
         # Mock electron API
-        page.add_init_script("""
-            window.electron = {
-                workspace: {
-                    search: async (query, root, options) => {
-                        console.log('Search called with:', query);
-                        if (query === 'test') {
-                            return [
-                                { file: '/root/file1.ts', line: 10, text: 'const test = 1;', matchIndex: 6 },
-                                { file: '/root/file1.ts', line: 15, text: 'console.log(test);', matchIndex: 12 },
-                                { file: '/root/file2.ts', line: 5, text: 'test function', matchIndex: 0 }
-                            ];
-                        }
-                        return [];
-                    },
-                    replace: async () => {},
-                    onUpdated: () => () => {},
-                    getTree: async () => [],
-                    openFolder: async () => ({ path: '/root', tree: [] })
-                },
-                fileSystem: {
-                    checkExists: async () => true,
-                    readFile: async () => '',
-                    readDir: async () => [],
-                    writeFile: async () => {}
-                },
-                selectFolder: async () => '/root',
-                executionStart: () => {},
-                onExecutionLog: () => () => {},
-                onExecutionError: () => () => {},
-                onExecutionStarted: () => () => {},
-                onExecutionDone: () => () => {},
-                onExecutionClear: () => () => {},
-                onSystemStats: () => () => {},
-                executionCheckAvailability: async () => ({ node: true }),
-                executionSetRuntime: () => {},
-                discoverPlugins: async () => [],
-                mcpSyncState: () => {},
-                mcpSyncState: () => {},
-                gitCommand: async () => ({ stdout: '', stderr: '' })
-            };
-        """)
+        mock_path = os.path.join(os.path.dirname(__file__), 'mock_electron.js')
+        try:
+            with open(mock_path, 'r') as f:
+                mock_electron = f.read()
+            page.add_init_script(mock_electron)
+        except Exception as e:
+            print(f"Error reading mock file: {e}")
+            return
 
         # Wait for server to be ready (naive wait, loop is better)
         time.sleep(5)
