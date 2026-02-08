@@ -1,19 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ExecutionPayload, ExecutionError, BenchmarkResult, SearchOptions, FileNode } from './types';
-
-// Define allowed IPC channels and their data types
-interface IpcEvents {
-    'terminal-data': (data: string) => void;
-    'plugin:notification': (data: { message: string }) => void;
-    'benchmark:result': (results: BenchmarkResult[]) => void;
-    'execution:log': (data: ExecutionPayload) => void;
-    'execution:error': (error: ExecutionError | string) => void;
-    'execution:clear': () => void;
-    'execution:started': () => void;
-    'execution:done': () => void;
-    'system:stats': (data: { cpu: number }) => void;
-    'workspace:updated': (data: { event: string; path: string; tree: FileNode[] }) => void;
-}
+import type {
+    ExecutionPayload,
+    ExecutionError,
+    BenchmarkResult,
+    SearchOptions,
+    FileNode,
+    IpcEvents
+} from './shared/ipc-types';
 
 contextBridge.exposeInMainWorld('electron', {
     // Dialogs & Window

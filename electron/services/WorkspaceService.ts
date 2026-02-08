@@ -2,15 +2,8 @@ import { ipcMain, dialog, BrowserWindow, utilityProcess, UtilityProcess } from '
 import * as fs from 'fs';
 import * as path from 'path';
 import * as chokidar from 'chokidar';
-import { SearchOptions, SearchResult } from '../types';
+import { SearchOptions, SearchResult, FileNode } from '../shared/ipc-types';
 import { PathUtils } from '../utils/PathUtils';
-
-export interface FileNode {
-    name: string;
-    path: string;
-    isDirectory: boolean;
-    children?: FileNode[];
-}
 
 export class WorkspaceService {
     private watcher: chokidar.FSWatcher | null = null;
@@ -96,10 +89,14 @@ export class WorkspaceService {
         });
 
         ipcMain.handle('workspace:search', async (_event, query: string, rootPath: string, options: SearchOptions) => {
+            // Cancel current action if any
+            this.ensureWorker().postMessage({ type: 'cancel' });
             return await this.sendToWorker('search', { query, rootPath: PathUtils.normalize(rootPath), options });
         });
 
         ipcMain.handle('workspace:replace', async (_event, query: string, replacement: string, rootPath: string, options: SearchOptions) => {
+            // Cancel current action if any
+            this.ensureWorker().postMessage({ type: 'cancel' });
             return await this.sendToWorker('replace', { query, replacement, rootPath: PathUtils.normalize(rootPath), options });
         });
     }
@@ -123,9 +120,8 @@ export class WorkspaceService {
             const normalizedFilePath = PathUtils.normalize(filePath);
             const parentDir = path.dirname(normalizedFilePath);
 
-            // Fast path: partially update the tree
+            // Surgical update: re-scan ONLY the parent directory of the change
             if (event === 'add' || event === 'addDir' || event === 'unlink' || event === 'unlinkDir') {
-                // Re-scan only the parent directory
                 const parentNodes = await this.getFileTree(parentDir);
                 this.updateTreeCacheAt(parentDir, parentNodes);
             }

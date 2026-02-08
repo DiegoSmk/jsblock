@@ -44,3 +44,16 @@ export interface FileNode {
     isDirectory: boolean;
     children?: FileNode[];
 }
+
+export interface IpcEvents {
+    'terminal-data': (data: string) => void;
+    'plugin:notification': (data: { message: string }) => void;
+    'benchmark:result': (results: BenchmarkResult[]) => void;
+    'execution:log': (data: ExecutionPayload) => void;
+    'execution:error': (error: ExecutionError | string) => void;
+    'execution:clear': () => void;
+    'execution:started': () => void;
+    'execution:done': () => void;
+    'system:stats': (data: { cpu: number }) => void;
+    'workspace:updated': (data: { event: string; path: string; tree: FileNode[] }) => void;
+}

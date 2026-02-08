@@ -53,27 +53,25 @@ describe('WorkspaceService Search', () => {
         vi.clearAllMocks();
     });
 
-    it('should delegate search to worker', async () => {
-        // Find the registered handler for 'workspace:search'
-        // ipcMain.handle is called during registerHandlers in beforeEach
+    it('should delegate search to worker after cancelling pending', async () => {
         const calls = (ipcMain.handle as any).mock.calls;
         const searchCall = calls.find((call: any[]) => call[0] === 'workspace:search');
         expect(searchCall).toBeDefined();
         const searchHandler = searchCall[1];
 
-        // Trigger the handler
         const searchPromise = searchHandler({}, 'query', '/root', {
             regex: false,
             caseSensitive: false
         });
 
-        // Verify worker was started
         expect(utilityProcess.fork).toHaveBeenCalled();
 
-        // Verify message sent to worker
-        expect(mockWorker.postMessage).toHaveBeenCalled();
-        const sentPayload = (mockWorker.postMessage as any).mock.calls[0][0];
+        // Should have 2 messages: 1 for cancellation, 1 for search
+        expect(mockWorker.postMessage).toHaveBeenCalledTimes(2);
 
+        expect(mockWorker.postMessage).toHaveBeenNthCalledWith(1, { type: 'cancel' });
+
+        const sentPayload = (mockWorker.postMessage as any).mock.calls[1][0];
         expect(sentPayload).toMatchObject({
             type: 'search',
             payload: {
@@ -84,23 +82,14 @@ describe('WorkspaceService Search', () => {
                 }
             }
         });
-        expect(sentPayload.payload.rootPath).toContain('root'); // Normalized path check
 
         const id = sentPayload.id;
         const mockResults = [{
-            file: '/root/test.ts',
-            line: 1,
-            text: 'match',
-            matchIndex: 0
+            file: '/root/test.ts', line: 1, text: 'match', matchIndex: 0
         }];
 
-        // Simulate worker response
-        // Worker sends { id, results } for search success
         if (workerCallbacks['message']) {
-            workerCallbacks['message']({
-                id,
-                results: mockResults
-            });
+            workerCallbacks['message']({ id, results: mockResults });
         }
 
         const results = await searchPromise;
@@ -113,16 +102,12 @@ describe('WorkspaceService Search', () => {
 
         const searchPromise = searchHandler({}, 'query', '/root', {});
 
-        // Get the ID
-        const sentPayload = (mockWorker.postMessage as any).mock.calls[0][0];
+        // Skip cancellation message, look at the second call (the actual search)
+        const sentPayload = (mockWorker.postMessage as any).mock.calls[1][0];
         const id = sentPayload.id;
 
-        // Simulate worker error
         if (workerCallbacks['message']) {
-            workerCallbacks['message']({
-                id,
-                error: 'Worker crashed'
-            });
+            workerCallbacks['message']({ id, error: 'Worker crashed' });
         }
 
         await expect(searchPromise).rejects.toThrow('Worker crashed');

@@ -436,6 +436,16 @@ export const generateCodeFromFlow = (
             visitVariableDeclaration(path: any) {
                 const varDecl = path.node as VariableDeclaration;
                 const decl = varDecl.declarations[0];
+
+                // Handle complex patterns (Destructuring)
+                if (decl.id.type === 'ObjectPattern' || decl.id.type === 'ArrayPattern') {
+                    // Logic for destructuring sync could go here if we tracked 
+                    // which DestructuringNode maps to which declaration index.
+                    // For v0.6.0, we prioritize NOT breaking existing destructuring
+                    // when other parts of the file are updated.
+                    return false;
+                }
+
                 if (decl.id.type !== 'Identifier') return false;
 
                 const varName = decl.id.name;
@@ -458,17 +468,13 @@ export const generateCodeFromFlow = (
                     (decl.id as any).typeAnnotation = b.tsTypeAnnotation(typeNode);
                 }
 
-                if (node && node.data.isExported) {
-                    // Check if parent is already an export declaration
-                    if (path.parentPath.node.type !== 'ExportNamedDeclaration') {
-                        // This might be tricky because visitVariableDeclaration visits the Declaration, 
-                        // and we want to wrap it.
-                        // However, we should only do this if we are at the top level or within a module.
-                    }
-                }
-
                 const nodeConns = connections[nodeId] ?? {};
+
+                // Logic Node Connection
                 const logicSourceId = Object.values(nodeConns).find(source => source?.startsWith('logic-'));
+
+                // Destructuring Node Connection
+                const destrSourceId = Object.values(nodeConns).find(source => source?.startsWith('param-destr') || source?.includes('destr'));
 
                 if (logicSourceId) {
                     const logicNode = nodes.find(n => n.id === logicSourceId);
@@ -492,6 +498,10 @@ export const generateCodeFromFlow = (
 
                         decl.init = createExpression(op, left, right);
                     }
+                } else if (destrSourceId) {
+                    // If a variable is connected to a DestructuringNode, its initializer is effectively handled 
+                    // by the parent declaration. Here we just ensure we don't overwrite it with a literal
+                    // if it was already part of a destructuring.
                 } else if (decl.init?.type === 'CallExpression') {
                     updateCallArguments(decl.init, nodeId, connections, varNodeMap, varValueMap, undefined, standaloneCalls);
                 } else if (!decl.init || isLiteral(decl.init)) {
