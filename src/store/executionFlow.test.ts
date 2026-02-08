@@ -57,6 +57,7 @@ describe('Quokka-like Execution Flow', () => {
             onExecutionDone: vi.fn(() => () => { /* no-op */ }),
             onSystemStats: vi.fn(() => () => { /* no-op */ }),
             checkExists: vi.fn(),
+            checkPathsExists: vi.fn(),
             discoverPlugins: vi.fn(),
             executionCheckAvailability: vi.fn(),
             executionSetRuntime: vi.fn(),

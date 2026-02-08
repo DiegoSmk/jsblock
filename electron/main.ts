@@ -238,16 +238,21 @@ ipcMain.handle('ensure-project-config', async (_event, folderPath: string) => {
     }
 });
 
-ipcMain.handle('check-paths-exists', (_event, pathsToCheck: string[]) => {
+ipcMain.handle('check-paths-exists', async (_event, paths: string[]) => {
     try {
         const results: Record<string, boolean> = {};
-        for (const p of pathsToCheck) {
-            results[p] = fs.existsSync(p);
-        }
+        await Promise.all(paths.map(async (pathToCheck) => {
+            try {
+                await fs.promises.access(pathToCheck);
+                results[pathToCheck] = true;
+            } catch {
+                results[pathToCheck] = false;
+            }
+        }));
         return results;
     } catch (err) {
         console.error('Error checking paths existence:', err);
-        throw err;
+        return {};
     }
 });
 
