@@ -2,6 +2,74 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.6.1](https://github.com/DiegoSmk/jsblock/compare/v0.5.3...v0.6.1) (2026-02-09)
+
+
+### 🎨 UI/UX
+
+* neutralize git panel colors and align with app theme ([575498d](https://github.com/DiegoSmk/jsblock/commit/575498db66bbf275dde99b1dcb91239fc680576c))
+
+
+### ⚡ Performance
+
+* **editor:** memoize defaultEdgeOptions in FlowContent ([681d7fb](https://github.com/DiegoSmk/jsblock/commit/681d7fbf3df926e37984fda9a147902406e57d7d))
+* memoize defaultEdgeOptions in FlowContent to prevent re-renders ([14092ee](https://github.com/DiegoSmk/jsblock/commit/14092ee44f2401f575ff2ff27e33b590338c8e53))
+* optimize FlowContent node filtering ([4962ef8](https://github.com/DiegoSmk/jsblock/commit/4962ef88894f08248d6f45bb1e5c1773437d6749))
+* optimize mcp:sync-state with non-blocking I/O ([f68d937](https://github.com/DiegoSmk/jsblock/commit/f68d937ad2b3561102299c7a3846e182fa0dacb5))
+* Optimize recent environments validation with bulk IPC check ([b48a797](https://github.com/DiegoSmk/jsblock/commit/b48a7972cd9baa6cb196429b741ef957144be063))
+* replace N+1 file reads with bulk IPC call ([64eed9c](https://github.com/DiegoSmk/jsblock/commit/64eed9c8f8b507cffd8fc3977c4c6b550f0b52d6))
+* use async fs.writeFile for state persistence ([c6e4beb](https://github.com/DiegoSmk/jsblock/commit/c6e4beb4c6c72f59a42ebf4e2b3d00e362b3d1cf))
+* Use async I/O in MCP server to prevent blocking ([592028c](https://github.com/DiegoSmk/jsblock/commit/592028c4653ad75d0de204ae4f640e6c10c36c84))
+* Use WriteStream for async logging in main process ([f2e8072](https://github.com/DiegoSmk/jsblock/commit/f2e8072e53354c7bb5b9140badc01c5c12e3fe96))
+
+
+### 🧹 Miscellaneous
+
+* cleanup codebase, consolidate types, and improve worker robustness ([c6ce751](https://github.com/DiegoSmk/jsblock/commit/c6ce751cefe77a4f4a628000be9217f5c7609187))
+* finalize integration of search, git, and quick-open features ([6f71383](https://github.com/DiegoSmk/jsblock/commit/6f71383aaed65adb9481882aded3b5db75187bbd))
+* fix all remaining lint errors and optimize tests ([a3a16b6](https://github.com/DiegoSmk/jsblock/commit/a3a16b6e247f55bd5d9e41ac5093e330c0b5f0f0))
+* resolve package-lock.json conflict by regenerating ([5e381b4](https://github.com/DiegoSmk/jsblock/commit/5e381b49431a021fe5a7bafc30b632b4a6a0d636))
+* v0.6.0 polish - centralized IPC types, surgical workspace updates, and destructuring refinements ([69b7e72](https://github.com/DiegoSmk/jsblock/commit/69b7e721f86738d79de197f0d42945f147a6e5d9))
+
+
+### 🐛 Bug Fixes
+
+* **editor:** resolve duplicate keys and add missing reference handles ([920ed4b](https://github.com/DiegoSmk/jsblock/commit/920ed4baeb2354223e0952ca9c5665b349be2828))
+* improve linux window resize behavior by adding padding grip ([1024523](https://github.com/DiegoSmk/jsblock/commit/1024523e804d6e4502000a96285433b1b080a825))
+* **logic:** prevent macro-ref edge ID collisions and enable root-level scope ([1d48620](https://github.com/DiegoSmk/jsblock/commit/1d4862027296701d8a9f85ff72277b3c7d8f7379))
+* **misc:** apply remaining minor fixes and type improvements ([38a3f4d](https://github.com/DiegoSmk/jsblock/commit/38a3f4d1daa9b3c3adaf8fba4d57963436396156))
+* **parser:** support parsing of named export declarations ([7bdac0d](https://github.com/DiegoSmk/jsblock/commit/7bdac0dd5b17f15b5714668d67268b84c51bf552))
+* remove review-diff.json and correct search limit units ([1d021a5](https://github.com/DiegoSmk/jsblock/commit/1d021a55098b617d604fdef333f7eaab451f68bc))
+* resolve linting errors and type safety issues ([a0b32a6](https://github.com/DiegoSmk/jsblock/commit/a0b32a6895be2e39052ba6b6ce2d1d1dfa4d77fa))
+* stabilize DiffEditor and improve global error filtering ([7148335](https://github.com/DiegoSmk/jsblock/commit/71483350967236b4735a7692cc3ead0d18a66e81))
+
+
+### 🚀 Features
+
+* Add Object Destructuring and Connection Validation ([879ce86](https://github.com/DiegoSmk/jsblock/commit/879ce86d5c98a2a686ecb590aa2f08a5432a7a7b))
+* Add visual support for Async/Await ([fa5ac94](https://github.com/DiegoSmk/jsblock/commit/fa5ac94d5e5334b6c2703f2afe01d122270a57f4))
+* **editor:** implement macro dependencies and cross-scope traceability ([f3196f4](https://github.com/DiegoSmk/jsblock/commit/f3196f426a8988a97a394e0a71d4e141db24b7e1))
+* Implement Class Node support and Auto-Layout button ([ef1edd4](https://github.com/DiegoSmk/jsblock/commit/ef1edd408675af24b8c10d978ee6dda77a31933d))
+* implement file renaming and robust workspace management ([b445092](https://github.com/DiegoSmk/jsblock/commit/b445092c403d968f36c7a5b7a04c944af5a1dd08))
+* implement global search and replace ([8af2f02](https://github.com/DiegoSmk/jsblock/commit/8af2f027429364153946716df2e5eece51098035))
+* Implement Quick Open (Ctrl+P) and File Breadcrumbs ([63823ac](https://github.com/DiegoSmk/jsblock/commit/63823ac5477e23f99dc8b2c177fccda9ad43b36a))
+* improve performance, type safety and tests ([03755cb](https://github.com/DiegoSmk/jsblock/commit/03755cbf7130100b153600ebcb7c33dbab54d557))
+* infrastructure for always-on-top pop-out windows and glassmorph UI components ([e96ae08](https://github.com/DiegoSmk/jsblock/commit/e96ae08fb9067ea63a812e70c82f51f4f7c4e270))
+* memoize node filtering in FlowContent and improve execution store testability ([f9b67d3](https://github.com/DiegoSmk/jsblock/commit/f9b67d3b9cf527f1de389c75f67ab3031141b0a5))
+* offload parsing and layout to web worker ([990c43c](https://github.com/DiegoSmk/jsblock/commit/990c43ce2e768a145d1d494019ccef5094171080))
+* optimize worker performance, reliability and unify window payloads ([c181c07](https://github.com/DiegoSmk/jsblock/commit/c181c073c2f51a204b67c9a3669c733b85b59db7))
+* optimized validation of recent environments using bulk IPC check ([4802413](https://github.com/DiegoSmk/jsblock/commit/48024133984515bfba5528febb538b5b09c2f416))
+* **parser:** implement named and default export delegation in ExportHandler ([ca013ff](https://github.com/DiegoSmk/jsblock/commit/ca013ffbe0e4512d314041468f1367f2f296a19c))
+* **parser:** implement named and default export parsing ([c6f63fb](https://github.com/DiegoSmk/jsblock/commit/c6f63fb1be5edca6093630a55b723e3f665241d9))
+* **perf:** implement bulk file reading for project sync ([c3e3c56](https://github.com/DiegoSmk/jsblock/commit/c3e3c566fbd00d99c4af50f2f70e4be9108db848))
+* **playground:** add comprehensive JS/TS test suite ([190e56e](https://github.com/DiegoSmk/jsblock/commit/190e56e593b4ac1cd5622c418fdd34b30a1faaca))
+* refine export handling, add ExportNode, and implement UX improvements for v0.6.0 ([c8253ae](https://github.com/DiegoSmk/jsblock/commit/c8253aedbacbc93588277e8dee2eb0f82b6d7ff0))
+* refine multi-window transparency and glassmorphism aesthetics ([2deb081](https://github.com/DiegoSmk/jsblock/commit/2deb0818156fd05a9476091962287058a4807c63))
+* robust anonymous export support and handle collision prevention ([dec8e0d](https://github.com/DiegoSmk/jsblock/commit/dec8e0d2ebac77bc27ca97838207a416864ee8f5))
+* **ui:** replace pop-out button with static beta badge ([26412cc](https://github.com/DiegoSmk/jsblock/commit/26412ccbd61de20cfeab2c3277d11d1063840581))
+* **ui:** update beta badge to glass button style ([39e049a](https://github.com/DiegoSmk/jsblock/commit/39e049a218066eaf2693e0b37ff83835984b0bcd))
+* v0.6.0 release - async/await support and polish ([9c1b651](https://github.com/DiegoSmk/jsblock/commit/9c1b651c56f577a270677f15fb23c163679584d4))
+
 ### [0.5.3](https://github.com/DiegoSmk/jsblock/compare/v0.5.2...v0.5.3) (2026-02-07)
 
 

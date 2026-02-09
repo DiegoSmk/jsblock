@@ -1,6 +1,6 @@
 {
   "name": "js-blueprints-electron",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "description": "A powerful visual programming editor for Javascript and Node.js blueprints.",
   "main": "dist/electron/main.js",
