@@ -34,10 +34,14 @@ O fluxo de dados principal ocorre em um ciclo contínuo de sincronização:
 
 ## Tecnologias Chave
 
-### Manipulação de AST (Abstract Syntax Tree)
+### 3. Manipulação de AST (Abstract Syntax Tree)
 A característica mais complexa do projeto é a tradução bidirecional entre código e grafo.
-- **Entrada (Code -> Flow)**: O código é parseado em AST. Um "Dispatcher" percorre a árvore e cria nós visuais correspondentes para estruturas suportadas (If, While, For, Switch, CallExpression).
-- **Saída (Flow -> Code)**: Os nós visuais são convertidos de volta para AST. O `Recast` é usado para preservar a formatação original do código onde possível, embora a regeneração completa seja comum.
+- **Entrada (Code -> Flow)**: O código é parseado em AST. Um "Dispatcher" percorre a árvore e utiliza `ParserHandlers` especializados para cada estrutura:
+    - **Controle**: `IfHandler`, `LoopHandler` (For/While), `SwitchHandler`, `TryCatchHandler`.
+    - **Sintaxe Moderna**: `ClassHandler` (com suporte a herança), `MethodHandler` (Getters, Setters, Static), `AwaitHandler`.
+    - **Atribuição**: `VariableHandler` e `AssignmentHandler` com suporte a **Nested Object Destructuring** (recursivo).
+    - **Módulos**: `ImportHandler` e `ExportHandler` (Named e Default).
+- **Saída (Flow -> Code)**: Os nós visuais são convertidos de volta para AST. O `Recast` é usado para preservar a formatação original onde possível.
 
 ### 4. Execução de Código e Telemetria
 Existem três modos principais de execução, gerenciados pelo `ExecutionManager`:

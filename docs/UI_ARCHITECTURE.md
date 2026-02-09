@@ -25,6 +25,18 @@ Ambiente principal de construção lógica do projeto.
 *   **Ícone na Side Ribbon**: 📦 (Box)
 *   **Sidebar Panel**: Exibe no topo os botões de alternância entre **Explorador de Arquivos** e **Biblioteca de Funções**.
 *   **Main Workspace**: Dividido entre o **Editor de Código (Monaco)** e o **Canvas de Blocos**.
+*   **Canvas Toolbar**: Barra flutuante inferior no Canvas para criação rápida de Notas, Utilitários e disparar o **Auto-Layout**.
+    *   *Atalhos*: `Shift+Alt+F` dispara a organização automática do grafo.
+
+---
+
+### 💎 Inteligência Visual (Node System)
+
+Os nós do JS Block não são apenas caixas estáticas, mas interfaces inteligentes:
+- **Badges de Contexto**: Nós como `MethodNode` exibem indicadores dinâmicos para `ASYNC`, `STATIC`, `GET` e `SET`.
+- **Type Hints**: handles de dados possuem tooltips que exibem o tipo inferido (ex: `string`, `number`, `boolean`) ao passar o mouse.
+- **Runtime Monitoring**: Variáveis exibem o valor em tempo real capturado durante a execução através de um badge rosa de "Runtime Value".
+- **Recursive Destructuring**: O sistema visualiza padrões complexos de objetos através de cadeias de `DestructuringNodes`.
 
 #### 2. 🔍 Ambiente de Busca
 Interface para localização global de termos e arquivos.
@@ -78,4 +90,4 @@ Seletor de menu personalizado com suporte a Portals.
 *   **Estética Premium**: Inclui animações de entrada suaves, indicador de seleção minimalista (dot) e sombras projetadas para profundidade visual.
 
 ---
-*Atualizado em: 01 de Fevereiro de 2026*
+*Atualizado em: 08 de Fevereiro de 2026*

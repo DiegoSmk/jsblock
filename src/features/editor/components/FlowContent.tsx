@@ -39,6 +39,7 @@ import { CanvasNode } from '../nodes/CanvasNode';
 import { ClassNode } from '../nodes/ClassNode';
 import { MethodNode } from '../nodes/MethodNode';
 import { DestructuringNode } from '../nodes/DestructuringNode';
+import { ExportNode } from '../nodes/ExportNode';
 import { ConnectionLine } from './ConnectionLine';
 import { validateConnection } from '../logic/connectionLogic';
 
@@ -60,7 +61,8 @@ const nodeTypes: NodeTypes = {
   canvasNode: CanvasNode,
   classNode: ClassNode,
   methodNode: MethodNode,
-  destructuringNode: DestructuringNode
+  destructuringNode: DestructuringNode,
+  exportNode: ExportNode
 };
 
 export function FlowContent() {
@@ -94,9 +96,16 @@ export function FlowContent() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+S / Meta+S: Save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         saveFile().catch(console.error);
+      }
+
+      // Shift+Alt+F: Auto-Layout
+      if (e.shiftKey && e.altKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault();
+        useStore.getState().forceLayout();
       }
     };
 

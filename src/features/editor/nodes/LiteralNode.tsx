@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { Sparkles } from 'lucide-react';
+import { Tooltip } from '../../../components/ui/Tooltip';
 
 import type { AppNodeData } from '../types';
 
@@ -162,17 +163,19 @@ export const LiteralNode = memo(({ id, data }: { id: string, data: AppNodeData }
             />
 
             {/* Output Handle */}
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="output"
-                className="handle-data source"
-                style={{
-                    right: '-8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                }}
-            />
+            <Tooltip content={data.type ?? 'Value'} side="right">
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    id="output"
+                    className="handle-data source"
+                    style={{
+                        right: '-8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                    }}
+                />
+            </Tooltip>
         </div >
     );
 });

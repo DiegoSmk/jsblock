@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
-import { Code, ExternalLink } from 'lucide-react';
+import { Code, ExternalLink, Clock } from 'lucide-react';
 import type { AppNodeData } from '../types';
 
 export const MethodNode = memo(({ data }: { data: AppNodeData }) => {
@@ -17,6 +17,7 @@ export const MethodNode = memo(({ data }: { data: AppNodeData }) => {
     };
 
     const isStatic = !!data.isStatic;
+    const isAsync = !!data.isAsync;
     const kind = (data.kind as string) || 'method'; // constructor, method, get, set
 
     // Style logic
@@ -52,6 +53,22 @@ export const MethodNode = memo(({ data }: { data: AppNodeData }) => {
                     {data.label}
                 </span>
 
+                {isAsync && (
+                    <span style={{
+                        fontSize: '0.65rem',
+                        background: 'rgba(124, 58, 237, 0.2)',
+                        color: '#a78bfa',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontWeight: 800,
+                        marginLeft: isStatic ? '4px' : 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '2px'
+                    }}>
+                        <Clock size={10} /> ASYNC
+                    </span>
+                )}
                 {isStatic && (
                     <span style={{
                         fontSize: '0.65rem',
@@ -60,20 +77,20 @@ export const MethodNode = memo(({ data }: { data: AppNodeData }) => {
                         padding: '2px 6px',
                         borderRadius: '4px',
                         fontWeight: 800,
-                        marginLeft: 'auto'
+                        marginLeft: isAsync ? '4px' : 'auto'
                     }}>
                         STATIC
                     </span>
                 )}
-                {kind !== 'method' && !isStatic && (
+                {kind !== 'method' && (
                     <span style={{
                         fontSize: '0.65rem',
-                        background: '#64748b',
+                        background: isStatic ? 'rgba(0,0,0,0.3)' : '#64748b',
                         color: 'white',
                         padding: '2px 6px',
                         borderRadius: '4px',
                         fontWeight: 800,
-                        marginLeft: 'auto',
+                        marginLeft: (isStatic || isAsync) ? '4px' : 'auto',
                         textTransform: 'uppercase'
                     }}>
                         {kind}

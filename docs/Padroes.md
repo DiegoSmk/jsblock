@@ -32,10 +32,11 @@
 - **Backend**: Use blocos `try/catch` em handlers IPC. Evite derrubar a aplicação inteira.
 - **Frontend**: Use `console.error` para bugs, mas mostre `toasts` para erros operacionais (ex: falha ao salvar arquivo).
 
-## Estilização
-- Cores de borda/handle devem seguir o tipo semântico:
-  - **Azul**: Fluxo de execução / Função.
-  - **Roxo**: Lógica / Controle.
-  - **Verde**: Sucesso / String.
-  - **Amarelo**: Aviso / Número.
-  - **Vermelho**: Erro / Exceção.
+### Estilização (Convenções de Cores)
+- Cores de borda/handle devem seguir o tipo semântico para facilitar leitura rápida:
+  - **Azul (#0ea5e9)**: Chamadas de Função e Fluxo Padrão.
+  - **Roxo (#a855f7)**: Estruturas de Classe, Métodos Estáticos e Lógica de Controle.
+  - **Rosa (#f472b6)**: Dados, Variáveis e Atribuições (Destructuring).
+  - **Amarelo (#f7df1e)**: APIs Nativas (Node.js/Web).
+  - **Verde (#4caf50)**: Funções de Usuário e Loops.
+  - **Laranja/Vermelho**: Erros, Exceções e Conexões Inválidas.

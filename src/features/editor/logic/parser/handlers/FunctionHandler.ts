@@ -1,6 +1,7 @@
 import type { ParserContext, ParserHandler } from '../types';
 import { generateId } from '../utils';
 import type { Node as BabelNode, FunctionDeclaration } from '@babel/types';
+import * as t from '@babel/types';
 import type { AppNode } from '../../../types';
 
 export const FunctionHandler: ParserHandler = {
@@ -60,62 +61,107 @@ export const FunctionHandler: ParserHandler = {
                     }
                 } as AppNode);
             } else if (p.type === 'ObjectPattern') {
-                const destrId = generateId('param-destr');
-                const destructuringKeys: string[] = [];
+                const processParamPattern = (
+                    pattern: t.ObjectPattern,
+                    sourceLabel: string,
+                    sourceConnect?: (targetId: string, targetHandle: string) => void
+                ): string => {
+                    const destrId = generateId('param-destr');
+                    const destructuringKeys: string[] = [];
 
-                p.properties.forEach((prop) => {
-                    if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
-                        destructuringKeys.push(prop.key.name);
-                    }
-                });
-
-                paramNodes.push({
-                    id: destrId,
-                    type: 'destructuringNode',
-                    position: { x: 0, y: 0 },
-                    data: {
-                        label: 'Parameters',
-                        destructuringKeys,
-                        destructuringSource: 'Arguments',
-                        // scopeId will be set by processBlock?
-                        // Usually processBlock iterates initialNodes and adds them.
-                    }
-                } as AppNode);
-
-                p.properties.forEach((prop) => {
-                     if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
-                        const varName = prop.key.name;
-                        let targetVarName = varName;
-                        if (prop.value.type === 'Identifier') {
-                            targetVarName = prop.value.name;
+                    pattern.properties.forEach((prop) => {
+                        if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
+                            destructuringKeys.push(prop.key.name);
                         }
+                    });
 
-                        const pNodeId = generateId('param-' + targetVarName);
+                    paramNodes.push({
+                        id: destrId,
+                        type: 'destructuringNode',
+                        position: { x: 0, y: 0 },
+                        data: {
+                            label: 'Parameters',
+                            destructuringKeys,
+                            destructuringSource: sourceLabel,
+                            scopeId: undefined // Will be set by processBlock? No, paramNodes are initialNodes. 
+                            // Usually processBlock expects nodes with undefined scopeId to assign them? 
+                            // Or rather, we should let processBlock handle it? 
+                            // Let's check logic/parser/Logic.ts processBlock. 
+                            // It iterates initialNodes and pushes them to ctx.nodes. 
+                            // It sets scopeId if missing? 
+                            // Actually, I should leave it undefined or set to body scope? 
+                            // The body scope is created by processBlock. 
+                            // Let's assume processBlock is smart enough or we set it later.
+                            // For now, undefined is fine as they are "floating" until attached.
+                        }
+                    } as AppNode);
 
-                        paramNodes.push({
-                            id: pNodeId,
-                            type: 'variableNode',
-                            position: { x: 0, y: 0 },
-                            data: {
-                                label: targetVarName,
-                                value: '(destructured)',
-                                nestedCall: { name: 'Destructured', args: [] },
-                                isParameter: true
+                    if (sourceConnect) {
+                        sourceConnect(destrId, 'input');
+                    }
+
+                    // Process props
+                    pattern.properties.forEach((prop) => {
+                        if (prop.type === 'ObjectProperty' && prop.key.type === 'Identifier') {
+                            const key = prop.key.name;
+
+                            if (prop.value.type === 'Identifier') {
+                                // Variable
+                                const targetVarName = prop.value.name;
+                                const pNodeId = generateId('param-' + targetVarName);
+
+                                paramNodes.push({
+                                    id: pNodeId,
+                                    type: 'variableNode',
+                                    position: { x: 0, y: 0 },
+                                    data: {
+                                        label: targetVarName,
+                                        value: '(destructured)',
+                                        isParameter: true
+                                    }
+                                } as AppNode);
+
+                                // Connect Destr -> Var
+                                // Edges must be pushed to ctx.edges directly?
+                                // Yes, processBlock handles nodes, but edges might need manual handling if not "flow".
+                                // paramNodes are internal to the block. Edges between them should be in ctx.edges?
+                                // Or should we return edges?
+                                // processBlock doesn't take edges array.
+                                // We must push to ctx.edges.
+                                ctx.edges.push({
+                                    id: `e-${destrId}-${key}-to-${pNodeId}`,
+                                    source: destrId,
+                                    sourceHandle: key,
+                                    target: pNodeId,
+                                    targetHandle: 'ref-target',
+                                    animated: true,
+                                    style: { strokeWidth: 2, stroke: '#a855f7' }
+                                });
+                            } else if (prop.value.type === 'ObjectPattern') {
+                                // Recurse
+                                processParamPattern(
+                                    prop.value,
+                                    key,
+                                    (targetId, targetHandle) => {
+                                        ctx.edges.push({
+                                            id: `e-${destrId}-${key}-to-${targetId}`,
+                                            source: destrId,
+                                            sourceHandle: key,
+                                            target: targetId,
+                                            targetHandle: targetHandle,
+                                            animated: true,
+                                            style: { strokeWidth: 2, stroke: '#a855f7' }
+                                        });
+                                    }
+                                );
                             }
-                        } as AppNode);
+                        }
+                    });
 
-                        // Connect DestructuringNode to VariableNode
-                        ctx.edges.push({
-                            id: `e-${destrId}-${varName}-to-${pNodeId}`,
-                            source: destrId,
-                            sourceHandle: varName,
-                            target: pNodeId,
-                            targetHandle: 'ref-target',
-                            animated: true,
-                            style: { strokeWidth: 2, stroke: '#a855f7' }
-                        });
-                     }
-                });
+                    return destrId;
+                };
+
+                processParamPattern(p, 'Arguments');
             }
         });
 

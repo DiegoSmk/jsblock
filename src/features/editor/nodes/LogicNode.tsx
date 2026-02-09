@@ -1,6 +1,7 @@
 import { useMemo, memo } from 'react';
 import { Handle, Position, useNodeConnections } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
+import { Tooltip } from '../../../components/ui/Tooltip';
 
 import type { AppNodeData } from '../types';
 
@@ -36,6 +37,9 @@ export const LogicNode = memo(({ id, data }: { id: string, data: AppNodeData }) 
         updateNodeData(id, { op });
     };
 
+    const op = data.op as string;
+    const resultType = ['==', '===', '!=', '>', '<', '>=', '<=', '&&', '||'].includes(op) ? 'boolean' : 'number | string';
+
     return (
         <div className="premium-node" style={{
             width: '64px',
@@ -47,25 +51,29 @@ export const LogicNode = memo(({ id, data }: { id: string, data: AppNodeData }) 
             borderColor: '#f44336', // Matching console.error red
             overflow: 'visible', // Crucial to show handles fully
         }}>
-            <Handle
-                type="target"
-                position={Position.Left}
-                id="input-a"
-                className="handle-data target"
-                style={{
-                    left: '-8px',
-                }}
-            />
+            <Tooltip content="Input A" side="left">
+                <Handle
+                    type="target"
+                    position={Position.Left}
+                    id="input-a"
+                    className="handle-data target"
+                    style={{
+                        left: '-8px',
+                    }}
+                />
+            </Tooltip>
 
-            <Handle
-                type="target"
-                position={Position.Right}
-                id="input-b"
-                className="handle-data target"
-                style={{
-                    right: '-8px',
-                }}
-            />
+            <Tooltip content="Input B" side="right">
+                <Handle
+                    type="target"
+                    position={Position.Right}
+                    id="input-b"
+                    className="handle-data target"
+                    style={{
+                        right: '-8px',
+                    }}
+                />
+            </Tooltip>
 
             <div
                 className="nodrag"
@@ -124,17 +132,19 @@ export const LogicNode = memo(({ id, data }: { id: string, data: AppNodeData }) 
                 </select>
             </div>
 
-            <Handle
-                type="source"
-                position={Position.Bottom}
-                id="result"
-                className="handle-data source handle-logic"
-                style={{
-                    bottom: '-8px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                }}
-            />
+            <Tooltip content={resultType} side="bottom">
+                <Handle
+                    type="source"
+                    position={Position.Bottom}
+                    id="result"
+                    className="handle-data source handle-logic"
+                    style={{
+                        bottom: '-8px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                    }}
+                />
+            </Tooltip>
 
             <style>{`
                 @keyframes slideDown {
