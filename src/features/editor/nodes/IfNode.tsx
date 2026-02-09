@@ -35,6 +35,13 @@ export const IfNode = memo(({ data }: { id: string, data: AppNodeData }) => {
                     className="handle-flow"
                     style={{ left: '-6px', top: '24px' }}
                 />
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    id="flow-next"
+                    className="handle-flow"
+                    style={{ right: '-6px', top: '24px' }}
+                />
             </div>
 
             <div className="node-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

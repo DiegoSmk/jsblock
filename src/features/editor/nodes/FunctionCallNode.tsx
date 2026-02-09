@@ -129,13 +129,15 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
                             className="handle-flow"
                             style={{ left: '-6px', top: '24px' }}
                         />
-                        <Handle
-                            type="source"
-                            position={Position.Right}
-                            id="flow-next"
-                            className="handle-flow"
-                            style={{ right: '-6px', top: '24px' }}
-                        />
+                        {!data.isReturn && (
+                            <Handle
+                                type="source"
+                                position={Position.Right}
+                                id="flow-next"
+                                className="handle-flow"
+                                style={{ right: '-6px', top: '24px' }}
+                            />
+                        )}
                     </>
                 )}
 
@@ -189,7 +191,10 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
                     </span>
                     {/* Reference Handles */}
                     {isDecl ? (
-                        <Handle type="source" position={Position.Top} id="ref-source" className="handle-data" style={{ top: '-10px', right: '10px', background: '#4caf50' }} />
+                        <>
+                            <Handle type="source" position={Position.Top} id="ref-source" className="handle-data" style={{ top: '-10px', right: '10px', background: '#4caf50' }} />
+                            <Handle type="target" position={Position.Top} id="ref-target" className="handle-data" style={{ top: '-10px', left: '10px', opacity: 0, pointerEvents: 'none' }} />
+                        </>
                     ) : (
                         <Handle type="target" position={Position.Top} id="ref-target" className="handle-data" style={{ top: '-10px', right: '10px', background: isBuiltin ? '#f7df1e' : '#4caf50' }} />
                     )}

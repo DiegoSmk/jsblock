@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { Box, Layers } from 'lucide-react';
 import type { AppNodeData } from '../types';
@@ -38,9 +39,9 @@ export const ClassNode = memo(({ data }: { data: AppNodeData }) => {
             }}>
                 <Box size={16} />
                 <span>Class: {data.label}</span>
-                {data.extends && (
+                {typeof data.extends === 'string' && (
                     <span style={{ fontSize: '0.8rem', opacity: 0.8, marginLeft: 'auto' }}>
-                        extends <span style={{ textDecoration: 'underline' }}>{data.extends as string}</span>
+                        extends <span style={{ textDecoration: 'underline' }}>{data.extends}</span>
                     </span>
                 )}
             </div>
@@ -58,6 +59,10 @@ export const ClassNode = memo(({ data }: { data: AppNodeData }) => {
                     <Layers size={64} />
                 </div>
             </div>
+
+            {/* Connection Handles */}
+            <Handle type="target" position={Position.Top} id="ref-target" className="handle-data" style={{ background: isDark ? '#4ade80' : '#16a34a' }} />
+            <Handle type="source" position={Position.Bottom} id="ref-source" className="handle-data" style={{ background: isDark ? '#4ade80' : '#16a34a' }} />
         </div>
     );
 });

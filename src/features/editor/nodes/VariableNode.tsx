@@ -32,6 +32,20 @@ export const VariableNode = memo(({ data, id }: { id: string, data: AppNodeData 
             }}>
                 <Box size={14} strokeWidth={2.5} />
                 <span>Variable</span>
+                <Handle
+                    type="target"
+                    position={Position.Left}
+                    id="flow-in"
+                    className="handle-flow"
+                    style={{ left: '-6px', top: '24px' }}
+                />
+                <Handle
+                    type="source"
+                    position={Position.Right}
+                    id="flow-next"
+                    className="handle-flow"
+                    style={{ right: '-6px', top: '24px' }}
+                />
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <input
                         value={data.typeAnnotation ?? ''}

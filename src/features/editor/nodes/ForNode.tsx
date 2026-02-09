@@ -129,7 +129,7 @@ export const ForNode = memo(({ data }: { id: string, data: AppNodeData }) => {
                         <Handle
                             type="source"
                             position={Position.Right}
-                            id="flow-exit"
+                            id="flow-next"
                             className="handle-flow"
                             style={{
                                 right: '-6px',

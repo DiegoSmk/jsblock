@@ -40,7 +40,8 @@ A característica mais complexa do projeto é a tradução bidirecional entre c�
     - **Controle**: `IfHandler`, `LoopHandler` (For/While), `SwitchHandler`, `TryCatchHandler`.
     - **Sintaxe Moderna**: `ClassHandler` (com suporte a herança), `MethodHandler` (Getters, Setters, Static), `AwaitHandler`.
     - **Atribuição**: `VariableHandler` e `AssignmentHandler` com suporte a **Nested Object Destructuring** (recursivo).
-    - **Módulos**: `ImportHandler` e `ExportHandler` (Named e Default).
+    - **Módulos**: `ImportHandler` e `ExportHandler` (Named e Default). Utilizam prefixos de memória (`import:`) para evitar colisões entre variáveis locais e globais.
+- **Scope Tracking (Dispatcher)**: O sistema mantém um rastreamento hierárquico de escopos, permitindo que o `Dispatcher` identifique o "Dono" do escopo atual (ex: uma Função ou Classe). Isso possibilita a geração de **Macro Dependencies**, conectando visualmente definições externas ao local de uso em níveis mais profundos do grafo.
 - **Saída (Flow -> Code)**: Os nós visuais são convertidos de volta para AST. O `Recast` é usado para preservar a formatação original onde possível.
 
 ### 4. Execução de Código e Telemetria

@@ -37,6 +37,8 @@ Os nós do JS Block não são apenas caixas estáticas, mas interfaces inteligen
 - **Type Hints**: handles de dados possuem tooltips que exibem o tipo inferido (ex: `string`, `number`, `boolean`) ao passar o mouse.
 - **Runtime Monitoring**: Variáveis exibem o valor em tempo real capturado durante a execução através de um badge rosa de "Runtime Value".
 - **Recursive Destructuring**: O sistema visualiza padrões complexos de objetos através de cadeias de `DestructuringNodes`.
+- **Macro Dependencies (Traceability)**: Conexões sutis (linhas tracejadas finas) ligam imports à função ou bloco que os utiliza. Isso permite rastrear dependências mesmo quando o conteúdo interno do bloco está oculto.
+- **Intelligent Scope Visibility**: Ao navegar para um escopo específico (Drill-down), o sistema identifica automaticamente dependências externas (Imports ou JS Runtime) e as traz para a visualização atual, garantindo que o contexto de dados nunca seja perdido.
 
 #### 2. 🔍 Ambiente de Busca
 Interface para localização global de termos e arquivos.

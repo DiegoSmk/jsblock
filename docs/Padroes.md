@@ -16,6 +16,7 @@
   - `flow-next` / `flow-out`: Saída de fluxo (fundo).
   - `flow-true` / `flow-false`: Saídas condicionais.
   - `input-a`, `input-b`: Entradas de dados.
+  - `ref-target` / `ref-source`: Handles para dependências globais e referências (transparentes ou coloridas).
 - **Canais IPC**: kebab-case (ex: `read-file`, `terminal-create`).
 
 ## Padrões de Código
@@ -35,6 +36,7 @@
 ### Estilização (Convenções de Cores)
 - Cores de borda/handle devem seguir o tipo semântico para facilitar leitura rápida:
   - **Azul (#0ea5e9)**: Chamadas de Função e Fluxo Padrão.
+  - **Ciano / Sky Blue (#38bdf8)**: Referências de Dados Externos (Imports).
   - **Roxo (#a855f7)**: Estruturas de Classe, Métodos Estáticos e Lógica de Controle.
   - **Rosa (#f472b6)**: Dados, Variáveis e Atribuições (Destructuring).
   - **Amarelo (#f7df1e)**: APIs Nativas (Node.js/Web).

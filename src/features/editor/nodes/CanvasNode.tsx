@@ -159,6 +159,10 @@ export const CanvasNode = memo(({ data, id }: { id: string, data: AppNodeData })
                 className="handle-data"
                 style={{ top: '50%', background: '#10b981' }}
             />
+
+            {/* Reference Handles */}
+            <Handle type="target" position={Position.Top} id="ref-target" className="handle-data" style={{ top: '-10px', right: '10px', background: '#10b981' }} />
+            <Handle type="source" position={Position.Bottom} id="ref-source" className="handle-data" style={{ bottom: '-10px', right: '10px', background: '#10b981' }} />
         </div>
     );
 });
