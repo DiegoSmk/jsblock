@@ -10,6 +10,8 @@ import { BenchmarkHelp } from './benchmark/BenchmarkHelp';
 import { BenchmarkHistoryItem } from './benchmark/BenchmarkHistoryItem';
 import { BenchmarkEmptyState } from './benchmark/BenchmarkEmptyState';
 
+import './BenchmarkPanel.css';
+
 export const BenchmarkPanel: React.FC = () => {
     const {
         benchmarkHistory,
@@ -60,18 +62,11 @@ export const BenchmarkPanel: React.FC = () => {
     const neutralColor = tokens.subtext;
 
     return (
-        <div style={{
-            display: 'flex',
-            flexDirection: 'column',
+        <div className="benchmark-panel-container" style={{
             background: tokens.bg,
             borderTop: `1px solid ${tokens.border}`,
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             maxHeight: isExpanded ? '300px' : '32px',
             height: isExpanded ? '300px' : '32px',
-            width: '100%',
-            zIndex: 100,
-            flexShrink: 0,
-            position: 'relative',
             overflow: isExpanded ? 'hidden' : 'visible'
         }}>
             {showHelp && <BenchmarkHelp isExpanded={isExpanded} isDark={isDark} onClose={() => setShowHelp(false)} />}
@@ -85,52 +80,25 @@ export const BenchmarkPanel: React.FC = () => {
             {/* Header / Toggle Bar */}
             <div
                 onClick={() => setIsExpanded(!isExpanded)}
+                className="benchmark-header-toggle"
                 style={{
-                    height: '32px',
-                    minHeight: '32px',
                     padding: `0 ${LAYOUT_TOKENS.padding.lg}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
                     background: tokens.hover,
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    position: 'relative',
-                    zIndex: 2001
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', height: '100%' }}>
+                <div className="benchmark-header-left">
                     <BarChart3 size={14} color={isDark ? '#666' : '#999'} />
-                    <span style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
+                    <span className="benchmark-title" style={{
                         color: isDark ? '#888' : '#666',
-                        lineHeight: '14px', // Standardize with icon height
-                        display: 'flex',
-                        alignItems: 'center'
                     }}>
                         Benchmarks
                     </span>
                     {hasUnread && !isExpanded && (
-                        <div style={{
-                            width: '14px',
-                            height: '14px',
-                            background: COLOR_TOKENS.cyan,
-                            borderRadius: '3px',
-                            boxShadow: `0 0 8px ${COLOR_TOKENS.cyan}44`
-                        }} />
+                        <div className="unread-signal" />
                     )}
                     {isBenchmarking && (
-                        <div style={{
-                            width: '14px',
-                            height: '14px',
+                        <div className="benchmarking-signal" style={{
                             background: isDark ? 'rgba(250, 204, 21, 0.1)' : 'rgba(250, 204, 21, 0.05)',
-                            borderRadius: '3px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
                             border: `1px solid ${isDark ? 'rgba(250, 204, 21, 0.2)' : 'rgba(250, 204, 21, 0.1)'}`,
                         }}>
                             <Zap size={10} className="animate-pulse" color="#facc15" fill="#facc15" />
@@ -138,26 +106,16 @@ export const BenchmarkPanel: React.FC = () => {
                     )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div className="benchmark-header-right">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             setShowHelp(!showHelp);
                         }}
                         title="Como usar"
+                        className="benchmark-help-btn"
                         style={{
-                            background: 'transparent',
-                            border: 'none',
                             color: showHelp ? COLOR_TOKENS.cyan : (isDark ? '#666' : '#999'),
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '11px',
-                            fontWeight: 500,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            padding: '4px 8px',
-                            borderRadius: '4px'
                         }}
                         onMouseEnter={(e) => {
                             if (!showHelp) e.currentTarget.style.color = isDark ? '#aaa' : '#666';
@@ -190,16 +148,9 @@ export const BenchmarkPanel: React.FC = () => {
                                 });
                             }}
                             title="Limpar histórico"
+                            className="clear-history-btn"
                             style={{
-                                background: 'transparent',
-                                border: 'none',
                                 color: isDark ? '#555' : '#aaa',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                fontSize: '11px',
-                                cursor: 'pointer',
-                                transition: 'color 0.2s'
                             }}
                             onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
                             onMouseLeave={(e) => e.currentTarget.style.color = isDark ? '#555' : '#aaa'}
@@ -243,28 +194,9 @@ export const BenchmarkPanel: React.FC = () => {
                 selectedRecord && (
                     <div
                         onClick={() => setSelectedRecord(null)}
-                        style={{
-                            position: 'fixed',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            background: 'rgba(0,0,0,0.4)',
-                            backdropFilter: 'blur(5px)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 10000,
-                            padding: '20px'
-                        }}
+                        className="benchmark-modal-overlay"
                     >
-                        <div onClick={(e) => e.stopPropagation()} style={{ animation: 'modalAppear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
-                            <style>{`
-                            @keyframes modalAppear {
-                                from { transform: scale(0.9); opacity: 0; }
-                                to { transform: scale(1); opacity: 1; }
-                            }
-                        `}</style>
+                        <div onClick={(e) => e.stopPropagation()} className="benchmark-modal-container">
                             <BenchmarkOverlay
                                 results={selectedRecord.results}
                                 onClose={() => setSelectedRecord(null)}

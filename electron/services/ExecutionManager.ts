@@ -305,7 +305,8 @@ export class ExecutionManager {
                 } else if (rt === 'bun') {
                     args = ['run', benchPath];
                 } else if (rt === 'deno') {
-                    args = ['run', '-A', benchPath];
+                    // Restrict permissions: allow read/write for the sandbox but not full system access (-A)
+                    args = ['run', '--allow-read', '--allow-write', benchPath];
                 }
 
                 const execStart = process.hrtime.bigint();

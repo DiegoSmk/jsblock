@@ -22,7 +22,6 @@ import type {
     SettingsConfig
 } from '../types/store';
 
-// import { v4 as uuidv4 } from 'uuid'; // Removed to avoid dependency check
 const getUUID = (prefix = 'id') => {
     const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
         ? crypto.randomUUID()
@@ -210,7 +209,9 @@ export const useStore = create<AppState>((set, get, api) => ({
             showDebugHandles: false,
             windowTransparency: 0.85,
             windowBackground: '#0f172a',
-            windowAlwaysOnTop: false
+            windowAlwaysOnTop: false,
+            searchMaxDepth: 10,
+            searchMaxFileSize: 5
         };
         try {
             const saved = localStorage.getItem('settings.json');
@@ -225,7 +226,9 @@ export const useStore = create<AppState>((set, get, api) => ({
                     showDebugHandles: parsed.developer?.showDebugHandles ?? defaultSettings.showDebugHandles,
                     windowTransparency: parsed.appearance?.windowTransparency ?? 0.85,
                     windowBackground: parsed.appearance?.windowBackground ?? (parsed.appearance?.theme === 'light' ? '#f8fbfc' : '#0f172a'),
-                    windowAlwaysOnTop: parsed.appearance?.windowAlwaysOnTop ?? false
+                    windowAlwaysOnTop: parsed.appearance?.windowAlwaysOnTop ?? false,
+                    searchMaxDepth: parsed.search?.maxDepth ?? defaultSettings.searchMaxDepth,
+                    searchMaxFileSize: parsed.search?.maxFileSize ?? defaultSettings.searchMaxFileSize
                 };
             }
         } catch { /* Ignore missing or corrupt settings */ }
@@ -515,19 +518,33 @@ export const useStore = create<AppState>((set, get, api) => ({
         const { nodes, edges, code, isBlockFile, autoSave } = get();
         const newEdges = applyEdgeChanges(changes, edges);
 
-        // Rebuild cache on edge changes (optimized for frequency)
-        const newCache = new Map<string, Edge[]>();
-        newEdges.forEach(edge => {
-            const source = newCache.get(edge.source) ?? [];
-            source.push(edge);
-            newCache.set(edge.source, source);
-
-            const target = newCache.get(edge.target) ?? [];
-            target.push(edge);
-            newCache.set(edge.target, target);
+        // Incremental update of connectionCache
+        const nextCache = new Map(get().connectionCache);
+        changes.forEach(change => {
+            if (change.type === 'remove') {
+                const edge = edges.find(e => e.id === change.id);
+                if (edge) {
+                    // Remove from source cache
+                    const sourceEdges = nextCache.get(edge.source) ?? [];
+                    nextCache.set(edge.source, sourceEdges.filter(e => e.id !== edge.id));
+                    // Remove from target cache
+                    const targetEdges = nextCache.get(edge.target) ?? [];
+                    nextCache.set(edge.target, targetEdges.filter(e => e.id !== edge.id));
+                }
+            } else if (change.type === 'add') {
+                const edge = (change as any).item;
+                if (edge) {
+                    // Add to source cache
+                    const sourceEdges = nextCache.get(edge.source) ?? [];
+                    nextCache.set(edge.source, [...sourceEdges, edge]);
+                    // Add to target cache
+                    const targetEdges = nextCache.get(edge.target) ?? [];
+                    nextCache.set(edge.target, [...targetEdges, edge]);
+                }
+            }
         });
 
-        set({ edges: newEdges, connectionCache: newCache });
+        set({ edges: newEdges, connectionCache: nextCache });
 
         if (isBlockFile) {
             if (autoSave) {
@@ -1084,7 +1101,9 @@ export const useStore = create<AppState>((set, get, api) => ({
                 showDebugHandles: false,
                 windowTransparency: 0.85,
                 windowBackground: '#0f172a',
-                windowAlwaysOnTop: false
+                windowAlwaysOnTop: false,
+                searchMaxDepth: 10,
+                searchMaxFileSize: 5
             },
             layout: {
                 ...get().layout,
@@ -1248,7 +1267,22 @@ export const useStore = create<AppState>((set, get, api) => ({
 
 // --- MCP State Synchronization ---
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+let lastSyncSnapshot = '';
+
 useStore.subscribe((state) => {
+    // Only sync if these core properties changed to avoid overhead on every state change (like mouse move)
+    const currentSnapshot = JSON.stringify({
+        selectedFile: state.selectedFile,
+        isSimulating: state.isSimulating,
+        isBlockFile: state.isBlockFile,
+        nodeCount: state.nodes.length,
+        edgeCount: state.edges.length,
+        activeSidebarTab: state.activeSidebarTab
+    });
+
+    if (currentSnapshot === lastSyncSnapshot) return;
+    lastSyncSnapshot = currentSnapshot;
+
     if (syncTimeout) clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
         if (window.electron?.mcpSyncState) {

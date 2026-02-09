@@ -29,8 +29,10 @@ self.onmessage = (e: MessageEvent) => {
             })()
         `;
 
-        // Function constructor is safer than direct eval as it creates a function in the global scope only
-        // Still has access to globals, but in a worker environment damage is contained to the worker
+        // SECURITY NOTE: The Function constructor is used to evaluate code logic for inline results.
+        // While this is similar to eval, execution is confined to the Web Worker environment,
+        // which isolated it from the main application's DOM and Electron sensitive APIs.
+        // However, it remains a dynamic execution sink and should be treated with caution.
         // eslint-disable-next-line @typescript-eslint/no-implied-eval
         const evaluator = new Function(captureCode);
         const result = (evaluator as () => Record<string, unknown>)();

@@ -183,7 +183,6 @@ function App() {
 
     const timer = setTimeout(() => {
       // Use the new window.electron pattern
-      // console.log('App initialized');
     }, 200);
 
     return () => {

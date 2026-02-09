@@ -1,17 +1,16 @@
 import { memo, useCallback } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
-import { useShallow } from 'zustand/react/shallow';
 import { Hash, Plus, ExternalLink, Activity, Clock } from 'lucide-react';
-import type { AppNode, AppNodeData } from '../types';
+import type { AppNodeData } from '../types';
 import type { Edge } from '@xyflow/react';
 
 export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {
     const theme = useStore((state) => state.theme);
     const runtimeValues = useStore((state) => state.runtimeValues);
-    const edges = useStore(useShallow(useCallback(state =>
-        state.edges.filter(edge => edge.target === id),
-        [id])));
+    const edges = useStore(useCallback(state =>
+        state.connectionCache.get(id)?.filter(e => e.target === id) ?? [],
+        [id]));
     const addFunctionCall = useStore((state) => state.addFunctionCall);
     const navigateInto = useStore((state) => state.navigateInto);
     const updateNodeData = useStore((state) => state.updateNodeData);
@@ -63,13 +62,17 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
     const isStandalone = data.isStandalone;
     const connectedValues = data.connectedValues ?? {};
 
+    // Selector for O(1) node lookup
+    const nodesMap = useStore(useCallback(state =>
+        new Map(state.nodes.map(n => [n.id, n])),
+        []));
+
     const getArgValue = (argIndex: number): string | null => {
         const targetHandle = `arg-${argIndex}`;
         const edge = edges.find((e: Edge) => e.target === id && e.targetHandle === targetHandle);
 
         if (edge) {
-            const nodes = useStore.getState().nodes;
-            const sourceNode = nodes.find((n: AppNode) => n.id === edge.source);
+            const sourceNode = nodesMap.get(edge.source);
             if (!sourceNode) return null;
 
             if (sourceNode.type === 'variableNode') {

@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../../../../store/useStore';
 import type { AppNode, NodeCustomStyle } from '../../../../types/store';
 import { hexToRgba } from '../../../../utils/colors';
+import { detectTasksFromMarkdown, type DetectedTask } from './noteUtils';
 
 export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean) => {
     const updateNodeData = useStore(state => state.updateNodeData);
@@ -61,7 +62,7 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
         return customStyle.backgroundColor ?? (isDark ? '#1a1a1a' : '#fff');
     }, [taskStatus, customStyle.backgroundColor, isDark]);
 
-    const [detectedTasks, setDetectedTasks] = useState<{ label: string, checked: boolean, fullMatch: string }[] | null>(null);
+    const [detectedTasks, setDetectedTasks] = useState<DetectedTask[] | null>(null);
 
 
 
@@ -77,20 +78,7 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
     const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const visualText = e.target.value;
         setLocalText(visualText);
-
-        const taskRegex = /^\s*- \[(x| )\] (.*)$/gm;
-        const matches = [...visualText.matchAll(taskRegex)];
-
-        if (matches.length > 0) {
-            const tasks = matches.map(match => ({
-                fullMatch: match[0],
-                checked: match[1] === 'x',
-                label: match[2]
-            }));
-            setDetectedTasks(tasks);
-        } else {
-            setDetectedTasks(null);
-        }
+        setDetectedTasks(detectTasksFromMarkdown(visualText));
     }, []);
 
 

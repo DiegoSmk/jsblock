@@ -1,52 +1,72 @@
 import type { AppNode } from '../types';
 import type { Edge } from '@xyflow/react';
 
-let worker: Worker | null = null;
-let messageId = 0;
-const pendingRequests = new Map<number, { resolve: (value: { nodes: AppNode[], edges: Edge[] }) => void, reject: (reason?: unknown) => void }>();
-
 interface WorkerResponse {
     id: number;
     nodes: AppNode[];
     edges: Edge[];
+    error?: any;
 }
 
-const getWorker = () => {
-    if (!worker) {
-        // Correct path for Vite to pick up the worker
-        worker = new Worker(new URL('./parser.worker.ts', import.meta.url), { type: 'module' });
+class CodeParserService {
+    private worker: Worker | null = null;
+    private messageId = 0;
+    private pendingRequests = new Map<number, {
+        resolve: (value: { nodes: AppNode[], edges: Edge[] }) => void,
+        reject: (reason?: unknown) => void
+    }>();
 
-        worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
-            const { id, nodes, edges } = e.data;
-            const request = pendingRequests.get(id);
-            if (request) {
-                request.resolve({ nodes, edges });
-                pendingRequests.delete(id);
-            }
-        };
+    private getWorker(): Worker {
+        if (!this.worker) {
+            this.worker = new Worker(new URL('./parser.worker.ts', import.meta.url), {
+                type: 'module'
+            });
 
-        worker.onerror = (err) => {
-            console.error('Worker error', err);
-            for (const [id, request] of pendingRequests) {
-                request.reject(err);
-                pendingRequests.delete(id);
-            }
-        };
+            this.worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+                const { id, nodes, edges, error } = e.data;
+                const request = this.pendingRequests.get(id);
+                if (request) {
+                    if (error) request.reject(error);
+                    else request.resolve({ nodes, edges });
+                    this.pendingRequests.delete(id);
+                }
+            };
+
+            this.worker.onerror = (err) => {
+                console.error('Parser worker error:', err);
+                for (const [id, request] of this.pendingRequests) {
+                    request.reject(err);
+                    this.pendingRequests.delete(id);
+                }
+            };
+        }
+        return this.worker;
     }
-    return worker;
-};
 
-export const parseCodeToFlowAsync = (code: string): Promise<{ nodes: AppNode[], edges: Edge[] }> => {
-    // Check for Worker support (SSR or Test Env)
-    if (typeof Worker === 'undefined') {
-        console.warn('Web Workers are not supported in this environment. Returning empty flow.');
-        return Promise.resolve({ nodes: [], edges: [] });
+    public async parseCode(code: string): Promise<{ nodes: AppNode[], edges: Edge[] }> {
+        if (typeof Worker === 'undefined') {
+            console.warn('Web Workers not supported. Returning empty flow.');
+            return { nodes: [], edges: [] };
+        }
+
+        const id = ++this.messageId;
+        const worker = this.getWorker();
+
+        return new Promise((resolve, reject) => {
+            this.pendingRequests.set(id, { resolve, reject });
+            worker.postMessage({ id, code });
+        });
     }
 
-    const id = ++messageId;
-    return new Promise((resolve, reject) => {
-        const w = getWorker();
-        pendingRequests.set(id, { resolve, reject });
-        w.postMessage({ code, id });
-    });
-};
+    public terminate() {
+        if (this.worker) {
+            this.worker.terminate();
+            this.worker = null;
+        }
+    }
+}
+
+export const codeParser = new CodeParserService();
+
+/** @deprecated Use codeParser.parseCode instead */
+export const parseCodeToFlowAsync = (code: string) => codeParser.parseCode(code);

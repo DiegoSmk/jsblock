@@ -39,25 +39,29 @@ export class PluginManager {
         }
     }
 
-    public discoverPlugins(): PluginManifest[] {
-        const folders = fs.readdirSync(this.pluginsPath).filter(f =>
-            fs.statSync(path.join(this.pluginsPath, f)).isDirectory()
-        );
-        this.plugins.clear();
+    public async discoverPlugins(): Promise<PluginManifest[]> {
+        try {
+            const folders = (await fs.promises.readdir(this.pluginsPath, { withFileTypes: true }))
+                .filter(dirent => dirent.isDirectory())
+                .map(dirent => dirent.name);
 
-        const config = this.readConfig();
+            this.plugins.clear();
+            const config = this.readConfig();
 
-        for (const folder of folders) {
-            const manifestPath = path.join(this.pluginsPath, folder, 'plugin.json');
-            if (fs.existsSync(manifestPath)) {
+            await Promise.all(folders.map(async (folder) => {
+                const manifestPath = path.join(this.pluginsPath, folder, 'plugin.json');
                 try {
-                    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as PluginManifest;
+                    await fs.promises.access(manifestPath);
+                    const manifestContent = await fs.promises.readFile(manifestPath, 'utf8');
+                    const manifest = JSON.parse(manifestContent) as PluginManifest;
                     manifest.enabled = !config.disabledPlugins.includes(manifest.id);
                     this.plugins.set(manifest.id, manifest);
-                } catch (e) {
-                    console.error(`Failed to load plugin manifest at ${manifestPath}:`, e);
+                } catch {
+                    // Ignore folders without plugin.json or failed reads
                 }
-            }
+            }));
+        } catch (err) {
+            console.error('Failed to discover plugins:', err);
         }
         return Array.from(this.plugins.values());
     }
@@ -96,36 +100,43 @@ export class PluginManager {
         this.broadcast('plugin:state-changed', { id, enabled });
     }
 
-    public installPlugin(sourcePath: string): PluginManifest {
+    public async installPlugin(sourcePath: string): Promise<PluginManifest> {
         const tempManifestPath = path.join(sourcePath, 'plugin.json');
-        if (!fs.existsSync(tempManifestPath)) {
+        try {
+            await fs.promises.access(tempManifestPath);
+        } catch {
             throw new Error('Invalid plugin: plugin.json not found');
         }
 
-        const manifest = JSON.parse(fs.readFileSync(tempManifestPath, 'utf8')) as PluginManifest;
+        const manifestContent = await fs.promises.readFile(tempManifestPath, 'utf8');
+        const manifest = JSON.parse(manifestContent) as PluginManifest;
         const targetDir = path.join(this.pluginsPath, manifest.id);
 
-        if (fs.existsSync(targetDir)) {
+        try {
+            await fs.promises.access(targetDir);
             // Update/Overwrites
-            fs.rmSync(targetDir, { recursive: true, force: true });
+            await fs.promises.rm(targetDir, { recursive: true, force: true });
+        } catch {
+            // Target directory doesn't exist, which is fine
         }
 
-        // Recursive copy
-        const copyDir = (src: string, dest: string) => {
-            fs.mkdirSync(dest, { recursive: true });
-            const entries = fs.readdirSync(src, { withFileTypes: true });
-            for (const entry of entries) {
+        // Recursive copy using fs.promises
+        const copyDirAuto = async (src: string, dest: string) => {
+            await fs.promises.mkdir(dest, { recursive: true });
+            const entries = await fs.promises.readdir(src, { withFileTypes: true });
+
+            await Promise.all(entries.map(async (entry) => {
                 const srcPath = path.join(src, entry.name);
                 const destPath = path.join(dest, entry.name);
                 if (entry.isDirectory()) {
-                    copyDir(srcPath, destPath);
+                    await copyDirAuto(srcPath, destPath);
                 } else {
-                    fs.copyFileSync(srcPath, destPath);
+                    await fs.promises.copyFile(srcPath, destPath);
                 }
-            }
+            }));
         };
 
-        copyDir(sourcePath, targetDir);
+        await copyDirAuto(sourcePath, targetDir);
         manifest.enabled = true;
         this.plugins.set(manifest.id, manifest);
         return manifest;

@@ -92,6 +92,12 @@ export interface GitSlice {
     tags: GitTag[];
     isInitialized: boolean;
     selectedDiffFile: string | null;
+    isLoading: boolean;
+    configLevel: 'global' | 'local';
+    authorBuffer: GitAuthor;
+    isEditingAuthor: boolean;
+    showProfileManager: boolean;
+    newProfile: Omit<GitProfile, 'id'> | GitProfile;
   };
   gitProfiles: GitProfile[];
   commitTemplates: CommitTemplate[];
@@ -170,4 +176,14 @@ export interface GitSlice {
   selectGitDiffFile: (path: string) => void;
   closeGitDiffFile: () => void;
   getGitFileContent: (path: string, ref: string) => Promise<string>;
+
+  // Initialization State Setters
+  setConfigLevel: (level: 'global' | 'local') => void;
+  setAuthorBuffer: (buffer: GitAuthor) => void;
+  setIsEditingAuthor: (editing: boolean) => void;
+  setShowProfileManager: (show: boolean) => void;
+  setNewProfile: (profile: Omit<GitProfile, 'id'> | GitProfile) => void;
+  startInit: () => Promise<void>;
+  handleSaveGlobalConfig: () => Promise<void>;
+  handleAddProfile: () => void;
 }

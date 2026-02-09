@@ -19,5 +19,11 @@ export const initialGitState: GitSlice['git'] = {
     },
     tags: [],
     isInitialized: false,
-    selectedDiffFile: null
+    selectedDiffFile: null,
+    isLoading: false,
+    configLevel: 'local',
+    authorBuffer: { name: '', email: '' },
+    isEditingAuthor: false,
+    showProfileManager: false,
+    newProfile: { name: '', email: '', tag: 'personal' as const, customTagName: '' }
 };

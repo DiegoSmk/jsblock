@@ -37,9 +37,9 @@ export class WindowManager {
         }
     }
 
-    private saveStates() {
+    private async saveStates() {
         try {
-            fs.writeFileSync(this.statesFilePath, JSON.stringify(this.windowStates, null, 2));
+            await fs.promises.writeFile(this.statesFilePath, JSON.stringify(this.windowStates, null, 2));
         } catch (err) {
             console.error('Failed to save window states:', err);
         }

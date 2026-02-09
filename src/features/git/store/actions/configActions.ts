@@ -142,4 +142,70 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
         localStorage.setItem('gitProfiles', JSON.stringify(newProfiles));
         set({ gitProfiles: newProfiles });
     },
+
+    // Initialization State Setters
+    setConfigLevel: (level: 'global' | 'local') => {
+        set((state: AppState) => ({
+            git: { ...state.git, configLevel: level }
+        }));
+    },
+
+    setAuthorBuffer: (buffer: GitAuthor) => {
+        set((state: AppState) => ({
+            git: { ...state.git, authorBuffer: buffer }
+        }));
+    },
+
+    setIsEditingAuthor: (editing: boolean) => {
+        set((state: AppState) => ({
+            git: { ...state.git, isEditingAuthor: editing }
+        }));
+    },
+
+    setShowProfileManager: (show: boolean) => {
+        set((state: AppState) => ({
+            git: { ...state.git, showProfileManager: show }
+        }));
+    },
+
+    setNewProfile: (profile: Omit<GitProfile, 'id'> | GitProfile) => {
+        // cast to any to avoid complex Omit/interface mismatch in the setter itself
+        set((state: AppState) => ({
+            git: { ...state.git, newProfile: profile as any }
+        }));
+    },
+
+    startInit: async () => {
+        const { git, gitInit, setAuthorBuffer, setConfigLevel } = get();
+        const { configLevel, authorBuffer, globalAuthor } = git;
+
+        set((state: AppState) => ({ git: { ...state.git, isLoading: true } }));
+
+        try {
+            if (configLevel === 'local' && authorBuffer.name && authorBuffer.email) {
+                await gitInit(authorBuffer, false);
+            } else if (configLevel === 'global' && globalAuthor) {
+                await gitInit();
+            }
+        } finally {
+            set((state: AppState) => ({ git: { ...state.git, isLoading: false } }));
+        }
+    },
+
+    handleSaveGlobalConfig: async () => {
+        const { git, setGitConfig, setIsEditingAuthor } = get();
+        const { authorBuffer } = git;
+
+        await setGitConfig(authorBuffer, true);
+        setIsEditingAuthor(false);
+    },
+
+    handleAddProfile: () => {
+        const { git, addGitProfile, setNewProfile } = get();
+        const { newProfile } = git;
+
+        if (!newProfile.name || !newProfile.email) return;
+        addGitProfile(newProfile);
+        setNewProfile({ name: '', email: '', tag: 'personal', customTagName: '' });
+    },
 });

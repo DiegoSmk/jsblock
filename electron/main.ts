@@ -409,19 +409,33 @@ ipcMain.handle('get-file-stats', async (_event, pathStr: string) => {
 ipcMain.handle('open-system-terminal', (_event, dirPath: string) => {
     try {
         SecurityUtils.validatePath(dirPath);
+
         if (process.platform === 'linux') {
-            // Try common terminal emulators
-            exec(`gnome-terminal --working-directory="${dirPath}"`, (err) => {
-                if (err) exec(`konsole --workdir "${dirPath}"`, (err) => {
-                    if (err) exec(`xfce4-terminal --working-directory="${dirPath}"`, (err) => {
-                        if (err) exec(`xterm -e "cd ${dirPath} && bash"`);
-                    });
+            const terminals = [
+                { bin: 'gnome-terminal', args: ['--working-directory', dirPath] },
+                { bin: 'konsole', args: ['--workdir', dirPath] },
+                { bin: 'xfce4-terminal', args: ['--working-directory', dirPath] },
+                // xterm is more tricky with working directory, using a shell wrapper if needed
+                { bin: 'xterm', args: ['-e', `cd "${dirPath.replace(/"/g, '\\"')}" && bash`] }
+            ];
+
+            const tryTerminal = (index: number) => {
+                if (index >= terminals.length) return;
+                const { bin, args } = terminals[index];
+                execFile(bin, args, (err) => {
+                    if (err) tryTerminal(index + 1);
                 });
-            });
+            };
+            tryTerminal(0);
+
         } else if (process.platform === 'win32') {
-            exec(`start cmd /K "cd /d ${dirPath}"`);
+            // Using 'start' via exec is still shell-based, but we escape carefully.
+            // Better: use powershell or a direct process if possible.
+            // For Windows cmd /K, we quote the path and ensure cd /d handles drive changes.
+            const escapedPath = dirPath.replace(/"/g, '^"');
+            exec(`start cmd /K "cd /d \\"${escapedPath}\\""`);
         } else if (process.platform === 'darwin') {
-            exec(`open -a Terminal "${dirPath}"`);
+            execFile('open', ['-a', 'Terminal', dirPath]);
         }
         return true;
     } catch (err) {
@@ -442,8 +456,8 @@ ipcMain.handle('git-command', async (_event, dirPath: string, args: string[]) =>
 });
 
 // Plugin System Handlers
-ipcMain.handle('plugins:discover', () => {
-    return pluginManager.discoverPlugins();
+ipcMain.handle('plugins:discover', async () => {
+    return await pluginManager.discoverPlugins();
 });
 
 ipcMain.handle('plugins:toggle', (_event, id: string, enabled: boolean) => {
@@ -570,7 +584,7 @@ ipcMain.on('window-close', (event) => {
 let ptyProcess: pty.IPty | null = null;
 let currentTerminalId = 0;
 
-ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
+ipcMain.on('terminal-create', async (event, options: { cwd: string }) => {
     const terminalId = ++currentTerminalId;
 
     if (options.cwd) {
@@ -604,7 +618,8 @@ ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
         args = process.platform === 'darwin' ? ['-l'] : ['-i'];
     }
 
-    const workingDir = options.cwd && fs.existsSync(options.cwd) ? options.cwd : os.homedir();
+    const workingDirExists = options.cwd ? await fs.promises.access(options.cwd).then(() => true).catch(() => false) : false;
+    const workingDir = options.cwd && workingDirExists ? options.cwd : os.homedir();
 
     try {
         const newPty = pty.spawn(shell, args, {

@@ -1,42 +1,53 @@
 import { GitBranch, AlertCircle, User, Settings, Check, Edit3, ShieldAlert, Plus, RefreshCw, ChevronDown, X } from 'lucide-react';
+import { useStore } from '../../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
+import './GitInitView.css';
+import { getTagIcon, getTagColor } from '../utils/gitHelpers';
 import type { GitProfile } from '../types';
 
-interface GitInitViewProps {
-    isDark: boolean;
-    openedFolder: string | null;
-    isLoading: boolean;
-    git: {
-        globalAuthor: { name: string; email: string } | null;
-        projectAuthor: { name: string; email: string } | null;
-    };
-    configLevel: 'global' | 'local';
-    setConfigLevel: (level: 'global' | 'local') => void;
-    authorBuffer: { name: string; email: string };
-    setAuthorBuffer: (buffer: { name: string; email: string }) => void;
-    isEditingAuthor: boolean;
-    setIsEditingAuthor: (editing: boolean) => void;
-    gitProfiles: GitProfile[];
-    showProfileManager: boolean;
-    setShowProfileManager: (show: boolean) => void;
-    startInit: () => void | Promise<void>;
-    handleSaveGlobalConfig: () => void | Promise<void>;
-    handleAddProfile: () => void;
-    removeGitProfile: (id: string) => void;
-    getTagIcon: (tag: string) => React.ReactNode;
-    getTagColor: (tag: string) => string;
-    newProfile: Omit<GitProfile, 'id'> | GitProfile;
-    setNewProfile: (profile: Omit<GitProfile, 'id'> | GitProfile) => void;
-}
+export const GitInitView: React.FC = () => {
+    const {
+        isDark,
+        openedFolder,
+        isLoading,
+        git,
+        configLevel,
+        setConfigLevel,
+        authorBuffer,
+        setAuthorBuffer,
+        isEditingAuthor,
+        setIsEditingAuthor,
+        gitProfiles,
+        showProfileManager,
+        setShowProfileManager,
+        startInit,
+        handleSaveGlobalConfig,
+        handleAddProfile,
+        removeGitProfile,
+        newProfile,
+        setNewProfile
+    } = useStore(useShallow(state => ({
+        isDark: state.theme === 'dark',
+        openedFolder: state.openedFolder,
+        isLoading: state.git.isLoading,
+        git: state.git,
+        configLevel: state.git.configLevel,
+        setConfigLevel: state.setConfigLevel,
+        authorBuffer: state.git.authorBuffer,
+        setAuthorBuffer: state.setAuthorBuffer,
+        isEditingAuthor: state.git.isEditingAuthor,
+        setIsEditingAuthor: state.setIsEditingAuthor,
+        gitProfiles: state.git.gitProfiles,
+        showProfileManager: state.git.showProfileManager,
+        setShowProfileManager: state.setShowProfileManager,
+        startInit: state.startInit,
+        handleSaveGlobalConfig: state.handleSaveGlobalConfig,
+        handleAddProfile: state.handleAddProfile,
+        removeGitProfile: state.removeGitProfile,
+        newProfile: state.git.newProfile,
+        setNewProfile: state.setNewProfile
+    })));
 
-export const GitInitView: React.FC<GitInitViewProps> = ({
-    isDark, openedFolder, isLoading, git,
-    configLevel, setConfigLevel,
-    authorBuffer, setAuthorBuffer,
-    isEditingAuthor, setIsEditingAuthor,
-    gitProfiles, showProfileManager, setShowProfileManager,
-    startInit, handleSaveGlobalConfig, handleAddProfile, removeGitProfile,
-    getTagIcon, getTagColor, newProfile, setNewProfile
-}) => {
     if (!openedFolder) {
         return (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#555' : '#ccc' }}>
@@ -49,70 +60,40 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
 
     return (
         <div
-            className="animate-entrance"
+            className="git-init-container animate-entrance"
             style={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
                 background: isDark ? '#1a1a1a' : '#fff',
                 color: isDark ? '#fff' : '#000',
-                opacity: 0
             }}
         >
             {/* Header */}
             <div
-                className="animate-entrance"
+                className="git-init-header animate-entrance"
                 style={{
-                    padding: '12px 20px',
                     borderBottom: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    animationDelay: '0.05s',
-                    opacity: 0
                 }}
             >
                 <GitBranch size={18} color={isDark ? '#4fc3f7' : '#0070f3'} />
                 <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Controle de Versão</div>
-                    <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999' }}>Repositório não inicializado</div>
+                    <div className="git-init-title">Controle de Versão</div>
+                    <div className="git-init-subtitle" style={{ color: isDark ? '#666' : '#999' }}>Repositório não inicializado</div>
                 </div>
             </div>
 
             {/* Content */}
-            <div style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: '20px'
-            }}>
-                <div style={{
-                    maxWidth: '500px',
-                    margin: '0 auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px'
-                }}>
+            <div className="git-init-content">
+                <div className="git-init-inner">
                     {/* Info Card */}
                     <div
-                        className="animate-entrance"
+                        className="git-info-card animate-entrance"
                         style={{
                             background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                            borderRadius: '8px',
-                            padding: '14px 16px',
                             border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                            display: 'flex',
-                            gap: '12px',
-                            alignItems: 'center',
-                            animationDelay: '0.1s',
-                            opacity: 0
                         }}
                     >
                         <AlertCircle size={20} color={isDark ? '#fbbf24' : '#f59e0b'} style={{ flexShrink: 0 }} />
-                        <p style={{
-                            fontSize: '0.85rem',
+                        <p className="git-info-text" style={{
                             color: isDark ? '#888' : '#666',
-                            lineHeight: 1.5,
-                            margin: 0
                         }}>
                             Esta pasta ainda não está sendo rastreada pelo Git. Inicialize um repositório para começar a versionar suas alterações.
                         </p>
@@ -120,31 +101,15 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
 
                     {/* Author Section */}
                     <div
-                        className="animate-entrance"
+                        className="git-author-section animate-entrance"
                         style={{
                             background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                            borderRadius: '8px',
-                            padding: '16px',
                             border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
-                            animationDelay: '0.15s',
-                            opacity: 0
                         }}
                     >
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginBottom: '12px'
-                        }}>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
+                        <div className="git-section-header">
+                            <div className="git-section-title" style={{
                                 color: isDark ? '#888' : '#666',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-
-                                letterSpacing: '0.5px'
                             }}>
                                 <User size={14} />
                                 Autor dos Commits
@@ -152,19 +117,13 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                         </div>
 
                         {/* Config Level Selector */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
-                            <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', fontWeight: 600, letterSpacing: '0.5px' }}>
+                        <div className="git-config-selector">
+                            <div className="git-config-label" style={{ color: isDark ? '#666' : '#999' }}>
                                 Onde salvar?
                             </div>
 
                             {/* Local Option */}
-                            <label style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                padding: '10px',
-                                borderRadius: '6px',
+                            <label className="git-radio-option" style={{
                                 background: configLevel === 'local' ? (isDark ? 'rgba(79, 195, 247, 0.08)' : 'rgba(0, 112, 243, 0.05)') : 'transparent',
                                 border: `1px solid ${configLevel === 'local' ? (isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.15)') : 'transparent'}`
                             }}>
@@ -184,13 +143,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                             </label>
 
                             {/* Global Option */}
-                            <label style={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                padding: '10px',
-                                borderRadius: '6px',
+                            <label className="git-radio-option" style={{
                                 background: configLevel === 'global' ? (isDark ? 'rgba(79, 195, 247, 0.08)' : 'rgba(0, 112, 243, 0.05)') : 'transparent',
                                 border: `1px solid ${configLevel === 'global' ? (isDark ? 'rgba(79, 195, 247, 0.2)' : 'rgba(0, 112, 243, 0.15)') : 'transparent'}`
                             }}>
@@ -218,25 +171,19 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                 {/* Quick Select from Profiles */}
                                 {gitProfiles.length > 0 && (
                                     <div>
-                                        <div style={{ fontSize: '0.7rem', color: isDark ? '#666' : '#999', fontWeight: 600, marginBottom: '8px' }}>
+                                        <div className="git-config-label" style={{ color: isDark ? '#666' : '#999', marginBottom: '8px' }}>
                                             Perfis Salvos
                                         </div>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                            {gitProfiles.map(profile => (
+                                            {gitProfiles.map((profile: GitProfile) => (
                                                 <button
                                                     key={profile.id}
                                                     onClick={() => setAuthorBuffer({ name: profile.name, email: profile.email })}
+                                                    className="git-profile-tag-btn"
                                                     style={{
-                                                        padding: '6px 10px',
                                                         background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
                                                         border: `1px solid ${isDark ? '#444' : '#e5e7eb'}`,
-                                                        borderRadius: '6px',
-                                                        cursor: 'pointer',
-                                                        fontSize: '0.75rem',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        color: getTagColor(profile.tag)
+                                                        color: getTagColor(profile.tag, isDark)
                                                     }}
                                                 >
                                                     {getTagIcon(profile.tag)}
@@ -253,30 +200,22 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                         placeholder="Nome"
                                         value={authorBuffer.name}
                                         onChange={(e) => setAuthorBuffer({ ...authorBuffer, name: e.target.value })}
+                                        className="git-input"
                                         style={{
-                                            flex: 1,
-                                            padding: '8px 10px',
-                                            borderRadius: '6px',
                                             border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
                                             background: isDark ? '#2d2d2d' : '#fff',
                                             color: isDark ? '#fff' : '#000',
-                                            fontSize: '0.85rem',
-                                            outline: 'none'
                                         }}
                                     />
                                     <input
                                         placeholder="Email"
                                         value={authorBuffer.email}
                                         onChange={(e) => setAuthorBuffer({ ...authorBuffer, email: e.target.value })}
+                                        className="git-input"
                                         style={{
-                                            flex: 1,
-                                            padding: '8px 10px',
-                                            borderRadius: '6px',
                                             border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
                                             background: isDark ? '#2d2d2d' : '#fff',
                                             color: isDark ? '#fff' : '#000',
-                                            fontSize: '0.85rem',
-                                            outline: 'none'
                                         }}
                                     />
                                 </div>
@@ -284,18 +223,10 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                 {/* Manage Profiles Button */}
                                 <button
                                     onClick={() => setShowProfileManager(!showProfileManager)}
+                                    className="git-btn-secondary"
                                     style={{
-                                        padding: '8px',
-                                        background: 'transparent',
                                         color: isDark ? '#888' : '#666',
                                         border: `1px solid ${isDark ? '#444' : '#d1d1d1'}`,
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontSize: '0.75rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '6px'
                                     }}
                                 >
                                     <Settings size={14} />
@@ -304,10 +235,8 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
 
                                 {/* Profile Manager */}
                                 {showProfileManager && (
-                                    <div style={{
-                                        padding: '12px',
+                                    <div className="git-profile-manager" style={{
                                         background: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)',
-                                        borderRadius: '6px',
                                         border: `1px solid ${isDark ? '#444' : '#e5e7eb'}`
                                     }}>
                                         <div style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '10px', color: isDark ? '#aaa' : '#666' }}>
@@ -318,46 +247,37 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                                 placeholder="Nome"
                                                 value={newProfile.name}
                                                 onChange={(e) => setNewProfile({ ...newProfile, name: e.target.value })}
+                                                className="git-input"
                                                 style={{
-                                                    padding: '6px 8px',
-                                                    borderRadius: '4px',
                                                     border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
                                                     background: isDark ? '#1a1a1a' : '#fff',
                                                     color: isDark ? '#fff' : '#000',
-                                                    fontSize: '0.8rem',
-                                                    outline: 'none'
                                                 }}
                                             />
                                             <input
                                                 placeholder="Email"
                                                 value={newProfile.email}
                                                 onChange={(e) => setNewProfile({ ...newProfile, email: e.target.value })}
+                                                className="git-input"
                                                 style={{
-                                                    padding: '6px 8px',
-                                                    borderRadius: '4px',
                                                     border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
                                                     background: isDark ? '#1a1a1a' : '#fff',
                                                     color: isDark ? '#fff' : '#000',
-                                                    fontSize: '0.8rem',
-                                                    outline: 'none'
                                                 }}
                                             />
                                             <div style={{ position: 'relative' }}>
                                                 <select
                                                     value={newProfile.tag}
                                                     onChange={(e) => setNewProfile({ ...newProfile, tag: e.target.value as GitProfile['tag'] })}
+                                                    className="git-input"
                                                     style={{
                                                         width: '100%',
-                                                        padding: '6px 8px',
                                                         paddingRight: '28px',
-                                                        borderRadius: '4px',
                                                         border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
                                                         background: isDark ? '#1a1a1a' : '#fff',
                                                         color: isDark ? '#fff' : '#000',
-                                                        fontSize: '0.8rem',
                                                         appearance: 'none',
                                                         cursor: 'pointer',
-                                                        outline: 'none'
                                                     }}
                                                 >
                                                     <option value="personal">Pessoal</option>
@@ -379,29 +299,23 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                                     placeholder="Nome da tag personalizada"
                                                     value={newProfile.customTagName}
                                                     onChange={(e) => setNewProfile({ ...newProfile, customTagName: e.target.value })}
+                                                    className="git-input"
                                                     style={{
-                                                        padding: '6px 8px',
-                                                        borderRadius: '4px',
                                                         border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`,
                                                         background: isDark ? '#1a1a1a' : '#fff',
                                                         color: isDark ? '#fff' : '#000',
-                                                        fontSize: '0.8rem',
-                                                        outline: 'none'
                                                     }}
                                                 />
                                             )}
                                             <button
                                                 onClick={handleAddProfile}
                                                 disabled={!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)}
+                                                className="git-init-btn"
                                                 style={{
-                                                    padding: '6px',
                                                     background: (!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)) ? (isDark ? '#333' : '#eee') : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
                                                     color: (!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)) ? (isDark ? '#666' : '#999') : (isDark ? '#4fc3f7' : '#0070f3'),
                                                     border: `1px solid ${(!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)) ? (isDark ? '#444' : '#ddd') : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
-                                                    borderRadius: '4px',
                                                     cursor: (!newProfile.name || !newProfile.email || (newProfile.tag === 'custom' && !newProfile.customTagName)) ? 'not-allowed' : 'pointer',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 600
                                                 }}
                                             >
                                                 Adicionar Perfil
@@ -414,7 +328,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                                 <div style={{ fontSize: '0.7rem', fontWeight: 600, marginBottom: '8px', color: isDark ? '#888' : '#666' }}>
                                                     Perfis Salvos
                                                 </div>
-                                                {gitProfiles.map(profile => (
+                                                {gitProfiles.map((profile: GitProfile) => (
                                                     <div key={profile.id} style={{
                                                         display: 'flex',
                                                         alignItems: 'center',
@@ -425,7 +339,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                                         borderRadius: '4px'
                                                     }}>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem' }}>
-                                                            <span style={{ color: getTagColor(profile.tag) }}>{getTagIcon(profile.tag)}</span>
+                                                            <span style={{ color: getTagColor(profile.tag, isDark) }}>{getTagIcon(profile.tag)}</span>
                                                             <span>{profile.name}</span>
                                                             <span style={{ color: isDark ? '#666' : '#999', fontSize: '0.7rem' }}>({profile.email})</span>
                                                         </div>
@@ -491,19 +405,10 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                                     setIsEditingAuthor(true);
                                                 }
                                             }}
+                                            className="git-btn-secondary"
                                             style={{
-                                                width: '100%',
-                                                padding: '8px',
-                                                background: 'transparent',
                                                 color: isDark ? '#888' : '#666',
                                                 border: `1px solid ${isDark ? '#444' : '#d1d1d1'}`,
-                                                borderRadius: '6px',
-                                                cursor: 'pointer',
-                                                fontSize: '0.75rem',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                gap: '6px'
                                             }}
                                         >
                                             <Edit3 size={14} />
@@ -538,46 +443,34 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                                 placeholder="Nome"
                                                 value={authorBuffer.name}
                                                 onChange={(e) => setAuthorBuffer({ ...authorBuffer, name: e.target.value })}
+                                                className="git-input"
                                                 style={{
-                                                    flex: 1,
-                                                    padding: '8px 10px',
-                                                    borderRadius: '6px',
                                                     border: `1px solid ${isDark ? '#444' : '#d1d1d1'}`,
                                                     background: isDark ? '#2d2d2d' : '#fff',
                                                     color: isDark ? '#fff' : '#000',
-                                                    fontSize: '0.85rem',
-                                                    outline: 'none'
                                                 }}
                                             />
                                             <input
                                                 placeholder="Email"
                                                 value={authorBuffer.email}
                                                 onChange={(e) => setAuthorBuffer({ ...authorBuffer, email: e.target.value })}
+                                                className="git-input"
                                                 style={{
-                                                    flex: 1,
-                                                    padding: '8px 10px',
-                                                    borderRadius: '6px',
                                                     border: `1px solid ${isDark ? '#444' : '#d1d1d1'}`,
                                                     background: isDark ? '#2d2d2d' : '#fff',
                                                     color: isDark ? '#fff' : '#000',
-                                                    fontSize: '0.85rem',
-                                                    outline: 'none'
                                                 }}
                                             />
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <button
                                                 onClick={() => void handleSaveGlobalConfig()}
+                                                className="git-init-btn"
                                                 style={{
                                                     flex: 1,
-                                                    padding: '8px',
                                                     background: isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)',
                                                     color: isDark ? '#4fc3f7' : '#0070f3',
                                                     border: `1px solid ${isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)'}`,
-                                                    borderRadius: '6px',
-                                                    cursor: 'pointer',
-                                                    fontWeight: 600,
-                                                    fontSize: '0.8rem'
                                                 }}
                                             >
                                                 Salvar
@@ -585,13 +478,11 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                             {isEditingAuthor && (
                                                 <button
                                                     onClick={() => setIsEditingAuthor(false)}
+                                                    className="git-btn-secondary"
                                                     style={{
                                                         padding: '8px 16px',
-                                                        background: 'transparent',
                                                         color: isDark ? '#888' : '#666',
                                                         border: `1px solid ${isDark ? '#444' : '#d1d1d1'}`,
-                                                        borderRadius: '6px',
-                                                        cursor: 'pointer',
                                                         fontSize: '0.8rem'
                                                     }}
                                                 >
@@ -610,9 +501,8 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                         <button
                             onClick={() => void startInit()}
                             disabled={isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal)}
+                            className="git-init-btn"
                             style={{
-                                width: '100%',
-                                padding: '12px',
                                 background: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
                                     ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)')
                                     : (isDark ? 'rgba(79, 195, 247, 0.15)' : 'rgba(0, 112, 243, 0.1)'),
@@ -622,15 +512,7 @@ export const GitInitView: React.FC<GitInitViewProps> = ({
                                 border: `1px solid ${(isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal))
                                     ? (isDark ? '#333' : '#e5e7eb')
                                     : (isDark ? 'rgba(79, 195, 247, 0.3)' : 'rgba(0, 112, 243, 0.2)')}`,
-                                borderRadius: '8px',
                                 cursor: (isLoading || (configLevel === 'local' && (!authorBuffer.name || !authorBuffer.email)) || (configLevel === 'global' && !hasGlobal)) ? 'not-allowed' : 'pointer',
-                                fontWeight: 600,
-                                fontSize: '0.9rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '8px',
-                                transition: 'opacity 0.2s'
                             }}
                         >
                             {isLoading ? <RefreshCw size={18} className="animate-spin" /> : <Plus size={18} />}
