@@ -52,7 +52,7 @@ export const ExportNode = memo(({ data, id }: { id: string, data: AppNodeData })
                             <Handle
                                 type="target"
                                 position={Position.Left}
-                                id={s.exported}
+                                id={s.exported === 'default' ? 'handle-default-export' : s.exported}
                                 className="handle-data target"
                                 style={{ left: '-12px', background: '#a78bfa' }}
                             />
@@ -64,6 +64,7 @@ export const ExportNode = memo(({ data, id }: { id: string, data: AppNodeData })
                             }}>
                                 {s.local}
                                 {s.exported !== s.local && s.exported !== 'default' && ` as ${s.exported}`}
+                                {s.exported === 'default' && exportType === 'default' && s.local !== '(expression)' && ' (default)'}
                             </span>
                         </div>
                     ))}

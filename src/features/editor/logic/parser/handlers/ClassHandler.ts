@@ -7,9 +7,7 @@ export const ClassHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ClassDeclaration',
     handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
         const stmt = node as ClassDeclaration;
-        if (!stmt.id) return undefined;
-
-        const className = stmt.id.name;
+        const className = stmt.id ? stmt.id.name : 'default';
         const classNodeId = idSuffix ? `class-${className}-${idSuffix}` : `class-${className}`;
 
         let extendsClause: string | undefined = undefined;
@@ -17,8 +15,8 @@ export const ClassHandler: ParserHandler = {
             if (stmt.superClass.type === 'Identifier') {
                 extendsClause = stmt.superClass.name;
             } else if (stmt.superClass.type === 'MemberExpression' &&
-                       stmt.superClass.object.type === 'Identifier' &&
-                       stmt.superClass.property.type === 'Identifier') {
+                stmt.superClass.object.type === 'Identifier' &&
+                stmt.superClass.property.type === 'Identifier') {
                 extendsClause = `${stmt.superClass.object.name}.${stmt.superClass.property.name}`;
             }
         }
@@ -79,7 +77,7 @@ export const ClassHandler: ParserHandler = {
                         ctx.nodes.push(methodNode);
 
                         // Process method parameters
-                         const paramNodes: AppNode[] = method.params.map((p) => {
+                        const paramNodes: AppNode[] = method.params.map((p) => {
                             if (p.type === 'Identifier') {
                                 const varName = p.name;
                                 const pNodeId = generateId('param-' + varName);
@@ -105,7 +103,7 @@ export const ClassHandler: ParserHandler = {
                 }
             });
             // Update class height based on methods
-             classNode.style = { width: 400, height: Math.max(300, methodY + 50) };
+            classNode.style = { width: 400, height: Math.max(300, methodY + 50) };
         }
 
         return classNodeId;

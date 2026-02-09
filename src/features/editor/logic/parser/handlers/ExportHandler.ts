@@ -33,10 +33,15 @@ export const ExportHandler: ParserHandler = {
         if (node.type === 'ExportDefaultDeclaration') {
             exportType = 'default';
             label = 'Export Default';
-            // Default export might be an expression or identifier
             const stmt = node;
+
+            // If it's an Identifier, we add a specifier to connect it
             if (stmt.declaration.type === 'Identifier') {
                 specifiers.push({ local: stmt.declaration.name, exported: 'default' });
+            } else {
+                // For expressions like 'export default 123' or 'export default func()',
+                // we show '(expression)' as a hint in the ExportNode
+                specifiers.push({ local: '(expression)', exported: 'default' });
             }
         } else if (node.type === 'ExportNamedDeclaration') {
             const stmt = node;
@@ -67,12 +72,15 @@ export const ExportHandler: ParserHandler = {
         specifiers.forEach(spec => {
             const sourceId = ctx.variableNodes[spec.local];
             if (sourceId) {
+                // Use a more unique ID for default export handle to avoid confusion
+                const targetHandle = spec.exported === 'default' ? 'handle-default-export' : spec.exported;
+
                 ctx.edges.push({
                     id: `e-ref-${sourceId}-to-${nodeId}-spec-${spec.exported}`,
                     source: sourceId,
                     sourceHandle: 'output',
                     target: nodeId,
-                    targetHandle: spec.exported,
+                    targetHandle: targetHandle,
                     animated: true,
                     style: { stroke: '#a855f7', strokeWidth: 2, strokeDasharray: '5,5' }
                 });

@@ -8,9 +8,7 @@ export const FunctionHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'FunctionDeclaration',
     handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
         const stmt = node as FunctionDeclaration;
-        if (!stmt.id) return undefined;
-
-        const funcName = stmt.id.name;
+        const funcName = stmt.id ? stmt.id.name : 'default';
         const nodeId = idSuffix ? `func-${funcName}-${idSuffix}` : `func-${funcName}`;
 
         const params = stmt.params.map((p) => {
