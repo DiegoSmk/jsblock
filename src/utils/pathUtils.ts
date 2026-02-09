@@ -3,7 +3,7 @@
  * Checks if a file path is absolute.
  * Supports Unix-style (starting with /) and Windows-style (Drive letter or UNC).
  */
-export function isAbsolutePath(filePath: string): boolean {
+function isAbsolutePath(filePath: string): boolean {
     if (!filePath) return false;
     // Unix absolute
     if (filePath.startsWith('/')) return true;
