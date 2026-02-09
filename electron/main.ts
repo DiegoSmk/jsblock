@@ -12,6 +12,7 @@ import { PluginManager } from './services/PluginManager';
 import { ExecutionManager } from './services/ExecutionManager';
 import { WorkspaceService } from './services/WorkspaceService';
 import { windowManager, WindowType, WindowOptions } from './services/WindowManager';
+import { SecurityUtils } from './utils/SecurityUtils';
 
 const execFileAsync = promisify(execFile);
 
@@ -217,6 +218,7 @@ app.on('window-all-closed', () => {
 
 ipcMain.handle('ensure-project-config', async (_event, folderPath: string) => {
     try {
+        SecurityUtils.validatePath(folderPath);
         const blockPath = path.join(folderPath, '.block');
         if (!fs.existsSync(blockPath)) {
             await fs.promises.mkdir(blockPath, { recursive: true });
@@ -243,6 +245,7 @@ ipcMain.handle('check-paths-exists', async (_event, paths: string[]) => {
         const results: Record<string, boolean> = {};
         await Promise.all(paths.map(async (pathToCheck) => {
             try {
+                SecurityUtils.validatePath(pathToCheck);
                 await fs.promises.access(pathToCheck);
                 results[pathToCheck] = true;
             } catch {
@@ -263,11 +266,14 @@ ipcMain.handle('select-folder', async () => {
         properties: ['openDirectory']
     });
     if (result.canceled) return null;
-    return result.filePaths[0];
+    const selectedPath = result.filePaths[0];
+    SecurityUtils.authorizePath(selectedPath);
+    return selectedPath;
 });
 
 ipcMain.handle('read-dir', async (_event, dirPath: string) => {
     try {
+        SecurityUtils.validatePath(dirPath);
         const files = await fs.promises.readdir(dirPath, { withFileTypes: true });
         return files.map(file => ({
             name: file.name,
@@ -282,6 +288,7 @@ ipcMain.handle('read-dir', async (_event, dirPath: string) => {
 
 ipcMain.handle('read-file', async (_event, filePath: string) => {
     try {
+        SecurityUtils.validatePath(filePath);
         return await fs.promises.readFile(filePath, 'utf-8');
     } catch (err) {
         console.error('Error reading file:', err);
@@ -294,6 +301,7 @@ ipcMain.handle('read-multiple-files', async (_event, filePaths: string[]) => {
         const results: Record<string, string> = {};
         await Promise.all(filePaths.map(async (filePath) => {
             try {
+                SecurityUtils.validatePath(filePath);
                 const content = await fs.promises.readFile(filePath, 'utf-8');
                 results[filePath] = content;
             } catch (err) {
@@ -310,6 +318,7 @@ ipcMain.handle('read-multiple-files', async (_event, filePaths: string[]) => {
 
 ipcMain.handle('write-file', async (_event, filePath: string, content: string) => {
     try {
+        SecurityUtils.validatePath(filePath);
         await fs.promises.writeFile(filePath, content, 'utf-8');
         return true;
     } catch (err) {
@@ -321,6 +330,7 @@ ipcMain.handle('write-file', async (_event, filePath: string, content: string) =
 // eslint-disable-next-line @typescript-eslint/no-inferrable-types
 ipcMain.handle('create-file', async (_event, filePath: string, content: string = '') => {
     try {
+        SecurityUtils.validatePath(filePath);
         if (fs.existsSync(filePath)) {
             throw new Error('Arquivo já existe');
         }
@@ -335,6 +345,7 @@ ipcMain.handle('create-file', async (_event, filePath: string, content: string =
 
 ipcMain.handle('create-directory', async (_event, dirPath: string) => {
     try {
+        SecurityUtils.validatePath(dirPath);
         if (fs.existsSync(dirPath)) {
             throw new Error('Diretório já existe');
         }
@@ -348,6 +359,7 @@ ipcMain.handle('create-directory', async (_event, dirPath: string) => {
 
 ipcMain.handle('check-path-exists', (_event, pathToCheck: string) => {
     try {
+        SecurityUtils.validatePath(pathToCheck);
         return fs.existsSync(pathToCheck);
     } catch (err) {
         console.error('Error checking path existence:', err);
@@ -357,6 +369,8 @@ ipcMain.handle('check-path-exists', (_event, pathToCheck: string) => {
 
 ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => {
     try {
+        SecurityUtils.validatePath(oldPath);
+        SecurityUtils.validatePath(newPath);
         await fs.promises.rename(oldPath, newPath);
         return true;
     } catch (err) {
@@ -368,6 +382,7 @@ ipcMain.handle('move-file', async (_event, oldPath: string, newPath: string) => 
 // Generic delete for files or folders (New API)
 ipcMain.handle('delete-file-or-folder', async (_event, pathToDelete: string) => {
     try {
+        SecurityUtils.validatePath(pathToDelete);
         await fs.promises.rm(pathToDelete, { recursive: true, force: true });
         return true;
     } catch (err) {
@@ -378,6 +393,7 @@ ipcMain.handle('delete-file-or-folder', async (_event, pathToDelete: string) => 
 
 ipcMain.handle('get-file-stats', async (_event, pathStr: string) => {
     try {
+        SecurityUtils.validatePath(pathStr);
         const stats = await fs.promises.stat(pathStr);
         return {
             size: stats.size,
@@ -392,6 +408,7 @@ ipcMain.handle('get-file-stats', async (_event, pathStr: string) => {
 
 ipcMain.handle('open-system-terminal', (_event, dirPath: string) => {
     try {
+        SecurityUtils.validatePath(dirPath);
         if (process.platform === 'linux') {
             // Try common terminal emulators
             exec(`gnome-terminal --working-directory="${dirPath}"`, (err) => {
@@ -415,6 +432,7 @@ ipcMain.handle('open-system-terminal', (_event, dirPath: string) => {
 
 ipcMain.handle('git-command', async (_event, dirPath: string, args: string[]) => {
     try {
+        SecurityUtils.validatePath(dirPath);
         const { stdout, stderr } = await execFileAsync('git', args, { cwd: dirPath });
         return { stdout, stderr };
     } catch (err: unknown) {
@@ -443,7 +461,9 @@ ipcMain.handle('plugins:install', async () => {
     if (result.canceled) return null;
 
     try {
-        return pluginManager.installPlugin(result.filePaths[0]);
+        const pluginPath = result.filePaths[0];
+        SecurityUtils.authorizePath(pluginPath);
+        return pluginManager.installPlugin(pluginPath);
     } catch (err) {
         console.error('Failed to install plugin:', err);
         throw err;
@@ -552,6 +572,16 @@ let currentTerminalId = 0;
 
 ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
     const terminalId = ++currentTerminalId;
+
+    if (options.cwd) {
+        try {
+            SecurityUtils.validatePath(options.cwd);
+        } catch (err) {
+            console.error('Unauthorized terminal creation attempt:', err);
+            mainWindow?.webContents.send('terminal-data', `\r\n[Erro: Acesso negado ao diretório ${options.cwd}]\r\n`);
+            return;
+        }
+    }
 
     if (ptyProcess) {
         try {

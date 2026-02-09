@@ -9,6 +9,7 @@ import { TelemetryService } from './TelemetryService.js';
 import { CodeUtils } from '../utils/CodeUtils.js';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import { SecurityUtils } from '../utils/SecurityUtils.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -94,6 +95,9 @@ export class ExecutionManager {
     }
 
     async startExecution(code: string, originalPath?: string) {
+        if (originalPath) {
+            SecurityUtils.validatePath(originalPath);
+        }
         this.stopExecution();
 
         if (this.mainWindow && !this.mainWindow.isDestroyed()) {
@@ -242,6 +246,9 @@ export class ExecutionManager {
     }
 
     async startBenchmark(code: string, line: number, originalPath?: string) {
+        if (originalPath) {
+            SecurityUtils.validatePath(originalPath);
+        }
         this.stopExecution(); // Ensure no normal execution is running
         if (!this.mainWindow || this.mainWindow.isDestroyed()) return;
         this.startStatsMonitoring();

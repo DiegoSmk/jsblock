@@ -5,10 +5,17 @@ import * as path from 'path';
  */
 export class PathUtils {
     /**
-     * Normalizes a path to use forward slashes, useful for consistent internal state.
+     * Normalizes a path to use forward slashes and resolves it to an absolute path.
+     * This ensures consistent internal state and prevents path traversal attacks.
      */
     static normalize(p: string): string {
-        return p.replace(/\\/g, '/');
+        if (!p) return '';
+        try {
+            return path.resolve(p).replace(/\\/g, '/');
+        } catch {
+            // Fallback if path.resolve fails
+            return p.replace(/\\/g, '/');
+        }
     }
 
     /**
@@ -17,7 +24,11 @@ export class PathUtils {
     static isChildOf(parent: string, child: string): boolean {
         const normalizedParent = this.normalize(parent);
         const normalizedChild = this.normalize(child);
-        return normalizedChild === normalizedParent || normalizedChild.startsWith(normalizedParent + '/');
+
+        if (normalizedChild === normalizedParent) return true;
+
+        const prefix = normalizedParent.endsWith('/') ? normalizedParent : normalizedParent + '/';
+        return normalizedChild.startsWith(prefix);
     }
 
     /**

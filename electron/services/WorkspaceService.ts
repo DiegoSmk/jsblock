@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as chokidar from 'chokidar';
 import { SearchOptions, FileNode } from '../shared/ipc-types';
 import { PathUtils } from '../utils/PathUtils';
+import { SecurityUtils } from '../utils/SecurityUtils';
 
 export class WorkspaceService {
     private watcher: chokidar.FSWatcher | null = null;
@@ -95,6 +96,7 @@ export class WorkspaceService {
             }
 
             const folderPath = PathUtils.normalize(result.filePaths[0]);
+            SecurityUtils.authorizePath(folderPath);
             this.cachedTree = await this.getFileTree(folderPath); // Full scan once
             await this.setupWatcher(folderPath);
             return {
@@ -104,18 +106,21 @@ export class WorkspaceService {
         });
 
         ipcMain.handle('workspace:get-tree', async (_event, folderPath: string) => {
+            SecurityUtils.validatePath(folderPath);
             const normalizedPath = PathUtils.normalize(folderPath);
             if (normalizedPath === this.currentRoot) return this.cachedTree;
             return await this.getFileTree(normalizedPath);
         });
 
         ipcMain.handle('workspace:search', async (_event, query: string, rootPath: string, options: SearchOptions) => {
+            SecurityUtils.validatePath(rootPath);
             // Cancel current action if any
             this.ensureWorker().postMessage({ type: 'cancel' });
             return this.sendToWorker('search', { query, rootPath: PathUtils.normalize(rootPath), options });
         });
 
         ipcMain.handle('workspace:replace', async (_event, query: string, replacement: string, rootPath: string, options: SearchOptions) => {
+            SecurityUtils.validatePath(rootPath);
             // Cancel current action if any
             this.ensureWorker().postMessage({ type: 'cancel' });
             return this.sendToWorker('replace', { query, replacement, rootPath: PathUtils.normalize(rootPath), options });
