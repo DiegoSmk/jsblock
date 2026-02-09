@@ -75,13 +75,15 @@ describe('WindowManager', () => {
 
         expect(filePath).toContain('index.html');
         expect(options).toHaveProperty('query');
-        expect(options).toHaveProperty('hash');
 
-        // Verify hash contains query params starting with ?
-        expect(options.hash).toMatch(/^\?/);
-        expect(options.hash).toContain('mode=window');
-        expect(options.hash).toContain('type=git-diff');
-        // Payload should be encoded
-        expect(options.hash).toContain('payload=');
+        const query = options.query!;
+        expect(query).toMatchObject({
+            mode: 'window',
+            type: 'git-diff'
+        });
+
+        // Payload should be encoded in query
+        expect(query.payload).toBeDefined();
+        expect(JSON.parse(query.payload)).toEqual(payload);
     });
 });
