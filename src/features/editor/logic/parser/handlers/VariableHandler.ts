@@ -87,6 +87,8 @@ export const VariableHandler: ParserHandler = {
                                 });
                             } else {
                                 const declId = ctx.variableNodes[`decl:${callName}`];
+                                const importId = ctx.variableNodes[`import:${callName}`];
+
                                 if (declId) {
                                     ctx.edges.push({
                                         id: `ref-${declId}-${nodeId}`,
@@ -98,6 +100,31 @@ export const VariableHandler: ParserHandler = {
                                         type: 'step',
                                         style: { stroke: '#4caf50', strokeWidth: 2, strokeDasharray: '5,5', opacity: 0.8 }
                                     });
+                                } else if (importId) {
+                                    ctx.edges.push({
+                                        id: `ref-import-${importId}-${callName}-${nodeId}`,
+                                        source: importId,
+                                        sourceHandle: callName,
+                                        target: nodeId,
+                                        targetHandle: 'ref-target',
+                                        animated: false,
+                                        type: 'step',
+                                        style: { stroke: '#4caf50', strokeWidth: 2, strokeDasharray: '5,5', opacity: 0.8 }
+                                    });
+
+                                    // Macro Dependency
+                                    if (ctx.scopeOwnerId && ctx.scopeOwnerId !== importId) {
+                                        ctx.edges.push({
+                                            id: `macro-ref-${importId}-${callName}-to-${ctx.scopeOwnerId}`,
+                                            source: importId,
+                                            sourceHandle: callName,
+                                            target: ctx.scopeOwnerId,
+                                            targetHandle: 'ref-target',
+                                            animated: false,
+                                            type: 'step',
+                                            style: { stroke: '#4caf50', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                                        });
+                                    }
                                 }
                             }
                         } else if (callee.type === 'MemberExpression') {
@@ -134,16 +161,34 @@ export const VariableHandler: ParserHandler = {
                         };
 
                         callInit.arguments.forEach((arg, i: number) => {
-                            if (arg.type === 'Identifier' && ctx.variableNodes[arg.name]) {
-                                ctx.edges.push({
-                                    id: `e-${ctx.variableNodes[arg.name]}-to-${nodeId}-nested-arg-${i}`,
-                                    source: ctx.variableNodes[arg.name],
-                                    sourceHandle: 'output',
-                                    target: nodeId,
-                                    targetHandle: `nested-arg-${i}`,
-                                    animated: true,
-                                    style: { strokeWidth: 2, stroke: '#b1b1b7' }
-                                });
+                            if (arg.type === 'Identifier') {
+                                const sourceId = ctx.variableNodes[arg.name] || ctx.variableNodes[`import:${arg.name}`];
+                                if (sourceId) {
+                                    const isImport = !!ctx.variableNodes[`import:${arg.name}`];
+                                    ctx.edges.push({
+                                        id: `e-${sourceId}-to-${nodeId}-nested-arg-${i}`,
+                                        source: sourceId,
+                                        sourceHandle: isImport ? arg.name : 'output',
+                                        target: nodeId,
+                                        targetHandle: `nested-arg-${i}`,
+                                        animated: true,
+                                        style: { strokeWidth: 2, stroke: isImport ? '#38bdf8' : '#b1b1b7' }
+                                    });
+
+                                    // Macro Dependency for arguments
+                                    if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
+                                        ctx.edges.push({
+                                            id: `macro-ref-${sourceId}-${arg.name}-to-${ctx.scopeOwnerId}`,
+                                            source: sourceId,
+                                            sourceHandle: arg.name,
+                                            target: ctx.scopeOwnerId,
+                                            targetHandle: 'ref-target',
+                                            animated: false,
+                                            type: 'step',
+                                            style: { stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                                        });
+                                    }
+                                }
                             }
                         });
                     } else if (init.type === 'BinaryExpression' || init.type === 'LogicalExpression') {
@@ -290,16 +335,35 @@ export const VariableHandler: ParserHandler = {
                 const rootDestrId = processObjectPattern(
                     rootPattern,
                     (targetId, targetHandle) => {
-                        if (decl.init?.type === 'Identifier' && ctx.variableNodes[decl.init.name]) {
-                            ctx.edges.push({
-                                id: `e-${ctx.variableNodes[decl.init.name]}-to-${targetId}-input`,
-                                source: ctx.variableNodes[decl.init.name],
-                                sourceHandle: 'output',
-                                target: targetId,
-                                targetHandle: targetHandle,
-                                animated: true,
-                                style: { strokeWidth: 2, stroke: '#a855f7' }
-                            });
+                        if (decl.init?.type === 'Identifier') {
+                            const sourceName = decl.init.name;
+                            const sourceId = ctx.variableNodes[sourceName] || ctx.variableNodes[`import:${sourceName}`];
+                            if (sourceId) {
+                                const isImport = !!ctx.variableNodes[`import:${sourceName}`];
+                                ctx.edges.push({
+                                    id: `e-${sourceId}-to-${targetId}-input`,
+                                    source: sourceId,
+                                    sourceHandle: isImport ? sourceName : 'output',
+                                    target: targetId,
+                                    targetHandle: targetHandle,
+                                    animated: true,
+                                    style: { strokeWidth: 2, stroke: isImport ? '#38bdf8' : '#a855f7' }
+                                });
+
+                                // Macro Dependency for destructuring source
+                                if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
+                                    ctx.edges.push({
+                                        id: `macro-ref-${sourceId}-${sourceName}-to-${ctx.scopeOwnerId}`,
+                                        source: sourceId,
+                                        sourceHandle: sourceName,
+                                        target: ctx.scopeOwnerId,
+                                        targetHandle: 'ref-target',
+                                        animated: false,
+                                        type: 'step',
+                                        style: { stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                                    });
+                                }
+                            }
                         }
                     },
                     sourceLabel

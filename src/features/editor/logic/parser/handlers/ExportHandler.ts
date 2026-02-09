@@ -87,6 +87,6 @@ export const ExportHandler: ParserHandler = {
             }
         });
 
-        return nodeId;
+        return undefined;
     }
 };

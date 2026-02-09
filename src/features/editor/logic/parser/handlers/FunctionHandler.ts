@@ -6,7 +6,7 @@ import type { AppNode } from '../../../types';
 
 export const FunctionHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'FunctionDeclaration',
-    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
         const stmt = node as FunctionDeclaration;
         const funcName = stmt.id ? stmt.id.name : 'default';
         const nodeId = idSuffix ? `func-${funcName}-${idSuffix}` : `func-${funcName}`;
@@ -168,18 +168,7 @@ export const FunctionHandler: ParserHandler = {
             ctx.processBlock(stmt.body, nodeId, 'body', 'Body', paramNodes);
         }
 
-        if (parentId && handleName) {
-            ctx.edges.push({
-                id: `flow-${parentId}-${nodeId}`,
-                source: parentId,
-                sourceHandle: handleName,
-                target: nodeId,
-                targetHandle: 'flow-in',
-                animated: false,
-                type: 'step',
-                style: { stroke: '#555', strokeWidth: 2, strokeDasharray: '4,4' }
-            });
-        }
+
 
         return nodeId;
     }

@@ -37,9 +37,32 @@ export const AssignmentHandler: ParserHandler = {
         // Link right side (value)
         const right = expr.right;
         if (t.isIdentifier(right)) {
-            const sourceId = ctx.variableNodes[right.name];
+            const sourceId = ctx.variableNodes[right.name] || ctx.variableNodes[`import:${right.name}`];
             if (sourceId) {
-                ctx.edges.push(createEdge(sourceId, nodeId, 'output', 'arg-0'));
+                const isImport = !!ctx.variableNodes[`import:${right.name}`];
+                ctx.edges.push({
+                    id: `e-${sourceId}-to-${nodeId}-val`,
+                    source: sourceId,
+                    sourceHandle: isImport ? right.name : 'output',
+                    target: nodeId,
+                    targetHandle: 'arg-0',
+                    animated: true,
+                    style: { strokeWidth: 2, stroke: isImport ? '#38bdf8' : '#b1b1b7' }
+                });
+
+                // Macro Dependency
+                if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
+                    ctx.edges.push({
+                        id: `macro-ref-${sourceId}-${right.name}-to-${ctx.scopeOwnerId}`,
+                        source: sourceId,
+                        sourceHandle: right.name,
+                        target: ctx.scopeOwnerId,
+                        targetHandle: 'ref-target',
+                        animated: false,
+                        type: 'step',
+                        style: { stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                    });
+                }
             }
         } else if (t.isNumericLiteral(right) || t.isStringLiteral(right) || t.isBooleanLiteral(right)) {
             const litId = generateId('literal');

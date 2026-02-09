@@ -5,7 +5,7 @@ import type { AppNode } from '../../../types';
 
 export const ClassHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ClassDeclaration',
-    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
         const stmt = node as ClassDeclaration;
         const className = stmt.id ? stmt.id.name : 'default';
         const classNodeId = idSuffix ? `class-${className}-${idSuffix}` : `class-${className}`;
@@ -18,6 +18,24 @@ export const ClassHandler: ParserHandler = {
                 stmt.superClass.object.type === 'Identifier' &&
                 stmt.superClass.property.type === 'Identifier') {
                 extendsClause = `${stmt.superClass.object.name}.${stmt.superClass.property.name}`;
+            }
+
+            if (stmt.superClass.type === 'Identifier') {
+                const superName = stmt.superClass.name;
+                const sourceId = ctx.variableNodes[superName] || ctx.variableNodes[`import:${superName}`];
+                if (sourceId) {
+                    const isImport = !!ctx.variableNodes[`import:${superName}`];
+                    ctx.edges.push({
+                        id: `ref-${sourceId}-to-${classNodeId}-extends`,
+                        source: sourceId,
+                        sourceHandle: isImport ? superName : 'output',
+                        target: classNodeId,
+                        targetHandle: 'ref-target',
+                        animated: false,
+                        type: 'step',
+                        style: { stroke: isImport ? '#38bdf8' : '#4caf50', strokeWidth: 2, strokeDasharray: '5,5', opacity: 0.8 }
+                    });
+                }
             }
         }
 

@@ -42,6 +42,8 @@ export const CallHandler: ParserHandler = {
             });
         } else if (callee.type === 'Identifier') {
             const declId = ctx.variableNodes[`decl:${callee.name}`];
+            const importId = ctx.variableNodes[`import:${callee.name}`];
+
             if (declId) {
                 ctx.edges.push({
                     id: `ref-${declId}-${nodeId}`,
@@ -53,6 +55,32 @@ export const CallHandler: ParserHandler = {
                     type: 'step',
                     style: { stroke: '#4caf50', strokeWidth: 2, strokeDasharray: '5,5', opacity: 0.8 }
                 });
+            } else if (importId) {
+                // Connect to the specific handle (the local name of the import)
+                ctx.edges.push({
+                    id: `ref-import-${importId}-${callee.name}-${nodeId}`,
+                    source: importId,
+                    sourceHandle: callee.name,
+                    target: nodeId,
+                    targetHandle: 'ref-target',
+                    animated: false,
+                    type: 'step',
+                    style: { stroke: '#4caf50', strokeWidth: 2, strokeDasharray: '5,5', opacity: 0.8 }
+                });
+
+                // Macro Dependency: Connect Import to the Function/Block that contains this call
+                if (ctx.scopeOwnerId && ctx.scopeOwnerId !== importId) {
+                    ctx.edges.push({
+                        id: `macro-ref-${importId}-${callee.name}-to-${ctx.scopeOwnerId}`,
+                        source: importId,
+                        sourceHandle: callee.name,
+                        target: ctx.scopeOwnerId,
+                        targetHandle: 'ref-target',
+                        animated: false,
+                        type: 'step',
+                        style: { stroke: '#4caf50', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                    });
+                }
             }
         }
 
@@ -84,7 +112,7 @@ export const CallHandler: ParserHandler = {
                 label,
                 args,
                 hasReturn: true,
-                isStandalone: !parentId,
+                isStandalone: node.type === 'ExpressionStatement',
                 scopeId: ctx.currentScopeId,
                 scopes,
                 expression: ''

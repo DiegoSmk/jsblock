@@ -227,6 +227,7 @@ export function FlowContent() {
   };
 
   const { filteredNodes, filteredEdges } = useMemo(() => {
+    // 1. Get nodes directly in the current scope
     const scopeNodes = nodes.filter((n: Node) =>
       n.id !== 'node-js-runtime' && (
         n.data?.scopeId === activeScopeId ||
@@ -235,24 +236,32 @@ export function FlowContent() {
     );
 
     const scopeNodeIds = new Set(scopeNodes.map(n => n.id));
-    const hasNativeCalls = edges.some((e: Edge) =>
-      e.source === 'node-js-runtime' &&
-      scopeNodeIds.has(e.target)
-    );
 
-    const runtimeNode = nodes.find(n => n.id === 'node-js-runtime');
-    const filteredNodes: Node[] = (hasNativeCalls && runtimeNode)
-      ? [...scopeNodes, runtimeNode]
-      : scopeNodes;
+    // 2. Identify external nodes (Imports/Runtime) referenced by scope nodes
+    const referencedExternalNodeIds = new Set<string>();
+    edges.forEach((e: Edge) => {
+      if (scopeNodeIds.has(e.target)) {
+        const sourceNode = nodes.find(n => n.id === e.source);
+        if (sourceNode && (sourceNode.type === 'importNode' || sourceNode.id === 'node-js-runtime')) {
+          referencedExternalNodeIds.add(e.source);
+        }
+      }
+    });
 
-    const visibleNodeIds = new Set(filteredNodes.map((n: Node) => n.id));
+    // 3. Construct the final filtered node list
+    const externalNodes = nodes.filter(n => referencedExternalNodeIds.has(n.id) && !scopeNodeIds.has(n.id));
+    const finalFilteredNodes: Node[] = [...scopeNodes, ...externalNodes];
+
+    const visibleNodeIds = new Set(finalFilteredNodes.map((n: Node) => n.id));
+
+    // 4. Filter edges that connect visible nodes
     const filteredEdges = edges.filter(e => {
+      // Show edge if both ends are visible
       if (visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target)) return true;
-      if (e.source === 'node-js-runtime' && visibleNodeIds.has(e.target)) return true;
       return false;
     });
 
-    return { filteredNodes, filteredEdges };
+    return { filteredNodes: finalFilteredNodes, filteredEdges };
   }, [nodes, edges, activeScopeId]);
 
   useEffect(() => {

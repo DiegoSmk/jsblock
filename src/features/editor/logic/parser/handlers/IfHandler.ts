@@ -29,9 +29,32 @@ export const IfHandler: ParserHandler = {
         if (test.type === 'BinaryExpression' || test.type === 'LogicalExpression') {
             LogicHandler.handle(test, ctx, nodeId, 'condition');
         } else if (test.type === 'Identifier') {
-            const sourceId = ctx.variableNodes[test.name];
+            const sourceId = ctx.variableNodes[test.name] || ctx.variableNodes[`import:${test.name}`];
             if (sourceId) {
-                ctx.edges.push(createEdge(sourceId, nodeId, 'output', 'condition'));
+                const isImport = !!ctx.variableNodes[`import:${test.name}`];
+                ctx.edges.push({
+                    id: `e-${sourceId}-to-${nodeId}-cond`,
+                    source: sourceId,
+                    sourceHandle: isImport ? test.name : 'output',
+                    target: nodeId,
+                    targetHandle: 'condition',
+                    animated: true,
+                    style: { strokeWidth: 2, stroke: isImport ? '#38bdf8' : '#b1b1b7' }
+                });
+
+                // Macro Dependency
+                if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
+                    ctx.edges.push({
+                        id: `macro-ref-${sourceId}-${test.name}-to-${ctx.scopeOwnerId}`,
+                        source: sourceId,
+                        sourceHandle: test.name,
+                        target: ctx.scopeOwnerId,
+                        targetHandle: 'ref-target',
+                        animated: false,
+                        type: 'step',
+                        style: { stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                    });
+                }
             }
         }
 

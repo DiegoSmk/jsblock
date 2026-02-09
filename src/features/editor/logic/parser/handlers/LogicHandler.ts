@@ -33,9 +33,32 @@ export const LogicHandler: ParserHandler = {
 
         const processOperand = (operand: BabelNode, targetHandle: string) => {
             if (t.isIdentifier(operand)) {
-                const sourceId = ctx.variableNodes[operand.name];
+                const sourceId = ctx.variableNodes[operand.name] || ctx.variableNodes[`import:${operand.name}`];
                 if (sourceId) {
-                    ctx.edges.push(createEdge(sourceId, nodeId, 'output', targetHandle));
+                    const isImport = !!ctx.variableNodes[`import:${operand.name}`];
+                    ctx.edges.push({
+                        id: `e-${sourceId}-to-${nodeId}-${targetHandle}`,
+                        source: sourceId,
+                        sourceHandle: isImport ? operand.name : 'output',
+                        target: nodeId,
+                        targetHandle: targetHandle,
+                        animated: true,
+                        style: { strokeWidth: 2, stroke: isImport ? '#38bdf8' : '#b1b1b7' }
+                    });
+
+                    // Macro Dependency
+                    if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
+                        ctx.edges.push({
+                            id: `macro-ref-${sourceId}-${operand.name}-to-${ctx.scopeOwnerId}`,
+                            source: sourceId,
+                            sourceHandle: operand.name,
+                            target: ctx.scopeOwnerId,
+                            targetHandle: 'ref-target',
+                            animated: false,
+                            type: 'step',
+                            style: { stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                        });
+                    }
                 }
             } else if (t.isNumericLiteral(operand) || t.isStringLiteral(operand) || t.isBooleanLiteral(operand)) {
                 const litId = generateId('literal');

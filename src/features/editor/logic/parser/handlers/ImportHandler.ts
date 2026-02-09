@@ -4,7 +4,7 @@ import * as t from '@babel/types';
 
 export const ImportHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ImportDeclaration',
-    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
+    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
         const stmt = node as ImportDeclaration;
         const source = stmt.source.value;
         const nodeId = idSuffix ? `import-${ctx.nodes.length}-${idSuffix}` : `import-${ctx.nodes.length}`;
@@ -44,25 +44,14 @@ export const ImportHandler: ParserHandler = {
             }
         });
 
-        // Register local names in variableNodes to allow connections
+        // Register local names in variableNodes with a prefix to allow targeted connections
         specifiers.forEach(s => {
             if (s?.local) {
-                ctx.variableNodes[s.local] = nodeId;
+                ctx.variableNodes[`import:${s.local}`] = nodeId;
             }
         });
 
-        if (parentId && handleName) {
-            ctx.edges.push({
-                id: `flow-${parentId}-${nodeId}`,
-                source: parentId,
-                sourceHandle: handleName,
-                target: nodeId,
-                targetHandle: 'flow-in',
-                animated: false,
-                type: 'step',
-                style: { stroke: '#555', strokeWidth: 2, strokeDasharray: '4,4' }
-            });
-        }
+
 
         return nodeId;
     }

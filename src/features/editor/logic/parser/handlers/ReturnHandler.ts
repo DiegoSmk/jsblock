@@ -7,7 +7,7 @@ import * as t from '@babel/types';
 
 export const ReturnHandler: ParserHandler = {
     canHandle: (node: BabelNode) => node.type === 'ReturnStatement',
-    handle: (node: BabelNode, ctx: ParserContext, _parentId?: string, _handleName?: string, idSuffix?: string) => {
+    handle: (node: BabelNode, ctx: ParserContext, parentId?: string, handleName?: string, idSuffix?: string) => {
         const stmt = node as ReturnStatement;
         const nodeId = idSuffix ? `return-${idSuffix}` : generateId('return');
 
@@ -21,9 +21,14 @@ export const ReturnHandler: ParserHandler = {
                 label: 'Return',
                 args: ['value'], // This creates an input handle 'arg-0'
                 scopeId: ctx.currentScopeId,
-                isReturn: true // Flag mostly for potential future styling styling
+                isStandalone: true,
+                isReturn: true
             }
         });
+
+        if (parentId && handleName) {
+            ctx.edges.push(createEdge(parentId, nodeId, handleName, 'flow-in'));
+        }
 
         // Process the return argument
         if (stmt.argument) {
@@ -36,9 +41,32 @@ export const ReturnHandler: ParserHandler = {
 
             if (t.isIdentifier(argument)) {
                 const varName = argument.name;
-                const sourceId = ctx.variableNodes[varName];
+                const sourceId = ctx.variableNodes[varName] || ctx.variableNodes[`import:${varName}`];
                 if (sourceId) {
-                    connectToReturn(sourceId);
+                    const isImport = !!ctx.variableNodes[`import:${varName}`];
+                    ctx.edges.push({
+                        id: `e-${sourceId}-to-${nodeId}-ret`,
+                        source: sourceId,
+                        sourceHandle: isImport ? varName : 'output',
+                        target: nodeId,
+                        targetHandle: 'arg-0',
+                        animated: true,
+                        style: { strokeWidth: 2, stroke: isImport ? '#38bdf8' : '#b1b1b7' }
+                    });
+
+                    // Macro Dependency
+                    if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
+                        ctx.edges.push({
+                            id: `macro-ref-${sourceId}-${varName}-to-${ctx.scopeOwnerId}`,
+                            source: sourceId,
+                            sourceHandle: varName,
+                            target: ctx.scopeOwnerId,
+                            targetHandle: 'ref-target',
+                            animated: false,
+                            type: 'step',
+                            style: { stroke: '#38bdf8', strokeWidth: 1, strokeDasharray: '3,3', opacity: 0.4 }
+                        });
+                    }
                 }
             } else if (t.isNumericLiteral(argument) || t.isStringLiteral(argument) || t.isBooleanLiteral(argument)) {
                 const litId = generateId('literal');

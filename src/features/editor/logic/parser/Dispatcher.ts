@@ -30,11 +30,13 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
     }
 
     if (FunctionHandler.canHandle(stmt)) {
-        return FunctionHandler.handle(stmt, ctx, undefined, undefined, suffix);
+        FunctionHandler.handle(stmt, ctx, undefined, undefined, suffix);
+        return undefined;
     }
 
     if (ClassHandler.canHandle(stmt)) {
-        return ClassHandler.handle(stmt, ctx, undefined, undefined, idSuffix);
+        ClassHandler.handle(stmt, ctx, undefined, undefined, suffix);
+        return undefined;
     }
 
     if (AssignmentHandler.canHandle(stmt)) {
@@ -66,7 +68,8 @@ export const parseStatement = (stmt: BabelNode, ctx: ParserContext, parentId?: s
     }
 
     if (LogicHandler.canHandle(stmt)) {
-        return LogicHandler.handle(stmt, ctx, parentId, handleName, suffix);
+        LogicHandler.handle(stmt, ctx, undefined, undefined, suffix);
+        return undefined;
     }
 
     if (ReturnHandler.canHandle(stmt)) {
@@ -104,9 +107,11 @@ export const processBlockInScope = (
 
     const oldScopeId = ctx.currentScopeId;
     const oldParentId = ctx.currentParentId;
+    const oldScopeOwnerId = ctx.scopeOwnerId;
 
     ctx.currentScopeId = newScopeId;
     ctx.currentParentId = undefined; // Reset logical parenting inside new scope
+    ctx.scopeOwnerId = entryNodeId;
 
     // Add pre-nodes (parameters) to the new scope
     preNodes.forEach((node: AppNode) => {
@@ -132,6 +137,7 @@ export const processBlockInScope = (
 
     ctx.currentScopeId = oldScopeId;
     ctx.currentParentId = oldParentId;
+    ctx.scopeOwnerId = oldScopeOwnerId;
 };
 
 export const initializeContext = (astBody: Statement[], indexCounter: { value: number }): ParserContext => {

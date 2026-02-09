@@ -13,6 +13,7 @@ export interface ParserContext {
     currentParentId?: string; // Track containing block
     nativeApiNodeId?: string; // ID for the JS Runtime node
     currentScopeId: string; // Hierarchical scope level
+    scopeOwnerId?: string; // The node ID that "owns" this scope (e.g. Function Node)
     isExporting?: boolean;
     isExportingDefault?: boolean;
     processBlock: (bodyNode: BabelNode | BabelNode[], entryNodeId: string, flowHandle: string, label: string, preNodes?: AppNode[]) => void;
