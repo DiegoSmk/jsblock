@@ -127,8 +127,10 @@ export const ProductivityToolbar: React.FC<ProductivityToolbarProps> = ({ isDark
                             disabled={isProcessing || !hasStashes}
                             style={{
                                 background: isDark ? '#252525' : '#fff',
-                                border: `1px solid ${isDark ? '#333' : '#ddd'}`,
-                                borderRight: 'none',
+                                borderStyle: 'solid',
+                                borderWidth: '1px',
+                                borderColor: isDark ? '#333' : '#ddd',
+                                borderRightWidth: 0,
                                 borderRadius: '6px 0 0 6px',
                                 cursor: (!hasStashes || isProcessing) ? 'not-allowed' : 'pointer',
                                 display: 'flex',

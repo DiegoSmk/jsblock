@@ -235,7 +235,7 @@ export const WindowOutlet: React.FC = () => {
                     </button>
 
                     <button
-                        onClick={() => window.electron.windowClose()}
+                        onClick={() => window.electron?.windowClose()}
                         style={{
                             ...({ WebkitAppRegion: 'no-drag' } as React.CSSProperties),
                             background: 'transparent',

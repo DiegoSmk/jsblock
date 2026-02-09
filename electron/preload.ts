@@ -4,7 +4,8 @@ import type {
     ExecutionError,
     BenchmarkResult,
     SearchOptions,
-    IpcEvents
+    IpcEvents,
+    FileNode
 } from './shared/ipc-types';
 
 contextBridge.exposeInMainWorld('electron', {
@@ -109,6 +110,11 @@ contextBridge.exposeInMainWorld('electron', {
         getTree: (path: string) => ipcRenderer.invoke('workspace:get-tree', path),
         search: (query: string, root: string, options: SearchOptions) => ipcRenderer.invoke('workspace:search', query, root, options),
         replace: (query: string, replace: string, root: string, options: SearchOptions) => ipcRenderer.invoke('workspace:replace', query, replace, root, options),
+        onUpdated: (callback: (data: { event: string, path: string, tree: FileNode[] }) => void) => {
+            const subscription = (_event: unknown, data: { event: string, path: string, tree: FileNode[] }) => callback(data);
+            ipcRenderer.on('workspace:updated', subscription);
+            return () => ipcRenderer.removeListener('workspace:updated', subscription);
+        },
     },
 
     // Generic Event Listener (Sub-only)
