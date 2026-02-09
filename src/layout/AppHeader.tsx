@@ -487,20 +487,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         label={openedFolder ? t('app.window_controls.close') : t('app.open')}
                     />
 
-                    {/* Version Badge */}
-                    <div
-                        style={{
-                            padding: '4px 8px',
-                            background: isDark ? '#3b82f6' : '#2563eb',
-                            color: '#fff',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            userSelect: 'none',
-                            marginLeft: '8px'
-                        }}
-                    >
-                        v.BETA
+                    {/* Beta Badge (Visual Style Only) */}
+                    <div style={{ pointerEvents: 'none', marginLeft: '8px' }}>
+                        <GlassButton
+                            onClick={() => { }}
+                            title="Versão Beta"
+                            isDark={isDark}
+                            variant="primary"
+                            icon={Info}
+                            label="Beta"
+                        />
                     </div>
 
                     {/* Window Controls */}
