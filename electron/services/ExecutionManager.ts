@@ -105,7 +105,7 @@ export class ExecutionManager {
 
         const userDataPath = app.getPath('userData');
         const tempDir = path.join(userDataPath, 'temp_runs');
-        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+        await fs.promises.mkdir(tempDir, { recursive: true });
 
         const originalExtension = originalPath ? path.extname(originalPath) : '.ts';
         const fileName = originalPath ? path.basename(originalPath, originalExtension) : 'scratch';
@@ -181,9 +181,7 @@ export class ExecutionManager {
 
             this.activeAdapter.onError((errorData: ExecutionError) => {
                 this.stopCleanup();
-                if (fs.existsSync(filePath)) {
-                    void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
-                }
+                void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     const enhancedError = this.enhanceErrorWithSuggestion(code, errorData);
                     this.mainWindow.webContents.send('execution:error', enhancedError);
@@ -192,9 +190,7 @@ export class ExecutionManager {
 
             this.activeAdapter.onDone(() => {
                 this.stopCleanup();
-                if (fs.existsSync(filePath)) {
-                    void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
-                }
+                void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
                 if (this.mainWindow && !this.mainWindow.isDestroyed()) {
                     this.mainWindow.webContents.send('execution:done');
                 }
@@ -235,9 +231,7 @@ export class ExecutionManager {
                 this.mainWindow.webContents.send('execution:error', { message: `Execution failed: ${err.message}`, line: 1, column: 1 });
             }
             // Cleanup on catch too
-            if (fs.existsSync(filePath)) {
-                void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
-            }
+            void fs.promises.unlink(filePath).catch((_err: unknown) => { /* ignore */ });
         }
     }
 
@@ -255,12 +249,13 @@ export class ExecutionManager {
 
         // Determine where to save benchmarks
         let tempDir: string;
-        if (originalPath && fs.existsSync(path.dirname(originalPath))) {
+        const exists = originalPath ? await fs.promises.access(path.dirname(originalPath)).then(() => true).catch(() => false) : false;
+        if (originalPath && exists) {
             tempDir = path.dirname(originalPath);
         } else {
             const userDataPath = app.getPath('userData');
             tempDir = path.join(userDataPath, 'temp_benchmarks');
-            if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+            await fs.promises.mkdir(tempDir, { recursive: true });
         }
 
         // Run benchmarks SEQUENTIALLY to avoid CPU/memory spikes and ensure accurate measurement
@@ -286,8 +281,11 @@ export class ExecutionManager {
                         const jsLoader = path.join(esbuildDir, 'loader.js');
 
                         let loaderPath: string | null = null;
-                        if (fs.existsSync(mjsLoader)) loaderPath = mjsLoader;
-                        else if (fs.existsSync(jsLoader)) loaderPath = jsLoader;
+                        if (await fs.promises.access(mjsLoader).then(() => true).catch(() => false)) {
+                            loaderPath = mjsLoader;
+                        } else if (await fs.promises.access(jsLoader).then(() => true).catch(() => false)) {
+                            loaderPath = jsLoader;
+                        }
 
                         if (loaderPath) {
                             args = ['--loader', loaderPath, benchPath];
@@ -329,9 +327,7 @@ export class ExecutionManager {
                     output: `Error: ${message}`
                 });
             } finally {
-                if (fs.existsSync(benchPath)) {
-                    void fs.promises.unlink(benchPath).catch((_err: unknown) => { /* ignore */ });
-                }
+                void fs.promises.unlink(benchPath).catch((_err: unknown) => { /* ignore */ });
             }
         }
 
