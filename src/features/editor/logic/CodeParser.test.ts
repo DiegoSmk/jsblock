@@ -128,4 +128,30 @@ describe('CodeParser', () => {
         const link = edges.find(e => e.source === mainDestr?.id && e.sourceHandle === 'styles' && e.target === nestedDestr?.id);
         expect(link).toBeDefined();
     });
+    it('should generate unique IDs for macro dependency edges for multiple calls', () => {
+        const code = `
+            import { myFunc } from './utils';
+            function main() {
+                myFunc();
+                myFunc();
+            }
+        `;
+        const { edges, nodes } = parseCodeToFlow(code);
+
+        // Find main function node
+        const mainNode = nodes.find(n => n.type === 'functionCallNode' && n.data.label === 'Definition: main');
+        expect(mainNode).toBeDefined();
+
+        // There should be 2 macro ref edges from import:myFunc to scopeOwner (variable main is not scope owner usually, declaration creates scope)
+        // Wait, VariableHandler creates the variable 'main', but the FunctionHandler creates the function body.
+        // We know that `main` function body will have `scopeOwnerId` set to `main` (decl) id.
+
+        // Actually let's look for edges that start with macro-ref
+        const macroEdges = edges.filter(e => e.id.startsWith('macro-ref-'));
+        expect(macroEdges.length).toBe(2);
+
+        // IDs should be unique
+        const ids = new Set(macroEdges.map(e => e.id));
+        expect(ids.size).toBe(2);
+    });
 });

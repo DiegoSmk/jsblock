@@ -115,7 +115,7 @@ export const VariableHandler: ParserHandler = {
                                     // Macro Dependency
                                     if (ctx.scopeOwnerId && ctx.scopeOwnerId !== importId) {
                                         ctx.edges.push({
-                                            id: `macro-ref-${importId}-${callName}-to-${ctx.scopeOwnerId}`,
+                                            id: `macro-ref-${importId}-${callName}-to-${ctx.scopeOwnerId}-${nodeId}`,
                                             source: importId,
                                             sourceHandle: callName,
                                             target: ctx.scopeOwnerId,
@@ -178,7 +178,7 @@ export const VariableHandler: ParserHandler = {
                                     // Macro Dependency for arguments
                                     if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
                                         ctx.edges.push({
-                                            id: `macro-ref-${sourceId}-${arg.name}-to-${ctx.scopeOwnerId}`,
+                                            id: `macro-ref-${sourceId}-${arg.name}-to-${ctx.scopeOwnerId}-${nodeId}`,
                                             source: sourceId,
                                             sourceHandle: arg.name,
                                             target: ctx.scopeOwnerId,
@@ -353,7 +353,7 @@ export const VariableHandler: ParserHandler = {
                                 // Macro Dependency for destructuring source
                                 if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
                                     ctx.edges.push({
-                                        id: `macro-ref-${sourceId}-${sourceName}-to-${ctx.scopeOwnerId}`,
+                                        id: `macro-ref-${sourceId}-${sourceName}-to-${ctx.scopeOwnerId}-${flowTargetId}`,
                                         source: sourceId,
                                         sourceHandle: sourceName,
                                         target: ctx.scopeOwnerId,

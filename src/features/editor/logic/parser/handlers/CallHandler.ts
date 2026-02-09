@@ -71,7 +71,7 @@ export const CallHandler: ParserHandler = {
                 // Macro Dependency: Connect Import to the Function/Block that contains this call
                 if (ctx.scopeOwnerId && ctx.scopeOwnerId !== importId) {
                     ctx.edges.push({
-                        id: `macro-ref-${importId}-${callee.name}-to-${ctx.scopeOwnerId}`,
+                        id: `macro-ref-${importId}-${callee.name}-to-${ctx.scopeOwnerId}-${nodeId}`,
                         source: importId,
                         sourceHandle: callee.name,
                         target: ctx.scopeOwnerId,

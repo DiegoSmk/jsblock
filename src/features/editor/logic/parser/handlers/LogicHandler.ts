@@ -49,7 +49,7 @@ export const LogicHandler: ParserHandler = {
                     // Macro Dependency
                     if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
                         ctx.edges.push({
-                            id: `macro-ref-${sourceId}-${operand.name}-to-${ctx.scopeOwnerId}`,
+                            id: `macro-ref-${sourceId}-${operand.name}-to-${ctx.scopeOwnerId}-${nodeId}`,
                             source: sourceId,
                             sourceHandle: operand.name,
                             target: ctx.scopeOwnerId,

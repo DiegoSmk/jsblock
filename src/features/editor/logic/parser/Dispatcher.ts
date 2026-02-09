@@ -155,6 +155,7 @@ export const initializeContext = (astBody: Statement[], indexCounter: { value: n
         indexCounter,
         currentScopeId: 'root',
         currentParentId: undefined,
+        scopeOwnerId: 'root', // Enable root-level macro dependencies
         nativeApiNodeId: nativeApiId,
         processBlock: (bodyNode, entryNodeId, flowHandle, label, preNodes) =>
             processBlockInScope(bodyNode, ctx, entryNodeId, flowHandle, label, preNodes),

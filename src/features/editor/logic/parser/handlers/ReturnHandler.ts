@@ -57,7 +57,7 @@ export const ReturnHandler: ParserHandler = {
                     // Macro Dependency
                     if (isImport && ctx.scopeOwnerId && ctx.scopeOwnerId !== sourceId) {
                         ctx.edges.push({
-                            id: `macro-ref-${sourceId}-${varName}-to-${ctx.scopeOwnerId}`,
+                            id: `macro-ref-${sourceId}-${varName}-to-${ctx.scopeOwnerId}-${nodeId}`,
                             source: sourceId,
                             sourceHandle: varName,
                             target: ctx.scopeOwnerId,
