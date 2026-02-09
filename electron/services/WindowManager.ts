@@ -98,8 +98,8 @@ export class WindowManager {
 
         if (app.isPackaged) {
             void win.loadFile(path.join(__dirname, '../index.html'), {
-                query: Object.fromEntries(new URLSearchParams(queryParams)),
-                hash: '?' + queryParams
+                query: Object.fromEntries(new URLSearchParams(queryParams))
+                // Removed hash fallback to standardize on query params
             });
         } else {
             const tryLoad = async (port: number) => {

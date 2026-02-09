@@ -8,6 +8,8 @@ export interface Settings {
   windowTransparency: number;
   windowBackground: string;
   windowAlwaysOnTop: boolean;
+  searchMaxDepth: number;
+  searchMaxFileSize: number;
 }
 
 export interface SettingsConfig {
@@ -36,5 +38,9 @@ export interface SettingsConfig {
   };
   files?: {
     autoSave?: boolean;
+  };
+  search?: {
+    maxDepth?: number;
+    maxFileSize?: number; // in MB
   };
 }

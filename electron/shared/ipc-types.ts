@@ -36,6 +36,8 @@ export interface SearchResult {
 export interface SearchOptions {
     caseSensitive: boolean;
     regex: boolean;
+    maxDepth?: number;
+    maxFileSize?: number; // in Bytes
 }
 
 export interface FileNode {

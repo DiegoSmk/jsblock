@@ -16,8 +16,8 @@ interface SearchResult {
 }
 
 const MAX_SEARCH_RESULTS = 2000;
-const MAX_FILE_SIZE_FOR_SEARCH = 1024 * 1024; // 1MB
-const MAX_SEARCH_DEPTH = 50;
+const DEFAULT_MAX_FILE_SIZE = 1024 * 1024; // 1MB
+const DEFAULT_MAX_DEPTH = 50;
 
 class WorkspaceWorker {
     private currentActionId: string | null = null;
@@ -91,9 +91,13 @@ class WorkspaceWorker {
         const pattern = createSearchPattern(query, options);
         if (!pattern) return [];
 
+        const maxDepth = options.maxDepth ?? DEFAULT_MAX_DEPTH;
+        const maxFileSize = options.maxFileSize ?? DEFAULT_MAX_FILE_SIZE;
+
         const traverse = async (currentPath: string, depth: number) => {
+            if (this.isCancelled) return;
             if (results.length >= MAX_SEARCH_RESULTS) return;
-            if (depth > MAX_SEARCH_DEPTH) return;
+            if (depth > maxDepth) return;
 
             try {
                 const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
@@ -110,6 +114,8 @@ class WorkspaceWorker {
                     if (entry.isDirectory()) {
                         await traverse(fullPath, depth + 1);
                     } else if (entry.isFile()) {
+                        if (this.isCancelled) break;
+
                         const ext = path.extname(entry.name).toLowerCase();
                         if (['.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.exe', '.bin', '.dll', '.so', '.dylib'].includes(ext)) {
                             continue;
@@ -117,25 +123,28 @@ class WorkspaceWorker {
 
                         try {
                             const stats = await fs.promises.stat(fullPath);
-                            if (stats.size > MAX_FILE_SIZE_FOR_SEARCH) continue;
+                            if (stats.size > maxFileSize) continue;
 
                             const content = await fs.promises.readFile(fullPath, 'utf-8');
                             if (content.includes('\0')) continue;
 
                             const lines = content.split(/\r?\n/);
 
-                            lines.forEach((line, index) => {
-                                if (results.length >= MAX_SEARCH_RESULTS) return;
+                            for (let i = 0; i < lines.length; i++) {
+                                if (this.isCancelled) break;
+                                if (results.length >= MAX_SEARCH_RESULTS) break;
+
+                                const line = lines[i];
                                 pattern.lastIndex = 0;
                                 if (pattern.test(line)) {
                                     results.push({
                                         file: fullPath,
-                                        line: index + 1,
+                                        line: i + 1,
                                         text: line.trim(),
                                         matchIndex: line.search(pattern)
                                     });
                                 }
-                            });
+                            }
                         } catch { /* ignore */ }
                     }
                 }
@@ -150,8 +159,12 @@ class WorkspaceWorker {
         const pattern = createSearchPattern(query, options);
         if (!pattern) return;
 
+        const maxDepth = options.maxDepth ?? DEFAULT_MAX_DEPTH;
+        const maxFileSize = options.maxFileSize ?? DEFAULT_MAX_FILE_SIZE;
+
         const traverse = async (currentPath: string, depth: number) => {
-            if (depth > MAX_SEARCH_DEPTH) return;
+            if (this.isCancelled) return;
+            if (depth > maxDepth) return;
 
             try {
                 const entries = await fs.promises.readdir(currentPath, { withFileTypes: true });
@@ -167,6 +180,8 @@ class WorkspaceWorker {
                     if (entry.isDirectory()) {
                         await traverse(fullPath, depth + 1);
                     } else if (entry.isFile()) {
+                        if (this.isCancelled) break;
+
                         const ext = path.extname(entry.name).toLowerCase();
                         if (['.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.exe', '.bin', '.dll', '.so', '.dylib'].includes(ext)) {
                             continue;
@@ -174,7 +189,7 @@ class WorkspaceWorker {
 
                         try {
                             const stats = await fs.promises.stat(fullPath);
-                            if (stats.size > MAX_FILE_SIZE_FOR_SEARCH) continue;
+                            if (stats.size > maxFileSize) continue;
 
                             const content = await fs.promises.readFile(fullPath, 'utf-8');
                             if (content.includes('\0')) continue;

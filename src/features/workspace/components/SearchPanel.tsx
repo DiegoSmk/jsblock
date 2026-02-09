@@ -5,7 +5,7 @@ import { SidebarPanel } from '../../../components/ui/SidebarPanel';
 import type { SearchResult, SearchOptions } from '../../../types/electron';
 
 export const SearchPanel: React.FC = () => {
-    const { theme, openedFolder, setSelectedFile } = useStore();
+    const { theme, openedFolder, setSelectedFile, settings } = useStore();
     const isDark = theme === 'dark';
 
     const [query, setQuery] = useState('');
@@ -15,11 +15,21 @@ export const SearchPanel: React.FC = () => {
     const [showReplace, setShowReplace] = useState(false);
     const [options, setOptions] = useState<SearchOptions>({
         caseSensitive: false,
-        regex: false
+        regex: false,
+        maxDepth: settings?.searchMaxDepth ?? 50,
+        maxFileSize: settings?.searchMaxFileSize ?? 1024 * 1024
     });
     const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
 
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setOptions(prev => ({
+            ...prev,
+            maxDepth: settings?.searchMaxDepth ?? 50,
+            maxFileSize: settings?.searchMaxFileSize ?? 1024 * 1024
+        }));
+    }, [settings?.searchMaxDepth, settings?.searchMaxFileSize]);
 
     useEffect(() => {
         // Focus search input when panel is mounted
