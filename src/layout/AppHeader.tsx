@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     FolderOpen, X, Minus, Square, Info, LogOut,
     History as HistoryIcon, Network, PanelLeft, Files,
-    Library, ChevronRight, File as FileIcon, Folder, ExternalLink
+    Library, ChevronRight, File as FileIcon, Folder
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store/useStore';
@@ -487,23 +487,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                         label={openedFolder ? t('app.window_controls.close') : t('app.open')}
                     />
 
-                    {/* Pop-out Test Button */}
-                    <GlassButton
-                        onClick={() => {
-                            const { settings, openedFolder } = useStore.getState();
-                            void window.electron.openWindow('test', {
-                                width: 600,
-                                height: 400,
-                                alwaysOnTop: settings.windowAlwaysOnTop,
-                                payload: { openedFolder }
-                            });
+                    {/* Version Badge */}
+                    <div
+                        style={{
+                            padding: '4px 8px',
+                            background: isDark ? '#3b82f6' : '#2563eb',
+                            color: '#fff',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            userSelect: 'none',
+                            marginLeft: '8px'
                         }}
-                        title="Abrir Janela de Teste"
-                        isDark={isDark}
-                        variant="primary"
-                        icon={ExternalLink}
-                        label="Pop-out"
-                    />
+                    >
+                        v.BETA
+                    </div>
 
                     {/* Window Controls */}
                     <div style={{ display: 'flex', marginLeft: '8px', borderLeft: `1px solid ${isDark ? '#333' : '#ddd'}`, paddingLeft: '8px' }}>
