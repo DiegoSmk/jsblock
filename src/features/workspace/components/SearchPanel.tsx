@@ -17,7 +17,7 @@ export const SearchPanel: React.FC = () => {
         caseSensitive: false,
         regex: false,
         maxDepth: settings?.searchMaxDepth ?? 50,
-        maxFileSize: settings?.searchMaxFileSize ?? 1024 * 1024
+        maxFileSize: (settings?.searchMaxFileSize ?? 1) * 1024 * 1024 // Convert MB to Bytes
     });
     const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
 
@@ -27,7 +27,7 @@ export const SearchPanel: React.FC = () => {
         setOptions(prev => ({
             ...prev,
             maxDepth: settings?.searchMaxDepth ?? 50,
-            maxFileSize: settings?.searchMaxFileSize ?? 1024 * 1024
+            maxFileSize: (settings?.searchMaxFileSize ?? 1) * 1024 * 1024 // Convert MB to Bytes
         }));
     }, [settings?.searchMaxDepth, settings?.searchMaxFileSize]);
 
