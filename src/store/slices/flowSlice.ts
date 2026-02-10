@@ -205,7 +205,12 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     forceLayout: () => {
         const { nodes, edges } = get();
         const layouted = getLayoutedElements(nodes, edges);
-        set({ nodes: [...layouted.nodes], edges: [...layouted.edges] });
+        // We must rebuild the index because layout might return new edge objects references
+        set({
+            nodes: [...layouted.nodes],
+            edges: [...layouted.edges],
+            edgeIndex: buildEdgeIndex([...layouted.edges])
+        });
     },
 
     updateNodeData: (nodeId, newData) => {
@@ -271,7 +276,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     },
 
     getEdgesForNode: (nodeId: string) => {
-        return get().edgeIndex.get(nodeId) || [];
+        return get().edgeIndex.get(nodeId) ?? [];
     },
 
     onViewportChange: (viewport) => {

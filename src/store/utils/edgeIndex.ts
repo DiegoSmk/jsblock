@@ -153,10 +153,13 @@ const updateSelectionInIndex = (index: Map<string, Edge[]>, newEdges: Edge[], se
  */
 export const shouldRebuildIndex = (newEdgesCount: number, changesCount: number, hasReset: boolean): boolean => {
     if (hasReset) return true;
-    if (newEdgesCount < 20) return true;
 
-    // If we're changing more than 30% of the graph, rebuild might be cleaner/comparable
-    if (changesCount > newEdgesCount * 0.3) return true;
+    // Always rebuild for very small graphs as it's negligible and safer
+    if (newEdgesCount < 50) return true;
+
+    // Rebuild if changes affect a significant portion of the graph (> 20%)
+    // This avoids fragmentation or accumulated overhead in incremental updates
+    if (changesCount > newEdgesCount * 0.2) return true;
 
     return false;
 };

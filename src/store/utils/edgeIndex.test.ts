@@ -11,7 +11,6 @@ import type { Edge, EdgeChange } from '@xyflow/react';
 describe('Edge Index Utilities', () => {
     const edge1: Edge = { id: 'e1', source: 'n1', target: 'n2' };
     const edge2: Edge = { id: 'e2', source: 'n2', target: 'n3' };
-    const edge3: Edge = { id: 'e3', source: 'n1', target: 'n3' };
 
     it('buildEdgeIndex should create a map correctly', () => {
         const index = buildEdgeIndex([edge1, edge2]);
