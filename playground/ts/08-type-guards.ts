@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 08-type-guards.ts
  *

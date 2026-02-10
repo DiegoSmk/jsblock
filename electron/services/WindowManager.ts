@@ -134,7 +134,7 @@ export class WindowManager {
                     width: bounds.width,
                     height: bounds.height
                 };
-                this.saveStates();
+                void this.saveStates();
             }
         });
 

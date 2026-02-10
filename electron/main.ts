@@ -200,8 +200,8 @@ void app.whenReady().then(() => {
     workspaceService.registerHandlers();
 
     // Initial discovery and host start
-    pluginManager.discoverPlugins();
-    pluginManager.startExtensionHost();
+    void pluginManager.discoverPlugins();
+    void pluginManager.startExtensionHost();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -584,79 +584,81 @@ ipcMain.on('window-close', (event) => {
 let ptyProcess: pty.IPty | null = null;
 let currentTerminalId = 0;
 
-ipcMain.on('terminal-create', async (event, options: { cwd: string }) => {
-    const terminalId = ++currentTerminalId;
+ipcMain.on('terminal-create', (event, options: { cwd: string }) => {
+    void (async () => {
+        const terminalId = ++currentTerminalId;
 
-    if (options.cwd) {
-        try {
-            SecurityUtils.validatePath(options.cwd);
-        } catch (err) {
-            console.error('Unauthorized terminal creation attempt:', err);
-            mainWindow?.webContents.send('terminal-data', `\r\n[Erro: Acesso negado ao diretório ${options.cwd}]\r\n`);
-            return;
-        }
-    }
-
-    if (ptyProcess) {
-        try {
-            ptyProcess.kill();
-        } catch {
-            // Ignore error if process already dead
-        }
-        ptyProcess = null;
-    }
-
-    let shell = 'bash';
-    let args: string[] = ['-i'];
-
-    if (process.platform === 'win32') {
-        shell = 'powershell.exe';
-        args = [];
-    } else {
-        // Use user's preferred shell if available
-        shell = process.env.SHELL ?? (process.platform === 'darwin' ? 'zsh' : 'bash');
-        args = process.platform === 'darwin' ? ['-l'] : ['-i'];
-    }
-
-    const workingDirExists = options.cwd ? await fs.promises.access(options.cwd).then(() => true).catch(() => false) : false;
-    const workingDir = options.cwd && workingDirExists ? options.cwd : os.homedir();
-
-    try {
-        const newPty = pty.spawn(shell, args, {
-            name: 'xterm-256color',
-            cols: 80,
-            rows: 24,
-            cwd: workingDir,
-            env: {
-                ...process.env,
-                TERM: 'xterm-256color',
-                COLORTERM: 'truecolor',
-                LANG: process.env.LANG ?? 'en_US.UTF-8'
-            } as Record<string, string>
-        });
-
-        newPty.onData((data) => {
-            if (currentTerminalId === terminalId) {
-                mainWindow?.webContents.send('terminal-data', data);
+        if (options.cwd) {
+            try {
+                SecurityUtils.validatePath(options.cwd);
+            } catch (err) {
+                console.error('Unauthorized terminal creation attempt:', err);
+                mainWindow?.webContents.send('terminal-data', `\r\n[Erro: Acesso negado ao diretório ${options.cwd}]\r\n`);
+                return;
             }
-        });
+        }
 
-        newPty.onExit(({ exitCode, signal }) => {
-            if (currentTerminalId === terminalId) {
-                mainWindow?.webContents.send('terminal-data', `\r\n[Processo finalizado com código ${exitCode}${signal ? ` e sinal ${signal}` : ''}]\r\n`);
-                if (ptyProcess === newPty) {
-                    ptyProcess = null;
+        if (ptyProcess) {
+            try {
+                ptyProcess.kill();
+            } catch {
+                // Ignore error if process already dead
+            }
+            ptyProcess = null;
+        }
+
+        let shell = 'bash';
+        let args: string[] = ['-i'];
+
+        if (process.platform === 'win32') {
+            shell = 'powershell.exe';
+            args = [];
+        } else {
+            // Use user's preferred shell if available
+            shell = process.env.SHELL ?? (process.platform === 'darwin' ? 'zsh' : 'bash');
+            args = process.platform === 'darwin' ? ['-l'] : ['-i'];
+        }
+
+        const workingDirExists = options.cwd ? await fs.promises.access(options.cwd).then(() => true).catch(() => false) : false;
+        const workingDir = options.cwd && workingDirExists ? options.cwd : os.homedir();
+
+        try {
+            const newPty = pty.spawn(shell, args, {
+                name: 'xterm-256color',
+                cols: 80,
+                rows: 24,
+                cwd: workingDir,
+                env: {
+                    ...process.env,
+                    TERM: 'xterm-256color',
+                    COLORTERM: 'truecolor',
+                    LANG: process.env.LANG ?? 'en_US.UTF-8'
+                } as Record<string, string>
+            });
+
+            newPty.onData((data) => {
+                if (currentTerminalId === terminalId) {
+                    mainWindow?.webContents.send('terminal-data', data);
                 }
-            }
-        });
+            });
 
-        ptyProcess = newPty;
-    } catch (err) {
-        console.error('Failed to spawn terminal:', err);
-        if (currentTerminalId === terminalId) {
-            mainWindow?.webContents.send('terminal-data', `\r\n[Erro ao iniciar terminal: ${err instanceof Error ? err.message : String(err)}]\r\n`);
+            newPty.onExit(({ exitCode, signal }) => {
+                if (currentTerminalId === terminalId) {
+                    mainWindow?.webContents.send('terminal-data', `\r\n[Processo finalizado com código ${exitCode}${signal ? ` e sinal ${signal}` : ''}]\r\n`);
+                    if (ptyProcess === newPty) {
+                        ptyProcess = null;
+                    }
+                }
+            });
+
+            ptyProcess = newPty;
+        } catch (err) {
+            console.error('Failed to spawn terminal:', err);
+            if (currentTerminalId === terminalId) {
+                mainWindow?.webContents.send('terminal-data', `\r\n[Erro ao iniciar terminal: ${err instanceof Error ? err.message : String(err)}]\r\n`);
+            }
         }
-    }
+    })();
 });
 
 ipcMain.on('terminal-input', (event, data: string) => {

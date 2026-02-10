@@ -3,22 +3,34 @@ import type { AppState } from '../../../types/store';
 import type { ExecutionSlice, ExecutionError } from '../types';
 import type { ExecutionPayload } from '../../../types/electron';
 
-export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => {
-    let simulationInterval: ReturnType<typeof setInterval> | null = null;
-    let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
-    let rafId: number | null = null;
-    let hasPendingUpdates = false;
+let simulationInterval: ReturnType<typeof setInterval> | null = null;
+let executionDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
+let rafId: number | null = null;
+let hasPendingUpdates = false;
 
-    // Internal Buffer (not in state to avoid React overhead)
-    let buffer: {
-        results: Map<number, { value: string; type: 'spy' | 'log' }[]>;
-        coverage: Set<number>;
-        errors: Map<number, ExecutionError>;
-    } = {
-        results: new Map(),
-        coverage: new Set(),
-        errors: new Map()
-    };
+// Internal Buffer (not in state to avoid React overhead)
+let buffer: {
+    results: Map<number, { value: string; type: 'spy' | 'log' }[]>;
+    coverage: Set<number>;
+    errors: Map<number, ExecutionError>;
+} = {
+    results: new Map(),
+    coverage: new Set(),
+    errors: new Map()
+};
+
+export const resetExecutionStateForTesting = () => {
+    buffer = { results: new Map(), coverage: new Set(), errors: new Map() };
+    hasPendingUpdates = false;
+    if (simulationInterval) clearInterval(simulationInterval);
+    if (executionDebounceTimeout) clearTimeout(executionDebounceTimeout);
+    if (rafId) cancelAnimationFrame(rafId);
+    simulationInterval = null;
+    executionDebounceTimeout = null;
+    rafId = null;
+};
+
+export const createExecutionSlice: StateCreator<AppState, [], [], ExecutionSlice> = (set, get) => {
 
     const flushBuffer = () => {
         if (hasPendingUpdates) {

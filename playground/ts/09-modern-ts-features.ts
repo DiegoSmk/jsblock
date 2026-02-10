@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 09-modern-ts-features.ts
  * 

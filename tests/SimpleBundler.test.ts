@@ -2,10 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { bundleCode } from '../src/features/execution/utils/SimpleBundler';
 
 // Mock Blob and URL
-global.Blob = vi.fn().mockImplementation((content, options) => ({ content, options }));
+global.Blob = vi.fn().mockImplementation((content: unknown[], options?: BlobPropertyBag) => ({ content, options })) as unknown as typeof Blob;
 global.URL = {
     createObjectURL: vi.fn().mockReturnValue('blob:mock-url'),
-} as any;
+    revokeObjectURL: vi.fn(),
+} as unknown as typeof URL;
 
 describe('SimpleBundler', () => {
     beforeEach(() => {
@@ -34,6 +35,7 @@ describe('SimpleBundler', () => {
 
         expect(result.code).toContain('blob:mock-url');
         expect(result.blobs).toContain('blob:mock-url');
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
     });
 
@@ -48,6 +50,7 @@ describe('SimpleBundler', () => {
         const result = bundleCode(entryCode, entryPath, projectFiles);
 
         expect(result.blobs).toHaveLength(2);
+        // eslint-disable-next-line @typescript-eslint/unbound-method
         expect(URL.createObjectURL).toHaveBeenCalledTimes(2);
     });
 

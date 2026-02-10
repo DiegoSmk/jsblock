@@ -169,14 +169,13 @@ export const createConfigActions = (set: (nextState: Partial<AppState> | ((state
     },
 
     setNewProfile: (profile: Omit<GitProfile, 'id'> | GitProfile) => {
-        // cast to any to avoid complex Omit/interface mismatch in the setter itself
         set((state: AppState) => ({
-            git: { ...state.git, newProfile: profile as any }
+            git: { ...state.git, newProfile: profile as unknown as GitProfile }
         }));
     },
 
     startInit: async () => {
-        const { git, gitInit, setAuthorBuffer, setConfigLevel } = get();
+        const { git, gitInit } = get();
         const { configLevel, authorBuffer, globalAuthor } = git;
 
         set((state: AppState) => ({ git: { ...state.git, isLoading: true } }));

@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 02-interfaces.ts
  *

@@ -5,7 +5,7 @@ interface WorkerResponse {
     id: number;
     nodes: AppNode[];
     edges: Edge[];
-    error?: any;
+    error?: unknown;
 }
 
 class CodeParserService {

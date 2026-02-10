@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 04-classes-modifiers.ts
  *

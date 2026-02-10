@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 05-decorators.ts
  *

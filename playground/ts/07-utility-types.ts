@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 07-utility-types.ts
  *

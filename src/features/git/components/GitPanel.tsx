@@ -32,7 +32,7 @@ export const GitPanel: React.FC = () => {
                 }
             }
         };
-        loadGitData();
+        void loadGitData();
     }, [openedFolder, refreshGit, fetchGitConfig]);
 
     if (!openedFolder) {

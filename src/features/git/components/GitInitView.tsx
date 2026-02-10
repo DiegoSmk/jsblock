@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import './GitInitView.css';
 import { getTagIcon, getTagColor } from '../utils/gitHelpers';
 import type { GitProfile } from '../types';
+import type { AppState } from '../../../types/store';
 
 export const GitInitView: React.FC = () => {
     const {
@@ -26,7 +27,7 @@ export const GitInitView: React.FC = () => {
         removeGitProfile,
         newProfile,
         setNewProfile
-    } = useStore(useShallow(state => ({
+    } = useStore(useShallow((state: AppState) => ({
         isDark: state.theme === 'dark',
         openedFolder: state.openedFolder,
         isLoading: state.git.isLoading,
@@ -37,7 +38,7 @@ export const GitInitView: React.FC = () => {
         setAuthorBuffer: state.setAuthorBuffer,
         isEditingAuthor: state.git.isEditingAuthor,
         setIsEditingAuthor: state.setIsEditingAuthor,
-        gitProfiles: state.git.gitProfiles,
+        gitProfiles: state.gitProfiles,
         showProfileManager: state.git.showProfileManager,
         setShowProfileManager: state.setShowProfileManager,
         startInit: state.startInit,

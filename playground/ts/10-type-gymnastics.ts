@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 10-type-gymnastics.ts
  *

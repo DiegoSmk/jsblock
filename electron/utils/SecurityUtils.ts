@@ -1,13 +1,12 @@
 import { app } from 'electron';
 import { PathUtils } from './PathUtils';
-import * as path from 'path';
 
 /**
  * Security utility for managing and validating file system access in the Electron main process.
  * This helps prevent unrestricted file system access from a potentially compromised renderer.
  */
 export class SecurityUtils {
-    private static authorizedRoots: Set<string> = new Set();
+    private static authorizedRoots = new Set<string>();
     private static isInitialized = false;
 
     /**
@@ -17,10 +16,6 @@ export class SecurityUtils {
         if (this.isInitialized) return;
 
         try {
-            // In some test environments, 'electron' might be mocked or partially available
-            const electron = require('electron');
-            const app = electron.app;
-
             if (app) {
                 // Pre-authorize the application's user data directory
                 try {

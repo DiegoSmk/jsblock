@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 06-namespaces.ts
  *

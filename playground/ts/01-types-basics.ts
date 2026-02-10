@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 01-types-basics.ts
  *

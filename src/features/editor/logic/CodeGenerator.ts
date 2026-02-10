@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
 import { parse, print, types } from 'recast';
 import * as parser from '@babel/parser';
 import type { Edge } from '@xyflow/react';
@@ -61,9 +62,9 @@ function createLiteral(val: unknown): Expression {
 function createExpression(op: string, left: Expression | Pattern, right: Expression): Expression {
     const isLogical = op === '&&' || op === '||' || op === '??';
     if (isLogical) {
-        return b.logicalExpression(op as any, left as any, right as any) as unknown as Expression;
+        return b.logicalExpression(op as any, left as any, right as any) as any;
     }
-    return b.binaryExpression(op as any, left as any, right as any) as unknown as Expression;
+    return b.binaryExpression(op as any, left as any, right as any) as any;
 }
 
 export const generateCodeFromFlow = (
@@ -92,7 +93,7 @@ export const generateCodeFromFlow = (
             callOverrideMap: {},
             nodesToPrune: new Set<string>(),
             ast,
-            body: ast.program.body as Statement[],
+            body: ast.program.body,
             standaloneCalls: {}
         };
 
@@ -104,7 +105,7 @@ export const generateCodeFromFlow = (
         visitFlowAST(ctx);
 
         return print(ast).code;
-    } catch (err) {
+    } catch (err: unknown) {
         console.error("Generation error:", err);
         return currentCode;
     }

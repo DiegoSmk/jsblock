@@ -377,7 +377,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                             payload: { fallenIndex: randomIndex },
                             confirmLabel: 'Close',
                             onSubmit: () => {
-                                // Modal closed
+                                // Modal closed (no-op)
                             }
                         });
                     }}
@@ -407,7 +407,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                         payload: { fallenIndex: randomIndex },
                                         confirmLabel: 'Close',
                                         onSubmit: () => {
-                                            // Modal closed
+                                            // Modal closed (no-op)
                                         }
                                     });
                                 }}
@@ -490,7 +490,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                     {/* Beta Badge (Visual Style Only) */}
                     <div style={{ pointerEvents: 'none', marginLeft: '8px' }}>
                         <GlassButton
-                            onClick={() => { }}
+                            onClick={() => { /* No-op (Beta Badge) */ }}
                             title="Versão Beta"
                             isDark={isDark}
                             variant="primary"

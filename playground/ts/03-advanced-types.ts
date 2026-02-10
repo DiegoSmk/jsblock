@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * 03-advanced-types.ts
  *

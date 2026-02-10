@@ -47,6 +47,7 @@ export interface ExecutionSlice {
     checkAvailability: () => Promise<void>;
     isListenersInitialized?: boolean;
     lastExecutedCode?: string | null;
+    initializeExecutionListeners: () => void;
 }
 
 export interface BenchmarkSlice {

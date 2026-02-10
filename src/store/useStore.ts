@@ -532,7 +532,8 @@ export const useStore = create<AppState>((set, get, api) => ({
                     nextCache.set(edge.target, targetEdges.filter(e => e.id !== edge.id));
                 }
             } else if (change.type === 'add') {
-                const edge = (change as any).item;
+                const addChange = change as { item: Edge };
+                const edge = addChange.item;
                 if (edge) {
                     // Add to source cache
                     const sourceEdges = nextCache.get(edge.source) ?? [];
