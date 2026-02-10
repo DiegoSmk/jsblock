@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useMemo } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -64,10 +64,8 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
     const isStandalone = data.isStandalone;
     const connectedValues = data.connectedValues ?? {};
 
-    // Selector for O(1) node lookup
-    const nodesMap = useStore(useCallback(state =>
-        new Map(state.nodes.map(n => [n.id, n])),
-        []));
+    const nodes = useStore((state: AppState) => state.nodes);
+    const nodesMap = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
 
     const getArgValue = (argIndex: number): string | null => {
         const targetHandle = `arg-${argIndex}`;
