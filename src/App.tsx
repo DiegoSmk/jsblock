@@ -114,7 +114,7 @@ function App() {
   // - useGlobalEventListeners: Storage sync, keyboard shortcuts, rejection handler
   // - useMonacoSetup: Monaco configuration, project file sync, editor decorations
   useGlobalEventListeners();
-  const { handleEditorDidMount } = useMonacoSetup({ projectFiles, selectedFile, saveFile });
+  const { handleEditorDidMount } = useMonacoSetup({ projectFiles, selectedFile, code, saveFile });
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (value !== undefined) setCode(value);
