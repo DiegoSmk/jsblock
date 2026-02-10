@@ -1,27 +1,17 @@
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import {
   ReactFlowProvider,
 } from '@xyflow/react';
-import Editor, { loader, useMonaco } from '@monaco-editor/react';
+import { loader } from '@monaco-editor/react';
 import { Allotment } from 'allotment';
 import {
-  Code,
-  Box,
   Layers,
   Terminal,
-  Zap,
-  ZapOff,
-  SquareStack,
-  Save,
-  X,
-  Check
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useStore } from './store/useStore';
-import { useMonacoDecorations } from './features/execution/hooks/useMonacoDecorations';
-import { useMonacoBenchmarks } from './features/execution/hooks/useMonacoBenchmarks';
-import { useGitGutter } from './features/git/hooks/useGitGutter';
+import { useGlobalEventListeners } from './hooks/useGlobalEventListeners';
+import { useMonacoSetup } from './hooks/useMonacoSetup';
 import { SideRibbon } from './layout/SideRibbon';
 import { ContextRibbon } from './components/ui/ContextRibbon';
 import { SidebarContainer } from './layout/SidebarContainer';
@@ -31,8 +21,6 @@ import i18next from 'i18next';
 import 'allotment/dist/style.css';
 import '@xyflow/react/dist/style.css';
 
-import type * as Monaco from 'monaco-editor';
-
 // Configure Monaco loader to use local files copied to public/monaco-editor
 loader.config({
   paths: {
@@ -40,7 +28,6 @@ loader.config({
   }
 });
 
-import { ScopeBreadcrumbs } from './features/editor/components/ScopeBreadcrumbs';
 import { ModernModal } from './components/ui/ModernModal';
 import { ConfirmationModal } from './components/ui/ConfirmationModal';
 import { ToastContainer } from './components/ui/ToastContainer';
@@ -50,14 +37,13 @@ import { ExtensionDetailsView } from './features/extensions/ExtensionDetailsView
 import { ExtensionLandingPage } from './features/extensions/ExtensionLandingPage';
 import { CommandPalette } from './components/ui/CommandPalette';
 import { CommitDetailModal } from './features/git/components/CommitDetailModal';
-import { FlowContent } from './features/editor/components/FlowContent';
 import { AppHeader } from './layout/AppHeader';
 import { AppFooter } from './layout/AppFooter';
-import { BenchmarkPanel } from './features/execution/components/BenchmarkPanel';
+import { EditorPane } from './layout/EditorPane';
+import { CanvasPane } from './layout/CanvasPane';
 import { WindowOutlet } from './routes/WindowOutlet';
 
 function App() {
-  const { t } = useTranslation();
   const {
     code, setCode, theme,
     showCode, showCanvas, activeSidebarTab,
@@ -124,133 +110,13 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'settings.json' && e.newValue) {
-        try {
-          useStore.getState().updateSettingsConfig(e.newValue);
-        } catch (err) {
-          console.error('Failed to sync settings from storage event', err);
-        }
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-
-  useEffect(() => {
-    const { setSidebarTab, saveFile, layout, toggleSidebar } = useStore.getState();
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+S: Save
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S') && !e.shiftKey) {
-        e.preventDefault();
-        saveFile().catch(console.error);
-        return;
-      }
-
-      // Ctrl+Shift+F: Search
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'f' || e.key === 'F')) {
-        e.preventDefault();
-        setSidebarTab('search');
-        if (!layout.sidebar.isVisible) {
-          toggleSidebar();
-        }
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      // Specifically catch and silence 'cancelation' and common harmless Monaco errors
-      const reasonStr = String(event.reason);
-      if (
-        (event.reason && typeof event.reason === 'object' && (event.reason as Record<string, unknown>).type === 'cancelation') ||
-        reasonStr.includes('no diff result available') ||
-        reasonStr.includes('canceled')
-      ) {
-        event.preventDefault();
-        return;
-      }
-      console.warn('Unhandled Promise Rejection:', event.reason);
-    };
-
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    const timer = setTimeout(() => {
-      // Use the new window.electron pattern
-    }, 200);
-
-    return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      clearTimeout(timer);
-    };
-  }, []);
+  // Extracted hooks
+  useGlobalEventListeners();
+  const { handleEditorDidMount } = useMonacoSetup({ projectFiles, selectedFile, saveFile });
 
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (value !== undefined) setCode(value);
   }, [setCode]);
-
-  const monaco = useMonaco();
-
-  // 1. Configure Monaco once when it's ready
-  useEffect(() => {
-    if (!monaco) return;
-
-    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
-    const m = monaco as any;
-    m.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: m.languages.typescript.ScriptTarget.ESNext,
-      allowNonTsExtensions: true,
-      moduleResolution: m.languages.typescript.ModuleResolutionKind.NodeJs,
-      module: m.languages.typescript.ModuleKind.ESNext,
-      noEmit: true,
-      esModuleInterop: true,
-      jsx: m.languages.typescript.JsxEmit.React,
-      allowJs: true,
-    });
-    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
-  }, [monaco]);
-
-  // 2. Sync project files (cross-file support)
-  useEffect(() => {
-    if (!monaco || Object.keys(projectFiles).length === 0) return;
-
-    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
-    const m = monaco as any;
-
-    Object.entries(projectFiles).forEach(([filePath, content]) => {
-      const uri = m.Uri.file(filePath);
-      const model = m.editor.getModel(uri);
-      if (!model) {
-        m.editor.createModel(content, 'typescript', uri);
-      } else if (filePath !== selectedFile) {
-        // Only update if content actually differs to avoid canceling internal monaco operations
-        if (model.getValue() !== content) {
-          model.setValue(content);
-        }
-      }
-    });
-    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
-
-  }, [monaco, projectFiles, selectedFile]);
-
-  const [editorInstance, setEditorInstance] = useState<Monaco.editor.IStandaloneCodeEditor | null>(null);
-
-  const handleEditorDidMount = useCallback((editor: Monaco.editor.IStandaloneCodeEditor, m: typeof Monaco) => {
-    setEditorInstance(editor);
-    editor.addCommand(m.KeyMod.CtrlCmd | m.KeyCode.KeyS, () => {
-      saveFile().catch(console.error);
-    });
-  }, [saveFile]);
-
-  useMonacoDecorations(editorInstance);
-  useMonacoBenchmarks(editorInstance);
-  useGitGutter(editorInstance);
 
   // Styles moved to src/index.css for reliability
 
@@ -364,179 +230,25 @@ function App() {
                           {selectedPluginId ? <ExtensionDetailsView /> : <ExtensionLandingPage />}
                         </MainWorkspace>
                       ) : (
-                        <div
-                          style={{ height: '100%', borderRight: `1px solid ${isDark ? '#2d2d2d' : '#d1d1d1'}`, display: 'flex', flexDirection: 'column', background: isDark ? '#1a1a1a' : '#fff' }}
-                          onKeyDown={(e) => e.stopPropagation()}
-                        >
-                          {selectedFile && (
-                            <div style={{
-                              height: '32px',
-                              minHeight: '32px',
-                              flexShrink: 0,
-                              background: isDark ? '#2d2d2d' : '#f0f0f0',
-                              display: 'flex',
-                              alignItems: 'center',
-                              padding: '0 0 0 12px',
-                              fontSize: '0.75rem',
-                              color: isDark ? '#aaa' : '#666',
-                              borderBottom: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`,
-                              justifyContent: 'space-between'
-                            }}>
-                              <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.75rem',
-                                color: isDark ? '#aaa' : '#666'
-                              }}>
-                                <Code size={14} style={{ marginRight: '8px' }} />
-                                {selectedFile.split(/[\\/]/).pop()}
-                              </div>
-
-                              <div style={{ display: 'flex', height: '100%' }}>
-                                <div
-                                  onClick={() => setLivePreviewEnabled(!livePreviewEnabled)}
-                                  title={livePreviewEnabled ? "Disable Live Execution (Zap)" : "Enable Live Execution (Zap)"}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '38px',
-                                    height: '100%',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    color: livePreviewEnabled ? (isDark ? '#4ec9b0' : '#008080') : (isDark ? '#555' : '#ccc'),
-                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
-                                  }}
-                                >
-                                  {livePreviewEnabled ? <Zap size={18} fill={livePreviewEnabled ? 'currentColor' : 'none'} fillOpacity={0.2} /> : <ZapOff size={18} />}
-                                </div>
-
-                                <div
-                                  onClick={() => toggleCanvas()}
-                                  title={showCanvas ? "Hide Blocks Workspace" : "Show Blocks Workspace"}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '38px',
-                                    height: '100%',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    color: showCanvas ? (isDark ? '#6366f1' : '#4f46e5') : (isDark ? '#555' : '#ccc'),
-                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`
-                                  }}
-                                >
-                                  <SquareStack size={18} fill={showCanvas ? 'currentColor' : 'none'} fillOpacity={0.1} />
-                                </div>
-
-                                <div
-                                  onClick={() => { void saveFile(); }}
-                                  title={isDirty ? "Save changes (Ctrl+S)" : "No pending changes"}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '38px',
-                                    height: '100%',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    color: isDirty ? (isDark ? '#4fc3f7' : '#0070f3') : (isDark ? '#555' : '#ccc'),
-                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`,
-                                    opacity: isDirty ? 1 : 0.8
-                                  }}
-                                >
-                                  {isDirty ? (
-                                    <Save size={16} strokeWidth={2.5} />
-                                  ) : (
-                                    <Check size={16} strokeWidth={2} style={{ color: isDark ? '#4ade80' : '#16a34a' }} />
-                                  )}
-                                </div>
-
-                                <div
-                                  onClick={() => void setSelectedFile(null)}
-                                  title="Close file"
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '38px',
-                                    height: '100%',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    color: isDark ? '#555' : '#aaa',
-                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                                    borderLeft: `1px solid ${isDark ? '#3c3c3c' : '#ddd'}`,
-                                    opacity: 0.6
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = isDark ? '#fff' : '#ef4444';
-                                    e.currentTarget.style.opacity = '1';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = isDark ? '#555' : '#aaa';
-                                    e.currentTarget.style.opacity = '0.6';
-                                  }}
-                                >
-                                  <X size={16} />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          <div style={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-                            {!selectedFile ? (
-                              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                                <Code size={48} opacity={0.3} />
-                                <p>{t('app.select_file')}</p>
-                              </div>
-                            ) : (
-                              <Editor
-                                height="100%"
-                                defaultLanguage="typescript"
-                                path={selectedFile || undefined}
-                                value={code}
-                                onChange={handleEditorChange}
-                                onMount={handleEditorDidMount}
-                                theme={isDark ? "vs-dark" : "light"}
-                                options={{
-                                  minimap: { enabled: false },
-                                  fontSize: 13,
-                                  padding: { top: 10 },
-                                  scrollBeyondLastLine: false,
-                                  automaticLayout: true,
-                                  glyphMargin: true,
-                                  lineDecorationsWidth: 10,
-                                  scrollBeyondLastColumn: 50, // Allow space for inline values
-                                  cursorStyle: 'line',
-                                  cursorBlinking: 'smooth'
-                                }}
-                              />
-                            )}
-                          </div>
-                          <BenchmarkPanel />
-                        </div>
+                        <EditorPane
+                          isDark={isDark}
+                          code={code}
+                          selectedFile={selectedFile}
+                          livePreviewEnabled={livePreviewEnabled}
+                          showCanvas={showCanvas}
+                          isDirty={isDirty}
+                          onEditorChange={handleEditorChange}
+                          onEditorDidMount={handleEditorDidMount}
+                          onToggleLivePreview={() => setLivePreviewEnabled(!livePreviewEnabled)}
+                          onToggleCanvas={() => toggleCanvas()}
+                          onSave={() => { void saveFile(); }}
+                          onClose={() => void setSelectedFile(null)}
+                        />
                       )}
                     </Allotment.Pane>
 
                     <Allotment.Pane minSize={400} visible={activeSidebarTab !== 'git' && activeSidebarTab !== 'extensions' && (isBlockFile || showCanvas)}>
-                      <div style={{ width: '100%', height: '100%', background: isDark ? '#121212' : '#fafafa', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 10, pointerEvents: 'none' }}>
-                          <div style={{ pointerEvents: 'auto', display: 'inline-block' }}>
-                            <ScopeBreadcrumbs />
-                          </div>
-                        </div>
-                        {!selectedFile ? (
-                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isDark ? '#444' : '#ccc', flexDirection: 'column', gap: '20px' }}>
-                            <Box size={64} style={{ opacity: 0.1, color: isDark ? '#fff' : '#000' }} />
-                            <p style={{ fontSize: '1.1rem' }}>{t('app.open_folder_hint')}</p>
-                          </div>
-                        ) : (
-                          <FlowContent />
-                        )}
-                      </div>
+                      <CanvasPane isDark={isDark} selectedFile={selectedFile} />
                     </Allotment.Pane>
                   </Allotment>
                 </div>
