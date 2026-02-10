@@ -107,6 +107,7 @@ contextBridge.exposeInMainWorld('electron', {
     // Workspace
     workspace: {
         openFolder: () => ipcRenderer.invoke('workspace:open-folder'),
+        openFromPath: (path: string) => ipcRenderer.invoke('workspace:open-from-path', path),
         getTree: (path: string) => ipcRenderer.invoke('workspace:get-tree', path),
         search: (query: string, root: string, options: SearchOptions) => ipcRenderer.invoke('workspace:search', query, root, options),
         replace: (query: string, replace: string, root: string, options: SearchOptions) => ipcRenderer.invoke('workspace:replace', query, replace, root, options),

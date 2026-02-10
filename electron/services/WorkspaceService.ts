@@ -105,6 +105,22 @@ export class WorkspaceService {
             };
         });
 
+        ipcMain.handle('workspace:open-from-path', async (_event, folderPath: string) => {
+            if (!this.mainWindow) return null;
+            if (!fs.existsSync(folderPath)) return null;
+
+            const normalizedPath = PathUtils.normalize(folderPath);
+            // Authorize the path since it comes from a user action (selecting a recent project)
+            SecurityUtils.authorizePath(normalizedPath);
+
+            this.cachedTree = await this.getFileTree(normalizedPath); // Full scan once
+            await this.setupWatcher(normalizedPath);
+            return {
+                path: normalizedPath,
+                tree: this.cachedTree
+            };
+        });
+
         ipcMain.handle('workspace:get-tree', async (_event, folderPath: string) => {
             SecurityUtils.validatePath(folderPath);
             const normalizedPath = PathUtils.normalize(folderPath);

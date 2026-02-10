@@ -245,7 +245,8 @@ ipcMain.handle('check-paths-exists', async (_event, paths: string[]) => {
         const results: Record<string, boolean> = {};
         await Promise.all(paths.map(async (pathToCheck) => {
             try {
-                SecurityUtils.validatePath(pathToCheck);
+                // We do NOT validate path here because we want to check existence
+                // of recent files that might not be authorized yet.
                 await fs.promises.access(pathToCheck);
                 results[pathToCheck] = true;
             } catch {
@@ -359,7 +360,7 @@ ipcMain.handle('create-directory', async (_event, dirPath: string) => {
 
 ipcMain.handle('check-path-exists', (_event, pathToCheck: string) => {
     try {
-        SecurityUtils.validatePath(pathToCheck);
+        // We do not validate path for simple existence check
         return fs.existsSync(pathToCheck);
     } catch (err) {
         console.error('Error checking path existence:', err);

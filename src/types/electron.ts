@@ -74,6 +74,7 @@ export interface ElectronAPI {
 
   workspace: {
     openFolder: () => Promise<{ path: string; tree: FileNode[] } | null>;
+    openFromPath: (path: string) => Promise<{ path: string; tree: FileNode[] } | null>;
     getTree: (path: string) => Promise<FileNode[]>;
     onUpdated: (callback: (data: { event: string; path: string; tree: FileNode[] }) => void) => () => void;
     search: (query: string, rootPath: string, options: SearchOptions) => Promise<SearchResult[]>;

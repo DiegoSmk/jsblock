@@ -40,6 +40,11 @@ export const createWorkspaceSlice: StateCreator<
                 if (get().refreshGit) {
                     await get().refreshGit();
                 }
+
+                // Ensure side effects for opening a workspace are triggered
+                void window.electron.fileSystem.ensureProjectConfig(result.path);
+                void get().addRecent(result.path);
+                void get().syncProjectFiles();
             } else {
                 set((state) => ({
                     workspace: { ...state.workspace, isLoading: false }
@@ -50,6 +55,53 @@ export const createWorkspaceSlice: StateCreator<
             set((state) => ({
                 workspace: { ...state.workspace, isLoading: false }
             }));
+        }
+    },
+
+    openProject: async (path: string) => {
+        if (!window.electron) return;
+
+        set((state) => ({
+            workspace: { ...state.workspace, isLoading: true }
+        }));
+
+        try {
+            const result = await window.electron.workspace.openFromPath(path);
+            if (result) {
+                set((state) => ({
+                    workspace: {
+                        ...state.workspace,
+                        rootPath: result.path,
+                        fileTree: result.tree,
+                        isWatching: true,
+                        isLoading: false
+                    },
+                    openedFolder: result.path
+                }));
+
+                // Auto-refresh Git if it's a repo
+                if (get().refreshGit) {
+                    await get().refreshGit();
+                }
+
+                // Ensure project config exists
+                void window.electron.fileSystem.ensureProjectConfig(result.path);
+                void get().addRecent(result.path);
+                void get().syncProjectFiles();
+
+            } else {
+                set((state) => ({
+                    workspace: { ...state.workspace, isLoading: false }
+                }));
+                get().addToast({ type: 'error', message: 'Projeto não encontrado ou inacessível.' });
+                get().removeRecent(path);
+            }
+        } catch (error) {
+            console.error('Failed to open project:', error);
+            set((state) => ({
+                workspace: { ...state.workspace, isLoading: false }
+            }));
+            get().addToast({ type: 'error', message: 'Erro ao abrir projeto.' });
         }
     },
 

@@ -223,18 +223,29 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
     addRecent: async (path) => {
         const { recentEnvironments } = get();
         if (window.electron) {
+            // Use the relaxed check which doesn't require prior authorization
+            // This is safe because we are just checking existence to add to a list
             const exists = await window.electron.fileSystem.checkExists(path);
-            if (!exists) return;
+            if (!exists) return; // Only return if it truly doesn't exist
         }
 
         const now = Date.now();
         const existingIndex = recentEnvironments.findIndex((r) => r.path === path);
-        const newRecents = [...recentEnvironments];
+
+        let newRecents: RecentEnvironment[];
+
         if (existingIndex >= 0) {
+            newRecents = [...recentEnvironments];
             newRecents[existingIndex] = { ...newRecents[existingIndex], lastOpened: now };
         } else {
-            newRecents.push({ path, lastOpened: now });
+            newRecents = [...recentEnvironments, { path, lastOpened: now }];
         }
+
+        // Sort by recency (newest lastOpened first)
+        // This is important because validRecents logic often expects sorted input or UI sorts it
+        // but keeping store sorted is good practice.
+        // Actually, let's just append/update. The UI usually sorts. 
+        // But let's check duplicates: we handled existingIndex correctly.
 
         localStorage.setItem('recentEnvironments', JSON.stringify(newRecents));
         set({ recentEnvironments: newRecents });
@@ -265,11 +276,22 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
     validateRecents: async () => {
         if (!window.electron) return;
         const { recentEnvironments } = get();
+        if (recentEnvironments.length === 0) return;
+
         const paths = recentEnvironments.map((r) => r.path);
         try {
             const existenceMap = await window.electron.fileSystem.checkPathsExists(paths);
+
+            // If checking failed (empty map returned for non-empty input), abort to protect data
+            if (Object.keys(existenceMap).length === 0 && paths.length > 0) {
+                console.warn('Recents validation failed (empty result), skipping cleanup.');
+                return;
+            }
+
             const validRecents = recentEnvironments.filter((r) => existenceMap[r.path]);
+
             if (validRecents.length !== recentEnvironments.length) {
+                console.warn(`Removed ${recentEnvironments.length - validRecents.length} invalid recent paths.`);
                 localStorage.setItem('recentEnvironments', JSON.stringify(validRecents));
                 set({ recentEnvironments: validRecents });
             }

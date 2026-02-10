@@ -11,6 +11,7 @@ export interface WorkspaceSlice {
 
     // Actions
     openWorkspace: () => Promise<void>;
+    openProject: (path: string) => Promise<void>;
     refreshWorkspace: () => Promise<void>;
     setWorkspaceRoot: (path: string | null) => void;
     updateFileTree: (tree: FileNode[]) => void;

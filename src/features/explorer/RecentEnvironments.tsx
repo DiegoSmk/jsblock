@@ -54,7 +54,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
     const toggleFavorite = useStore(state => state.toggleFavorite);
     const setRecentLabel = useStore(state => state.setRecentLabel);
     const openWorkspace = useStore(state => state.openWorkspace);
-    const setWorkspaceRoot = useStore(state => state.setWorkspaceRoot);
+    const openProject = useStore(state => state.openProject);
     const validateRecents = useStore(state => state.validateRecents);
     const setConfirmationModal = useStore(state => state.setConfirmationModal);
     const theme = useStore(state => state.theme);
@@ -65,14 +65,7 @@ export const RecentEnvironments = ({ embedded = false }: { embedded?: boolean })
     }, [validateRecents]);
 
     const handleOpen = async (path: string) => {
-        if (window.electron) {
-            const exists = await window.electron.fileSystem.checkExists(path);
-            if (exists) {
-                setWorkspaceRoot(path);
-            } else {
-                void validateRecents();
-            }
-        }
+        await openProject(path);
     };
 
     const sortedRecents = [...recentEnvironments].sort((a, b) => {
