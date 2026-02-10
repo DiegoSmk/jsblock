@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createStore } from 'zustand';
+import { createStore } from 'zustand/vanilla';
+import type { StoreApi } from 'zustand/vanilla';
 import { createFlowSlice } from './slices/flowSlice';
 import { createFileSlice } from './slices/fileSlice';
 import type { AppState } from '../types/store';
@@ -8,17 +10,27 @@ import type { AppState } from '../types/store';
 // In the test environment, Worker is undefined so parseCodeToFlowAsync returns empty flow.
 
 describe('Store Integration (no mocks)', () => {
-    let store: ReturnType<typeof createStore<AppState>>;
+    let store: StoreApi<AppState>;
 
     beforeEach(() => {
-        store = createStore<AppState>((set, get, api) => ({
-            ...createFlowSlice(set as any, get as any, api as any),
-            ...createFileSlice(set as any, get as any, api as any),
-            // Minimal stubs for required actions
-            runExecution: vi.fn(),
-            runExecutionDebounced: vi.fn(),
-            checkTaskRecurse: vi.fn(),
-        } as any));
+        store = createStore<AppState>((set, get, api) => {
+            const ss = set as unknown as (partial: Partial<AppState>) => void;
+            const gg = get as unknown as () => AppState;
+            const aa = api as unknown as any;
+
+            return {
+                ...createFlowSlice(ss as any, gg as any, aa as any),
+                ...createFileSlice(ss as any, gg as any, aa as any),
+                // Minimal stubs for required actions
+                runExecution: vi.fn(),
+                runExecutionDebounced: vi.fn(),
+                checkTaskRecurse: vi.fn(),
+                saveFile: vi.fn(),
+                setConfirmationModal: vi.fn(),
+                setCode: vi.fn(),
+                addToast: vi.fn(),
+            } as unknown as AppState;
+        });
     });
 
     it('should keep edgeIndex consistent after setCode with real parser fallback', async () => {

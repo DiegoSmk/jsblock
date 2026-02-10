@@ -198,7 +198,10 @@ const Breadcrumbs: React.FC<{
                                 // p will be name of selected file
                                 // We need to construct full path
                                 // dirToRead + '/' + p
-                                void setSelectedFile(`${dirToRead}/${p}`);
+                                void setSelectedFile(`${dirToRead}/${p}`).catch(err => {
+                                    if (err instanceof Error && err.message === 'cancel') return;
+                                    console.error('Breadcrumb selection failed', err);
+                                });
                             }}
                             isLast={isLast}
                         />
@@ -473,7 +476,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                     variant: 'warning',
                                     onConfirm: () => {
                                         setWorkspaceRoot(null);
-                                        void setSelectedFile(null);
+                                        void setSelectedFile(null).catch(() => { });
                                         setConfirmationModal(null);
                                     },
                                     onCancel: () => setConfirmationModal(null)

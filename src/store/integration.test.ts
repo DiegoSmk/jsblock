@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createStore } from 'zustand';
+import { createStore } from 'zustand/vanilla';
+import type { StoreApi } from 'zustand/vanilla';
 import { createFlowSlice } from './slices/flowSlice';
 import { createFileSlice } from './slices/fileSlice';
 import type { AppState } from '../types/store';
@@ -8,7 +10,7 @@ import type { Edge } from '@xyflow/react';
 
 // Mock getLayoutedElements to modify positions but keep topology
 vi.mock('../features/editor/logic/layout', () => ({
-    getLayoutedElements: (nodes: any[], edges: any[]) => ({
+    getLayoutedElements: (nodes: AppNode[], edges: Edge[]) => ({
         nodes: nodes.map(n => ({ ...n, position: { x: n.position.x + 10, y: n.position.y + 10 } })),
         edges: [...edges] // Return shallow copy to simulate processing
     })
@@ -23,17 +25,27 @@ vi.mock('../features/editor/logic/CodeGenerator', () => ({
 }));
 
 describe('Store Integration & Edge Index Consistency', () => {
-    let store: any;
+    let store: StoreApi<AppState>;
 
     beforeEach(() => {
-        store = createStore<AppState>((set, get, api) => ({
-            ...createFlowSlice(set as any, get as any, api as any),
-            ...createFileSlice(set as any, get as any, api as any),
-            // Mock other slices minimal requirements
-            runExecution: vi.fn(),
-            runExecutionDebounced: vi.fn(),
-            checkTaskRecurse: vi.fn(),
-        } as any));
+        store = createStore<AppState>((set, get, api) => {
+            const ss = set as unknown as (partial: Partial<AppState>) => void;
+            const gg = get as unknown as () => AppState;
+            const aa = api as unknown as any;
+
+            return {
+                ...createFlowSlice(ss as any, gg as any, aa as any),
+                ...createFileSlice(ss as any, gg as any, aa as any),
+                // Mock other slices minimal requirements
+                runExecution: vi.fn(),
+                runExecutionDebounced: vi.fn(),
+                checkTaskRecurse: vi.fn(),
+                saveFile: vi.fn(),
+                setConfirmationModal: vi.fn(),
+                setCode: vi.fn(),
+                addToast: vi.fn(),
+            } as unknown as AppState;
+        });
     });
 
     it('should maintain edge index consistency through a complete workflow', () => {
@@ -46,7 +58,7 @@ describe('Store Integration & Edge Index Consistency', () => {
             nodes: [node1, node2],
             edges: [edge1],
             edgeIndex: new Map([['n1', [edge1]], ['n2', [edge1]]])
-        } as any);
+        } as Partial<AppState>);
 
         // Verify initial index
         let state = store.getState();

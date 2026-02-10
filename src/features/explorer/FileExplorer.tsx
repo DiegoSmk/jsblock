@@ -86,7 +86,10 @@ export const FileExplorer: React.FC = () => {
     };
 
     const handleFileSelect = (path: string) => {
-        void setSelectedFile(path);
+        setSelectedFile(path).catch(err => {
+            if (err instanceof Error && err.message === 'cancel') return;
+            console.error('File selection failed', err);
+        });
     };
 
     const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
@@ -119,7 +122,7 @@ export const FileExplorer: React.FC = () => {
 
                         if (selectedFile && isInternalPath(node.path, selectedFile)) {
                             setDirty(false);
-                            await setSelectedFile(null);
+                            await setSelectedFile(null).catch(() => { /* Ignore cancellation on delete */ });
                         }
 
                         addToast({ type: 'success', message: t('file_explorer.delete_success') ?? 'Item excluído com sucesso' });
@@ -163,9 +166,9 @@ export const FileExplorer: React.FC = () => {
             };
 
             if (selectedFile === oldPath) {
-                await setSelectedFile(newPath);
+                await setSelectedFile(newPath).catch(() => { /* Ignore cancellation on rename */ });
             } else if (selectedFile && isInternalPath(oldPath, selectedFile)) {
-                await setSelectedFile(selectedFile.replace(oldPath, newPath));
+                await setSelectedFile(selectedFile.replace(oldPath, newPath)).catch(() => { /* Ignore cancellation */ });
             }
 
             addToast({ type: 'success', message: t('file_explorer.rename_success') ?? 'Item renomeado' });

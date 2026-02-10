@@ -10,10 +10,18 @@ export interface FileSlice {
     recentFiles: string[];
     recentEnvironments: RecentEnvironment[];
     isBlockFile: boolean;
+    pendingFileSwitch: {
+        targetFile: string | null;
+        resolve: (value: { switched: boolean }) => void;
+        reject: (reason?: Error | string) => void;
+    } | null;
 
     setOpenedFolder: (path: string | null) => void;
     syncProjectFiles: () => Promise<void>;
     setSelectedFile: (path: string | null) => Promise<void>;
+    requestFileSwitch: (path: string | null) => Promise<{ switched: boolean }>;
+    confirmFileSwitch: (action: 'save' | 'discard' | 'cancel') => Promise<void>;
+    performFileSwitch: (path: string | null) => Promise<void>;
     loadContentForFile: (path: string | null) => Promise<void>;
     saveFile: () => Promise<void>;
     addRecentFile: (path: string) => void;
@@ -33,6 +41,7 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
     recentFiles: (JSON.parse(localStorage.getItem('recentFiles') ?? '[]') as string[]),
     recentEnvironments: (JSON.parse(localStorage.getItem('recentEnvironments') ?? '[]') as RecentEnvironment[]),
     isBlockFile: false,
+    pendingFileSwitch: null,
 
     setOpenedFolder: (path) => set({ openedFolder: path }),
 
@@ -51,51 +60,82 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
         }
     },
 
-    setSelectedFile: async (path) => {
-        const { isDirty, setConfirmationModal, selectedFile, saveFile, setDirty, addRecentFile, loadContentForFile } = get();
+    requestFileSwitch: async (path) => {
+        const { isDirty, selectedFile, setConfirmationModal, pendingFileSwitch } = get();
 
-        if (isDirty && selectedFile) {
-            return new Promise<void>((resolve) => {
-                setConfirmationModal({
-                    isOpen: true,
-                    title: 'Salvar alterações?',
-                    message: `Você tem alterações não salvas em "${selectedFile.split('/').pop()}". Deseja salvar antes de sair?`,
-                    confirmLabel: 'Salvar',
-                    cancelLabel: 'Cancelar',
-                    discardLabel: 'Descartar',
-                    variant: 'warning',
-                    onConfirm: async () => {
-                        await saveFile();
-                        setConfirmationModal(null);
-                        set({ selectedFile: path });
-                        if (path) {
-                            addRecentFile(path);
-                            await loadContentForFile(path);
-                        }
-                        resolve();
-                    },
-                    onDiscard: async () => {
-                        setDirty(false);
-                        setConfirmationModal(null);
-                        set({ selectedFile: path });
-                        if (path) {
-                            addRecentFile(path);
-                            await loadContentForFile(path);
-                        }
-                        resolve();
-                    },
-                    onCancel: () => {
-                        setConfirmationModal(null);
-                        resolve();
-                    }
-                });
-            });
+        if (pendingFileSwitch) {
+            return Promise.reject(new Error('pending-switch'));
         }
+
+        if (!isDirty || !selectedFile) {
+            await get().performFileSwitch(path);
+            return { switched: true };
+        }
+
+        return new Promise<{ switched: boolean }>((resolve, reject) => {
+            set({ pendingFileSwitch: { targetFile: path, resolve: () => resolve({ switched: true }), reject } });
+
+            setConfirmationModal({
+                isOpen: true,
+                title: 'Salvar alterações?',
+                message: `Você tem alterações não salvas em "${selectedFile.split('/').pop()}". Deseja salvar antes de sair?`,
+                confirmLabel: 'Salvar',
+                cancelLabel: 'Cancelar',
+                discardLabel: 'Descartar',
+                variant: 'warning',
+                onConfirm: () => get().confirmFileSwitch('save'),
+                onDiscard: () => get().confirmFileSwitch('discard'),
+                onCancel: () => get().confirmFileSwitch('cancel')
+            });
+        });
+    },
+
+    confirmFileSwitch: async (action) => {
+        const { pendingFileSwitch, saveFile, setDirty, setConfirmationModal } = get();
+
+        if (!pendingFileSwitch) {
+            setConfirmationModal(null);
+            return;
+        }
+
+        const { targetFile, resolve, reject } = pendingFileSwitch;
+        set({ pendingFileSwitch: null });
+        setConfirmationModal(null);
+
+        try {
+            switch (action) {
+                case 'save':
+                    await saveFile();
+                    await get().performFileSwitch(targetFile);
+                    resolve({ switched: true });
+                    break;
+                case 'discard':
+                    setDirty(false);
+                    await get().performFileSwitch(targetFile);
+                    resolve({ switched: true });
+                    break;
+                case 'cancel':
+                    reject(new Error('cancel'));
+                    break;
+                default:
+                    reject(new Error('Invalid action'));
+            }
+        } catch (error) {
+            reject(error instanceof Error ? error : new Error(String(error)));
+        }
+    },
+
+    setSelectedFile: async (path: string | null) => {
+        await get().requestFileSwitch(path);
+    },
+
+    performFileSwitch: async (path) => {
+        const { addRecentFile, loadContentForFile } = get();
 
         set({ selectedFile: path });
         if (path) {
-            get().addRecentFile(path);
-            await get().loadContentForFile(path);
+            addRecentFile(path);
+            await loadContentForFile(path);
         }
     },
 

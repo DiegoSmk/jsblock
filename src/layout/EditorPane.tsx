@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import Editor from '@monaco-editor/react';
 import { Code } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

@@ -62,9 +62,9 @@ function createLiteral(val: unknown): Expression {
 function createExpression(op: string, left: Expression | Pattern, right: Expression): Expression {
     const isLogical = op === '&&' || op === '||' || op === '??';
     if (isLogical) {
-        return b.logicalExpression(op as any, left as any, right as any) as any;
+        return b.logicalExpression(op as any, left as any, right as any) as unknown as Expression;
     }
-    return b.binaryExpression(op as any, left as any, right as any) as any;
+    return b.binaryExpression(op as any, left as any, right as any) as unknown as Expression;
 }
 
 export const generateCodeFromFlow = (
@@ -231,7 +231,7 @@ function reorganizeASTBasedOnFlow(ctx: GeneratorContext) {
 
 function pruneASTBody(ctx: GeneratorContext) {
     const prefixes = ['call-exec-', 'if-', 'switch-', 'while-', 'for-'];
-    ctx.ast.program.body = (ctx.ast.program.body as Statement[]).filter((_: Statement, i: number) => {
+    ctx.ast.program.body = ctx.ast.program.body.filter((_: Statement, i: number) => {
         return !prefixes.some(prefix => ctx.nodesToPrune.has(`${prefix}${i}`));
     });
 }
@@ -496,7 +496,7 @@ function visitFlowAST(ctx: GeneratorContext) {
                 }
             } else if (exprStmt.expression.type === 'AwaitExpression' && exprStmt.expression.argument.type === 'CallExpression') {
                 const callNodeId = `call-exec-${index}`;
-                updateCallArguments(exprStmt.expression.argument as CallExpression, callNodeId, ctx);
+                updateCallArguments(exprStmt.expression.argument, callNodeId, ctx);
 
                 const node = ctx.nodes.find(n => n.id === callNodeId);
                 if (node && node.data.isAwait === false) {
@@ -508,8 +508,8 @@ function visitFlowAST(ctx: GeneratorContext) {
 
                 if (node && node.data.op) {
                     const op = node.data.op as string;
-                    let left = exprStmt.expression.left as Expression;
-                    let right = exprStmt.expression.right as Expression;
+                    let left = exprStmt.expression.left;
+                    let right = exprStmt.expression.right;
 
                     const updateOperand = (handleId: 'input-a' | 'input-b', current: Expression) => {
                         const sourceId = ctx.connections[logicNodeId]?.[handleId];
@@ -520,9 +520,9 @@ function visitFlowAST(ctx: GeneratorContext) {
                         return current;
                     };
 
-                    left = updateOperand('input-a', left);
-                    right = updateOperand('input-b', right);
-                    exprStmt.expression = createExpression(op, left, right);
+                    left = updateOperand('input-a', left as Expression) as any;
+                    right = updateOperand('input-b', right as Expression) as any;
+                    exprStmt.expression = createExpression(op, left as Expression, right as Expression);
                 }
             }
             return false;
