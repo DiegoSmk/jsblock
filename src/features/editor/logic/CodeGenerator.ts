@@ -44,8 +44,7 @@ function isLiteral(node: object): boolean {
 }
 
 function isExpression(node: unknown): node is Expression {
-    return typeof node === 'object' && node !== null && 'type' in node &&
-        !['Statement', 'Declaration', 'Pattern'].some(t => ((node as { type: string }).type).includes(t));
+    return types.namedTypes.Expression.check(node);
 }
 
 function createLiteral(val: unknown): Expression {

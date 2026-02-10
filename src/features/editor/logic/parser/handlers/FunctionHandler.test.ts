@@ -1,8 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, type Mock } from 'vitest';
 import * as t from '@babel/types';
 import { FunctionHandler } from './FunctionHandler';
 import type { ParserContext } from '../types';
+import type { AppNode } from '../../../types';
+
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
 describe('FunctionHandler', () => {
     const createMockContext = (): ParserContext => ({
@@ -86,11 +88,11 @@ describe('FunctionHandler', () => {
         FunctionHandler.handle(node, ctx);
 
         // processBlock should be called with paramNodes containing destructuring and variables
-        const callArgs = (ctx.processBlock as any).mock.calls[0];
-        const paramNodes = callArgs[4];
+        const callArgs = (ctx.processBlock as Mock).mock.calls[0];
+        const paramNodes = callArgs[4] as AppNode[];
 
-        expect(paramNodes.some((n: any) => n.type === 'destructuringNode' && n.data.destructuringSource === 'Arguments')).toBe(true);
-        expect(paramNodes.some((n: any) => n.type === 'variableNode' && n.data.label === 'x')).toBe(true);
-        expect(paramNodes.some((n: any) => n.type === 'variableNode' && n.data.label === 'y')).toBe(true);
+        expect(paramNodes.some(n => n.type === 'destructuringNode' && n.data.destructuringSource === 'Arguments')).toBe(true);
+        expect(paramNodes.some(n => n.type === 'variableNode' && n.data.label === 'x')).toBe(true);
+        expect(paramNodes.some(n => n.type === 'variableNode' && n.data.label === 'y')).toBe(true);
     });
 });

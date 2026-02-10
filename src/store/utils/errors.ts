@@ -2,7 +2,11 @@
  * Checks if an error is an intentional user cancellation.
  */
 export function isCancellation(err: unknown): boolean {
-    return err instanceof Error && err.message === 'cancel';
+    if (typeof err === 'string') return err === 'cancel';
+    if (err && typeof err === 'object' && 'message' in err) {
+        return (err as { message: unknown }).message === 'cancel';
+    }
+    return false;
 }
 
 /**
