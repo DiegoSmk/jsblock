@@ -34,13 +34,15 @@ describe('validateRecents Performance Benchmark', () => {
             ...window.electron,
             fileSystem: {
                 ...window.electron?.fileSystem,
+                checkExists: vi.fn(),
+                checkPathsExists: vi.fn(),
                 // Old method: 10ms per call
-                checkExists: vi.fn().mockImplementation(async () => {
+                checkExistsForRecents: vi.fn().mockImplementation(async () => {
                     await new Promise(resolve => setTimeout(resolve, delayPerCall));
                     return true;
                 }),
                 // New method: 10ms per batch (simulated)
-                checkPathsExists: vi.fn().mockImplementation(async (ps: string[]) => {
+                checkPathsExistsForRecents: vi.fn().mockImplementation(async (ps: string[]) => {
                     await new Promise(resolve => setTimeout(resolve, delayPerCall));
                     return ps.reduce((acc, p) => ({ ...acc, [p]: true }), {});
                 })

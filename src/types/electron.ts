@@ -34,8 +34,10 @@ export interface ElectronAPI {
     createDirectory: (path: string) => Promise<boolean>;
     delete: (path: string) => Promise<boolean>;
     move: (source: string, target: string) => Promise<boolean>; // ensure target includes filename if needed, or update consumers
-    checkExists: (path: string, caller?: string) => Promise<boolean>;
-    checkPathsExists: (paths: string[], caller?: string) => Promise<Record<string, boolean>>;
+    checkExists: (path: string) => Promise<boolean>;
+    checkPathsExists: (paths: string[]) => Promise<Record<string, boolean>>;
+    checkExistsForRecents: (path: string) => Promise<boolean>;
+    checkPathsExistsForRecents: (paths: string[]) => Promise<Record<string, boolean>>;
     getStats: (path: string) => Promise<{ size: number; mtime: number; isDirectory: boolean }>;
     ensureProjectConfig: (path: string) => Promise<void>;
   };

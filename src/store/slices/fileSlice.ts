@@ -225,7 +225,7 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
         if (window.electron) {
             // Use the relaxed check for recents to allow checking unauthorized paths
             // This is safe because we are just checking existence to add to a list
-            const exists = await window.electron.fileSystem.checkExists(path, 'recents');
+            const exists = await window.electron.fileSystem.checkExistsForRecents(path);
             if (!exists) return; // Only return if it truly doesn't exist
         }
 
@@ -277,7 +277,7 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
 
         const paths = recentEnvironments.map((r) => r.path);
         try {
-            const existenceMap = await window.electron.fileSystem.checkPathsExists(paths, 'recents');
+            const existenceMap = await window.electron.fileSystem.checkPathsExistsForRecents(paths);
 
             // If checking failed (empty map returned for non-empty input), abort to protect data
             if (Object.keys(existenceMap).length === 0 && paths.length > 0) {

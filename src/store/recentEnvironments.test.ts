@@ -8,8 +8,10 @@ const checkPathsExistsMock = vi.fn();
 
 const mockElectron = {
     fileSystem: {
-        checkExists: checkExistsMock,
-        checkPathsExists: checkPathsExistsMock,
+        checkExists: vi.fn(),
+        checkPathsExists: vi.fn(),
+        checkExistsForRecents: checkExistsMock,
+        checkPathsExistsForRecents: checkPathsExistsMock,
     },
 } as unknown as ElectronAPI;
 
