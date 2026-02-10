@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useRef, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useStore } from '../../../../store/useStore';
-import type { AppNode, NodeCustomStyle } from '../../../../types/store';
+import type { AppState, AppNode, NodeCustomStyle } from '../../../../types/store';
 import { hexToRgba } from '../../../../utils/colors';
 import { detectTasksFromMarkdown, type DetectedTask } from './noteUtils';
 
@@ -15,12 +15,12 @@ export const useNoteLogic = (id: string, data: AppNode['data'], isDark: boolean)
     // Use store directly for spawn logic if needed, but we rely on spawnConnectedUtility action.
 
     // Optimized store usage to prevent re-renders on node move
-    const edges = useStore(useShallow(state =>
-        state.edges.filter(edge => edge.source === id || edge.target === id)
+    const edges = useStore(useShallow((state: AppState) =>
+        state.getEdgesForNode(id)
     ));
 
     const taskStatus = useStore(useShallow(state => {
-        const connectedEdges = state.edges.filter(e => e.source === id || e.target === id);
+        const connectedEdges = state.getEdgesForNode(id);
         const taskNodes = connectedEdges
             .map(e => {
                 const otherId = e.source === id ? e.target : e.source;

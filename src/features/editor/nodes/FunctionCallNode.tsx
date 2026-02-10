@@ -11,7 +11,7 @@ export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeD
     const theme = useStore((state: AppState) => state.theme);
     const runtimeValues = useStore((state: AppState) => state.runtimeValues);
     const edges = useStore(useShallow((state: AppState) =>
-        state.edges.filter(e => e.target === id)
+        state.getEdgesForNode(id).filter(e => e.target === id)
     ));
     const addFunctionCall = useStore((state: AppState) => state.addFunctionCall);
     const navigateInto = useStore((state: AppState) => state.navigateInto);

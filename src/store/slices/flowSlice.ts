@@ -7,6 +7,7 @@ import { parseCodeToFlowAsync } from '../../features/editor/logic/CodeParser';
 import { generateCodeFromFlow } from '../../features/editor/logic/CodeGenerator';
 import { getLayoutedElements } from '../../features/editor/logic/layout';
 import { validateConnection } from '../../features/editor/logic/connectionLogic';
+import { buildEdgeIndex, addToEdgeIndex, removeFromEdgeIndex, updateInEdgeIndex, syncEdgeIndex } from '../utils/edgeIndex';
 
 const initialCode = '';
 
@@ -17,6 +18,7 @@ export interface FlowSlice {
     navigationStack: { id: string, label: string }[];
     activeScopeId: string;
     viewport: { x: number, y: number, zoom: number };
+    edgeIndex: Map<string, Edge[]>;
     saveTimeout: ReturnType<typeof setTimeout> | null;
 
     setCode: (code: string, shouldSetDirty?: boolean, debounce?: boolean) => void;
@@ -38,6 +40,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
     viewport: { x: 0, y: 0, zoom: 1 },
+    edgeIndex: new Map(),
     saveTimeout: null,
 
     setCode: (code: string, shouldSetDirty = true, debounce = true) => {
@@ -84,6 +87,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
             set({
                 nodes: finalNodes,
                 edges,
+                edgeIndex: buildEdgeIndex(edges),
                 navigationStack: activeNodeExists ? currentStack : [{ id: 'root', label: 'Main' }],
                 activeScopeId: activeNodeExists ? currentScopeId : 'root'
             });
@@ -105,7 +109,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
         if (deletions.length > 0) {
             const deletedIds = new Set(deletions.map(d => d.id));
             const activeEdges = get().edges.filter(edge => !deletedIds.has(edge.source) && !deletedIds.has(edge.target));
-            set({ nodes: nextNodes, edges: activeEdges });
+            set({ nodes: nextNodes, edges: activeEdges, edgeIndex: buildEdgeIndex(activeEdges) });
         } else {
             set({ nodes: nextNodes });
         }
@@ -126,9 +130,9 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     },
 
     onEdgesChange: (changes: EdgeChange[]) => {
-        const { nodes, edges, code, isBlockFile, autoSave } = get();
+        const { nodes, edges, code, isBlockFile, autoSave, edgeIndex } = get();
         const newEdges = applyEdgeChanges(changes, edges);
-        set({ edges: newEdges });
+        set({ edges: newEdges, edgeIndex: syncEdgeIndex(edgeIndex, edges, newEdges, changes) });
 
         if (isBlockFile) {
             if (autoSave) {
@@ -150,8 +154,13 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
 
     removeEdges: (edgeIds: string[]) => {
         const { nodes, edges, code, isBlockFile, autoSave } = get();
+        const removedEdges = edges.filter(e => edgeIds.includes(e.id));
         const newEdges = edges.filter(e => !edgeIds.includes(e.id));
-        set({ edges: newEdges });
+
+        set({
+            edges: newEdges,
+            edgeIndex: removeFromEdgeIndex(get().edgeIndex, removedEdges)
+        });
 
         if (isBlockFile) {
             if (autoSave) {
@@ -178,7 +187,11 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
         if (!validateConnection(connection, nodes)) return;
 
         const newEdges = addEdge(connection, edges);
-        set({ edges: newEdges });
+        // Incremental update for simple connection
+        set({
+            edges: newEdges,
+            edgeIndex: addToEdgeIndex(get().edgeIndex, [newEdges[newEdges.length - 1]])
+        });
 
         if (isBlockFile) {
             if (autoSave) void get().saveFile();
@@ -231,10 +244,16 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     },
 
     updateEdge: (edgeId, updates) => {
-        set(state => {
-            const updatedEdges = state.edges.map(e => e.id === edgeId ? { ...e, ...updates } : e);
+        set((state) => {
+            const oldEdge = state.edges.find(e => e.id === edgeId);
+            if (!oldEdge) return {};
+
+            const newEdge = { ...oldEdge, ...updates };
+            const updatedEdges = state.edges.map(e => e.id === edgeId ? newEdge : e);
+
             return {
                 edges: updatedEdges,
+                edgeIndex: updateInEdgeIndex(state.edgeIndex, oldEdge, newEdge),
                 isDirty: state.isBlockFile ? !state.autoSave : state.isDirty
             };
         });
@@ -252,7 +271,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     },
 
     getEdgesForNode: (nodeId: string) => {
-        return get().edges.filter(e => e.source === nodeId || e.target === nodeId);
+        return get().edgeIndex.get(nodeId) || [];
     },
 
     onViewportChange: (viewport) => {

@@ -114,9 +114,22 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
                         code?: string;
                     }
                     const json = JSON.parse(content) as BlockData;
+                    const nodes = Array.isArray(json.nodes) ? json.nodes : [];
+                    const edges = (Array.isArray(json.edges) ? json.edges : []) as Edge[];
+
+                    // Update index for performance
+                    const edgeIndex = new Map<string, Edge[]>();
+                    edges.forEach(e => {
+                        if (!edgeIndex.has(e.source)) edgeIndex.set(e.source, []);
+                        if (!edgeIndex.has(e.target)) edgeIndex.set(e.target, []);
+                        edgeIndex.get(e.source)!.push(e);
+                        edgeIndex.get(e.target)!.push(e);
+                    });
+
                     set({
-                        nodes: json.nodes ?? [],
-                        edges: (json.edges ?? []) as Edge[],
+                        nodes,
+                        edges,
+                        edgeIndex,
                         viewport: json.viewport ?? { x: 0, y: 0, zoom: 1 },
                         code: json.code ?? ''
                     });

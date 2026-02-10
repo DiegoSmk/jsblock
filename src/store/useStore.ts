@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 import type { AppState } from '../types/store';
 import { createGitSlice } from '../features/git/store/slice';
 import { createExecutionSlice } from '../features/execution/store/executionSlice';
@@ -11,39 +13,54 @@ import { createFileSlice } from './slices/fileSlice';
 import { createExtensionSlice } from './slices/extensionSlice';
 import { createActionSlice } from './slices/actionSlice';
 
-export const useStore = create<AppState>((set, get, api) => ({
-    ...createGitSlice(set, get, api),
-    ...createExecutionSlice(set, get, api),
-    ...createBenchmarkSlice(set, get, api),
-    ...createWorkspaceSlice(set, get, api),
-    ...createConfigSlice(set, get, api),
-    ...createFlowSlice(set, get, api),
-    ...createUISlice(set, get, api),
-    ...createFileSlice(set, get, api),
-    ...createExtensionSlice(set, get, api),
-    ...createActionSlice(set, get, api),
-}));
+export const useStore = create<AppState>()(
+    subscribeWithSelector((set, get, api) => ({
+        ...createGitSlice(set, get, api),
+        ...createExecutionSlice(set, get, api),
+        ...createBenchmarkSlice(set, get, api),
+        ...createWorkspaceSlice(set, get, api),
+        ...createConfigSlice(set, get, api),
+        ...createFlowSlice(set, get, api),
+        ...createUISlice(set, get, api),
+        ...createFileSlice(set, get, api),
+        ...createExtensionSlice(set, get, api),
+        ...createActionSlice(set, get, api),
+    }))
+);
 
 // MCP Synchronization
-if (typeof window !== 'undefined' && window.electron) {
+if (typeof window !== 'undefined') {
     let mcpSyncTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    useStore.subscribe((state) => {
-        if (mcpSyncTimeout) clearTimeout(mcpSyncTimeout);
+    useStore.subscribe(
+        (state) => ({
+            code: state.code,
+            nodes: state.nodes,
+            edges: state.edges,
+            activeScopeId: state.activeScopeId,
+            selectedFile: state.selectedFile,
+            isDirty: state.isDirty
+        }),
+        (state) => {
+            if (!window.electron) return;
 
-        mcpSyncTimeout = setTimeout(() => {
-            try {
-                window.electron.mcpSyncState({
-                    code: state.code,
-                    nodes: state.nodes,
-                    edges: state.edges,
-                    activeScopeId: state.activeScopeId,
-                    selectedFile: state.selectedFile,
-                    isDirty: state.isDirty
-                });
-            } catch (err) {
-                console.error('MCP Sync Error:', err);
-            }
-        }, 1000); // 1s debounce for stability
-    });
+            if (mcpSyncTimeout) clearTimeout(mcpSyncTimeout);
+
+            mcpSyncTimeout = setTimeout(() => {
+                try {
+                    window.electron.mcpSyncState({
+                        code: state.code,
+                        nodes: state.nodes,
+                        edges: state.edges,
+                        activeScopeId: state.activeScopeId,
+                        selectedFile: state.selectedFile,
+                        isDirty: state.isDirty
+                    });
+                } catch (err) {
+                    console.error('MCP Sync Error:', err);
+                }
+            }, 1000); // 1s debounce for stability
+        },
+        { equalityFn: shallow }
+    );
 }
