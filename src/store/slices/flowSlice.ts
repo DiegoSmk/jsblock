@@ -14,7 +14,6 @@ export interface FlowSlice {
     code: string;
     nodes: AppNode[];
     edges: Edge[];
-    connectionCache: Map<string, Edge[]>;
     navigationStack: { id: string, label: string }[];
     activeScopeId: string;
     saveTimeout: ReturnType<typeof setTimeout> | null;
@@ -34,7 +33,6 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     code: initialCode,
     nodes: [],
     edges: [],
-    connectionCache: new Map(),
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
     saveTimeout: null,
@@ -102,11 +100,9 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
         const deletions = changes.filter(c => c.type === 'remove');
 
         if (deletions.length > 0) {
-            const newCache = new Map(get().connectionCache);
-            deletions.forEach(d => newCache.delete(d.id));
             const deletedIds = new Set(deletions.map(d => d.id));
             const activeEdges = get().edges.filter(edge => !deletedIds.has(edge.source) && !deletedIds.has(edge.target));
-            set({ nodes: nextNodes, edges: activeEdges, connectionCache: newCache });
+            set({ nodes: nextNodes, edges: activeEdges });
         } else {
             set({ nodes: nextNodes });
         }
@@ -129,29 +125,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     onEdgesChange: (changes: EdgeChange[]) => {
         const { nodes, edges, code, isBlockFile, autoSave } = get();
         const newEdges = applyEdgeChanges(changes, edges);
-        const nextCache = new Map(get().connectionCache);
-
-        changes.forEach(change => {
-            if (change.type === 'remove') {
-                const edge = edges.find(e => e.id === change.id);
-                if (edge) {
-                    const sourceEdges = nextCache.get(edge.source) ?? [];
-                    nextCache.set(edge.source, sourceEdges.filter(e => e.id !== edge.id));
-                    const targetEdges = nextCache.get(edge.target) ?? [];
-                    nextCache.set(edge.target, targetEdges.filter(e => e.id !== edge.id));
-                }
-            } else if (change.type === 'add') {
-                const edge = 'item' in change ? change.item : null;
-                if (edge) {
-                    const sourceEdges = nextCache.get(edge.source) ?? [];
-                    nextCache.set(edge.source, [...sourceEdges, edge]);
-                    const targetEdges = nextCache.get(edge.target) ?? [];
-                    nextCache.set(edge.target, [...targetEdges, edge]);
-                }
-            }
-        });
-
-        set({ edges: newEdges, connectionCache: nextCache });
+        set({ edges: newEdges });
 
         if (isBlockFile) {
             if (autoSave) {
@@ -174,18 +148,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     removeEdges: (edgeIds: string[]) => {
         const { nodes, edges, code, isBlockFile, autoSave } = get();
         const newEdges = edges.filter(e => !edgeIds.includes(e.id));
-        const newCache = new Map<string, Edge[]>();
-
-        newEdges.forEach(edge => {
-            const source = newCache.get(edge.source) ?? [];
-            source.push(edge);
-            newCache.set(edge.source, source);
-            const target = newCache.get(edge.target) ?? [];
-            target.push(edge);
-            newCache.set(edge.target, target);
-        });
-
-        set({ edges: newEdges, connectionCache: newCache });
+        set({ edges: newEdges });
 
         if (isBlockFile) {
             if (autoSave) {

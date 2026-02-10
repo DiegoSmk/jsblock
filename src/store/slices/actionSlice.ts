@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { AppState, AppNode, UtilityType, AppNodeData } from '../../types/store';
+import type { AppState, AppNode, UtilityType } from '../../types/store';
 import type { Edge } from '@xyflow/react';
 import { generateCodeFromFlow } from '../../features/editor/logic/CodeGenerator';
 
@@ -8,6 +8,46 @@ const getUUID = (prefix = 'id') => {
         ? crypto.randomUUID()
         : Math.random().toString(36).substring(2, 15);
     return `${prefix}-${uuid}`;
+};
+
+const getUtilityDefinition = (type: UtilityType) => {
+    switch (type) {
+        case 'todo':
+            return {
+                label: 'To-Do Item',
+                color: '#ff9f43',
+                icon: 'check-square',
+                defaultData: { checked: false, text: '' }
+            };
+        case 'note':
+            return {
+                label: 'Note',
+                color: '#fff200',
+                icon: 'sticky-note',
+                defaultData: { text: '' }
+            };
+        case 'link':
+            return {
+                label: 'Link',
+                color: '#0abde3',
+                icon: 'link',
+                defaultData: { url: 'https://' }
+            };
+        case 'image':
+            return {
+                label: 'Image',
+                color: '#ff6b6b',
+                icon: 'image',
+                defaultData: { src: '' }
+            };
+        default:
+            return {
+                label: 'Utility',
+                color: '#576574',
+                icon: 'box',
+                defaultData: {}
+            };
+    }
 };
 
 export interface ActionSlice {
@@ -119,7 +159,7 @@ export const createActionSlice: StateCreator<AppState, [], [], ActionSlice> = (s
                 const { code, nodes } = get();
                 const callNode = nodes.find((n) => n.id === callNodeId);
                 if (!callNode) return;
-                const originalExpr = (callNode.data as AppNodeData).expression;
+                const originalExpr = callNode.data.expression;
                 if (!originalExpr) return;
                 const callStatement = originalExpr + (originalExpr.endsWith(';') ? '' : ';');
                 // This would require more complex code manipulation logic, but let's keep it minimal for now
@@ -152,7 +192,7 @@ export const createActionSlice: StateCreator<AppState, [], [], ActionSlice> = (s
     }),
 
     addNoteNode: () => {
-        const { nodes, activeScopeId } = get();
+        const { nodes, activeScopeId, isBlockFile, autoSave } = get();
         const newNode: AppNode = {
             id: getUUID('note'),
             type: 'noteNode',
@@ -160,17 +200,33 @@ export const createActionSlice: StateCreator<AppState, [], [], ActionSlice> = (s
             data: { label: 'Nova Nota', scopeId: activeScopeId, text: '' }
         };
         set({ nodes: [...nodes, newNode] });
+
+        if (isBlockFile) {
+            if (autoSave) void get().saveFile();
+            else set({ isDirty: true });
+        }
     },
 
     addUtilityNode: (type) => {
-        const { nodes, activeScopeId } = get();
+        const { nodes, activeScopeId, isBlockFile, autoSave } = get();
+        const def = getUtilityDefinition(type);
         const newNode: AppNode = {
             id: getUUID('util'),
             type: 'utilityNode',
             position: { x: 100, y: 100 },
-            data: { label: type, scopeId: activeScopeId, utilityType: type }
+            data: {
+                label: def.label,
+                scopeId: activeScopeId,
+                utilityType: type,
+                ...def.defaultData
+            }
         };
         set({ nodes: [...nodes, newNode] });
+
+        if (isBlockFile) {
+            if (autoSave) void get().saveFile();
+            else set({ isDirty: true });
+        }
     },
 
     checkTaskRecurse: (nodeId: string) => {
@@ -214,7 +270,7 @@ export const createActionSlice: StateCreator<AppState, [], [], ActionSlice> = (s
         };
 
         const updatedNodes = [...nodes, newNode];
-        const updatedEdges = [...edges, newEdge] as Edge[];
+        const updatedEdges = [...edges, newEdge];
 
         // Se for um arquivo de bloco, apenas atualizamos o estado
         if (get().isBlockFile) {
@@ -231,7 +287,7 @@ export const createActionSlice: StateCreator<AppState, [], [], ActionSlice> = (s
     spawnMultipleConnectedUtilities: (sourceId, utilities) => {
         const { nodes, edges, code, activeScopeId, isBlockFile, autoSave, saveFile } = get();
         const currentNodes = [...nodes];
-        const currentEdges = [...edges] as Edge[];
+        const currentEdges = [...edges];
 
         utilities.forEach(util => {
             const newId = getUUID('util');

@@ -23,3 +23,21 @@ export const useStore = create<AppState>((set, get, api) => ({
     ...createExtensionSlice(set, get, api),
     ...createActionSlice(set, get, api),
 }));
+
+// MCP Synchronization
+if (typeof window !== 'undefined' && window.electron) {
+    useStore.subscribe((state) => {
+        try {
+            window.electron.mcpSyncState({
+                code: state.code,
+                nodes: state.nodes,
+                edges: state.edges,
+                activeScopeId: state.activeScopeId,
+                selectedFile: state.selectedFile,
+                isDirty: state.isDirty
+            });
+        } catch (err) {
+            console.error('MCP Sync Error:', err);
+        }
+    });
+}

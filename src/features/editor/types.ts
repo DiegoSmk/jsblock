@@ -20,7 +20,7 @@ export interface EdgeCustomStyle {
   animated?: boolean;
 }
 
-export type UtilityType = 'copy' | 'task' | 'collector' | 'portal';
+export type UtilityType = 'copy' | 'task' | 'collector' | 'portal' | 'todo' | 'note' | 'link' | 'image';
 
 export interface AppNodeData {
   label?: string;

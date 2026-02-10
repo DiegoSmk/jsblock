@@ -51,9 +51,46 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
     },
 
     setSelectedFile: async (path) => {
-        if (get().isDirty) {
-            // Need confirmation logic here, but for now just set
+        const { isDirty, setConfirmationModal, selectedFile, saveFile, setDirty, addRecentFile, loadContentForFile } = get();
+
+        if (isDirty && selectedFile) {
+            return new Promise<void>((resolve) => {
+                setConfirmationModal({
+                    isOpen: true,
+                    title: 'Salvar alterações?',
+                    message: `Você tem alterações não salvas em "${selectedFile.split('/').pop()}". Deseja salvar antes de sair?`,
+                    confirmLabel: 'Salvar',
+                    cancelLabel: 'Cancelar',
+                    discardLabel: 'Descartar',
+                    variant: 'warning',
+                    onConfirm: async () => {
+                        await saveFile();
+                        setConfirmationModal(null);
+                        set({ selectedFile: path });
+                        if (path) {
+                            addRecentFile(path);
+                            await loadContentForFile(path);
+                        }
+                        resolve();
+                    },
+                    onDiscard: async () => {
+                        setDirty(false);
+                        setConfirmationModal(null);
+                        set({ selectedFile: path });
+                        if (path) {
+                            addRecentFile(path);
+                            await loadContentForFile(path);
+                        }
+                        resolve();
+                    },
+                    onCancel: () => {
+                        setConfirmationModal(null);
+                        resolve();
+                    }
+                });
+            });
         }
+
         set({ selectedFile: path });
         if (path) {
             get().addRecentFile(path);
@@ -66,19 +103,44 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
         try {
             const content = await window.electron.fileSystem.readFile(path);
             const isBlock = path.endsWith('.block') || path.endsWith('.json');
-            set({ isBlockFile: isBlock });
-            get().setCode(content, false, false);
-            set({ isDirty: false });
+
+            if (isBlock) {
+                try {
+                    const json = JSON.parse(content) as { nodes?: never[], edges?: never[], code?: string, viewport?: unknown };
+                    set({
+                        nodes: Array.isArray(json.nodes) ? json.nodes : [],
+                        edges: Array.isArray(json.edges) ? json.edges : [],
+                        code: ''
+                    });
+                    set({ isBlockFile: true, isDirty: false });
+                } catch (e) {
+                    console.error('Failed to parse block file', e);
+                    get().addToast({ type: 'error', message: 'Erro ao abrir arquivo de bloco' });
+                }
+            } else {
+                get().setCode(content, false, false);
+                set({ isBlockFile: false, isDirty: false });
+            }
         } catch (err) {
             console.error('Failed to load file content', err);
         }
     },
 
     saveFile: async () => {
-        const { selectedFile, code } = get();
+        const { selectedFile, code, nodes, edges, isBlockFile } = get();
         if (!selectedFile || !window.electron) return;
         try {
-            await window.electron.fileSystem.writeFile(selectedFile, code);
+            let content = code;
+            if (isBlockFile) {
+                const json = {
+                    nodes,
+                    edges,
+                    viewport: { x: 0, y: 0, zoom: 1 } // Placeholder, could get actual viewport
+                };
+                content = JSON.stringify(json, null, 2);
+            }
+
+            await window.electron.fileSystem.writeFile(selectedFile, content);
             set({ isDirty: false });
             get().addToast({ type: 'success', message: 'Arquivo salvo com sucesso' });
         } catch (err) {
