@@ -7,13 +7,31 @@ export const createWorkspaceSlice: StateCreator<
     [],
     [],
     WorkspaceSlice
-> = (set, get) => ({
-    workspace: {
-        rootPath: null,
-        fileTree: [],
-        isWatching: false,
-        isLoading: false,
-    },
+> = (set, get) => {
+    // Helper to apply common side effects when opening a workspace/project
+    const applyWorkspaceSideEffects = async (path: string) => {
+        // Auto-refresh Git if it's a repo
+        if (get().refreshGit) {
+            await get().refreshGit();
+        }
+
+        // Ensure project config exists
+        void window.electron?.fileSystem.ensureProjectConfig(path);
+        
+        // Add to recent list
+        void get().addRecent(path);
+        
+        // Sync project files
+        void get().syncProjectFiles();
+    };
+
+    return {
+        workspace: {
+            rootPath: null,
+            fileTree: [],
+            isWatching: false,
+            isLoading: false,
+        },
 
     openWorkspace: async () => {
         if (!window.electron) return;
@@ -36,15 +54,8 @@ export const createWorkspaceSlice: StateCreator<
                     openedFolder: result.path // For backward compatibility
                 }));
 
-                // Auto-refresh Git if it's a repo
-                if (get().refreshGit) {
-                    await get().refreshGit();
-                }
-
-                // Ensure side effects for opening a workspace are triggered
-                void window.electron.fileSystem.ensureProjectConfig(result.path);
-                void get().addRecent(result.path);
-                void get().syncProjectFiles();
+                // Apply common side effects
+                void applyWorkspaceSideEffects(result.path);
             } else {
                 set((state) => ({
                     workspace: { ...state.workspace, isLoading: false }
@@ -79,15 +90,8 @@ export const createWorkspaceSlice: StateCreator<
                     openedFolder: result.path
                 }));
 
-                // Auto-refresh Git if it's a repo
-                if (get().refreshGit) {
-                    await get().refreshGit();
-                }
-
-                // Ensure project config exists
-                void window.electron.fileSystem.ensureProjectConfig(result.path);
-                void get().addRecent(result.path);
-                void get().syncProjectFiles();
+                // Apply common side effects
+                void applyWorkspaceSideEffects(result.path);
 
             } else {
                 set((state) => ({
@@ -150,4 +154,5 @@ export const createWorkspaceSlice: StateCreator<
             workspace: { ...state.workspace, fileTree: tree }
         }));
     }
-});
+    };
+};

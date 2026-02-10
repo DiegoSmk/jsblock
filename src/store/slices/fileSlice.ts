@@ -223,9 +223,9 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
     addRecent: async (path) => {
         const { recentEnvironments } = get();
         if (window.electron) {
-            // Use the relaxed check which doesn't require prior authorization
+            // Use the relaxed check for recents to allow checking unauthorized paths
             // This is safe because we are just checking existence to add to a list
-            const exists = await window.electron.fileSystem.checkExists(path);
+            const exists = await window.electron.fileSystem.checkExists(path, 'recents');
             if (!exists) return; // Only return if it truly doesn't exist
         }
 
@@ -241,11 +241,8 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
             newRecents = [...recentEnvironments, { path, lastOpened: now }];
         }
 
-        // Sort by recency (newest lastOpened first)
-        // This is important because validRecents logic often expects sorted input or UI sorts it
-        // but keeping store sorted is good practice.
-        // Actually, let's just append/update. The UI usually sorts. 
-        // But let's check duplicates: we handled existingIndex correctly.
+        // Note: We append/update without explicit sorting.
+        // The UI layer handles sorting by lastOpened when displaying recent environments.
 
         localStorage.setItem('recentEnvironments', JSON.stringify(newRecents));
         set({ recentEnvironments: newRecents });
@@ -280,7 +277,7 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
 
         const paths = recentEnvironments.map((r) => r.path);
         try {
-            const existenceMap = await window.electron.fileSystem.checkPathsExists(paths);
+            const existenceMap = await window.electron.fileSystem.checkPathsExists(paths, 'recents');
 
             // If checking failed (empty map returned for non-empty input), abort to protect data
             if (Object.keys(existenceMap).length === 0 && paths.length > 0) {

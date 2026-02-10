@@ -240,13 +240,16 @@ ipcMain.handle('ensure-project-config', async (_event, folderPath: string) => {
     }
 });
 
-ipcMain.handle('check-paths-exists', async (_event, paths: string[]) => {
+ipcMain.handle('check-paths-exists', async (_event, paths: string[], caller?: string) => {
     try {
         const results: Record<string, boolean> = {};
         await Promise.all(paths.map(async (pathToCheck) => {
             try {
-                // We do NOT validate path here because we want to check existence
-                // of recent files that might not be authorized yet.
+                // Only allow unrestricted existence check for 'recents' caller
+                // For all other callers, validate path to prevent probing attacks
+                if (caller !== 'recents') {
+                    SecurityUtils.validatePath(pathToCheck);
+                }
                 await fs.promises.access(pathToCheck);
                 results[pathToCheck] = true;
             } catch {
@@ -358,9 +361,13 @@ ipcMain.handle('create-directory', async (_event, dirPath: string) => {
     }
 });
 
-ipcMain.handle('check-path-exists', (_event, pathToCheck: string) => {
+ipcMain.handle('check-path-exists', (_event, pathToCheck: string, caller?: string) => {
     try {
-        // We do not validate path for simple existence check
+        // Only allow unrestricted existence check for 'recents' caller
+        // For all other callers, validate path to prevent probing attacks
+        if (caller !== 'recents') {
+            SecurityUtils.validatePath(pathToCheck);
+        }
         return fs.existsSync(pathToCheck);
     } catch (err) {
         console.error('Error checking path existence:', err);
