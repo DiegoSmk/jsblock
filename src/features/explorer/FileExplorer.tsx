@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
+import { ignoreCancellation } from '../../store/utils/errors';
 import { RecentEnvironments } from './RecentEnvironments';
 import { FolderContextMenu } from './FolderContextMenu';
 import { TreeItem } from '../workspace/components/TreeItem';
@@ -86,10 +87,7 @@ export const FileExplorer: React.FC = () => {
     };
 
     const handleFileSelect = (path: string) => {
-        setSelectedFile(path).catch(err => {
-            if (err instanceof Error && err.message === 'cancel') return;
-            console.error('File selection failed', err);
-        });
+        setSelectedFile(path).catch(ignoreCancellation);
     };
 
     const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
@@ -122,7 +120,7 @@ export const FileExplorer: React.FC = () => {
 
                         if (selectedFile && isInternalPath(node.path, selectedFile)) {
                             setDirty(false);
-                            await setSelectedFile(null).catch(() => { /* Ignore cancellation on delete */ });
+                            await setSelectedFile(null).catch(ignoreCancellation);
                         }
 
                         addToast({ type: 'success', message: t('file_explorer.delete_success') ?? 'Item excluído com sucesso' });
@@ -166,7 +164,7 @@ export const FileExplorer: React.FC = () => {
             };
 
             if (selectedFile === oldPath) {
-                await setSelectedFile(newPath).catch(() => { /* Ignore cancellation on rename */ });
+                await setSelectedFile(newPath).catch(ignoreCancellation);
             } else if (selectedFile && isInternalPath(oldPath, selectedFile)) {
                 await setSelectedFile(selectedFile.replace(oldPath, newPath)).catch(() => { /* Ignore cancellation */ });
             }

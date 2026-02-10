@@ -33,38 +33,44 @@ interface GeneratorContext {
     standaloneCalls: Record<string, Expression>;
 }
 
-function isLiteral(node: Expression | Pattern | Statement): boolean {
+function isLiteral(node: object): boolean {
+    const type = (node as any).type;
     return (
-        node.type === 'NumericLiteral' ||
-        node.type === 'StringLiteral' ||
-        node.type === 'BooleanLiteral' ||
-        (node.type as string) === 'Literal'
+        type === 'NumericLiteral' ||
+        type === 'StringLiteral' ||
+        type === 'BooleanLiteral' ||
+        type === 'Literal'
     );
+}
+
+function isExpression(node: unknown): node is Expression {
+    return typeof node === 'object' && node !== null && 'type' in node &&
+        !['Statement', 'Declaration', 'Pattern'].some(t => ((node as { type: string }).type).includes(t));
 }
 
 function createLiteral(val: unknown): Expression {
     if (typeof val === 'number') {
-        return b.numericLiteral(val) as unknown as Expression;
+        return b.numericLiteral(val) as Expression;
     } else if (typeof val === 'boolean') {
-        return b.booleanLiteral(val) as unknown as Expression;
+        return b.booleanLiteral(val) as Expression;
     } else if (typeof val === 'string') {
         if (!isNaN(Number(val)) && val.trim() !== '') {
-            return b.numericLiteral(Number(val)) as unknown as Expression;
+            return b.numericLiteral(Number(val)) as Expression;
         } else if (val === 'true' || val === 'false') {
-            return b.booleanLiteral(val === 'true') as unknown as Expression;
+            return b.booleanLiteral(val === 'true') as Expression;
         } else {
-            return b.stringLiteral(val) as unknown as Expression;
+            return b.stringLiteral(val) as Expression;
         }
     }
-    return b.identifier('undefined') as unknown as Expression;
+    return b.identifier('undefined') as Expression;
 }
 
 function createExpression(op: string, left: Expression | Pattern, right: Expression): Expression {
     const isLogical = op === '&&' || op === '||' || op === '??';
     if (isLogical) {
-        return b.logicalExpression(op as any, left as any, right as any) as unknown as Expression;
+        return b.logicalExpression(op as any, left as any, right as any) as Expression;
     }
-    return b.binaryExpression(op as any, left as any, right as any) as unknown as Expression;
+    return b.binaryExpression(op as any, left as any, right as any) as Expression;
 }
 
 export const generateCodeFromFlow = (
@@ -238,7 +244,7 @@ function pruneASTBody(ctx: GeneratorContext) {
 
 function visitFlowAST(ctx: GeneratorContext) {
     types.visit(ctx.ast, {
-        visitFunctionDeclaration(path: any) {
+        visitFunctionDeclaration(this: { traverse: (p: any) => void }, path: any) {
             const funcDecl = path.node;
             if (!funcDecl.id) {
                 this.traverse(path);
@@ -255,7 +261,7 @@ function visitFlowAST(ctx: GeneratorContext) {
             return false;
         },
 
-        visitIfStatement(path: any) {
+        visitIfStatement(this: { traverse: (p: any) => void }, path: any) {
             const ifStmt = path.node as IfStatement;
             const index = ctx.body.indexOf(ifStmt);
             const ifNodeId = `if-${index}`;
@@ -265,24 +271,24 @@ function visitFlowAST(ctx: GeneratorContext) {
                 const conditionSourceId = ctx.connections[ifNodeId]?.condition;
                 if (conditionSourceId) {
                     if (ctx.varNodeMap[conditionSourceId]) {
-                        ifStmt.test = b.identifier(ctx.varNodeMap[conditionSourceId]) as unknown as Expression;
+                        ifStmt.test = b.identifier(ctx.varNodeMap[conditionSourceId]) as Expression;
                     } else if (conditionSourceId.startsWith('logic-')) {
                         const logicNode = ctx.nodes.find(n => n.id === conditionSourceId);
                         if (logicNode) {
                             const op = logicNode.data.op as string;
-                            let left: Expression = b.identifier('undefined') as unknown as Expression;
-                            let right: Expression = b.identifier('undefined') as unknown as Expression;
+                            let left: Expression = b.identifier('undefined') as Expression;
+                            let right: Expression = b.identifier('undefined') as Expression;
 
                             const leftSource = ctx.connections[logicNode.id]?.['input-a'];
                             const rightSource = ctx.connections[logicNode.id]?.['input-b'];
 
                             if (leftSource) {
-                                if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as unknown as Expression;
+                                if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as Expression;
                                 else if (ctx.varValueMap[leftSource] !== undefined) left = createLiteral(ctx.varValueMap[leftSource]);
                             }
 
                             if (rightSource) {
-                                if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as unknown as Expression;
+                                if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as Expression;
                                 else if (ctx.varValueMap[rightSource] !== undefined) right = createLiteral(ctx.varValueMap[rightSource]);
                             }
 
@@ -297,7 +303,7 @@ function visitFlowAST(ctx: GeneratorContext) {
             return false;
         },
 
-        visitSwitchStatement(path: any) {
+        visitSwitchStatement(this: { traverse: (p: any) => void }, path: any) {
             const switchStmt = path.node as SwitchStatement;
             const index = ctx.body.indexOf(switchStmt);
             const nodeId = `switch-${index}`;
@@ -307,7 +313,7 @@ function visitFlowAST(ctx: GeneratorContext) {
                 const discSourceId = ctx.connections[nodeId]?.discriminant;
                 if (discSourceId) {
                     if (ctx.varNodeMap[discSourceId]) {
-                        switchStmt.discriminant = b.identifier(ctx.varNodeMap[discSourceId]) as unknown as Expression;
+                        switchStmt.discriminant = b.identifier(ctx.varNodeMap[discSourceId]) as Expression;
                     } else if (ctx.varValueMap[discSourceId] !== undefined) {
                         switchStmt.discriminant = createLiteral(ctx.varValueMap[discSourceId]);
                     }
@@ -317,7 +323,7 @@ function visitFlowAST(ctx: GeneratorContext) {
             return false;
         },
 
-        visitWhileStatement(path: any) {
+        visitWhileStatement(this: { traverse: (p: any) => void }, path: any) {
             const whileStmt = path.node as WhileStatement;
             const index = ctx.body.indexOf(whileStmt);
             const nodeId = `while-${index}`;
@@ -327,24 +333,24 @@ function visitFlowAST(ctx: GeneratorContext) {
                 const conditionSourceId = ctx.connections[nodeId]?.condition;
                 if (conditionSourceId) {
                     if (ctx.varNodeMap[conditionSourceId]) {
-                        whileStmt.test = b.identifier(ctx.varNodeMap[conditionSourceId]) as unknown as Expression;
+                        whileStmt.test = b.identifier(ctx.varNodeMap[conditionSourceId]) as Expression;
                     } else if (conditionSourceId.startsWith('logic-')) {
                         const logicNode = ctx.nodes.find(n => n.id === conditionSourceId);
                         if (logicNode) {
                             const op = logicNode.data.op as string;
-                            let left: Expression = b.identifier('undefined') as unknown as Expression;
-                            let right: Expression = b.identifier('undefined') as unknown as Expression;
+                            let left: Expression = b.identifier('undefined') as Expression;
+                            let right: Expression = b.identifier('undefined') as Expression;
 
                             const leftSource = ctx.connections[logicNode.id]?.['input-a'];
                             const rightSource = ctx.connections[logicNode.id]?.['input-b'];
 
                             if (leftSource) {
-                                if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as unknown as Expression;
+                                if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as Expression;
                                 else if (ctx.varValueMap[leftSource] !== undefined) left = createLiteral(ctx.varValueMap[leftSource]);
                             }
 
                             if (rightSource) {
-                                if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as unknown as Expression;
+                                if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as Expression;
                                 else if (ctx.varValueMap[rightSource] !== undefined) right = createLiteral(ctx.varValueMap[rightSource]);
                             }
 
@@ -358,7 +364,7 @@ function visitFlowAST(ctx: GeneratorContext) {
             return false;
         },
 
-        visitForStatement(path: any) {
+        visitForStatement(this: { traverse: (p: any) => void }, path: any) {
             const forStmt = path.node as ForStatement;
             const index = ctx.body.indexOf(forStmt);
             const nodeId = `for-${index}`;
@@ -384,23 +390,23 @@ function visitFlowAST(ctx: GeneratorContext) {
                 const testSourceId = ctx.connections[nodeId]?.test;
                 if (testSourceId) {
                     if (ctx.varNodeMap[testSourceId]) {
-                        forStmt.test = b.identifier(ctx.varNodeMap[testSourceId]) as unknown as Expression;
+                        forStmt.test = b.identifier(ctx.varNodeMap[testSourceId]) as Expression;
                     } else if (testSourceId.startsWith('logic-')) {
                         const logicNode = ctx.nodes.find(n => n.id === testSourceId);
                         if (logicNode) {
                             const op = logicNode.data.op as string;
-                            let left: Expression = b.identifier('undefined') as unknown as Expression;
-                            let right: Expression = b.identifier('undefined') as unknown as Expression;
+                            let left: Expression = b.identifier('undefined') as Expression;
+                            let right: Expression = b.identifier('undefined') as Expression;
                             const leftSource = ctx.connections[logicNode.id]?.['input-a'];
                             const rightSource = ctx.connections[logicNode.id]?.['input-b'];
 
                             if (leftSource) {
-                                if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as unknown as Expression;
+                                if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as Expression;
                                 else if (ctx.varValueMap[leftSource] !== undefined) left = createLiteral(ctx.varValueMap[leftSource]);
                             }
 
                             if (rightSource) {
-                                if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as unknown as Expression;
+                                if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as Expression;
                                 else if (ctx.varValueMap[rightSource] !== undefined) right = createLiteral(ctx.varValueMap[rightSource]);
                             }
 
@@ -414,7 +420,7 @@ function visitFlowAST(ctx: GeneratorContext) {
             return false;
         },
 
-        visitVariableDeclaration(path: any) {
+        visitVariableDeclaration(this: { traverse: (p: any) => void }, path: any) {
             const varDecl = path.node as VariableDeclaration;
             const decl = varDecl.declarations[0];
 
@@ -452,19 +458,19 @@ function visitFlowAST(ctx: GeneratorContext) {
                 const logicNode = ctx.nodes.find(n => n.id === logicSourceId);
                 if (logicNode) {
                     const op = logicNode.data.op as string;
-                    let left: Expression = b.identifier('undefined') as unknown as Expression;
-                    let right: Expression = b.identifier('undefined') as unknown as Expression;
+                    let left: Expression = b.identifier('undefined') as Expression;
+                    let right: Expression = b.identifier('undefined') as Expression;
 
                     const leftSource = ctx.connections[logicNode.id]?.['input-a'];
                     const rightSource = ctx.connections[logicNode.id]?.['input-b'];
 
                     if (leftSource) {
-                        if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as unknown as Expression;
+                        if (ctx.varNodeMap[leftSource]) left = b.identifier(ctx.varNodeMap[leftSource]) as Expression;
                         else if (ctx.varValueMap[leftSource] !== undefined) left = createLiteral(ctx.varValueMap[leftSource]);
                     }
 
                     if (rightSource) {
-                        if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as unknown as Expression;
+                        if (ctx.varNodeMap[rightSource]) right = b.identifier(ctx.varNodeMap[rightSource]) as Expression;
                         else if (ctx.varValueMap[rightSource] !== undefined) right = createLiteral(ctx.varValueMap[rightSource]);
                     }
 
@@ -483,7 +489,7 @@ function visitFlowAST(ctx: GeneratorContext) {
             return false;
         },
 
-        visitExpressionStatement(path: any) {
+        visitExpressionStatement(this: { traverse: (p: any) => void }, path: any) {
             const exprStmt = path.node as ExpressionStatement;
             const index = ctx.body.indexOf(exprStmt);
             if (exprStmt.expression.type === 'CallExpression') {
@@ -492,7 +498,8 @@ function visitFlowAST(ctx: GeneratorContext) {
 
                 const node = ctx.nodes.find(n => n.id === callNodeId);
                 if (node && node.data.isAwait) {
-                    exprStmt.expression = b.awaitExpression(exprStmt.expression as any) as unknown as Expression;
+                    // Cast to any to bridge @babel/types and recast (ast-types) incompatibility
+                    exprStmt.expression = b.awaitExpression(exprStmt.expression as any) as Expression;
                 }
             } else if (exprStmt.expression.type === 'AwaitExpression' && exprStmt.expression.argument.type === 'CallExpression') {
                 const callNodeId = `call-exec-${index}`;
@@ -508,21 +515,23 @@ function visitFlowAST(ctx: GeneratorContext) {
 
                 if (node && node.data.op) {
                     const op = node.data.op as string;
-                    let left = exprStmt.expression.left;
-                    let right = exprStmt.expression.right;
+                    const left = exprStmt.expression.left;
+                    const right = exprStmt.expression.right;
 
                     const updateOperand = (handleId: 'input-a' | 'input-b', current: Expression) => {
                         const sourceId = ctx.connections[logicNodeId]?.[handleId];
                         if (sourceId) {
-                            if (ctx.varNodeMap[sourceId]) return b.identifier(ctx.varNodeMap[sourceId]) as unknown as Expression;
+                            if (ctx.varNodeMap[sourceId]) return b.identifier(ctx.varNodeMap[sourceId]) as Expression;
                             if (ctx.varValueMap[sourceId] !== undefined) return createLiteral(ctx.varValueMap[sourceId]);
                         }
                         return current;
                     };
 
-                    left = updateOperand('input-a', left as Expression) as any;
-                    right = updateOperand('input-b', right as Expression) as any;
-                    exprStmt.expression = createExpression(op, left as Expression, right as Expression);
+                    if (isExpression(left) && isExpression(right)) {
+                        const newLeft = updateOperand('input-a', left);
+                        const newRight = updateOperand('input-b', right);
+                        exprStmt.expression = createExpression(op, newLeft, newRight);
+                    }
                 }
             }
             return false;
@@ -562,7 +571,7 @@ function updateCallArguments(
 
         if (sourceId) {
             if (ctx.varNodeMap[sourceId]) {
-                newArgValue = b.identifier(ctx.varNodeMap[sourceId]) as unknown as Expression;
+                newArgValue = b.identifier(ctx.varNodeMap[sourceId]) as Expression;
             } else if (ctx.varValueMap[sourceId] !== undefined) {
                 newArgValue = createLiteral(ctx.varValueMap[sourceId]);
             } else if (ctx.standaloneCalls?.[sourceId]) {
@@ -583,13 +592,13 @@ function updateCallArguments(
                 const nestedHandleId = `arg-${i}-nested-arg-${j}`;
                 const nestedSourceId = nodeConns[nestedHandleId];
                 if (nestedSourceId && ctx.varNodeMap[nestedSourceId]) {
-                    (nestedArg.arguments as any)[j] = b.identifier(ctx.varNodeMap[nestedSourceId]) as unknown as Expression;
+                    (nestedArg.arguments as any)[j] = b.identifier(ctx.varNodeMap[nestedSourceId]) as Expression;
                 } else if (nestedSourceId && ctx.varValueMap[nestedSourceId] !== undefined) {
                     (nestedArg.arguments as any)[j] = createLiteral(ctx.varValueMap[nestedSourceId]);
                 }
             });
         } else if (i >= currentArgCount) {
-            (callExpr.arguments as any)[i] = b.identifier('undefined') as unknown as Expression;
+            (callExpr.arguments as any)[i] = b.identifier('undefined') as Expression;
         }
     }
 }

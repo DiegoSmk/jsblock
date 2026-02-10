@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { useStore } from '../useStore';
@@ -10,7 +10,6 @@ describe('File Slice & Store Optimizations', () => {
         vi.useFakeTimers();
 
         // Mock Electron API
-        /* eslint-disable @typescript-eslint/no-explicit-any */
         (window as any).electron = {
             fileSystem: {
                 readFile: vi.fn(),
@@ -22,7 +21,6 @@ describe('File Slice & Store Optimizations', () => {
             windowMaximize: vi.fn(),
             windowClose: vi.fn(),
         };
-        /* eslint-enable @typescript-eslint/no-explicit-any */
 
         // Reset store state
         useStore.setState({
@@ -38,7 +36,7 @@ describe('File Slice & Store Optimizations', () => {
 
         // Flush any triggers from the reset itself
         vi.runAllTimers();
-        (window.electron.mcpSyncState as Mock).mockClear();
+        (window as any).electron.mcpSyncState.mockClear();
     });
 
     it('should load a .block file and correctly populate all fields including index', async () => {
@@ -54,7 +52,7 @@ describe('File Slice & Store Optimizations', () => {
             code: '// Some visual code'
         };
 
-        (window.electron.fileSystem.readFile as Mock).mockResolvedValue(JSON.stringify(mockBlock));
+        ((window as any).electron.fileSystem.readFile as Mock).mockResolvedValue(JSON.stringify(mockBlock));
 
         await useStore.getState().loadContentForFile('test.block');
 
@@ -72,7 +70,7 @@ describe('File Slice & Store Optimizations', () => {
     });
 
     it('should handle fallback for invalid JSON in .block file', async () => {
-        (window.electron.fileSystem.readFile as Mock).mockResolvedValue('{{{ invalid json');
+        ((window as any).electron.fileSystem.readFile as Mock).mockResolvedValue('{{{ invalid json');
 
         await useStore.getState().loadContentForFile('bad.block');
 
@@ -98,7 +96,7 @@ describe('File Slice & Store Optimizations', () => {
         const writeFileCall = (window.electron.fileSystem.writeFile as Mock).mock.calls[0];
         expect(writeFileCall[0]).toBe('output.block');
 
-        const savedData = JSON.parse(writeFileCall[1] as string) as { nodes: any[]; edges: any[]; viewport: any; code: string };
+        const savedData = JSON.parse(writeFileCall[1] as string) as { nodes: unknown[]; edges: unknown[]; viewport: unknown; code: string };
         expect(savedData.nodes).toHaveLength(1);
         expect(savedData.viewport).toEqual({ x: -10, y: 20, zoom: 0.5 });
         expect(savedData.code).toBe('const x = 1;');
@@ -120,14 +118,14 @@ describe('File Slice & Store Optimizations', () => {
         // Fast-forward another 600ms (total > 1000ms)
         vi.advanceTimersByTime(600);
         expect((window as any).electron.mcpSyncState).toHaveBeenCalledTimes(1);
-        const syncStateArg = ((window as any).electron.mcpSyncState as Mock).mock.calls[0][0] as { code: string };
+        const syncStateArg = (window as any).electron.mcpSyncState.mock.calls[0][0] as { code: string };
         expect(syncStateArg.code).toBe('char 3');
     });
 
     it('should only trigger MCP sync for relevant state changes', () => {
         // This assumes subscribeWithSelector and shallow equality are working
         // Reset call count
-        ((window as any).electron.mcpSyncState as Mock).mockClear();
+        (window as any).electron.mcpSyncState.mockClear();
 
         // Change something irrelevant (like benchmark records or theme - if not in selector)
         // Wait, theme IS in AppState but IS NOT in our MCP selector.

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
@@ -19,8 +19,8 @@ describe('Store Integration (no mocks)', () => {
             const aa = api as unknown as any;
 
             return {
-                ...createFlowSlice(ss as any, gg as any, aa as any),
-                ...createFileSlice(ss as any, gg as any, aa as any),
+                ...createFlowSlice(ss as any, gg as any, aa),
+                ...createFileSlice(ss as any, gg as any, aa),
                 // Minimal stubs for required actions
                 runExecution: vi.fn(),
                 runExecutionDebounced: vi.fn(),

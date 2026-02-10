@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store/useStore';
+import { ignoreCancellation } from '../store/utils/errors';
 import { DESIGN_TOKENS } from '../constants/design';
 
 
@@ -198,10 +199,7 @@ const Breadcrumbs: React.FC<{
                                 // p will be name of selected file
                                 // We need to construct full path
                                 // dirToRead + '/' + p
-                                void setSelectedFile(`${dirToRead}/${p}`).catch(err => {
-                                    if (err instanceof Error && err.message === 'cancel') return;
-                                    console.error('Breadcrumb selection failed', err);
-                                });
+                                void setSelectedFile(`${dirToRead}/${p}`).catch(ignoreCancellation);
                             }}
                             isLast={isLast}
                         />
@@ -476,7 +474,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ isDark }) => {
                                     variant: 'warning',
                                     onConfirm: () => {
                                         setWorkspaceRoot(null);
-                                        void setSelectedFile(null).catch(() => { });
+                                        void setSelectedFile(null).catch(ignoreCancellation);
                                         setConfirmationModal(null);
                                     },
                                     onCancel: () => setConfirmationModal(null)

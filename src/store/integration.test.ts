@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createStore } from 'zustand/vanilla';
 import type { StoreApi } from 'zustand/vanilla';
@@ -12,13 +12,13 @@ import type { Edge } from '@xyflow/react';
 vi.mock('../features/editor/logic/layout', () => ({
     getLayoutedElements: (nodes: AppNode[], edges: Edge[]) => ({
         nodes: nodes.map(n => ({ ...n, position: { x: n.position.x + 10, y: n.position.y + 10 } })),
-        edges: [...edges] // Return shallow copy to simulate processing
+        edges: [...edges]
     })
 }));
 
 // Mock other dependencies
 vi.mock('../features/editor/logic/CodeParser', () => ({
-    parseCodeToFlowAsync: async () => ({ nodes: [], edges: [] })
+    parseCodeToFlowAsync: () => Promise.resolve({ nodes: [], edges: [] })
 }));
 vi.mock('../features/editor/logic/CodeGenerator', () => ({
     generateCodeFromFlow: () => ''
@@ -28,15 +28,16 @@ describe('Store Integration & Edge Index Consistency', () => {
     let store: StoreApi<AppState>;
 
     beforeEach(() => {
+        // Create a real store using the slices
         store = createStore<AppState>((set, get, api) => {
-            const ss = set as unknown as (partial: Partial<AppState>) => void;
-            const gg = get as unknown as () => AppState;
-            const aa = api as unknown as any;
+            // We use unknown cast as a bridge, but we define the expected type
+            const ss = set as (partial: AppState | Partial<AppState> | ((state: AppState) => AppState | Partial<AppState>), replace?: boolean) => void;
+            const gg = get as () => AppState;
 
             return {
-                ...createFlowSlice(ss as any, gg as any, aa as any),
-                ...createFileSlice(ss as any, gg as any, aa as any),
-                // Mock other slices minimal requirements
+                ...createFlowSlice(ss as any, gg as any, api),
+                ...createFileSlice(ss as any, gg as any, api),
+                // Mock minimal requirements for other slices
                 runExecution: vi.fn(),
                 runExecutionDebounced: vi.fn(),
                 checkTaskRecurse: vi.fn(),
@@ -44,7 +45,25 @@ describe('Store Integration & Edge Index Consistency', () => {
                 setConfirmationModal: vi.fn(),
                 setCode: vi.fn(),
                 addToast: vi.fn(),
-            } as unknown as AppState;
+                toggleSidebar: vi.fn(),
+                setSidebarTab: vi.fn(),
+                updateSettingsConfig: vi.fn(),
+                theme: 'dark' as const,
+                showCode: true,
+                showCanvas: true,
+                activeSidebarTab: 'files',
+                confirmationModal: null,
+                git: { activeView: 'status' },
+                modal: { isOpen: false, type: 'settings' },
+                selectedPluginId: null,
+                settings: { showAppBorder: true },
+                projectFiles: {},
+                livePreviewEnabled: false,
+                isDirty: false,
+                setSelectedFile: vi.fn(),
+                setLivePreviewEnabled: vi.fn(),
+                toggleCanvas: vi.fn(),
+            } as any; // Cast as any at the end because we don't implement full AppState
         });
     });
 
