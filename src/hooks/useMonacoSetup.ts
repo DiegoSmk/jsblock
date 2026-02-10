@@ -32,9 +32,6 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
     const [editorInstance, setEditorInstance] = useState<Monaco.editor.IStandaloneCodeEditor | null>(null);
     const createdModelsRef = useRef<Set<string>>(new Set());
 
-    // Store latest code in ref for use in effects
-    const codeRef = useRef<string | null>(null);
-    useEffect(() => { codeRef.current = code; }, [code]);
 
     // 1. Configure Monaco once when it's ready
     useEffect(() => {
@@ -55,6 +52,16 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
         /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
     }, [monaco]);
 
+    // Helper to detect language from extension
+    const getLanguage = (filePath: string) => {
+        if (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) return 'typescript';
+        if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) return 'javascript';
+        if (filePath.endsWith('.json') || filePath.endsWith('.block')) return 'json';
+        if (filePath.endsWith('.css')) return 'css';
+        if (filePath.endsWith('.html')) return 'html';
+        return 'typescript'; // Fallback to TS for JS-family files
+    };
+
     // 2. Sync project files (cross-file support)
     useEffect(() => {
         if (!monaco || Object.keys(projectFiles).length === 0) return;
@@ -66,7 +73,7 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
             const uri = m.Uri.file(filePath);
             const model = m.editor.getModel(uri);
             if (!model) {
-                m.editor.createModel(content, 'typescript', uri);
+                m.editor.createModel(content, getLanguage(filePath), uri);
                 createdModelsRef.current.add(filePath);
             } else if (filePath !== selectedFile) {
                 // Only update if content actually differs to avoid canceling internal monaco operations
@@ -91,9 +98,9 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
 
     }, [monaco, projectFiles, selectedFile]);
 
-    // 3. Sync main editor code with Monaco model when file changes
+    // 3. Sync main editor code with Monaco model
     useEffect(() => {
-        if (!monaco || !selectedFile || !editorInstance || codeRef.current === null) return;
+        if (!monaco || !selectedFile || !editorInstance || code === null) return;
 
         /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
         const m = monaco as any;
@@ -102,18 +109,22 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
 
         // If no model exists for this file, create one
         if (!model) {
-            model = m.editor.createModel(codeRef.current, 'typescript', uri);
+            model = m.editor.createModel(code, getLanguage(selectedFile), uri);
         }
 
-        // Force the editor to use the correct model and value
-        editorInstance.setModel(model);
+        // Ensure the editor is using this model
+        if (editorInstance.getModel() !== model) {
+            editorInstance.setModel(model);
+        }
+
+        // Sync content if it differs (e.g., change from visual canvas)
         const currentValue = model.getValue();
-        if (currentValue !== codeRef.current) {
-            model.setValue(codeRef.current);
+        if (currentValue !== code) {
+            model.setValue(code);
         }
         /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 
-    }, [monaco, selectedFile, editorInstance]);
+    }, [monaco, selectedFile, editorInstance, code]);
 
     const handleEditorDidMount = useCallback((editor: Monaco.editor.IStandaloneCodeEditor, m: typeof Monaco) => {
         setEditorInstance(editor);
