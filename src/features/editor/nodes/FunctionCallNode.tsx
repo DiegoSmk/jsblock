@@ -1,19 +1,21 @@
 import { memo, useCallback } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { useStore } from '../../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Hash, Plus, ExternalLink, Activity, Clock } from 'lucide-react';
 import type { AppNodeData } from '../types';
+import type { AppState } from '../../../types/store';
 import type { Edge } from '@xyflow/react';
 
 export const FunctionCallNode = memo(({ id, data }: { id: string, data: AppNodeData }) => {
-    const theme = useStore((state) => state.theme);
-    const runtimeValues = useStore((state) => state.runtimeValues);
-    const edges = useStore(useCallback(state =>
-        state.getEdgesForNode(id).filter(e => e.target === id),
-        [id]));
-    const addFunctionCall = useStore((state) => state.addFunctionCall);
-    const navigateInto = useStore((state) => state.navigateInto);
-    const updateNodeData = useStore((state) => state.updateNodeData);
+    const theme = useStore((state: AppState) => state.theme);
+    const runtimeValues = useStore((state: AppState) => state.runtimeValues);
+    const edges = useStore(useShallow((state: AppState) =>
+        state.edges.filter(e => e.target === id)
+    ));
+    const addFunctionCall = useStore((state: AppState) => state.addFunctionCall);
+    const navigateInto = useStore((state: AppState) => state.navigateInto);
+    const updateNodeData = useStore((state: AppState) => state.updateNodeData);
 
     const handleEnterScope = () => {
         const scope = data.scopes?.body;

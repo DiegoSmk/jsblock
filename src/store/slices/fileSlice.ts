@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
-import type { AppState, RecentEnvironment } from '../../types/store';
+import type { Edge } from '@xyflow/react';
+import type { AppState, RecentEnvironment, AppNode } from '../../types/store';
 
 export interface FileSlice {
     openedFolder: string | null;
@@ -106,16 +107,25 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
 
             if (isBlock) {
                 try {
-                    const json = JSON.parse(content) as { nodes?: never[], edges?: never[], code?: string, viewport?: unknown };
+                    interface BlockData {
+                        nodes?: AppNode[];
+                        edges?: unknown[];
+                        viewport?: { x: number; y: number; zoom: number };
+                        code?: string;
+                    }
+                    const json = JSON.parse(content) as BlockData;
                     set({
-                        nodes: Array.isArray(json.nodes) ? json.nodes : [],
-                        edges: Array.isArray(json.edges) ? json.edges : [],
-                        code: ''
+                        nodes: json.nodes ?? [],
+                        edges: (json.edges ?? []) as Edge[],
+                        viewport: json.viewport ?? { x: 0, y: 0, zoom: 1 },
+                        code: json.code ?? ''
                     });
                     set({ isBlockFile: true, isDirty: false });
                 } catch (e) {
                     console.error('Failed to parse block file', e);
                     get().addToast({ type: 'error', message: 'Erro ao abrir arquivo de bloco' });
+                    // Safe fallback
+                    set({ nodes: [], edges: [], isBlockFile: true, isDirty: false });
                 }
             } else {
                 get().setCode(content, false, false);
@@ -127,7 +137,7 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
     },
 
     saveFile: async () => {
-        const { selectedFile, code, nodes, edges, isBlockFile } = get();
+        const { selectedFile, code, nodes, edges, isBlockFile, viewport } = get();
         if (!selectedFile || !window.electron) return;
         try {
             let content = code;
@@ -135,7 +145,8 @@ export const createFileSlice: StateCreator<AppState, [], [], FileSlice> = (set, 
                 const json = {
                     nodes,
                     edges,
-                    viewport: { x: 0, y: 0, zoom: 1 } // Placeholder, could get actual viewport
+                    viewport,
+                    code
                 };
                 content = JSON.stringify(json, null, 2);
             }

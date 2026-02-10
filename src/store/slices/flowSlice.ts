@@ -16,6 +16,7 @@ export interface FlowSlice {
     edges: Edge[];
     navigationStack: { id: string, label: string }[];
     activeScopeId: string;
+    viewport: { x: number, y: number, zoom: number };
     saveTimeout: ReturnType<typeof setTimeout> | null;
 
     setCode: (code: string, shouldSetDirty?: boolean, debounce?: boolean) => void;
@@ -26,6 +27,7 @@ export interface FlowSlice {
     forceLayout: () => void;
     updateNodeData: (nodeId: string, newData: Partial<AppNodeData>) => void;
     updateEdge: (edgeId: string, updates: Partial<Edge>) => void;
+    onViewportChange: (viewport: { x: number, y: number, zoom: number }) => void;
     getEdgesForNode: (nodeId: string) => Edge[];
 }
 
@@ -35,6 +37,7 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
     edges: [],
     navigationStack: [{ id: 'root', label: 'Main' }],
     activeScopeId: 'root',
+    viewport: { x: 0, y: 0, zoom: 1 },
     saveTimeout: null,
 
     setCode: (code: string, shouldSetDirty = true, debounce = true) => {
@@ -250,5 +253,18 @@ export const createFlowSlice: StateCreator<AppState, [], [], FlowSlice> = (set, 
 
     getEdgesForNode: (nodeId: string) => {
         return get().edges.filter(e => e.source === nodeId || e.target === nodeId);
+    },
+
+    onViewportChange: (viewport) => {
+        set({ viewport });
+        if (get().isBlockFile && get().autoSave) {
+            if (get().saveTimeout) {
+                clearTimeout(get().saveTimeout as unknown as number);
+            }
+            const timeout = setTimeout(() => {
+                void get().saveFile();
+            }, 2000); // Wait longer for viewport
+            set({ saveTimeout: timeout as unknown as ReturnType<typeof setTimeout> });
+        }
     }
 });

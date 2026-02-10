@@ -78,7 +78,8 @@ export function FlowContent() {
     openModal,
     saveFile,
     removeEdges,
-    updateEdge
+    updateEdge,
+    onViewportChange
   } = useStore(useShallow(state => ({
     nodes: state.nodes,
     edges: state.edges,
@@ -91,7 +92,8 @@ export function FlowContent() {
     openModal: state.openModal,
     updateNodeData: state.updateNodeData,
     updateEdge: state.updateEdge,
-    removeEdges: state.removeEdges
+    removeEdges: state.removeEdges,
+    onViewportChange: state.onViewportChange
   })));
 
   useEffect(() => {
@@ -264,14 +266,32 @@ export function FlowContent() {
     return { filteredNodes: finalFilteredNodes, filteredEdges };
   }, [nodes, edges, activeScopeId]);
 
+  const { setViewport } = useReactFlow();
+  const { viewport, selectedFile, isBlockFile } = useStore(useShallow(state => ({
+    viewport: state.viewport,
+    selectedFile: state.selectedFile,
+    isBlockFile: state.isBlockFile
+  })));
+
+  const lastLoadedFileRef = React.useRef<string | null>(null);
+
+  // Viewport restoration when file changes
   useEffect(() => {
-    if (filteredNodes.length > 0) {
+    if (isBlockFile && selectedFile !== lastLoadedFileRef.current) {
+      void setViewport(viewport, { duration: 400 });
+      lastLoadedFileRef.current = selectedFile;
+    }
+  }, [selectedFile, isBlockFile, viewport, setViewport]);
+
+  useEffect(() => {
+    // Only fitView automatically for JS files (not .block files which have their own viewport)
+    if (filteredNodes.length > 0 && !isBlockFile) {
       const timer = setTimeout(() => {
-        fitView({ padding: 0.2, duration: 400, includeHiddenNodes: false }).catch(console.error);
+        void fitView({ padding: 0.2, duration: 400, includeHiddenNodes: false });
       }, 50);
       return () => clearTimeout(timer);
     }
-  }, [activeScopeId, fitView, filteredNodes.length]);
+  }, [activeScopeId, fitView, filteredNodes.length, isBlockFile]);
 
   // Determine if the currently selected edge (in context menu) has a label/comment
   const currentEdgeLabel = edgeMenu ? edges.find(e => e.id === edgeMenu.id)?.label : null;
@@ -291,6 +311,7 @@ export function FlowContent() {
         edges={filteredEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onViewportChange={onViewportChange}
         onConnect={onConnect}
         onEdgeClick={onEdgeClick}
         onPaneClick={onPaneClick}
