@@ -110,7 +110,9 @@ function App() {
     }
   }, []);
 
-  // Extracted hooks
+  // CRITICAL: These hooks are MANDATORY for app functionality
+  // - useGlobalEventListeners: Storage sync, keyboard shortcuts, rejection handler
+  // - useMonacoSetup: Monaco configuration, project file sync, editor decorations
   useGlobalEventListeners();
   const { handleEditorDidMount } = useMonacoSetup({ projectFiles, selectedFile, saveFile });
 

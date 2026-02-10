@@ -4,6 +4,14 @@ import { useStore } from '../store/useStore';
 /**
  * Global event listeners extracted from App.tsx.
  * Handles storage sync, keyboard shortcuts, and unhandled promise rejections.
+ * 
+ * **CRITICAL**: This hook is MANDATORY for app functionality. Do not remove from App.tsx.
+ * - Storage sync: Enables cross-tab settings synchronization
+ * - Keyboard shortcuts: Ctrl+S (save), Ctrl+Shift+F (search)
+ * - Rejection handler: Silences harmless Monaco cancelation errors
+ * 
+ * Note: Uses `useStore.getState()` directly (not reactive hooks) to access store methods.
+ * This is intentional to avoid circular dependencies and keep listeners stable.
  */
 export const useGlobalEventListeners = () => {
     // Storage sync: listen for cross-tab settings changes

@@ -15,6 +15,16 @@ interface UseMonacoSetupOptions {
 /**
  * Monaco editor configuration and lifecycle management extracted from App.tsx.
  * Handles compiler options, project file sync, editor mount, and decoration hooks.
+ * 
+ * **CRITICAL**: This hook is MANDATORY when using Monaco editor - it configures TypeScript
+ * compiler options, syncs project files for IntelliSense, and applies runtime decorations.
+ * 
+ * Note: Uses `any` for Monaco API due to @monaco-editor/react type limitations.
+ * This is necessary to access internal TypeScript language service APIs.
+ * 
+ * @returns Object containing:
+ * - `handleEditorDidMount`: Callback for Monaco's onMount event
+ * - `editorInstance`: The current editor instance (null until mounted)
  */
 export const useMonacoSetup = ({ projectFiles, selectedFile, saveFile }: UseMonacoSetupOptions) => {
     const monaco = useMonaco();
@@ -74,5 +84,5 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, saveFile }: UseMona
     useMonacoBenchmarks(editorInstance);
     useGitGutter(editorInstance);
 
-    return { handleEditorDidMount };
+    return { handleEditorDidMount, editorInstance };
 };
