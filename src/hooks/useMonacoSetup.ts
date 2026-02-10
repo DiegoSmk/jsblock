@@ -59,8 +59,10 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
         if (filePath.endsWith('.json') || filePath.endsWith('.block')) return 'json';
         if (filePath.endsWith('.css')) return 'css';
         if (filePath.endsWith('.html')) return 'html';
-        return 'typescript'; // Fallback to TS for JS-family files
+        return 'plaintext'; // Fallback for unknown extensions
     };
+
+    const selectedLanguage = selectedFile ? getLanguage(selectedFile) : 'plaintext';
 
     // 2. Sync project files (cross-file support)
     useEffect(() => {
@@ -105,12 +107,10 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
         /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
         const m = monaco as any;
         const uri = m.Uri.file(selectedFile);
-        let model = m.editor.getModel(uri);
+        let model = m.editor.getModel(uri) as Monaco.editor.ITextModel | null;
 
         // If no model exists for this file, create one
-        if (!model) {
-            model = m.editor.createModel(code, getLanguage(selectedFile), uri);
-        }
+        model ??= m.editor.createModel(code, selectedLanguage, uri) as Monaco.editor.ITextModel;
 
         // Ensure the editor is using this model
         if (editorInstance.getModel() !== model) {
@@ -124,7 +124,7 @@ export const useMonacoSetup = ({ projectFiles, selectedFile, code, saveFile }: U
         }
         /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 
-    }, [monaco, selectedFile, editorInstance, code]);
+    }, [monaco, selectedFile, editorInstance, code, selectedLanguage]);
 
     const handleEditorDidMount = useCallback((editor: Monaco.editor.IStandaloneCodeEditor, m: typeof Monaco) => {
         setEditorInstance(editor);
