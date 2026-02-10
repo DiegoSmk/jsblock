@@ -148,18 +148,38 @@ const updateSelectionInIndex = (index: Map<string, Edge[]>, newEdges: Edge[], se
     return newIndex;
 };
 
+export interface EdgeIndexRebuildConfig {
+    minEdgesForIncremental: number;
+    changeRatioThreshold: number;
+    minChangesForRatioCheck: number;
+}
+
+export const edgeIndexRebuildConfig: EdgeIndexRebuildConfig = {
+    // For very small graphs, rebuild is cheap and safer.
+    minEdgesForIncremental: 50,
+    // Rebuild if changes affect a significant portion of the graph.
+    changeRatioThreshold: 0.2,
+    // Only apply ratio check when there are at least this many changes.
+    minChangesForRatioCheck: 10
+};
+
 /**
  * Decision: Should we rebuild the index or apply incremental updates?
  */
-export const shouldRebuildIndex = (newEdgesCount: number, changesCount: number, hasReset: boolean): boolean => {
+export const shouldRebuildIndex = (
+    newEdgesCount: number,
+    changesCount: number,
+    hasReset: boolean,
+    config: EdgeIndexRebuildConfig = edgeIndexRebuildConfig
+): boolean => {
     if (hasReset) return true;
 
-    // Always rebuild for very small graphs as it's negligible and safer
-    if (newEdgesCount < 50) return true;
+    if (newEdgesCount < config.minEdgesForIncremental) return true;
 
-    // Rebuild if changes affect a significant portion of the graph (> 20%)
-    // This avoids fragmentation or accumulated overhead in incremental updates
-    if (changesCount > newEdgesCount * 0.2) return true;
+    const changeRatio = changesCount / Math.max(1, newEdgesCount);
+    if (changesCount >= config.minChangesForRatioCheck && changeRatio > config.changeRatioThreshold) {
+        return true;
+    }
 
     return false;
 };
