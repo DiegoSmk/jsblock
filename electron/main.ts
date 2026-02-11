@@ -74,6 +74,16 @@ function setupLogging() {
 let mainWindow: BrowserWindow | null = null;
 let splashWindow: BrowserWindow | null = null;
 
+const getIconPath = () => {
+    if (app.isPackaged) {
+        return path.join(__dirname, '../icon.png');
+    }
+    // In dev, try build folder first, then public
+    const buildPath = path.join(__dirname, '../../build/icon.png');
+    if (fs.existsSync(buildPath)) return buildPath;
+    return path.join(__dirname, '../../public/icon.png');
+};
+
 function createSplashWindow() {
     splashWindow = new BrowserWindow({
         width: 500,
@@ -82,7 +92,7 @@ function createSplashWindow() {
         frame: false,
         alwaysOnTop: true,
         resizable: false,
-        icon: path.join(__dirname, '../../build/icon.png'),
+        icon: getIconPath(),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true
@@ -109,7 +119,7 @@ function createWindow() {
         backgroundColor: '#0f172a',
         titleBarStyle: 'hidden',
         trafficLightPosition: { x: 12, y: 12 },
-        icon: path.join(__dirname, '../../build/icon.png'),
+        icon: getIconPath(),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
